@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PBE Score Keeper</title>
+  <link href="jquery-ui.min.css" rel="stylesheet">
+  <script src="jquery-3.7.1.min.js"></script>
+  <script src="jquery-ui.min.js"></script>
+  <script src="jquery.cookie.js"></script>
+  <script>
+    $(document).ready(initialize);
+    var blocks = 0;
+    var teams = 0;
+
+    function initialize() {
+      //Setup Accordion display
+      $("#accordion").accordion({
+        heightStyle: "content"
+      });
+    }
+
+    function setup() {
+      blocks = $("#blocks").val();
+      teams = $("#teams").val();
+    }
+  </script>
+</head>
+
+<body>
+
+  <div data-role="page" id="main">
+    <div data-role="header" class="jqm-header">
+      <h1>SunRail Corporate Cost Calculator</h1>
+    </div>
+    <h1>PBE Score Keeper</h1>
+    <div data-role="setup" id="accordion">
+      <h3>Setup</h3>
+      <div id="setup">
+        <h4>Instructions</h4>
+        <p>Please enter your number of blocks and teams below so that the scoring grid can be created</p>
+        <label><input name="blocks" id="blocks" type="number" min="1" max="24"> blocks</label><br>
+        <label><input name="teams" id="teams" type="number" min="1" max="20"> teams</label><br>
+        <br>
+        <button onclick="setup();$( '#accordion' ).accordion({active: 1});">Submit</button>
+      </div>
+      <h3>Scores</h3>
+      <div>
+        <div data-role="scores">
+          Scores go here
+        </div>
+      </div>
+    </div>
+</body>
+
+</html>
