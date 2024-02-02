@@ -31,14 +31,37 @@
     function setup() {
       //Set up Blocks
       blocks = $("#blocks").val();
-      //if for new number is bigger or smaller
-      for (i=1;i<=blocks;i++) {
-        //add missing
+      current_block_count = $("#block_names").children().length;
+      if (current_block_count < blocks)
+        for (i=current_block_count + 1;i<=blocks;i++) {
+          //Add new
+          $("#block_names").append('<label>Block '+i+' Name: <input type = "text" name = "block'+i+'" id = "block'+i+'" value = "Block '+i+'"><br></label>');
+        }
+      else if (current_block_count > blocks) {
+        //remove extra
+        for (i=current_block_count;i>blocks;i--) {
+          $("#block_names").children()[i - 1].remove();
+        }
+      } else {
+        //Already have the right number do nothing
       }
-      //remove extra
       
       //Set up Teams
       teams = $("#teams").val();
+      current_teams_count = $("#team_names").children().length;
+      if (current_teams_count < teams)
+        for (i=current_teams_count + 1;i<=teams;i++) {
+          //Add new
+          $("#team_names").append('<label>Team '+i+' Name: <input type = "text" name = "team'+i+'" id = "team'+i+'" value = "Team '+i+'"><br></label>');
+        }
+      else if (current_teams_count > teams) {
+        //remove extra
+        for (i=current_teams_count;i>teams;i--) {
+          $("#team_names").children()[i - 1].remove();
+        }
+      } else {
+        //Already have the right number do nothing
+      }
     }
   </script>
 </head>
@@ -47,9 +70,8 @@
 
   <div data-role="page" id="main">
     <div data-role="header" class="jqm-header">
-      <h1>SunRail Corporate Cost Calculator</h1>
+      <h1>PBE Score Keeper</h1>
     </div>
-    <h1>PBE Score Keeper</h1>
     <div data-role="setup" id="accordion">
       <h3>Setup</h3>
       <div id="setup">
@@ -66,17 +88,35 @@
           <legend>Set up your Teams</legend>
 
           <label><input name="teams" id="teams" type="number" min="1" max="20" onchange="setup()"> teams</label>
-          <div id="block_names">
+          <div id="team_names">
 
           </div>
         </fieldset>
         <br>
         <button onclick="setup();$( '#accordion' ).accordion({active: 1});">Submit</button>
       </div>
-      <h3>Scores</h3>
+      <h3>Score Entry</h3>
+      <div>
+        <div data-role="score_entry">
+          Score Entry Screen goes here
+        </div>
+      </div>
+      <h3>Score by Team</h3>
+      <div>
+        <div data-role="team_scores">
+          Team Scores Go Here
+        </div>
+      </div>
+      <h3>Score by Block</h3>
+      <div>
+        <div data-role="block_scores">
+          Team Scores Go Here
+        </div>
+      </div>
+      <h3>Question Log</h3>
       <div>
         <div data-role="scores">
-          Scores go here
+          Question Log Goes Here
         </div>
       </div>
     </div>
