@@ -114,8 +114,8 @@
         <div data-role="score_entry">
           <h4 id="current_question_title">Question 1</h4>
           <fieldset>
-            <legend>Points</legend>
-          <label><input name="question_total" id="question_total" type="number" min=1, max=20 onchange="update_score()"> total points</label><br>
+            <legend>Possible Points</legend>
+          <label><input name="question_total" id="question_total" type="number" min=1, max=20 onchange="update_score()"></label><br>
           <label><input type="checkbox" name="question_default_all_points" id="question_default_all_points"> all teams get points by default</label>
         </fieldset>
           <fieldset>
@@ -124,18 +124,19 @@
               <label><input type="radio" id="block1" name="question_block" onchange="update_score()">1</label>
               <label><input type="radio" id="block2" name="question_block" onchange="update_score()">2</label>
               <label><input type="radio" id="block3" name="question_block" onchange="update_score()">3</label>
+              <label><input type="radio" id="block3" name="question_block" onchange="update_score()">4</label>
+              <label><input type="radio" id="block3" name="question_block" onchange="update_score()">5</label>
+              <label><input type="radio" id="block3" name="question_block" onchange="update_score()">6</label>
             </div>
           </fieldset>
           <fieldset>
             <legend>Team Points</legend>
             <div id="team1_score">
-              <label><input type="checkbox" id="team1_score_1" name="team1_score" onchange="update_score()">1</label>
-              <label><input type="checkbox" id="team1_score_2" name="team1_score" onchange="update_score()">2</label>
-              <label><input type="checkbox" id="team1_score_3" name="team1_score" onchange="update_score()">3</label>
+              <label><input type="radio" id="team1_score_1" name="team1_score" onchange="update_score()">1</label>
+              <label><input type="radio" id="team1_score_2" name="team1_score" onchange="update_score()">2</label>
+              <label><input type="radio" id="team1_score_3" name="team1_score" onchange="update_score()">3</label>
             </div>
             Team 1 Score<br>
-            <label><input type="number" id="team2_score" min=1, max=20 onchange="update_score()"> Team 2 Score<br></label>
-            <label><input type="number" id="team3_score" min=1, max=20 onchange="update_score()"> Team 3 Score<br></label>
           </fieldset>
           <br>
           <button>Previous Question</button>
