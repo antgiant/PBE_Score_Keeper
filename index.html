@@ -11,8 +11,10 @@
   <script src="jquery.cookie.js"></script>
   <script>
     $(document).ready(initialize);
-    var blocks = 0;
-    var teams = 0;
+    //Setup Global Variables
+    var blocks = 6;
+    var teams = 1;
+    var current_question = 1;
 
     function initialize() {
       //Setup Accordion display
@@ -20,8 +22,15 @@
         heightStyle: "content"
       });
 
-      blocks = ($.cookie("blocks") != undefined ? $.cookie(["blocks"]) : 6);
-      teams = ($.cookie("teams") != undefined ? $.cookie(["teams"]) : 1);
+      //Setup score entry buttons
+      $( "#question_block" ).controlgroup({
+        //direction: "vertical"
+      })
+
+      //Initialize variables
+      blocks = ($.cookie("blocks") != undefined ? $.cookie(["blocks"]) : blocks);
+      teams = ($.cookie("teams") != undefined ? $.cookie(["teams"]) : teams);
+      current_question = ($.cookie("current_question") != undefined ? $.cookie(["current_question"]) : current_question);
       $("#blocks").val(blocks);
       $("#teams").val(teams);
 
@@ -35,7 +44,7 @@
       if (current_block_count < blocks)
         for (i=current_block_count + 1;i<=blocks;i++) {
           //Add new
-          $("#block_names").append('<label>Block '+i+' Name: <input type = "text" name = "block'+i+'" id = "block'+i+'" value = "Block '+i+'"><br></label>');
+          $("#block_names").append('<label>Block '+i+' Name: <input type = "text" name = "block'+i+'_name" id = "block'+i+'_name" value = "Block '+i+'"><br></label>');
         }
       else if (current_block_count > blocks) {
         //remove extra
@@ -52,7 +61,7 @@
       if (current_teams_count < teams)
         for (i=current_teams_count + 1;i<=teams;i++) {
           //Add new
-          $("#team_names").append('<label>Team '+i+' Name: <input type = "text" name = "team'+i+'" id = "team'+i+'" value = "Team '+i+'"><br></label>');
+          $("#team_names").append('<label>Team '+i+' Name: <input type = "text" name = "team'+i+'_name" id = "team'+i+'_name" value = "Team '+i+'"><br></label>');
         }
       else if (current_teams_count > teams) {
         //remove extra
@@ -62,6 +71,11 @@
       } else {
         //Already have the right number do nothing
       }
+    }
+
+    function update_score() {
+      //Update Question Number
+      $("#current_question_title").text("Question " + current_question)
     }
   </script>
 </head>
@@ -98,7 +112,27 @@
       <h3>Score Entry</h3>
       <div>
         <div data-role="score_entry">
-          Score Entry Screen goes here
+          <h4 id="current_question_title">Question 1</h4>
+          <label><input name="question_total" id="question_total" type="number" min=1, max=20 onchange="update_score()"> points</label>
+          <button>All Teams Full Points</button>
+          <button>All Teams No Points</button>
+          <fieldset>
+            <legend>Block</legend>
+            <div id="question_block">
+              <label><input type="radio" id="block1" name="question_block" onchange="update_score()">1</label>
+              <label><input type="radio" id="block2" name="question_block" onchange="update_score()">2</label>
+              <label><input type="radio" id="block3" name="question_block" onchange="update_score()">3</label>
+            </div>
+          </fieldset>
+          <fieldset>
+            <legend>Team Points</legend>
+            <label><input type="number" id="team1_score" min=1, max=20 onchange="update_score()"> Team 1 Score<br></label>
+            <label><input type="number" id="team2_score" min=1, max=20 onchange="update_score()"> Team 2 Score<br></label>
+            <label><input type="number" id="team3_score" min=1, max=20 onchange="update_score()"> Team 3 Score<br></label>
+          </fieldset>
+          <br>
+          <button>Previous Question</button>
+          <button>Next Question</button>
         </div>
       </div>
       <h3>Score by Team</h3>
