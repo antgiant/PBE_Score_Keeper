@@ -23,9 +23,9 @@
       });
 
       //Setup score entry buttons
-      $( "#question_block" ).controlgroup({
-        //direction: "vertical"
-      })
+      $( "#question_block" ).controlgroup();
+      
+      $( "#team1_score" ).controlgroup();
 
       //Initialize variables
       blocks = ($.cookie("blocks") != undefined ? $.cookie(["blocks"]) : blocks);
@@ -113,9 +113,11 @@
       <div>
         <div data-role="score_entry">
           <h4 id="current_question_title">Question 1</h4>
-          <label><input name="question_total" id="question_total" type="number" min=1, max=20 onchange="update_score()"> points</label>
-          <button>All Teams Full Points</button>
-          <button>All Teams No Points</button>
+          <fieldset>
+            <legend>Points</legend>
+          <label><input name="question_total" id="question_total" type="number" min=1, max=20 onchange="update_score()"> total points</label><br>
+          <label><input type="checkbox" name="question_default_all_points" id="question_default_all_points"> all teams get points by default</label>
+        </fieldset>
           <fieldset>
             <legend>Block</legend>
             <div id="question_block">
@@ -126,7 +128,12 @@
           </fieldset>
           <fieldset>
             <legend>Team Points</legend>
-            <label><input type="number" id="team1_score" min=1, max=20 onchange="update_score()"> Team 1 Score<br></label>
+            <div id="team1_score">
+              <label><input type="checkbox" id="team1_score_1" name="team1_score" onchange="update_score()">1</label>
+              <label><input type="checkbox" id="team1_score_2" name="team1_score" onchange="update_score()">2</label>
+              <label><input type="checkbox" id="team1_score_3" name="team1_score" onchange="update_score()">3</label>
+            </div>
+            Team 1 Score<br>
             <label><input type="number" id="team2_score" min=1, max=20 onchange="update_score()"> Team 2 Score<br></label>
             <label><input type="number" id="team3_score" min=1, max=20 onchange="update_score()"> Team 3 Score<br></label>
           </fieldset>
