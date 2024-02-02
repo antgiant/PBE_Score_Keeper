@@ -19,10 +19,25 @@
       $("#accordion").accordion({
         heightStyle: "content"
       });
+
+      blocks = ($.cookie("blocks") != undefined ? $.cookie(["blocks"]) : 6);
+      teams = ($.cookie("teams") != undefined ? $.cookie(["teams"]) : 1);
+      $("#blocks").val(blocks);
+      $("#teams").val(teams);
+
+      setup();
     }
 
     function setup() {
+      //Set up Blocks
       blocks = $("#blocks").val();
+      //if for new number is bigger or smaller
+      for (i=1;i<=blocks;i++) {
+        //add missing
+      }
+      //remove extra
+      
+      //Set up Teams
       teams = $("#teams").val();
     }
   </script>
@@ -40,8 +55,21 @@
       <div id="setup">
         <h4>Instructions</h4>
         <p>Please enter your number of blocks and teams below so that the scoring grid can be created</p>
-        <label><input name="blocks" id="blocks" type="number" min="1" max="24"> blocks</label><br>
-        <label><input name="teams" id="teams" type="number" min="1" max="20"> teams</label><br>
+        <fieldset>
+          <legend>Set up your Blocks</legend>
+          <label><input name="blocks" id="blocks" type="number" min="1" max="24" onchange="setup()"> blocks</label><br>
+          <div id="block_names">
+
+          </div>
+        </fieldset>
+        <fieldset>
+          <legend>Set up your Teams</legend>
+
+          <label><input name="teams" id="teams" type="number" min="1" max="20" onchange="setup()"> teams</label>
+          <div id="block_names">
+
+          </div>
+        </fieldset>
         <br>
         <button onclick="setup();$( '#accordion' ).accordion({active: 1});">Submit</button>
       </div>
