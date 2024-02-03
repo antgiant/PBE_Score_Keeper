@@ -80,14 +80,21 @@
         for (i=current_teams_count + 1;i<=teams;i++) {
           //Add new
           $("#team_names").append('<label>Team '+i+' Name: <input type = "text" name = "team'+i+'_name" id = "team'+i+'_name" onchange="setup()" value = "Team '+i+'"><br></label>');
-        }
+          $("#question_teams").append('<fieldset><legend id=team'+i+'_points_label>Team '+i+' Score</legend><div id="team'+i+'_score"></div></fieldset>');
+//              <label><input type="radio" id="team'+i+'_score_0" name="team'+i+'_score" onchange="update_score()">0</label>
+}
       else if (current_teams_count > teams) {
         //remove extra
         for (i=current_teams_count;i>teams;i--) {
           $("#team_names").children()[i - 1].remove();
+          $("#question_teams").children()[i - 1].remove();
         }
       } else {
         //Already have the right number do nothing
+      }
+      //Update Block Names (Yes this is ineffecient but the numbers are so small it doesn't really matter)
+      for (i=1;i<=teams;i++) {
+        $("#team"+i+"_points_label").text($("#team"+i+"_name").val());
       }
     }
 
@@ -150,15 +157,7 @@
             <legend>Block</legend>
             <div id="question_block"></div>
           </fieldset>
-          <fieldset>
-            <legend>Team 1 Score</legend>
-            <div id="team1_score">
-              <label><input type="radio" id="team1_score_0" name="team1_score" onchange="update_score()">0</label>
-              <label><input type="radio" id="team1_score_1" name="team1_score" onchange="update_score()">1</label>
-              <label><input type="radio" id="team1_score_2" name="team1_score" onchange="update_score()">2</label>
-              <label><input type="radio" id="team1_score_3" name="team1_score" onchange="update_score()">3</label>
-            </div>
-          </fieldset>
+          <div id = "question_teams"></div>
           <br>
           <button>Previous Question</button>
           <button>Next Question</button>

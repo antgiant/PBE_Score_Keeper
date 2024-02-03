@@ -1,6 +1,5 @@
 # Warning: Under Active Development and not yet functional
 Remaining items to complete before it is usable
-* Rename Teams
 * Possible Points changes number shown in team entry
 * Verify max possible question points
 * Implement data storage
