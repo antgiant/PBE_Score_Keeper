@@ -14,3 +14,4 @@ A tool to help keep track of Pathfinder Bible Bowl (PBE) Scores by block and tea
 To Do list (Bonus Features)
 * Add Timer
 * ?Sticky scores?
+* Multiple session storage
