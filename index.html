@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
   <meta charset="UTF-8">
@@ -23,9 +23,9 @@
       });
 
       //Setup score entry buttons
-      $( "#question_block" ).controlgroup();
-      
       $( "#team1_score" ).controlgroup();
+      $( "#question_score" ).controlgroup();
+      $( "#question_block" ).controlgroup();
 
       //Initialize variables
       blocks = ($.cookie("blocks") != undefined ? $.cookie(["blocks"]) : blocks);
@@ -39,29 +39,47 @@
 
     function setup() {
       //Set up Blocks
-      blocks = $("#blocks").val();
+      $("#total_blocks").text(blocks);
+      if (blocks == 1) {
+        $("#total_blocks_text").text("block");
+      } else {
+        $("#total_blocks_text").text("blocks");
+      }
       current_block_count = $("#block_names").children().length;
       if (current_block_count < blocks)
         for (i=current_block_count + 1;i<=blocks;i++) {
           //Add new
-          $("#block_names").append('<label>Block '+i+' Name: <input type = "text" name = "block'+i+'_name" id = "block'+i+'_name" value = "Block '+i+'"><br></label>');
+          $("#block_names").append('<label>Block '+i+' Name: <input type = "text" name = "block'+i+'_name" id = "block'+i+'_name" onchange="setup()" value = "'+i+'"><br></label>');
+          $("#question_block").append('<label><input type="radio" id="block'+i+'_points" name="question_block" onchange="update_score()"><span id="block'+i+'_point_label">'+i+'</span></label>');
         }
       else if (current_block_count > blocks) {
         //remove extra
         for (i=current_block_count;i>blocks;i--) {
           $("#block_names").children()[i - 1].remove();
+          $("#question_block").children()[i - 1].remove();
         }
       } else {
         //Already have the right number do nothing
       }
-      
+      //Add fancy options to new buttons
+      $( "#question_block" ).controlgroup( "refresh" );
+      //Update Block Names (Yes this is ineffecient but the numbers are so small it doesn't really matter)
+      for (i=1;i<=blocks;i++) {
+        $("#block"+i+"_point_label").text($("#block"+i+"_name").val());
+      }
+
       //Set up Teams
-      teams = $("#teams").val();
+      $("#total_teams").text(teams);
+      if (teams == 1) {
+        $("#total_teams_text").text("team");
+      } else {
+        $("#total_teams_text").text("teams");
+      }
       current_teams_count = $("#team_names").children().length;
       if (current_teams_count < teams)
         for (i=current_teams_count + 1;i<=teams;i++) {
           //Add new
-          $("#team_names").append('<label>Team '+i+' Name: <input type = "text" name = "team'+i+'_name" id = "team'+i+'_name" value = "Team '+i+'"><br></label>');
+          $("#team_names").append('<label>Team '+i+' Name: <input type = "text" name = "team'+i+'_name" id = "team'+i+'_name" onchange="setup()" value = "Team '+i+'"><br></label>');
         }
       else if (current_teams_count > teams) {
         //remove extra
@@ -93,50 +111,53 @@
         <p>Please enter your number of blocks and teams below so that the scoring grid can be created</p>
         <fieldset>
           <legend>Set up your Blocks</legend>
-          <label><input name="blocks" id="blocks" type="number" min="1" max="24" onchange="setup()"> blocks</label><br>
-          <div id="block_names">
-
-          </div>
+          <span id="total_blocks"></span> <span id="total_blocks_text">blocks</span> <button onclick='(blocks<24?blocks++:"");setup()'>▲</button> <button onclick='(blocks>1?blocks--:"");setup()'>▼</button><br>
+          <br>
+          <div id="block_names"></div>
         </fieldset>
         <fieldset>
           <legend>Set up your Teams</legend>
 
-          <label><input name="teams" id="teams" type="number" min="1" max="20" onchange="setup()"> teams</label>
-          <div id="team_names">
-
-          </div>
+          <span id="total_teams"></span> <span id="total_teams_text">teams</span> <button onclick='(teams<24?teams++:"");setup()'>▲</button> <button onclick='(teams>1?teams--:"");setup()'>▼</button><br>
+          <br>
+          <div id="team_names"></div>
         </fieldset>
         <br>
-        <button onclick="setup();$( '#accordion' ).accordion({active: 1});">Submit</button>
+        <button onclick="setup();$( '#accordion' ).accordion({active: 1});">Enter Scores</button>
       </div>
       <h3>Score Entry</h3>
       <div>
         <div data-role="score_entry">
           <h4 id="current_question_title">Question 1</h4>
           <fieldset>
-            <legend>Possible Points</legend>
-          <label><input name="question_total" id="question_total" type="number" min=1, max=20 onchange="update_score()"></label><br>
-          <label><input type="checkbox" name="question_default_all_points" id="question_default_all_points"> all teams get points by default</label>
+            <legend id = "points_legend">Possible Points for Question 1</legend>
+            <div id="question_score">
+              <label><input type="radio" id="question_score_1" name="question_score" onchange="update_score()">1</label>
+              <label><input type="radio" id="question_score_2" name="question_score" onchange="update_score()">2</label>
+              <label><input type="radio" id="question_score_3" name="question_score" onchange="update_score()">3</label>
+              <label><input type="radio" id="question_score_4" name="question_score" onchange="update_score()">4</label>
+              <label><input type="radio" id="question_score_5" name="question_score" onchange="update_score()">5</label>
+              <label><input type="radio" id="question_score_6" name="question_score" onchange="update_score()">6</label>
+              <label><input type="radio" id="question_score_7" name="question_score" onchange="update_score()">7</label>
+              <label><input type="radio" id="question_score_8" name="question_score" onchange="update_score()">8</label>
+              <label><input type="radio" id="question_score_9" name="question_score" onchange="update_score()">9</label>
+              <label><input type="radio" id="question_score_10" name="question_score" onchange="update_score()">10</label>
+              <label><input type="radio" id="question_score_11" name="question_score" onchange="update_score()">11</label>
+              <label><input type="radio" id="question_score_12" name="question_score" onchange="update_score()">12</label>
+            </div>
         </fieldset>
           <fieldset>
             <legend>Block</legend>
-            <div id="question_block">
-              <label><input type="radio" id="block1" name="question_block" onchange="update_score()">1</label>
-              <label><input type="radio" id="block2" name="question_block" onchange="update_score()">2</label>
-              <label><input type="radio" id="block3" name="question_block" onchange="update_score()">3</label>
-              <label><input type="radio" id="block3" name="question_block" onchange="update_score()">4</label>
-              <label><input type="radio" id="block3" name="question_block" onchange="update_score()">5</label>
-              <label><input type="radio" id="block3" name="question_block" onchange="update_score()">6</label>
-            </div>
+            <div id="question_block"></div>
           </fieldset>
           <fieldset>
-            <legend>Team Points</legend>
+            <legend>Team 1 Score</legend>
             <div id="team1_score">
+              <label><input type="radio" id="team1_score_0" name="team1_score" onchange="update_score()">0</label>
               <label><input type="radio" id="team1_score_1" name="team1_score" onchange="update_score()">1</label>
               <label><input type="radio" id="team1_score_2" name="team1_score" onchange="update_score()">2</label>
               <label><input type="radio" id="team1_score_3" name="team1_score" onchange="update_score()">3</label>
             </div>
-            Team 1 Score<br>
           </fieldset>
           <br>
           <button>Previous Question</button>
