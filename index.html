@@ -14,6 +14,13 @@
     var max_team_count = 24;
     var max_block_count = 24;
 
+    //Get Data Version and upgrade if needed
+    var data_version = JSON.parse(localStorage.getItem("data_version"));
+    if (data_version === null) {
+      data_version = "1.0";
+    }
+
+
     //Get Session History
     var session_list = JSON.parse(localStorage.getItem("session_list"));
     if (session_list === null) {
@@ -22,13 +29,19 @@
 
     //Get/Setup Current Session
     var current_session;
+    var session_names;
     var all_session_data;
     var current_session_data;
     if (localStorage.getItem("current_session") !== null) {
       current_session = localStorage.getItem("current_session");
       all_session_data = JSON.parse(localStorage.getItem("sessions"));
+      session_names = JSON.parse(localStorage.getItem("session_names"));
       current_session_data = all_session_data[current_session];
     } else {
+      session_names = JSON.parse(localStorage.getItem("session_names"));
+      if (session_names === null) {
+        session_names = new Array();
+      }
       all_session_data = JSON.parse(localStorage.getItem("sessions"));
       if (all_session_data === null) {
         all_session_data = new Object();
@@ -36,6 +49,8 @@
       var d = new Date();
       localStorage.setItem("current_session", d.toLocaleString());
       current_session = localStorage.getItem("current_session");
+      session_names.push(current_session);
+      localStorage.setItem("session_names", JSON.stringify(session_names));
       current_session_data = {
         "block_names": ["", "1", "2", "3", "4", "5", "6"],
         "team_names": ["", "1"],
