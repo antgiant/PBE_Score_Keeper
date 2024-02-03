@@ -81,7 +81,7 @@
           //Add new
           $("#team_names").append('<label>Team '+i+' Name: <input type = "text" name = "team'+i+'_name" id = "team'+i+'_name" onchange="setup()" value = "'+i+'"><br></label>');
           $("#question_teams").append('<fieldset><legend id=team'+i+'_points_label>Team '+i+' Score</legend><div id="team'+i+'_score"></div></fieldset>');
-          $("#team"+i+"_score").append('<label><input type="radio" id="team'+i+'_score_0" name="team'+i+'_score" onchange="update_score()">0</label>');
+          $("#team"+i+"_score").append('<label><input type="radio" id="team'+i+'_score_0" name="team'+i+'_score" value=0 onchange="update_score()">0</label>');
       
           $( "#team"+i+"_score" ).controlgroup();
           //Call update score to update the visible point options
@@ -112,14 +112,24 @@
       $("#current_question_title").text("Question " + current_question);
 
       for (i=1;i<=teams;i++) {
-          //Delete all point options
-          $("#team"+i+"_score").empty();
-
-          //Add corrected point options
-          for (j=0;j<=$("input:radio[name=question_score]:checked").val();j++) {
-            $("#team"+i+"_score").append('<label><input type="radio" id="team'+i+'_score_'+j+'" name="team'+i+'_score" onchange="update_score()">'+j+'</label>');
+        var total_points = $("input:radio[name=question_score]:checked").val();
+        var current_point_count = $("#team"+i+"_score").children().length - 1;
+        if (current_point_count < total_points) {
+          //Add new
+          for (j=current_point_count;j<=total_points - 1;j++) {
+            $("#team"+i+"_score").append('<label><input type="radio" id="team'+i+'_score_'+j+'" name="team'+i+'_score" value='+(j + 1)+' onchange="update_score()">'+(j + 1)+'</label>');
           }
-          $( "#team"+i+"_score" ).controlgroup("refresh");
+        } else if (current_point_count > total_points) {
+          //remove extra
+          for (j=current_point_count;j>total_points;j--) {
+            $("#team"+i+"_score").children()[j].remove();
+          }
+        } else {
+          //Already have the right number do nothing
+        }
+
+        //Add corrected point options
+        $( "#team"+i+"_score" ).controlgroup("refresh");
       }
 
     }
