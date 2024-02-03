@@ -8,13 +8,44 @@
   <link href="jquery-ui.min.css" rel="stylesheet">
   <script src="jquery-3.7.1.min.js"></script>
   <script src="jquery-ui.min.js"></script>
-  <script src="jquery.cookie.js"></script>
   <script>
     $(document).ready(initialize);
     //Setup Global Variables
-    var blocks = 6;
-    var teams = 1;
-    var current_question = 1;
+    var max_team_count = 24;
+    var max_block_count = 24;
+
+    //Get Session History
+    var session_list = JSON.parse(localStorage.getItem("session_list"));
+    if (session_list === null) {
+      session_list = new Array();
+    }
+
+    //Get/Setup Current Session Reference
+    var current_session_name;
+    if (localStorage.getItem("current_session_name") !== null) {
+      current_session_name = localStorage.getItem("current_session_name");
+    } else {
+      var d = new Date();
+      localStorage.setItem("current_session_name", d.toLocaleString());
+      current_session_name = localStorage.getItem("current_session_name");
+      session_list.push(current_session_name);
+      localStorage.setItem("session_list", JSON.stringify(session_list));
+    }
+
+    //Get/Setup Session Data
+    var current_session_data;
+    if (localStorage.getItem("current_session_data") !== null) {
+      current_session_data = JSON.parse(localStorage.getItem("current_session_data"));
+    } else {
+      current_session_data = {
+        "block_names": ["", "1", "2", "3", "4", "5", "6"],
+        "team_names": ["", "1"],
+        "current_question": 1
+      }
+      localStorage.setItem("current_session_data", JSON.stringify(current_session_data));
+    }
+    var block_count = current_session_data.block_names.length - 1;
+    var team_count = current_session_data.team_names.length - 1;
 
     function initialize() {
       //Setup Accordion display
@@ -26,37 +57,51 @@
       $( "#question_score" ).controlgroup();
       $( "#question_block" ).controlgroup();
 
-      //Initialize variables
-      blocks = ($.cookie("blocks") != undefined ? $.cookie(["blocks"]) : blocks);
-      teams = ($.cookie("teams") != undefined ? $.cookie(["teams"]) : teams);
-      current_question = ($.cookie("current_question") != undefined ? $.cookie(["current_question"]) : current_question);
-      $("#blocks").val(blocks);
-      $("#teams").val(teams);
+      $("#blocks").val(block_count);
+      $("#teams").val(team_count);
 
+      //Setup Blocks
+      for (i=1;i<=block_count;i++) {
+        //Add new
+        $("#block_names").append('<label>Block '+i+' Name: <input type = "text" name = "block'+i+'_name" id = "block'+i+'_name" onchange="setup()" value = "'+current_session_data.block_names[i]+'"><br></label>');
+        $("#question_block").append('<label><input type="radio" id="block'+i+'_points" name="question_block" onchange="update_score()"><span id="block'+i+'_point_label">'+current_session_data.block_names[i]+'</span></label>');
+      }
+
+      //Setup Teams
+      for (i=1;i<=team_count;i++) {
+        //Add new
+        $("#team_names").append('<label>Team '+i+' Name: <input type = "text" name = "team'+i+'_name" id = "team'+i+'_name" onchange="setup()" value = "'+current_session_data.team_names[i]+'"><br></label>');
+        $("#question_teams").append('<fieldset><legend id=team'+i+'_points_label>Team '+current_session_data.team_names[i]+' Score</legend><div id="team'+i+'_score"></div></fieldset>');
+        $("#team"+i+"_score").append('<label><input type="radio" id="team'+i+'_score_0" name="team'+i+'_score" value=0 onchange="update_score()">0</label>');
+    
+        $( "#team"+i+"_score" ).controlgroup();
+      }
       setup();
     }
 
     function setup() {
       //Set up Blocks
-      $("#total_blocks").text(blocks);
-      if (blocks == 1) {
+      $("#total_blocks").text(block_count);
+      if (block_count == 1) {
         $("#total_blocks_text").text("block");
       } else {
         $("#total_blocks_text").text("blocks");
       }
       current_block_count = $("#block_names").children().length;
-      if (current_block_count < blocks) {
-        for (i=current_block_count + 1;i<=blocks;i++) {
+      if (current_block_count < block_count) {
+        for (i=current_block_count + 1;i<=block_count;i++) {
           //Add new
-          $("#block_names").append('<label>Block '+i+' Name: <input type = "text" name = "block'+i+'_name" id = "block'+i+'_name" onchange="setup()" value = "'+i+'"><br></label>');
-          $("#question_block").append('<label><input type="radio" id="block'+i+'_points" name="question_block" onchange="update_score()"><span id="block'+i+'_point_label">'+i+'</span></label>');
+          current_session_data.block_names.push(i.toString());
+          $("#block_names").append('<label>Block '+i+' Name: <input type = "text" name = "block'+i+'_name" id = "block'+i+'_name" onchange="setup()" value = "'+current_session_data.block_names[i]+'"><br></label>');
+          $("#question_block").append('<label><input type="radio" id="block'+i+'_points" name="question_block" onchange="update_score()"><span id="block'+i+'_point_label">'+current_session_data.block_names[i]+'</span></label>');
         }
       }
-      else if (current_block_count > blocks) {
+      else if (current_block_count > block_count) {
         //remove extra
-        for (i=current_block_count;i>blocks;i--) {
+        for (i=current_block_count;i>block_count;i--) {
           $("#block_names").children()[i - 1].remove();
           $("#question_block").children()[i - 1].remove();
+          current_session_data.block_names.pop();
         }
       } else {
         //Already have the right number do nothing
@@ -64,55 +109,61 @@
       //Add fancy options to new buttons
       $( "#question_block" ).controlgroup( "refresh" );
       //Update Block Names (Yes this is ineffecient but the numbers are so small it doesn't really matter)
-      for (i=1;i<=blocks;i++) {
+      for (i=1;i<=block_count;i++) {
+        current_session_data.block_names[i] = $("#block"+i+"_name").val();
         $("#block"+i+"_point_label").text($("#block"+i+"_name").val());
       }
 
       //Set up Teams
-      $("#total_teams").text(teams);
-      if (teams == 1) {
+      $("#total_teams").text(team_count);
+      if (team_count == 1) {
         $("#total_teams_text").text("team");
       } else {
         $("#total_teams_text").text("teams");
       }
       current_teams_count = $("#team_names").children().length;
-      if (current_teams_count < teams) {
-        for (i=current_teams_count + 1;i<=teams;i++) {
+      if (current_teams_count < team_count) {
+        for (i=current_teams_count + 1;i<=team_count;i++) {
           //Add new
-          $("#team_names").append('<label>Team '+i+' Name: <input type = "text" name = "team'+i+'_name" id = "team'+i+'_name" onchange="setup()" value = "'+i+'"><br></label>');
-          $("#question_teams").append('<fieldset><legend id=team'+i+'_points_label>Team '+i+' Score</legend><div id="team'+i+'_score"></div></fieldset>');
+          current_session_data.team_names.push(i.toString());
+          $("#team_names").append('<label>Team '+i+' Name: <input type = "text" name = "team'+i+'_name" id = "team'+i+'_name" onchange="setup()" value = "'+current_session_data.team_names[i]+'"><br></label>');
+          $("#question_teams").append('<fieldset><legend id=team'+i+'_points_label>Team '+current_session_data.team_names[i]+' Score</legend><div id="team'+i+'_score"></div></fieldset>');
           $("#team"+i+"_score").append('<label><input type="radio" id="team'+i+'_score_0" name="team'+i+'_score" value=0 onchange="update_score()">0</label>');
       
           $( "#team"+i+"_score" ).controlgroup();
           //Call update score to update the visible point options
           update_score();
         }
-      } else if (current_teams_count > teams) {
+      } else if (current_teams_count > team_count) {
         //remove extra
-        for (i=current_teams_count;i>teams;i--) {
+        for (i=current_teams_count;i>team_count;i--) {
           $("#team_names").children()[i - 1].remove();
           $("#question_teams").children()[i - 1].remove();
+          current_session_data.team_names.pop();
         }
       } else {
         //Already have the right number do nothing
       }
       
       //Update Team Names (Yes this is ineffecient but the numbers are so small it doesn't really matter)
-      for (i=1;i<=teams;i++) {
-        if ($("#team"+i+"_name").val().slice(-1).toLowerCase() === "s") {
-          $("#team"+i+"_points_label").text("Team "+$("#team"+i+"_name").val()+"' score");
+      for (i=1;i<=team_count;i++) {
+        current_session_data.team_names[i] = $("#team"+i+"_name").val();
+        if (current_session_data.team_names[i].slice(-1).toLowerCase() === "s") {
+          $("#team"+i+"_points_label").text("Team "+current_session_data.team_names[i]+"' score");
         } else {
-          $("#team"+i+"_points_label").text("Team "+$("#team"+i+"_name").val()+"'s score");
+          $("#team"+i+"_points_label").text("Team "+current_session_data.team_names[i]+"'s score");
         }
       }
+      //Save out data
+      localStorage.setItem("current_session_data", JSON.stringify(current_session_data));
     }
 
     function update_score() {
       //Update Question Number
-      $("#current_question_title").text("Question " + current_question);
+      $("#current_question_title").text("Question " + current_session_data.current_question);
+      var total_points = $("input:radio[name=question_score]:checked").val();
 
-      for (i=1;i<=teams;i++) {
-        var total_points = $("input:radio[name=question_score]:checked").val();
+      for (i=1;i<=team_count;i++) {
         var current_point_count = $("#team"+i+"_score").children().length - 1;
         if (current_point_count < total_points) {
           //Add new
@@ -131,7 +182,9 @@
         //Add corrected point options
         $( "#team"+i+"_score" ).controlgroup("refresh");
       }
-
+      
+      //Save out data
+      localStorage.setItem("current_session_data", JSON.stringify(current_session_data));
     }
   </script>
 </head>
@@ -150,13 +203,13 @@
         <fieldset>
           <legend>Set up your Teams</legend>
 
-          <span id="total_teams"></span> <span id="total_teams_text">teams</span> <button onclick='(teams<24?teams++:"");setup()'>▲</button> <button onclick='(teams>1?teams--:"");setup()'>▼</button><br>
+          <span id="total_teams"></span> <span id="total_teams_text">teams</span> <button onclick='(team_count<max_team_count?team_count++:"");setup()'>▲</button> <button onclick='(team_count>1?team_count--:"");setup()'>▼</button><br>
           <br>
           <div id="team_names"></div>
         </fieldset>
         <fieldset>
           <legend>Set up your Blocks</legend>
-          <span id="total_blocks"></span> <span id="total_blocks_text">blocks</span> <button onclick='(blocks<24?blocks++:"");setup()'>▲</button> <button onclick='(blocks>1?blocks--:"");setup()'>▼</button><br>
+          <span id="total_blocks"></span> <span id="total_blocks_text">blocks</span> <button onclick='(block_count<max_block_count?block_count++:"");setup()'>▲</button> <button onclick='(block_count>1?block_count--:"");setup()'>▼</button><br>
           <br>
           <div id="block_names"></div>
         </fieldset>

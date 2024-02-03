@@ -1,8 +1,6 @@
 # Warning: Under Active Development and not yet functional
 Remaining items to complete before it is usable
 * Implement data storage
-* Save data to cookie
-* Restore data from cookie
 * Implement question navigaion
 * Implement Score by Team
 * Implement Score by Block
