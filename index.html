@@ -20,30 +20,32 @@
       session_list = new Array();
     }
 
-    //Get/Setup Current Session Reference
-    var current_session_name;
-    if (localStorage.getItem("current_session_name") !== null) {
-      current_session_name = localStorage.getItem("current_session_name");
-    } else {
-      var d = new Date();
-      localStorage.setItem("current_session_name", d.toLocaleString());
-      current_session_name = localStorage.getItem("current_session_name");
-      session_list.push(current_session_name);
-      localStorage.setItem("session_list", JSON.stringify(session_list));
-    }
-
-    //Get/Setup Session Data
+    //Get/Setup Current Session
+    var current_session;
+    var all_session_data;
     var current_session_data;
-    if (localStorage.getItem("current_session_data") !== null) {
-      current_session_data = JSON.parse(localStorage.getItem("current_session_data"));
+    if (localStorage.getItem("current_session") !== null) {
+      current_session = localStorage.getItem("current_session");
+      all_session_data = JSON.parse(localStorage.getItem("sessions"));
+      current_session_data = all_session_data[current_session];
     } else {
+      all_session_data = JSON.parse(localStorage.getItem("sessions"));
+      if (all_session_data === null) {
+        all_session_data = new Object();
+      }
+      var d = new Date();
+      localStorage.setItem("current_session", d.toLocaleString());
+      current_session = localStorage.getItem("current_session");
       current_session_data = {
         "block_names": ["", "1", "2", "3", "4", "5", "6"],
         "team_names": ["", "1"],
-        "current_question": 1
+        "current_question": 1,
+        "questions": [{},]
       }
-      localStorage.setItem("current_session_data", JSON.stringify(current_session_data));
+      all_session_data[current_session] = current_session_data;
+      localStorage.setItem("sessions", JSON.stringify(all_session_data));
     }
+
     var block_count = current_session_data.block_names.length - 1;
     var team_count = current_session_data.team_names.length - 1;
 
@@ -155,7 +157,8 @@
         }
       }
       //Save out data
-      localStorage.setItem("current_session_data", JSON.stringify(current_session_data));
+      all_session_data[current_session] = current_session_data;
+      localStorage.setItem("sessions", JSON.stringify(all_session_data));
     }
 
     function update_score() {
@@ -184,7 +187,8 @@
       }
       
       //Save out data
-      localStorage.setItem("current_session_data", JSON.stringify(current_session_data));
+      all_session_data[current_session] = current_session_data;
+      localStorage.setItem("sessions", JSON.stringify(all_session_data));
     }
   </script>
 </head>
