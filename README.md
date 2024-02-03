@@ -1,10 +1,8 @@
 # Warning: Under Active Development and not yet functional
 Remaining items to complete before it is usable
-* Possible Points changes number shown in team entry
-* Verify max possible question points
 * Implement data storage
 * Save data to cookie
-* Restore data from cookies
+* Restore data from cookie
 * Implement question navigaion
 * Implement Score by Team
 * Implement Score by Block

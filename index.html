@@ -23,7 +23,6 @@
       });
 
       //Setup score entry buttons
-      $( "#team1_score" ).controlgroup();
       $( "#question_score" ).controlgroup();
       $( "#question_block" ).controlgroup();
 
@@ -46,12 +45,13 @@
         $("#total_blocks_text").text("blocks");
       }
       current_block_count = $("#block_names").children().length;
-      if (current_block_count < blocks)
+      if (current_block_count < blocks) {
         for (i=current_block_count + 1;i<=blocks;i++) {
           //Add new
           $("#block_names").append('<label>Block '+i+' Name: <input type = "text" name = "block'+i+'_name" id = "block'+i+'_name" onchange="setup()" value = "'+i+'"><br></label>');
           $("#question_block").append('<label><input type="radio" id="block'+i+'_points" name="question_block" onchange="update_score()"><span id="block'+i+'_point_label">'+i+'</span></label>');
         }
+      }
       else if (current_block_count > blocks) {
         //remove extra
         for (i=current_block_count;i>blocks;i--) {
@@ -76,14 +76,18 @@
         $("#total_teams_text").text("teams");
       }
       current_teams_count = $("#team_names").children().length;
-      if (current_teams_count < teams)
+      if (current_teams_count < teams) {
         for (i=current_teams_count + 1;i<=teams;i++) {
           //Add new
-          $("#team_names").append('<label>Team '+i+' Name: <input type = "text" name = "team'+i+'_name" id = "team'+i+'_name" onchange="setup()" value = "Team '+i+'"><br></label>');
+          $("#team_names").append('<label>Team '+i+' Name: <input type = "text" name = "team'+i+'_name" id = "team'+i+'_name" onchange="setup()" value = "'+i+'"><br></label>');
           $("#question_teams").append('<fieldset><legend id=team'+i+'_points_label>Team '+i+' Score</legend><div id="team'+i+'_score"></div></fieldset>');
-//              <label><input type="radio" id="team'+i+'_score_0" name="team'+i+'_score" onchange="update_score()">0</label>
-}
-      else if (current_teams_count > teams) {
+          $("#team"+i+"_score").append('<label><input type="radio" id="team'+i+'_score_0" name="team'+i+'_score" onchange="update_score()">0</label>');
+      
+          $( "#team"+i+"_score" ).controlgroup();
+          //Call update score to update the visible point options
+          update_score();
+        }
+      } else if (current_teams_count > teams) {
         //remove extra
         for (i=current_teams_count;i>teams;i--) {
           $("#team_names").children()[i - 1].remove();
@@ -92,15 +96,32 @@
       } else {
         //Already have the right number do nothing
       }
-      //Update Block Names (Yes this is ineffecient but the numbers are so small it doesn't really matter)
+      
+      //Update Team Names (Yes this is ineffecient but the numbers are so small it doesn't really matter)
       for (i=1;i<=teams;i++) {
-        $("#team"+i+"_points_label").text($("#team"+i+"_name").val());
+        if ($("#team"+i+"_name").val().slice(-1).toLowerCase() === "s") {
+          $("#team"+i+"_points_label").text("Team "+$("#team"+i+"_name").val()+"' score");
+        } else {
+          $("#team"+i+"_points_label").text("Team "+$("#team"+i+"_name").val()+"'s score");
+        }
       }
     }
 
     function update_score() {
       //Update Question Number
-      $("#current_question_title").text("Question " + current_question)
+      $("#current_question_title").text("Question " + current_question);
+
+      for (i=1;i<=teams;i++) {
+          //Delete all point options
+          $("#team"+i+"_score").empty();
+
+          //Add corrected point options
+          for (j=0;j<=$("input:radio[name=question_score]:checked").val();j++) {
+            $("#team"+i+"_score").append('<label><input type="radio" id="team'+i+'_score_'+j+'" name="team'+i+'_score" onchange="update_score()">'+j+'</label>');
+          }
+          $( "#team"+i+"_score" ).controlgroup("refresh");
+      }
+
     }
   </script>
 </head>
@@ -117,17 +138,17 @@
         <h4>Instructions</h4>
         <p>Please enter your number of blocks and teams below so that the scoring grid can be created</p>
         <fieldset>
-          <legend>Set up your Blocks</legend>
-          <span id="total_blocks"></span> <span id="total_blocks_text">blocks</span> <button onclick='(blocks<24?blocks++:"");setup()'>▲</button> <button onclick='(blocks>1?blocks--:"");setup()'>▼</button><br>
-          <br>
-          <div id="block_names"></div>
-        </fieldset>
-        <fieldset>
           <legend>Set up your Teams</legend>
 
           <span id="total_teams"></span> <span id="total_teams_text">teams</span> <button onclick='(teams<24?teams++:"");setup()'>▲</button> <button onclick='(teams>1?teams--:"");setup()'>▼</button><br>
           <br>
           <div id="team_names"></div>
+        </fieldset>
+        <fieldset>
+          <legend>Set up your Blocks</legend>
+          <span id="total_blocks"></span> <span id="total_blocks_text">blocks</span> <button onclick='(blocks<24?blocks++:"");setup()'>▲</button> <button onclick='(blocks>1?blocks--:"");setup()'>▼</button><br>
+          <br>
+          <div id="block_names"></div>
         </fieldset>
         <br>
         <button onclick="setup();$( '#accordion' ).accordion({active: 1});">Enter Scores</button>
@@ -139,18 +160,18 @@
           <fieldset>
             <legend id = "points_legend">Possible Points for Question 1</legend>
             <div id="question_score">
-              <label><input type="radio" id="question_score_1" name="question_score" onchange="update_score()">1</label>
-              <label><input type="radio" id="question_score_2" name="question_score" onchange="update_score()">2</label>
-              <label><input type="radio" id="question_score_3" name="question_score" onchange="update_score()">3</label>
-              <label><input type="radio" id="question_score_4" name="question_score" onchange="update_score()">4</label>
-              <label><input type="radio" id="question_score_5" name="question_score" onchange="update_score()">5</label>
-              <label><input type="radio" id="question_score_6" name="question_score" onchange="update_score()">6</label>
-              <label><input type="radio" id="question_score_7" name="question_score" onchange="update_score()">7</label>
-              <label><input type="radio" id="question_score_8" name="question_score" onchange="update_score()">8</label>
-              <label><input type="radio" id="question_score_9" name="question_score" onchange="update_score()">9</label>
-              <label><input type="radio" id="question_score_10" name="question_score" onchange="update_score()">10</label>
-              <label><input type="radio" id="question_score_11" name="question_score" onchange="update_score()">11</label>
-              <label><input type="radio" id="question_score_12" name="question_score" onchange="update_score()">12</label>
+              <label><input type="radio" id="question_score_1" name="question_score" value=1 onchange="update_score()">1</label>
+              <label><input type="radio" id="question_score_2" name="question_score" value=2 onchange="update_score()">2</label>
+              <label><input type="radio" id="question_score_3" name="question_score" value=3 onchange="update_score()">3</label>
+              <label><input type="radio" id="question_score_4" name="question_score" value=4 onchange="update_score()">4</label>
+              <label><input type="radio" id="question_score_5" name="question_score" value=5 onchange="update_score()">5</label>
+              <label><input type="radio" id="question_score_6" name="question_score" value=6 onchange="update_score()">6</label>
+              <label><input type="radio" id="question_score_7" name="question_score" value=7 onchange="update_score()">7</label>
+              <label><input type="radio" id="question_score_8" name="question_score" value=8 onchange="update_score()">8</label>
+              <label><input type="radio" id="question_score_9" name="question_score" value=9 onchange="update_score()">9</label>
+              <label><input type="radio" id="question_score_10" name="question_score" value=10 onchange="update_score()">10</label>
+              <label><input type="radio" id="question_score_11" name="question_score" value=11 onchange="update_score()">11</label>
+              <label><input type="radio" id="question_score_12" name="question_score" value=12 onchange="update_score()">12</label>
             </div>
         </fieldset>
           <fieldset>
