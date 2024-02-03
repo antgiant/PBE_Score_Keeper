@@ -81,7 +81,7 @@
       for (i=1;i<=block_count;i++) {
         //Add new
         $("#block_names").append('<label>Block '+i+' Name: <input type = "text" name = "block'+i+'_name" id = "block'+i+'_name" onchange="setup()" value = "'+current_session_data.block_names[i]+'"><br></label>');
-        $("#question_block").append('<label><input type="radio" id="block'+i+'_points" name="question_block" onchange="update_score()"><span id="block'+i+'_point_label">'+current_session_data.block_names[i]+'</span></label>');
+        $("#question_block").append('<label><input type="radio" id="question_block_'+i+'" name="question_block" value = '+i+' onchange="update_score()"><span id="block'+i+'_point_label">'+current_session_data.block_names[i]+'</span></label>');
       }
 
       //Setup Teams
@@ -110,7 +110,7 @@
           //Add new
           current_session_data.block_names.push(i.toString());
           $("#block_names").append('<label>Block '+i+' Name: <input type = "text" name = "block'+i+'_name" id = "block'+i+'_name" onchange="setup()" value = "'+current_session_data.block_names[i]+'"><br></label>');
-          $("#question_block").append('<label><input type="radio" id="block'+i+'_points" name="question_block" onchange="update_score()"><span id="block'+i+'_point_label">'+current_session_data.block_names[i]+'</span></label>');
+          $("#question_block").append('<label><input type="radio" id="question_block_'+i+'" name="question_block" value="'+i+'" onchange="update_score()"><span id="block'+i+'_label">'+current_session_data.block_names[i]+'</span></label>');
         }
       }
       else if (current_block_count > block_count) {
@@ -128,7 +128,7 @@
       //Update Block Names (Yes this is ineffecient but the numbers are so small it doesn't really matter)
       for (i=1;i<=block_count;i++) {
         current_session_data.block_names[i] = $("#block"+i+"_name").val();
-        $("#block"+i+"_point_label").text($("#block"+i+"_name").val());
+        $("#block"+i+"_label").text($("#block"+i+"_name").val());
       }
 
       //Set up Teams
@@ -174,12 +174,38 @@
       //Save out data
       all_session_data[current_session] = current_session_data;
       localStorage.setItem("sessions", JSON.stringify(all_session_data));
+
+      update_score();
     }
 
     function update_score() {
       //Update Question Number
       $("#current_question_title").text("Question " + current_session_data.current_question);
+      //Grab a working copy of the question data
+      var current_question_data = current_session_data.questions[current_session_data.current_question];
+      if (current_question_data === undefined) {
+        current_question_data = new Object;
+      }
+
+      //Get total points
       var total_points = $("input:radio[name=question_score]:checked").val();
+      if (total_points === undefined) {
+        total_points = current_question_data.total_points;
+        $("#question_score_" + total_points).prop("checked", true);
+        //Refresh visual display
+        $( "#question_score" ).controlgroup("refresh");
+      }
+      current_question_data.total_points = total_points;
+
+      //Get Block
+      var current_question_block = $("input:radio[name=question_block]:checked").val();
+      if (current_question_block === undefined) {
+        current_question_block = current_question_data.current_question_block;
+        $("#question_block_" + current_question_block).prop("checked", true);
+        //Refresh visual display
+        $( "#question_block" ).controlgroup("refresh");
+      }
+      current_question_data.current_question_block = current_question_block;
 
       for (i=1;i<=team_count;i++) {
         var current_point_count = $("#team"+i+"_score").children().length - 1;
@@ -202,6 +228,7 @@
       }
       
       //Save out data
+      current_session_data.questions[current_session_data.current_question] = current_question_data;
       all_session_data[current_session] = current_session_data;
       localStorage.setItem("sessions", JSON.stringify(all_session_data));
     }
