@@ -1,4 +1,6 @@
-# PBE_Score_Keeper
+# Warning: Under Active Development and not yet functional
+
+# PBE Score Keeper
 A tool to help keep track of Pathfinder Bible Bowl (PBE) Scores by block and team
 
 To Do
