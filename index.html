@@ -10,59 +10,68 @@
   <script src="jquery-ui.min.js"></script>
   <script>
     $(document).ready(initialize);
-    //Setup Global Variables
-    var max_team_count = 24;
-    var max_block_count = 24;
 
-    //Get Data Version and upgrade if needed
-    var data_version = JSON.parse(localStorage.getItem("data_version"));
-    if (data_version === null) {
-      data_version = "1.0";
-    }
+    var data = initialize_state();
 
+    function initialize_state() {
 
-    //Get Session History
-    var session_list = JSON.parse(localStorage.getItem("session_list"));
-    if (session_list === null) {
-      session_list = new Array();
-    }
+      //Get Data Version and upgrade if needed
+      var data_version = JSON.parse(localStorage.getItem("data_version"));
+      //No data version means this is a first run. Initialize data state
+      if (data_version === null) {
+        var d = new Date();
+        var date = d.toLocaleString();
+        all_data = {
+          "max_team_count": 24,
+          "max_block_count": 24,
+          "max_points_per_question": 12,
+          "session_names": [date],
+          "current_session": date,
+          date: {
+            "block_names": ["", "1", "2", "3", "4", "5", "6"],
+            "team_names": ["", "1"],
+            "current_question": 1,
+            "questions": [{},]
+          }
+        };
+        //Save it to localStorage
+        localStorage.setItem("session_names", JSON.stringify(session_names));
+      } //Data structure upgrades go here as else if
 
-    //Get/Setup Current Session
-    var current_session;
-    var session_names;
-    var all_session_data;
-    var current_session_data;
-    if (localStorage.getItem("current_session") !== null) {
-      current_session = localStorage.getItem("current_session");
-      all_session_data = JSON.parse(localStorage.getItem("sessions"));
-      session_names = JSON.parse(localStorage.getItem("session_names"));
-      current_session_data = all_session_data[current_session];
-    } else {
-      session_names = JSON.parse(localStorage.getItem("session_names"));
-      if (session_names === null) {
-        session_names = new Array();
+      if (localStorage.getItem("current_session") !== null) {
+        current_session = localStorage.getItem("current_session");
+        all_session_data = JSON.parse(localStorage.getItem("sessions"));
+        session_names = JSON.parse(localStorage.getItem("session_names"));
+        current_session_data = all_session_data[current_session];
+      } else {
+        session_names = JSON.parse(localStorage.getItem("session_names"));
+        if (session_names === null) {
+          session_names = new Array();
+        }
+        all_session_data = JSON.parse(localStorage.getItem("sessions"));
+        if (all_session_data === null) {
+          all_session_data = new Object();
+        }
+        var d = new Date();
+        localStorage.setItem("current_session", d.toLocaleString());
+        current_session = localStorage.getItem("current_session");
+        session_names.push(current_session);
+        localStorage.setItem("session_names", JSON.stringify(session_names));
+        current_session_data = {
+          "block_names": [""],
+          "team_names": ["", "1"],
+          "current_question": 1,
+          "questions": [{},]
+        }
+        all_session_data[current_session] = current_session_data;
+        localStorage.setItem("sessions", JSON.stringify(all_session_data));
       }
-      all_session_data = JSON.parse(localStorage.getItem("sessions"));
-      if (all_session_data === null) {
-        all_session_data = new Object();
-      }
-      var d = new Date();
-      localStorage.setItem("current_session", d.toLocaleString());
-      current_session = localStorage.getItem("current_session");
-      session_names.push(current_session);
-      localStorage.setItem("session_names", JSON.stringify(session_names));
-      current_session_data = {
-        "block_names": ["", "1", "2", "3", "4", "5", "6"],
-        "team_names": ["", "1"],
-        "current_question": 1,
-        "questions": [{},]
-      }
-      all_session_data[current_session] = current_session_data;
-      localStorage.setItem("sessions", JSON.stringify(all_session_data));
-    }
 
-    var block_count = current_session_data.block_names.length - 1;
-    var team_count = current_session_data.team_names.length - 1;
+      var block_count = 6;
+      var team_count = current_session_data.team_names.length - 1;
+
+      return current_session_data;
+    }
 
     function initialize() {
       //Setup Accordion display
@@ -76,13 +85,6 @@
 
       $("#blocks").val(block_count);
       $("#teams").val(team_count);
-
-      //Setup Blocks
-      for (i=1;i<=block_count;i++) {
-        //Add new
-        $("#block_names").append('<label>Block '+i+' Name: <input type = "text" name = "block'+i+'_name" id = "block'+i+'_name" onchange="setup()" value = "'+current_session_data.block_names[i]+'"><br></label>');
-        $("#question_block").append('<label><input type="radio" id="question_block_'+i+'" name="question_block" value = '+i+' onchange="update_score()"><span id="block'+i+'_point_label">'+current_session_data.block_names[i]+'</span></label>');
-      }
 
       //Setup Teams
       for (i=1;i<=team_count;i++) {
@@ -198,14 +200,14 @@
       current_question_data.total_points = total_points;
 
       //Get Block
-      var current_question_block = $("input:radio[name=question_block]:checked").val();
-      if (current_question_block === undefined) {
-        current_question_block = current_question_data.current_question_block;
-        $("#question_block_" + current_question_block).prop("checked", true);
+      var question_block = $("input:radio[name=question_block]:checked").val();
+      if (question_block === undefined) {
+        question_block = current_question_data.question_block;
+        $("#question_block_" + question_block).prop("checked", true);
         //Refresh visual display
         $( "#question_block" ).controlgroup("refresh");
       }
-      current_question_data.current_question_block = current_question_block;
+      current_question_data.question_block = question_block;
 
       for (i=1;i<=team_count;i++) {
         var current_point_count = $("#team"+i+"_score").children().length - 1;
