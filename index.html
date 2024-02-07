@@ -9,10 +9,24 @@
   <script src="jquery-3.7.1.min.js"></script>
   <script src="jquery-ui.min.js"></script>
   <script>
-    $(document).ready(initialize);
+    $(document).ready(initialize_display);
 
     var data = initialize_state();
+    var block_count = data.block_names.length - 1;
+    var team_count = data.team_names.length - 1;
 
+    function initialize_display() {
+      //Setup Accordion display
+      $("#accordion").accordion({
+        heightStyle: "content"
+      });
+
+      //Setup score entry buttons
+      $( "#question_score" ).controlgroup();
+      $( "#question_block" ).controlgroup();
+
+    }
+    
     function initialize_state() {
 
       //Get Data Version and upgrade if needed
@@ -21,7 +35,7 @@
       if (data_version === null) {
         var d = new Date();
         var date = d.toLocaleString();
-        all_data = {
+        initial_state = {
           "max_team_count": 24,
           "max_block_count": 24,
           "max_points_per_question": 12,
@@ -35,65 +49,39 @@
           }
         };
         //Save it to localStorage
-        localStorage.setItem("session_names", JSON.stringify(session_names));
-      } //Data structure upgrades go here as else if
+        for (let [key, value] of Object.entries(initial_state)) {
+          localStorage.setItem(key, JSON.stringify(value));
+        }
+        
+      } //Data structure upgrades go here as else if required
 
-      if (localStorage.getItem("current_session") !== null) {
-        current_session = localStorage.getItem("current_session");
-        all_session_data = JSON.parse(localStorage.getItem("sessions"));
-        session_names = JSON.parse(localStorage.getItem("session_names"));
-        current_session_data = all_session_data[current_session];
-      } else {
-        session_names = JSON.parse(localStorage.getItem("session_names"));
-        if (session_names === null) {
-          session_names = new Array();
-        }
-        all_session_data = JSON.parse(localStorage.getItem("sessions"));
-        if (all_session_data === null) {
-          all_session_data = new Object();
-        }
-        var d = new Date();
-        localStorage.setItem("current_session", d.toLocaleString());
-        current_session = localStorage.getItem("current_session");
-        session_names.push(current_session);
-        localStorage.setItem("session_names", JSON.stringify(session_names));
-        current_session_data = {
-          "block_names": [""],
-          "team_names": ["", "1"],
-          "current_question": 1,
-          "questions": [{},]
-        }
-        all_session_data[current_session] = current_session_data;
-        localStorage.setItem("sessions", JSON.stringify(all_session_data));
-      }
-
-      var block_count = 6;
-      var team_count = current_session_data.team_names.length - 1;
+      current_session = localStorage.getItem("current_session");
+      all_session_data = JSON.parse(localStorage.getItem("sessions"));
+      current_session_data = all_session_data[current_session];
 
       return current_session_data;
     }
 
-    function initialize() {
-      //Setup Accordion display
-      $("#accordion").accordion({
-        heightStyle: "content"
-      });
-
-      //Setup score entry buttons
-      $( "#question_score" ).controlgroup();
-      $( "#question_block" ).controlgroup();
-
+    function local_data_update(record) {
+      
+    }
+    
+    function external_data_update(record) {
+      
+    }
+    
+    function sync_data_to_display() {
       $("#blocks").val(block_count);
       $("#teams").val(team_count);
-
-      //Setup Teams
-      for (i=1;i<=team_count;i++) {
-        //Add new
-        $("#team_names").append('<label>Team '+i+' Name: <input type = "text" name = "team'+i+'_name" id = "team'+i+'_name" onchange="setup()" value = "'+current_session_data.team_names[i]+'"><br></label>');
-        $("#question_teams").append('<fieldset><legend id=team'+i+'_points_label>Team '+current_session_data.team_names[i]+' Score</legend><div id="team'+i+'_score"></div></fieldset>');
-        $("#team"+i+"_score").append('<label><input type="radio" id="team'+i+'_score_0" name="team'+i+'_score" value=0 onchange="update_score()">0</label>');
     
-        $( "#team"+i+"_score" ).controlgroup();
+      //Setup Teams
+      for (i = 1; i <= team_count; i++) {
+        //Add new
+        $("#team_names").append('<label>Team ' + i + ' Name: <input type = "text" name = "team' + i + '_name" id = "team' + i + '_name" onchange="setup()" value = "' + current_session_data.team_names[i] + '"><br></label>');
+        $("#question_teams").append('<fieldset><legend id=team' + i + '_points_label>Team ' + current_session_data.team_names[i] + ' Score</legend><div id="team' + i + '_score"></div></fieldset>');
+        $("#team" + i + "_score").append('<label><input type="radio" id="team' + i + '_score_0" name="team' + i + '_score" value=0 onchange="update_score()">0</label>');
+    
+        $("#team" + i + "_score").controlgroup();
       }
       setup();
     }

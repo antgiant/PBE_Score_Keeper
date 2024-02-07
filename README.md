@@ -1,9 +1,11 @@
 # Warning: Under Active Development and not yet functional
 Remaining items to complete before it is usable
-* Implement data storage (?local storage?)
-* Save data to cookie
-* Restore data from cookie
+* Implement data storage
+  * https://github.com/macmcmeans/localDataStorage
 * Implement question navigaion
+  * Forward 1
+  * Backwards 1
+  * Dropdown selector
 * Implement Score by Team
 * Implement Score by Block
 * Implement Question log
@@ -18,5 +20,14 @@ To Do list (Bonus Features)
 * Multiple session storage
 * Export data
 * Import data
+* Implement complete data change log
 * Multi-User support
 * ?pbe quiz engine integration?
+
+Multi-User Master Plan
+* Get multiple windows on one machine working (Trigger sync model)
+* Get one writer many readers working
+  * WebRTC + Firebase + https://github.com/dmotz/trystero
+  * Passphrase generator (using pbe words) - https://dicepass.org or https://passphrase.js.org or ...
+* Get per team sharding working
+* Get arbitrary number of teams sharding working
