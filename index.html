@@ -42,6 +42,7 @@
           "session_1_max_points_per_question": 12,
           "session_1_block_names": ["", "1", "2", "3", "4", "5", "6"],
           "session_1_team_names": ["", "1"],
+          "session_1_question_names": ["", "1"],
           "session_1_current_question": 1,
           "session_1_question_1_score": "",
           "session_1_question_1_block": "",
@@ -54,6 +55,8 @@
         }
         
       } //Data structure upgrades go here as else if required
+      //else if (condition) {}
+      //Load current session from previously saved data
       else {
         current_session = localStorage.getItem("current_session");
       }
@@ -65,6 +68,9 @@
         team_names = JSON.parse(localStorage.getItem("session_"+current_session+"_team_names"));
         team_names.push("Team "+team_names.length);
         localStorage.setItem("session_"+current_session+"_team_names", JSON.stringify(team_names));
+        for (i = 1; i <= JSON.parse(localStorage.getItem("session_"+current_session+"_question_names")).length; i++) {
+        }
+        }
       } else if (clicked == "total_teams_decrease") {
         team_names = JSON.parse(localStorage.getItem("session_"+current_session+"_team_names"));
         if (team_names.length > 2) {
