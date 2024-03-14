@@ -13,7 +13,6 @@
 
     var current_session;
     initialize_state();
-    sync_data_to_display();
 
     function initialize_display() {
       //Setup Accordion display
@@ -25,6 +24,7 @@
       $( "#question_score" ).controlgroup();
       $( "#question_block" ).controlgroup();
 
+      sync_data_to_display();
     }
     
     function initialize_state() {
@@ -68,22 +68,26 @@
         team_names = JSON.parse(localStorage.getItem("session_"+current_session+"_team_names"));
         team_names.push("Team "+team_names.length);
         localStorage.setItem("session_"+current_session+"_team_names", JSON.stringify(team_names));
-        for (i = 1; i <= JSON.parse(localStorage.getItem("session_"+current_session+"_question_names")).length; i++) {
-        }
+        for (i = 1; i < JSON.parse(localStorage.getItem("session_"+current_session+"_question_names")).length; i++) {
+          //Add an empty placeholder score
+          localStorage.setItem("session_"+current_session+"_question_"+i+"_team_"+(team_names.length - 1)+"_score", "");
         }
       } else if (clicked == "total_teams_decrease") {
         team_names = JSON.parse(localStorage.getItem("session_"+current_session+"_team_names"));
         if (team_names.length > 2) {
           team_names.pop();
           localStorage.setItem("session_"+current_session+"_team_names", JSON.stringify(team_names));
-
-          //Erase team scores?
+        for (i = 1; i < JSON.parse(localStorage.getItem("session_"+current_session+"_question_names")).length; i++) {
+          //Remove deleted Team's score(s)
+          localStorage.removeItem("session_"+current_session+"_question_"+i+"_team_"+team_names.length+"_score");
+        }
         }
       }
+      sync_data_to_display();
     }
     
     function external_data_update(record) {
-      
+      sync_data_to_display();
     }
     
     function sync_data_to_display() {
@@ -94,10 +98,15 @@
       var block_count = block_names.length - 1;
       var team_count = team_names.length - 1;
 
-/*    
       //Setup Teams
       //Show Team Count
-      $("#teams").val(team_count);
+      $("#total_teams").text(team_count);
+      if (team_count == 1) {
+        $("#total_teams_text").text("team");
+      } else {
+        $("#total_teams_text").text("teams");
+      }
+/*    
 
       for (i = 1; i <= team_count; i++) {
         //Add new
@@ -147,12 +156,6 @@
       }
 
       //Set up Teams
-      $("#total_teams").text(team_count);
-      if (team_count == 1) {
-        $("#total_teams_text").text("team");
-      } else {
-        $("#total_teams_text").text("teams");
-      }
       current_teams_count = $("#team_names").children().length;
       if (current_teams_count < team_count) {
         for (i=current_teams_count + 1;i<=team_count;i++) {
