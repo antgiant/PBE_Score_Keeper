@@ -41,8 +41,8 @@
           "current_session": 1,
           "session_1_max_points_per_question": 12,
           "session_1_block_names": ["", "1", "2", "3", "4", "5", "6"],
-          "session_1_team_names": ["", "1"],
-          "session_1_question_names": ["", "1"],
+          "session_1_team_names": ["", "Team 1"],
+          "session_1_question_names": ["", "Question 1"],
           "session_1_current_question": 1,
           "session_1_question_1_score": "",
           "session_1_question_1_block": "",
@@ -63,8 +63,18 @@
     }
 
     function local_data_update(record) {
-      clicked = record.id;
-      if (clicked == "total_teams_increase") {
+      update_data_element(record.id, record.value);
+
+      sync_data_to_display();
+    }
+    
+    function external_data_update(record) {
+      sync_data_to_display();
+    }
+
+    function update_data_element(updated_id, new_value) {
+      const team_name_check = /team_([0-9]+)_name/;
+      if (updated_id == "total_teams_increase") {
         team_names = JSON.parse(localStorage.getItem("session_"+current_session+"_team_names"));
         team_names.push("Team "+team_names.length);
         localStorage.setItem("session_"+current_session+"_team_names", JSON.stringify(team_names));
@@ -72,22 +82,22 @@
           //Add an empty placeholder score
           localStorage.setItem("session_"+current_session+"_question_"+i+"_team_"+(team_names.length - 1)+"_score", "");
         }
-      } else if (clicked == "total_teams_decrease") {
+      } else if (updated_id == "total_teams_decrease") {
         team_names = JSON.parse(localStorage.getItem("session_"+current_session+"_team_names"));
         if (team_names.length > 2) {
           team_names.pop();
           localStorage.setItem("session_"+current_session+"_team_names", JSON.stringify(team_names));
-        for (i = 1; i < JSON.parse(localStorage.getItem("session_"+current_session+"_question_names")).length; i++) {
-          //Remove deleted Team's score(s)
-          localStorage.removeItem("session_"+current_session+"_question_"+i+"_team_"+team_names.length+"_score");
+          for (i = 1; i < JSON.parse(localStorage.getItem("session_"+current_session+"_question_names")).length; i++) {
+            //Remove deleted Team's score(s)
+            localStorage.removeItem("session_"+current_session+"_question_"+i+"_team_"+team_names.length+"_score");
+          }
         }
-        }
+      } else if (updated_id.search(team_name_check) > -1) {
+        team_names = JSON.parse(localStorage.getItem("session_"+current_session+"_team_names"));
+        updated_team_number = updated_id.match(team_name_check)[1];
+        team_names[updated_team_number] = new_value;
+        localStorage.setItem("session_"+current_session+"_team_names", JSON.stringify(team_names))
       }
-      sync_data_to_display();
-    }
-    
-    function external_data_update(record) {
-      sync_data_to_display();
     }
     
     function sync_data_to_display() {
@@ -106,13 +116,44 @@
       } else {
         $("#total_teams_text").text("teams");
       }
+
+      //Setup Team Name Editing
+      current_teams_count = $("#team_names").children().length;
+      if (current_teams_count < team_count) {
+        for (i=current_teams_count + 1;i<=team_count;i++) {
+          //Add new
+          $("#team_names").append('<label>Team '+i+' Name: <input type = "text" name = "team_'+i+'_name" id = "team_'+i+'_name" onchange="local_data_update(this)" value = "'+team_names[i]+'"><br></label>');
+          $("#question_teams").append('<fieldset><legend id=team_'+i+'_points_label>Team '+team_names[i]+' Score</legend><div id="team_'+i+'_score"></div></fieldset>');
+          $("#team_"+i+"_score").append('<label><input type="radio" id="team_'+i+'_score_0" name="team_'+i+'_score" value=0 onchange="local_data_update(this)">0</label>');
+          $( "#team_"+i+"_score" ).controlgroup();
+        }
+      } else if (current_teams_count > team_count) {
+        //remove extra
+        for (i=current_teams_count;i>team_count;i--) {
+          $("#team_names").children()[i - 1].remove();
+          $("#question_teams").children()[i - 1].remove();
+        }
+      } else {
+        //Already have the right number do nothing
+      }
+
+      //Update Team Names (Yes this is ineffecient but the numbers are so small it doesn't really matter)
+      for (i=1;i<=team_count;i++) {
+        team_names[i] = $("#team_"+i+"_name").val();
+        if (team_names[i].slice(-1).toLowerCase() === "s") {
+          $("#team_"+i+"_points_label").text("Team "+team_names[i]+"' score");
+        } else {
+          $("#team_"+i+"_points_label").text("Team "+team_names[i]+"'s score");
+        }
+      }
+
 /*    
 
       for (i = 1; i <= team_count; i++) {
         //Add new
-        $("#team_names").append('<label>Team ' + i + ' Name: <input type = "text" name = "team' + i + '_name" id = "team' + i + '_name" onchange="setup()" value = "' + team_names[i] + '"><br></label>');
+        $("#team_names").append('<label>Team ' + i + ' Name: <input type = "text" name = "team' + i + '_name" id = "team' + i + '_name" onchange="local_data_update(this)" value = "' + team_names[i] + '"><br></label>');
         $("#question_teams").append('<fieldset><legend id=team' + i + '_points_label>Team ' + team_names[i] + ' Score</legend><div id="team' + i + '_score"></div></fieldset>');
-        $("#team" + i + "_score").append('<label><input type="radio" id="team' + i + '_score_0" name="team' + i + '_score" value=0 onchange="update_score()">0</label>');
+        $("#team" + i + "_score").append('<label><input type="radio" id="team' + i + '_score_0" name="team' + i + '_score" value=0 onchange="local_data_update(this)">0</label>');
     
         $("#team" + i + "_score").controlgroup();
       }
@@ -130,8 +171,8 @@
         for (i=current_block_count + 1;i<=block_count;i++) {
           //Add new
           block_names.push(i.toString());
-          $("#block_names").append('<label>Block '+i+' Name: <input type = "text" name = "block'+i+'_name" id = "block'+i+'_name" onchange="setup()" value = "'+block_names[i]+'"><br></label>');
-          $("#question_block").append('<label><input type="radio" id="question_block_'+i+'" name="question_block" value="'+i+'" onchange="update_score()"><span id="block'+i+'_label">'+block_names[i]+'</span></label>');
+          $("#block_names").append('<label>Block '+i+' Name: <input type = "text" name = "block'+i+'_name" id = "block'+i+'_name" onchange="local_data_update(this)" value = "'+block_names[i]+'"><br></label>');
+          $("#question_block").append('<label><input type="radio" id="question_block_'+i+'" name="question_block" value="'+i+'" onchange="local_data_update(this)"><span id="block'+i+'_label">'+block_names[i]+'</span></label>');
         }
       }
       else if (current_block_count > block_count) {
@@ -145,7 +186,7 @@
         //Already have the right number do nothing
       }
       //Add Possible question points
-      //<label><input type="radio" id="question_score_1" name="question_score" value=1 onchange="update_score()">1</label>
+      //<label><input type="radio" id="question_score_1" name="question_score" value=1 onchange="local_data_update(this)">1</label>
       
       //Add fancy options to new buttons
       $( "#question_block" ).controlgroup( "refresh" );
@@ -155,38 +196,6 @@
         $("#block"+i+"_label").text($("#block"+i+"_name").val());
       }
 
-      //Set up Teams
-      current_teams_count = $("#team_names").children().length;
-      if (current_teams_count < team_count) {
-        for (i=current_teams_count + 1;i<=team_count;i++) {
-          //Add new
-          team_names.push(i.toString());
-          $("#team_names").append('<label>Team '+i+' Name: <input type = "text" name = "team'+i+'_name" id = "team'+i+'_name" onchange="setup()" value = "'+team_names[i]+'"><br></label>');
-          $("#question_teams").append('<fieldset><legend id=team'+i+'_points_label>Team '+team_names[i]+' Score</legend><div id="team'+i+'_score"></div></fieldset>');
-          $("#team"+i+"_score").append('<label><input type="radio" id="team'+i+'_score_0" name="team'+i+'_score" value=0 onchange="update_score()">0</label>');
-      
-          $( "#team"+i+"_score" ).controlgroup();
-        }
-      } else if (current_teams_count > team_count) {
-        //remove extra
-        for (i=current_teams_count;i>team_count;i--) {
-          $("#team_names").children()[i - 1].remove();
-          $("#question_teams").children()[i - 1].remove();
-          team_names.pop();
-        }
-      } else {
-        //Already have the right number do nothing
-      }
-      
-      //Update Team Names (Yes this is ineffecient but the numbers are so small it doesn't really matter)
-      for (i=1;i<=team_count;i++) {
-        team_names[i] = $("#team"+i+"_name").val();
-        if (team_names[i].slice(-1).toLowerCase() === "s") {
-          $("#team"+i+"_points_label").text("Team "+team_names[i]+"' score");
-        } else {
-          $("#team"+i+"_points_label").text("Team "+team_names[i]+"'s score");
-        }
-      }
       //Save out data
       all_session_data[current_session] = current_session_data;
       localStorage.setItem("sessions", JSON.stringify(all_session_data));
@@ -224,7 +233,7 @@
         if (current_point_count < total_points) {
           //Add new
           for (j=current_point_count;j<=total_points - 1;j++) {
-            $("#team"+i+"_score").append('<label><input type="radio" id="team'+i+'_score_'+j+'" name="team'+i+'_score" value='+(j + 1)+' onchange="update_score()">'+(j + 1)+'</label>');
+            $("#team"+i+"_score").append('<label><input type="radio" id="team'+i+'_score_'+j+'" name="team'+i+'_score" value='+(j + 1)+' onchange="local_data_update(this)">'+(j + 1)+'</label>');
           }
         } else if (current_point_count > total_points) {
           //remove extra
@@ -283,7 +292,7 @@
           <span id="max_points"></span> <span id="max_points_text">points</span> <button id="max_points_increase" onclick='local_data_update(this)'>▲</button> <button id="max_points_decrease" onclick='local_data_update(this)'>▼</button><br>
         </fieldset>
         <br>
-        <button onclick="setup();$( '#accordion' ).accordion({active: 1});">Enter Scores</button>
+        <button onclick="local_data_update(this);$( '#accordion' ).accordion({active: 1});">Enter Scores</button>
       </div>
       <h3>Score Entry</h3>
       <div>
