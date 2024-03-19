@@ -125,6 +125,20 @@
         team_names[updated_team_number] = new_value;
         localStorage.setItem("session_"+current_session+"_block_names", JSON.stringify(team_names))
       }
+      //Increase Max Points per Question
+      if (updated_id == "max_points_increase") {
+        max_points = localStorage.getItem("session_"+current_session+"_max_points_per_question");
+        max_points++;
+        localStorage.setItem("session_"+current_session+"_max_points_per_question", max_points);
+      } 
+      //Decrease Max Points per Question
+      else if (updated_id == "max_points_decrease") {
+        max_points = localStorage.getItem("session_"+current_session+"_max_points_per_question");
+        if (max_points > 1) {
+          max_points--;
+          localStorage.setItem("session_"+current_session+"_max_points_per_question", max_points);
+        }
+      }
     }
     
     function sync_data_to_display() {
@@ -210,11 +224,36 @@
         $("#block_"+i+"_label").text($("#block_"+i+"_name").val());
       }
 
-
-/*
+      //Set up Max Points per Question
+      max_points = JSON.parse(localStorage.getItem("session_"+current_session+"_max_points_per_question"));
       
-      //Add Possible question points
-      //<label><input type="radio" id="question_score_1" name="question_score" value=1 onchange="local_data_update(this)">1</label>
+      //Show block count
+      $("#max_points").text(max_points);
+      if (max_points == 1) {
+        $("#max_points_text").text("point");
+      } else {
+        $("#max_points_text").text("points");
+      }
+      
+      //Setup Possible question points
+      current_max_possible_points = $("#question_score").children().length;
+      if (current_max_possible_points < max_points) {
+        for (i=current_max_possible_points + 1;i<=max_points;i++) {
+          //Add new
+          $("#question_score").append('<label><input type="radio" id="question_score_'+i+'" name="question_score" value='+i+' onchange="local_data_update(this)">'+i+'</label>');
+        }
+      }
+      else if (current_max_possible_points > max_points) {
+        //remove extra
+        for (i=current_max_possible_points;i>max_points;i--) {
+          $("#question_score").children()[i - 1].remove();
+        }
+      } else {
+        //Already have the right number do nothing
+      }
+      //Add fancy options to new buttons
+      $( "#question_score" ).controlgroup( "refresh" );
+/*
       
       //Add fancy options to new buttons
       $( "#question_block" ).controlgroup( "refresh" );
