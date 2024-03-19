@@ -75,6 +75,7 @@
     function update_data_element(updated_id, new_value) {
       const team_name_check = /team_([0-9]+)_name/;
       const block_name_check = /block_([0-9]+)_name/;
+      const question_max_score_check = /question_score_([0-9]+)/;
       //Increase total teams count
       if (updated_id == "total_teams_increase") {
         team_names = JSON.parse(localStorage.getItem("session_"+current_session+"_team_names"));
@@ -138,6 +139,11 @@
           max_points--;
           localStorage.setItem("session_"+current_session+"_max_points_per_question", max_points);
         }
+      }
+      //Update Question Max Possible Score
+      else if (updated_id.search(question_max_score_check) > -1) {
+        question_number = localStorage.getItem("session_"+current_session+"_current_question");
+        localStorage.setItem("session_"+current_session+"_question_"+question_number+"_score", new_value);
       }
     }
     
@@ -251,6 +257,11 @@
       } else {
         //Already have the right number do nothing
       }
+      //Select actual score if possible
+      question_number = localStorage.getItem("session_"+current_session+"_current_question");
+      question_max_score = localStorage.getItem("session_"+current_session+"_question_"+question_number+"_score");
+      $("#question_score_" + question_max_score).prop("checked", true);
+
       //Add fancy options to new buttons
       $( "#question_score" ).controlgroup( "refresh" );
 /*
