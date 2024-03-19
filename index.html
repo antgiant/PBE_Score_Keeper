@@ -135,7 +135,18 @@
       //Decrease Max Points per Question
       else if (updated_id == "max_points_decrease") {
         max_points = localStorage.getItem("session_"+current_session+"_max_points_per_question");
-        if (max_points > 1) {
+
+        //Find largest actual max points and prevent max per question from going below that number
+        question_names = JSON.parse(localStorage.getItem("session_"+current_session+"_question_names"));
+        var question_count = question_names.length - 1;
+        var smallest_valid_max_points = 1;
+        for (i = 1; i <= question_count; i++) {
+          temp_max_points = Number(localStorage.getItem("session_"+current_session+"_question_"+i+"_score"));
+          if (smallest_valid_max_points < temp_max_points) {
+            smallest_valid_max_points = temp_max_points;
+          }
+        }
+        if (max_points > smallest_valid_max_points) {
           max_points--;
           localStorage.setItem("session_"+current_session+"_max_points_per_question", max_points);
         }
