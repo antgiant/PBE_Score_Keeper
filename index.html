@@ -174,6 +174,12 @@
         question_number = localStorage.getItem("session_"+current_session+"_current_question");
         localStorage.setItem("session_"+current_session+"_question_"+question_number+"_block", new_value);
       }
+      //Update score for a team on the current question
+      else if (updated_id.search(team_question_score_check) > -1) {
+        question_number = localStorage.getItem("session_"+current_session+"_current_question");
+        team_number = updated_id.match(team_question_score_check)[1];
+        localStorage.setItem("session_"+current_session+"_question_"+question_number+"_team_"+team_number+"_score", new_value);
+      }
     }
     
     function sync_data_to_display() {
@@ -301,7 +307,7 @@
         if (current_point_count < question_max_score) {
           //Add new
           for (j = current_point_count; j <= question_max_score - 1; j++) {
-            $("#team_"+i+"_score").append('<label><input type="radio" id="team_'+i+'_score_'+j+'" name="team_'+i+'_score" value='+(j + 1)+' onchange="local_data_update(this)">'+(j + 1)+'</label>');
+            $("#team_"+i+"_score").append('<label><input type="radio" id="team_'+i+'_score_'+(j + 1)+'" name="team_'+i+'_score" value='+(j + 1)+' onchange="local_data_update(this)">'+(j + 1)+'</label>');
           }
         } else if (current_point_count > question_max_score) {
           //remove extra
