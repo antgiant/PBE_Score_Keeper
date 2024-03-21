@@ -76,6 +76,7 @@
       const team_name_check = /team_([0-9]+)_name/;
       const block_name_check = /block_([0-9]+)_name/;
       const question_max_score_check = /question_score_([0-9]+)/;
+      const question_block_check = /question_block_([0-9]+)/;
       //Increase total teams count
       if (updated_id == "total_teams_increase") {
         team_names = JSON.parse(localStorage.getItem("session_"+current_session+"_team_names"));
@@ -114,7 +115,17 @@
       //Decrease total Blocks count
       else if (updated_id == "total_blocks_decrease") {
         block_names = JSON.parse(localStorage.getItem("session_"+current_session+"_block_names"));
-        if (block_names.length > 2) {
+        //Don't allow deleting of blocks that are in use
+        question_names = JSON.parse(localStorage.getItem("session_"+current_session+"_question_names"));
+        var question_count = question_names.length - 1;
+        var smallest_valid_number_of_blocks = 1;
+        for (i = 1; i <= question_count; i++) {
+          temp_max_blocks = Number(localStorage.getItem("session_"+current_session+"_question_"+i+"_block"));
+          if (smallest_valid_number_of_blocks < temp_max_blocks) {
+            smallest_valid_number_of_blocks = temp_max_blocks;
+          }
+        }
+        if (block_names.length > (smallest_valid_number_of_blocks + 1)) {
           block_names.pop();
           localStorage.setItem("session_"+current_session+"_block_names", JSON.stringify(block_names));
         }
@@ -155,6 +166,11 @@
       else if (updated_id.search(question_max_score_check) > -1) {
         question_number = localStorage.getItem("session_"+current_session+"_current_question");
         localStorage.setItem("session_"+current_session+"_question_"+question_number+"_score", new_value);
+      }
+      //Update Current Question's Block
+      else if (updated_id.search(question_block_check) > -1) {
+        question_number = localStorage.getItem("session_"+current_session+"_current_question");
+        localStorage.setItem("session_"+current_session+"_question_"+question_number+"_block", new_value);
       }
     }
     
