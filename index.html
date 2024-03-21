@@ -44,9 +44,9 @@
           "session_1_team_names": ["", "Team 1"],
           "session_1_question_names": ["", "Question 1"],
           "session_1_current_question": 1,
-          "session_1_question_1_score": "",
-          "session_1_question_1_block": "",
-          "session_1_question_1_team_1_score": ""
+          "session_1_question_1_score": 0,
+          "session_1_question_1_block": 0,
+          "session_1_question_1_team_1_score": 0
         };
         current_session = 1;
         //Save it to localStorage
@@ -77,6 +77,8 @@
       const block_name_check = /block_([0-9]+)_name/;
       const question_max_score_check = /question_score_([0-9]+)/;
       const question_block_check = /question_block_([0-9]+)/;
+      const team_question_score_check = /team_([0-9]+)_score_([0-9]+)/;
+      
       //Increase total teams count
       if (updated_id == "total_teams_increase") {
         team_names = JSON.parse(localStorage.getItem("session_"+current_session+"_team_names"));
@@ -84,7 +86,7 @@
         localStorage.setItem("session_"+current_session+"_team_names", JSON.stringify(team_names));
         for (i = 1; i < JSON.parse(localStorage.getItem("session_"+current_session+"_question_names")).length; i++) {
           //Add an empty placeholder score
-          localStorage.setItem("session_"+current_session+"_question_"+i+"_team_"+(team_names.length - 1)+"_score", "");
+          localStorage.setItem("session_"+current_session+"_question_"+i+"_team_"+(team_names.length - 1)+"_score", 0);
         }
       } 
       //Decrease total teams count
@@ -162,7 +164,7 @@
           localStorage.setItem("session_"+current_session+"_max_points_per_question", max_points);
         }
       }
-      //Update Question Max Possible Score
+      //Update Current Question Max Possible Score
       else if (updated_id.search(question_max_score_check) > -1) {
         question_number = localStorage.getItem("session_"+current_session+"_current_question");
         localStorage.setItem("session_"+current_session+"_question_"+question_number+"_score", new_value);
@@ -268,7 +270,7 @@
         $("#max_points_text").text("points");
       }
       
-      //Setup Possible question points
+      //Setup max possible points for all questions
       current_max_possible_points = $("#question_score").children().length;
       if (current_max_possible_points < max_points) {
         for (i=current_max_possible_points + 1;i<=max_points;i++) {
@@ -291,64 +293,31 @@
 
       //Add fancy options to new buttons
       $( "#question_score" ).controlgroup( "refresh" );
-/*
-      
-      //Add fancy options to new buttons
-      $( "#question_block" ).controlgroup( "refresh" );
 
-      //Update Question Number
-      $("#current_question_title").text("Question " + current_session_data.current_question);
-      //Grab a working copy of the question data
-      var current_question_data = current_session_data.questions[current_session_data.current_question];
-      if (current_question_data === undefined) {
-        current_question_data = new Object;
-      }
-
-      //Get total points
-      var total_points = $("input:radio[name=question_score]:checked").val();
-      if (total_points === undefined) {
-        total_points = current_question_data.total_points;
-        $("#question_score_" + total_points).prop("checked", true);
-        //Refresh visual display
-        $( "#question_score" ).controlgroup("refresh");
-      }
-      current_question_data.total_points = total_points;
-
-      //Get Block
-      var question_block = $("input:radio[name=question_block]:checked").val();
-      if (question_block === undefined) {
-        question_block = current_question_data.question_block;
-        $("#question_block_" + question_block).prop("checked", true);
-        //Refresh visual display
-        $( "#question_block" ).controlgroup("refresh");
-      }
-      current_question_data.question_block = question_block;
-
+      //Setup max possible points on this question (for each team)
       for (i=1;i<=team_count;i++) {
-        var current_point_count = $("#team"+i+"_score").children().length - 1;
-        if (current_point_count < total_points) {
+        var current_team_and_question_score = localStorage.getItem("session_"+current_session+"_question_"+question_number+"_team_"+i+"_score");
+        var current_point_count = $("#team_"+i+"_score").children().length - 1;
+        if (current_point_count < question_max_score) {
           //Add new
-          for (j=current_point_count;j<=total_points - 1;j++) {
-            $("#team"+i+"_score").append('<label><input type="radio" id="team'+i+'_score_'+j+'" name="team'+i+'_score" value='+(j + 1)+' onchange="local_data_update(this)">'+(j + 1)+'</label>');
+          for (j = current_point_count; j <= question_max_score - 1; j++) {
+            $("#team_"+i+"_score").append('<label><input type="radio" id="team_'+i+'_score_'+j+'" name="team_'+i+'_score" value='+(j + 1)+' onchange="local_data_update(this)">'+(j + 1)+'</label>');
           }
-        } else if (current_point_count > total_points) {
+        } else if (current_point_count > question_max_score) {
           //remove extra
-          for (j=current_point_count;j>total_points;j--) {
-            $("#team"+i+"_score").children()[j].remove();
+          for (j = current_point_count; j > question_max_score; j--) {
+            $("#team_"+i+"_score").children()[j].remove();
           }
         } else {
           //Already have the right number do nothing
         }
 
+        //Check off saved score
+        $("#team_"+i+"_score_" + current_team_and_question_score).prop("checked", true);
+
         //Add corrected point options
-        $( "#team"+i+"_score" ).controlgroup("refresh");
+        $( "#team_"+i+"_score" ).controlgroup("refresh");
       }
-      
-      //Save out data
-      current_session_data.questions[current_session_data.current_question] = current_question_data;
-      all_session_data[current_session] = current_session_data;
-      localStorage.setItem("sessions", JSON.stringify(all_session_data));
-*/
     }
   </script>
   <style>
