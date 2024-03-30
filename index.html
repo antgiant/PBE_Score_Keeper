@@ -282,6 +282,10 @@
       //Add fancy options to new buttons
       $( "#question_block" ).controlgroup( "refresh" );
 
+      //Update Question name to saved name
+      question_name = JSON.parse(localStorage.getItem("session_"+current_session+"_question_names"))[question_number];
+      $("#current_question_title").text(question_name);
+
       //Set up Max Points per Question
       max_points = JSON.parse(localStorage.getItem("session_"+current_session+"_max_points_per_question"));
       
