@@ -356,6 +356,14 @@
         //Add corrected point options
         $( "#team_"+i+"_score" ).controlgroup("refresh");
       }
+
+      //Disable Previous Question Button if this is the first Question
+      question_number = localStorage.getItem("session_"+current_session+"_current_question");
+      if (question_number == 1) {
+        $("#previous_question").prop("disabled", true);
+      } else {
+        $("#previous_question").prop("disabled", false);
+      }
     }
   </script>
   <style>
@@ -412,8 +420,8 @@
           </fieldset>
           <div id = "question_teams"></div>
           <br>
-          <button>Previous Question</button>
-          <button>Next Question</button>
+          <button id="previous_question" onclick='local_data_update(this)'>Previous Question</button>
+          <button id="next_question" onclick='local_data_update(this)'>Next Question</button>
         </div>
       </div>
       <h3>Score by Team</h3>
