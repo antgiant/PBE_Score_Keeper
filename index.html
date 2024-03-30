@@ -197,26 +197,30 @@
         question_names = JSON.parse(localStorage.getItem("session_"+current_session+"_question_names"));
         var question_count = question_names.length - 1;
         if (question_number == question_count) {
-          //Add a new question
+          //Only move forward if current question has a max possible score set
+          question_max_points = Number(localStorage.getItem("session_"+current_session+"_question_"+question_number+"_score"));
+          if (question_max_points > 0) {
+            //Add a new question
 
-          //Move current Question forward one
-          question_number++;
-          localStorage.setItem("session_"+current_session+"_current_question", question_number);
+            //Move current Question forward one
+            question_number++;
+            localStorage.setItem("session_"+current_session+"_current_question", question_number);
 
-          //Add new question name
-          question_names.push("Question "+question_number);
-          localStorage.setItem("session_"+current_session+"_question_names", JSON.stringify(question_names));
+            //Add new question name
+            question_names.push("Question "+question_number);
+            localStorage.setItem("session_"+current_session+"_question_names", JSON.stringify(question_names));
 
-          //Set new question possible score to 0
-          localStorage.setItem("session_"+current_session+"_question_"+question_number+"_score", 0);
+            //Set new question possible score to 0
+            localStorage.setItem("session_"+current_session+"_question_"+question_number+"_score", 0);
 
-          //Set new question block/group to 0 (aka none)
-          localStorage.setItem("session_"+current_session+"_question_"+question_number+"_block", 0);
+            //Set new question block/group to 0 (aka none)
+            localStorage.setItem("session_"+current_session+"_question_"+question_number+"_block", 0);
 
-          //Set default score for all teams on this question to 0
-          var team_count = (JSON.parse(localStorage.getItem("session_"+current_session+"_team_names"))).length - 1;
-          for (i = 1; i <= team_count; i++) {
-            localStorage.setItem("session_"+current_session+"_question_"+question_number+"_team_"+i+"_score", 0);
+            //Set default score for all teams on this question to 0
+            var team_count = (JSON.parse(localStorage.getItem("session_"+current_session+"_team_names"))).length - 1;
+            for (i = 1; i <= team_count; i++) {
+              localStorage.setItem("session_"+current_session+"_question_"+question_number+"_team_"+i+"_score", 0);
+            }
           }
         } else {
           //Move forward to existing quesiton
@@ -418,6 +422,15 @@
         $("#previous_question").prop("disabled", true);
       } else {
         $("#previous_question").prop("disabled", false);
+      }
+
+      //Disable Next Question Button if max possible points is not set
+      question_number = localStorage.getItem("session_"+current_session+"_current_question");
+      question_max_points = Number(localStorage.getItem("session_"+current_session+"_question_"+question_number+"_score"));
+      if (question_max_points == 0) {
+        $("#next_question").prop("disabled", true);
+      } else {
+        $("#next_question").prop("disabled", false);
       }
     }
   </script>
