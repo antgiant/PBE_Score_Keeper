@@ -93,11 +93,12 @@
       else if (updated_id == "total_teams_decrease") {
         team_names = JSON.parse(localStorage.getItem("session_"+current_session+"_team_names"));
         if (team_names.length > 2) {
-          team_names.pop();
-          localStorage.setItem("session_"+current_session+"_team_names", JSON.stringify(team_names));
-          for (i = 1; i < JSON.parse(localStorage.getItem("session_"+current_session+"_question_names")).length; i++) {
-            //Remove deleted Team's score(s)
-            localStorage.removeItem("session_"+current_session+"_question_"+i+"_team_"+team_names.length+"_score");
+          if (window.confirm("Do you really want Delete "+team_names.pop()+"?")) {
+            localStorage.setItem("session_"+current_session+"_team_names", JSON.stringify(team_names));
+            for (i = 1; i < JSON.parse(localStorage.getItem("session_"+current_session+"_question_names")).length; i++) {
+              //Remove deleted Team's score(s)
+              localStorage.removeItem("session_"+current_session+"_question_"+i+"_team_"+team_names.length+"_score");
+            }
           }
         }
       } 
@@ -167,7 +168,17 @@
       //Update Current Question Max Possible Score
       else if (updated_id.search(question_max_score_check) > -1) {
         question_number = localStorage.getItem("session_"+current_session+"_current_question");
-        localStorage.setItem("session_"+current_session+"_question_"+question_number+"_score", new_value);
+        //Disable selecting max possible score lower than already earned score
+        var team_count = (JSON.parse(localStorage.getItem("session_"+current_session+"_team_names"))).length - 1;
+        var temp_max = 0;
+        for (i = 1; i < team_count; i++) {
+          if (temp_max < Number(localStorage.getItem("session_"+current_session+"_question_"+question_number+"_team_"+i+"_score"))) {
+            temp_max = Number(localStorage.getItem("session_"+current_session+"_question_"+question_number+"_team_"+i+"_score"));
+          }
+        }
+        if (new_value >= temp_max) {
+          localStorage.setItem("session_"+current_session+"_question_"+question_number+"_score", new_value);
+        }
       }
       //Update Current Question's Block
       else if (updated_id.search(question_block_check) > -1) {
@@ -296,6 +307,21 @@
       question_number = localStorage.getItem("session_"+current_session+"_current_question");
       question_max_score = localStorage.getItem("session_"+current_session+"_question_"+question_number+"_score");
       $("#question_score_" + question_max_score).prop("checked", true);
+
+      //Disable selecting max possible score lower than already earned score
+      var temp_max = 0;
+      for (i = 1; i < team_count; i++) {
+        if (temp_max < Number(localStorage.getItem("session_"+current_session+"_question_"+question_number+"_team_"+i+"_score"))) {
+          temp_max = Number(localStorage.getItem("session_"+current_session+"_question_"+question_number+"_team_"+i+"_score"));
+        }
+      }
+      for (i = 0; i < max_points; i++) {
+        if (i < temp_max) {
+          $("#question_score_" + i).prop("disabled", true);
+        } else {
+          $("#question_score_" + i).prop("disabled", false);
+        }
+      }
 
       //Add fancy options to new buttons
       $( "#question_score" ).controlgroup( "refresh" );
