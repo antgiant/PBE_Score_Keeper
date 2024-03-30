@@ -2,12 +2,14 @@
 Remaining items to complete before it is usable
 * Implement Score by Team
 * Implement Score by Block
+* Implement Score by Team & Block
 * Implement Question log
 
 # PBE Score Keeper
 A tool to help keep track of Pathfinder Bible Bowl (PBE) Scores by block and team
 
 To Do list (Bonus Features)
+* Delete Question
 * Rename Questions
 * Implement question navigaion
   * Dropdown selector
