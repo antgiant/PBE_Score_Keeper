@@ -135,10 +135,10 @@
       } 
       //Update Block/Group Name
       else if (updated_id.search(block_name_check) > -1) {
-        team_names = JSON.parse(localStorage.getItem("session_"+current_session+"_block_names"));
-        updated_team_number = updated_id.match(block_name_check)[1];
-        team_names[updated_team_number] = new_value;
-        localStorage.setItem("session_"+current_session+"_block_names", JSON.stringify(team_names))
+        block_names = JSON.parse(localStorage.getItem("session_"+current_session+"_block_names"));
+        updated_block_number = updated_id.match(block_name_check)[1];
+        block_names[updated_block_number] = new_value;
+        localStorage.setItem("session_"+current_session+"_block_names", JSON.stringify(block_names))
       }
       //Increase Max Points per Question
       if (updated_id == "max_points_increase") {
@@ -248,8 +248,10 @@
       $("#total_teams").text(team_count);
       if (team_count == 1) {
         $("#total_teams_text").text("team");
+        $("#total_teams_decrease").prop("disabled", true);
       } else {
         $("#total_teams_text").text("teams");
+        $("#total_teams_decrease").prop("disabled", false);
       }
 
       //Setup Team Name Editing
@@ -290,8 +292,10 @@
       $("#total_blocks").text(block_count);
       if (block_count == 1) {
         $("#total_blocks_text").text("block/group");
+        $("#total_blocks_decrease").prop("disabled", true);
       } else {
         $("#total_blocks_text").text("blocks/groups");
+        $("#total_blocks_decrease").prop("disabled", false);
       }
 
       //Setup Block/Group renaming
@@ -317,8 +321,7 @@
       question_number = localStorage.getItem("session_"+current_session+"_current_question");
       current_selected_block = JSON.parse(localStorage.getItem("session_"+current_session+"_question_"+question_number+"_block"));
       for (i=1;i<=block_count;i++) {
-        block_names[i] = $("#block_"+i+"_name").val();
-        $("#block_"+i+"_label").text($("#block_"+i+"_name").val());
+        $("#block_"+i+"_label").text(block_names[i]);
         //Check off saved block/group
         if (i == current_selected_block) {
           $("#question_block_"+i).prop("checked", true);
@@ -326,7 +329,6 @@
           $("#question_block_"+i).prop("checked", false);
         }
       }
-
 
       //Add fancy options to new buttons
       $( "#question_block" ).controlgroup( "refresh" );
@@ -342,8 +344,10 @@
       $("#max_points").text(max_points);
       if (max_points == 1) {
         $("#max_points_text").text("point");
+        $("#max_points_decrease").prop("disabled", true);
       } else {
         $("#max_points_text").text("points");
+        $("#max_points_decrease").prop("disabled", false);
       }
       
       //Setup max possible points for all questions
@@ -506,20 +510,20 @@
         <fieldset>
           <legend>Set up your Teams</legend>
 
-          <span id="total_teams"></span> <span id="total_teams_text">teams</span> <button id="total_teams_increase" onclick='local_data_update(this)'>▲</button> <button id="total_teams_decrease" onclick='local_data_update(this)'>▼</button><br>
+          <span id="total_teams"></span> <span id="total_teams_text">teams</span> <button id="total_teams_increase" onclick='local_data_update(this)'>+</button> <button id="total_teams_decrease" onclick='local_data_update(this)'>-</button><br>
           <br>
           <div id="team_names"></div>
         </fieldset>
         <fieldset>
           <legend>Set up your Blocks/Groups</legend>
-          <span id="total_blocks"></span> <span id="total_blocks_text">blocks/groups</span> <button id="total_blocks_increase" onclick='local_data_update(this)'>▲</button> <button id="total_blocks_decrease" onclick='local_data_update(this)'>▼</button><br>
+          <span id="total_blocks"></span> <span id="total_blocks_text">blocks/groups</span> <button id="total_blocks_increase" onclick='local_data_update(this)'>+</button> <button id="total_blocks_decrease" onclick='local_data_update(this)'>-</button><br>
           <br>
           <div id="block_names"></div>
         </fieldset>
         <br>
         <fieldset>
           <legend>Maximum Points per Question</legend>
-          <span id="max_points"></span> <span id="max_points_text">points</span> <button id="max_points_increase" onclick='local_data_update(this)'>▲</button> <button id="max_points_decrease" onclick='local_data_update(this)'>▼</button><br>
+          <span id="max_points"></span> <span id="max_points_text">points</span> <button id="max_points_increase" onclick='local_data_update(this)'>+</button> <button id="max_points_decrease" onclick='local_data_update(this)'>-</button><br>
         </fieldset>
         <br>
         <button onclick="local_data_update(this);$( '#accordion' ).accordion({active: 1});">Enter Scores</button>

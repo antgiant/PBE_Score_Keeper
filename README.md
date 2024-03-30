@@ -1,6 +1,7 @@
 # Warning: Under Active Development and not yet functional
 Remaining items to complete before it is usable
-* Disable buttons that don't work in Setup area
+* Save Toast
+* Fix Block/Group name Updating
 * Implement Score by Block
 * Implement Score by Team & Block
 * Implement Question log
