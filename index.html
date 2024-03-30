@@ -357,7 +357,13 @@
       //Select actual score if possible
       question_number = localStorage.getItem("session_"+current_session+"_current_question");
       question_max_score = localStorage.getItem("session_"+current_session+"_question_"+question_number+"_score");
-      $("#question_score_" + question_max_score).prop("checked", true);
+      for (i=0; i<=max_points; i++) {
+        if (i == question_max_score) {
+          $("#question_score_" + i).prop("checked", true);
+        } else {
+          $("#question_score_" + i).prop("checked", false);
+        }
+      }
 
       //Disable selecting max possible score lower than already earned score
       var temp_max = 0;
