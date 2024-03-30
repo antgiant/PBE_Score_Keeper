@@ -267,14 +267,20 @@
       } else {
         //Already have the right number do nothing
       }
-      //Add fancy options to new buttons
-      $( "#question_block" ).controlgroup( "refresh" );
 
       //Update Block Names (Yes this is ineffecient but the numbers are so small it doesn't really matter)
       for (i=1;i<=block_count;i++) {
         block_names[i] = $("#block_"+i+"_name").val();
         $("#block_"+i+"_label").text($("#block_"+i+"_name").val());
       }
+
+      //Check off saved block
+      question_number = localStorage.getItem("session_"+current_session+"_current_question");
+      current_selected_block = JSON.parse(localStorage.getItem("session_"+current_session+"_question_"+question_number+"_block"));
+      $("#question_block_"+current_selected_block).prop("checked", true);
+
+      //Add fancy options to new buttons
+      $( "#question_block" ).controlgroup( "refresh" );
 
       //Set up Max Points per Question
       max_points = JSON.parse(localStorage.getItem("session_"+current_session+"_max_points_per_question"));
