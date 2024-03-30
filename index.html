@@ -215,7 +215,7 @@
 
           //Set default score for all teams on this question to 0
           var team_count = (JSON.parse(localStorage.getItem("session_"+current_session+"_team_names"))).length - 1;
-          for (i = 1; i < team_count; i++) {
+          for (i = 1; i <= team_count; i++) {
             localStorage.setItem("session_"+current_session+"_question_"+question_number+"_team_"+i+"_score", 0);
           }
         } else {
