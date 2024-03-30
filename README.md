@@ -1,6 +1,6 @@
 # Warning: Under Active Development and not yet functional
 Remaining items to complete before it is usable
-* Implement Score by Team
+* Disable buttons that don't work in Setup area
 * Implement Score by Block
 * Implement Score by Team & Block
 * Implement Question log
