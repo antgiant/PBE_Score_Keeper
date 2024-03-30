@@ -3,8 +3,6 @@ Remaining items to complete before it is usable
 * Implement data storage
   * https://github.com/macmcmeans/localDataStorage
 * Implement question navigaion
-  * Forward 1
-  * Backwards 1
   * Dropdown selector
 * Implement Score by Team
 * Implement Score by Block
