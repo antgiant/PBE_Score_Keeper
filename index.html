@@ -40,7 +40,7 @@
           "session_names": ["", date],
           "current_session": 1,
           "session_1_max_points_per_question": 12,
-          "session_1_block_names": ["", "Block 1"],
+          "session_1_block_names": ["", "Block/Group 1"],
           "session_1_team_names": ["", "Team 1"],
           "session_1_question_names": ["", "Question 1"],
           "session_1_current_question": 1,
@@ -109,13 +109,13 @@
         team_names[updated_team_number] = new_value;
         localStorage.setItem("session_"+current_session+"_team_names", JSON.stringify(team_names))
       }
-      //Increase total Block Count
+      //Increase total Block/Group Count
       if (updated_id == "total_blocks_increase") {
         block_names = JSON.parse(localStorage.getItem("session_"+current_session+"_block_names"));
-        block_names.push("Block "+block_names.length);
+        block_names.push("Block/Group "+block_names.length);
         localStorage.setItem("session_"+current_session+"_block_names", JSON.stringify(block_names));
       } 
-      //Decrease total Blocks count
+      //Decrease total Blocks/Groups count
       else if (updated_id == "total_blocks_decrease") {
         block_names = JSON.parse(localStorage.getItem("session_"+current_session+"_block_names"));
         //Don't allow deleting of blocks that are in use
@@ -133,7 +133,7 @@
           localStorage.setItem("session_"+current_session+"_block_names", JSON.stringify(block_names));
         }
       } 
-      //Update Block Name
+      //Update Block/Group Name
       else if (updated_id.search(block_name_check) > -1) {
         team_names = JSON.parse(localStorage.getItem("session_"+current_session+"_block_names"));
         updated_team_number = updated_id.match(block_name_check)[1];
@@ -180,7 +180,7 @@
           localStorage.setItem("session_"+current_session+"_question_"+question_number+"_score", new_value);
         }
       }
-      //Update Current Question's Block
+      //Update Current Question's Block/Group
       else if (updated_id.search(question_block_check) > -1) {
         question_number = localStorage.getItem("session_"+current_session+"_current_question");
         localStorage.setItem("session_"+current_session+"_question_"+question_number+"_block", new_value);
@@ -210,7 +210,7 @@
           //Set new question possible score to 0
           localStorage.setItem("session_"+current_session+"_question_"+question_number+"_score", 0);
 
-          //Set new question block to 0 (aka none)
+          //Set new question block/group to 0 (aka none)
           localStorage.setItem("session_"+current_session+"_question_"+question_number+"_block", 0);
 
           //Set default score for all teams on this question to 0
@@ -278,24 +278,24 @@
         }
       }
 
-      //Set up Blocks
+      //Set up Blocks/Groups
       block_names = JSON.parse(localStorage.getItem("session_"+current_session+"_block_names"));
       var block_count = block_names.length - 1;
       
-      //Show block count
+      //Show block/group count
       $("#total_blocks").text(block_count);
       if (block_count == 1) {
-        $("#total_blocks_text").text("block");
+        $("#total_blocks_text").text("block/group");
       } else {
-        $("#total_blocks_text").text("blocks");
+        $("#total_blocks_text").text("blocks/groups");
       }
 
-      //Setup Block renaming
+      //Setup Block/Group renaming
       current_block_count = $("#block_names").children().length;
       if (current_block_count < block_count) {
         for (i=current_block_count + 1;i<=block_count;i++) {
           //Add new
-          $("#block_names").append('<label>Block '+i+' Name: <input type = "text" name = "block_'+i+'_name" id = "block_'+i+'_name" onchange="local_data_update(this)" value = "'+block_names[i]+'"><br></label>');
+          $("#block_names").append('<label>Block/Group '+i+' Name: <input type = "text" name = "block_'+i+'_name" id = "block_'+i+'_name" onchange="local_data_update(this)" value = "'+block_names[i]+'"><br></label>');
           $("#question_block").append('<label><input type="radio" id="question_block_'+i+'" name="question_block" value="'+i+'" onchange="local_data_update(this)"><span id="block_'+i+'_label">'+block_names[i]+'</span></label>');
         }
       }
@@ -309,13 +309,13 @@
         //Already have the right number do nothing
       }
 
-      //Update Block Names (Yes this is ineffecient but the numbers are so small it doesn't really matter)
+      //Update Block/Group Names (Yes this is ineffecient but the numbers are so small it doesn't really matter)
       question_number = localStorage.getItem("session_"+current_session+"_current_question");
       current_selected_block = JSON.parse(localStorage.getItem("session_"+current_session+"_question_"+question_number+"_block"));
       for (i=1;i<=block_count;i++) {
         block_names[i] = $("#block_"+i+"_name").val();
         $("#block_"+i+"_label").text($("#block_"+i+"_name").val());
-        //Check off saved block
+        //Check off saved block/group
         if (i == current_selected_block) {
           $("#question_block_"+i).prop("checked", true);
         } else {
@@ -334,7 +334,7 @@
       //Set up Max Points per Question
       max_points = JSON.parse(localStorage.getItem("session_"+current_session+"_max_points_per_question"));
       
-      //Show block count
+      //Show block/group count
       $("#max_points").text(max_points);
       if (max_points == 1) {
         $("#max_points_text").text("point");
@@ -438,7 +438,7 @@
       <h3>Setup</h3>
       <div id="setup">
         <h4>Instructions</h4>
-        <p>Please enter your number of blocks and teams below so that the scoring grid can be created</p>
+        <p>Please enter your number of blocks/groups and teams below so that the scoring grid can be created</p>
         <fieldset>
           <legend>Set up your Teams</legend>
 
@@ -447,8 +447,8 @@
           <div id="team_names"></div>
         </fieldset>
         <fieldset>
-          <legend>Set up your Blocks</legend>
-          <span id="total_blocks"></span> <span id="total_blocks_text">blocks</span> <button id="total_blocks_increase" onclick='local_data_update(this)'>▲</button> <button id="total_blocks_decrease" onclick='local_data_update(this)'>▼</button><br>
+          <legend>Set up your Blocks/Groups</legend>
+          <span id="total_blocks"></span> <span id="total_blocks_text">blocks/groups</span> <button id="total_blocks_increase" onclick='local_data_update(this)'>▲</button> <button id="total_blocks_decrease" onclick='local_data_update(this)'>▼</button><br>
           <br>
           <div id="block_names"></div>
         </fieldset>
@@ -470,7 +470,7 @@
             </div>
         </fieldset>
           <fieldset>
-            <legend>Block</legend>
+            <legend>Block/Group</legend>
             <div id="question_block"></div>
           </fieldset>
           <div id = "question_teams"></div>
@@ -485,16 +485,16 @@
           Team Scores Go Here
         </div>
       </div>
-      <h3>Score by Block</h3>
+      <h3>Score by Block/Group</h3>
       <div>
         <div data-role="block_scores">
           Team Scores Go Here
         </div>
       </div>
-      <h3>Score by Team & Block</h3>
+      <h3>Score by Team & Block/Group</h3>
       <div>
         <div data-role="team_and_block_scores">
-          Team &amp; Block Scores Go Here
+          Team &amp; Block/Group Scores Go Here
         </div>
       </div>
       <h3>Question Log</h3>
