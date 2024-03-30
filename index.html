@@ -310,15 +310,19 @@
       }
 
       //Update Block Names (Yes this is ineffecient but the numbers are so small it doesn't really matter)
+      question_number = localStorage.getItem("session_"+current_session+"_current_question");
+      current_selected_block = JSON.parse(localStorage.getItem("session_"+current_session+"_question_"+question_number+"_block"));
       for (i=1;i<=block_count;i++) {
         block_names[i] = $("#block_"+i+"_name").val();
         $("#block_"+i+"_label").text($("#block_"+i+"_name").val());
+        //Check off saved block
+        if (i == current_selected_block) {
+          $("#question_block_"+i).prop("checked", true);
+        } else {
+          $("#question_block_"+i).prop("checked", false);
+        }
       }
 
-      //Check off saved block
-      question_number = localStorage.getItem("session_"+current_session+"_current_question");
-      current_selected_block = JSON.parse(localStorage.getItem("session_"+current_session+"_question_"+question_number+"_block"));
-      $("#question_block_"+current_selected_block).prop("checked", true);
 
       //Add fancy options to new buttons
       $( "#question_block" ).controlgroup( "refresh" );
