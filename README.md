@@ -1,9 +1,5 @@
 # Warning: Under Active Development and not yet functional
 Remaining items to complete before it is usable
-* Implement data storage
-  * https://github.com/macmcmeans/localDataStorage
-* Implement question navigaion
-  * Dropdown selector
 * Implement Score by Team
 * Implement Score by Block
 * Implement Question log
@@ -12,6 +8,11 @@ Remaining items to complete before it is usable
 A tool to help keep track of Pathfinder Bible Bowl (PBE) Scores by block and team
 
 To Do list (Bonus Features)
+* Rename Questions
+* Implement question navigaion
+  * Dropdown selector
+* Implement data storage
+  * https://github.com/macmcmeans/localDataStorage
 * Add Timer
 * Add Github issue link
 * ?Sticky scores?
