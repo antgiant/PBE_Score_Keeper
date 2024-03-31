@@ -1,6 +1,5 @@
 # Warning: Under Active Development and not yet functional
 Remaining items to complete before it is usable
-* Save Toast
 * Implement Score by Block
 * Implement Score by Team & Block
 * Implement Question log

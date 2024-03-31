@@ -338,8 +338,12 @@
       $( "#question_block" ).controlgroup( "refresh" );
 
       //Update Question name to saved name
-      question_name = JSON.parse(localStorage.getItem("session_"+current_session+"_question_names"))[question_number];
-      $("#current_question_title").text(question_name);
+      question_names = JSON.parse(localStorage.getItem("session_"+current_session+"_question_names"));
+      question_count = question_names.length - 1;
+      if (Number(localStorage.getItem("session_"+current_session+"_question_"+question_count+"_score")) == 0) {
+        question_count--;
+      }
+      $("#current_question_title").text(question_names[question_number]+" ("+question_number+" of "+question_count+")");
 
       //Set up Max Points per Question
       max_points = JSON.parse(localStorage.getItem("session_"+current_session+"_max_points_per_question"));
