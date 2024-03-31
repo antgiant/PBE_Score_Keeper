@@ -304,7 +304,7 @@
         for (i=current_block_count + 1;i<=block_count;i++) {
           //Add new
           $("#block_names").append('<label>Block/Group '+i+' Name: <input type = "text" name = "block_'+i+'_name" id = "block_'+i+'_name" onchange="local_data_update(this)" value = "'+block_names[i]+'"><br></label>');
-          $("#question_block").append('<label><input type="radio" id="question_block_'+i+'" name="question_block" value="'+i+'" onchange="local_data_update(this)"><span id="block_'+i+'_label">'+block_names[i]+'</span></label>');
+          $("#question_block").append('<input type="radio" id="question_block_'+i+'" name="question_block" value="'+i+'" onchange="local_data_update(this)"><label for="question_block_'+i+'"><span id="block_'+i+'_label">'+block_names[i]+'</span></label>');
         }
       }
       else if (current_block_count > block_count) {
@@ -321,7 +321,11 @@
       question_number = localStorage.getItem("session_"+current_session+"_current_question");
       current_selected_block = JSON.parse(localStorage.getItem("session_"+current_session+"_question_"+question_number+"_block"));
       for (i=1;i<=block_count;i++) {
-        $("#block_"+i+"_label").text(block_names[i]);
+        //Destroy and recreate as overly heavy handed technique (that actually works) to update label
+        $( "#question_block" ).controlgroup( "destroy" );
+        $("#block_"+i+"_label").html(block_names[i]);
+        $( "#question_block" ).controlgroup();
+        //$("#question_block_"+i).parent().label(block_names[i]);//.checkboxradio( "refresh" );
         //Check off saved block/group
         if (i == current_selected_block) {
           $("#question_block_"+i).prop("checked", true);
