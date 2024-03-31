@@ -1,9 +1,3 @@
-# Warning: Under Active Development and not yet functional
-Remaining items to complete before it is usable
-* Multiple session storage
-  * Fix score entry display bugs
-  * Fix all score display summaries
-
 # PBE Score Keeper
 A tool to help keep track of Pathfinder Bible Bowl (PBE) Scores by block and team
 

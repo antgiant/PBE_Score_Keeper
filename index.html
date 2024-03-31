@@ -357,17 +357,17 @@
       }
 
       //Setup Block/Group renaming
-      current_block_count = $("#block_names").children().length;
-      if (current_block_count < block_count) {
-        for (i=current_block_count + 1;i<=block_count;i++) {
+      displayed_block_count = $("#block_names").children().length;
+      if (displayed_block_count < block_count) {
+        for (i=displayed_block_count + 1;i<=block_count;i++) {
           //Add new
           $("#block_names").append('<label>Block/Group '+i+' Name: <input type = "text" name = "block_'+i+'_name" id = "block_'+i+'_name" onchange="local_data_update(this)" value = "'+block_names[i]+'"><br></label>');
-          $("#question_block").append('<input type="radio" id="question_block_'+i+'" name="question_block" value="'+i+'" onchange="local_data_update(this)"><label for="question_block_'+i+'"><span id="block_'+i+'_label">'+block_names[i]+'</span></label>');
+          $("#question_block").append('<label><input type="radio" id="question_block_'+i+'" name="question_block" value="'+i+'" onchange="local_data_update(this)"><span id="block_'+i+'_label">'+block_names[i]+'</span></label>');
         }
       }
-      else if (current_block_count > block_count) {
+      else if (displayed_block_count > block_count) {
         //remove extra
-        for (i=current_block_count;i>block_count;i--) {
+        for (i=displayed_block_count;i>block_count;i--) {
           $("#block_names").children()[i - 1].remove();
           $("#question_block").children()[i - 1].remove();
         }
