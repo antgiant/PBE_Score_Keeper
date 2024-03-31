@@ -493,7 +493,7 @@
       //Update displayed Team Scores
       $("#team_scores").html(temp_output);
 
-      //Update Block Scores
+      //Update Block/Group Scores
       //Create empty summary array
       block_names = JSON.parse(localStorage.getItem("session_"+current_session+"_block_names"));
       var block_count = block_names.length - 1;
@@ -506,7 +506,7 @@
       for (i=0; i < block_count; i++) {
         temp_score_data.push([],[],[]);
       }
-      //Fill in Block Scores
+      //Fill in Block/Group Scores
       highest_block_score = 0;
       for (i=1; i <= block_count; i++) {
         block_earned = 0;
@@ -525,8 +525,8 @@
           highest_block_score = block_earned;
         }
       }
-      //Fill in Block Placement and create output table
-      temp_output = "<table><thead><tr><th>Block Name</th><th>Percent</th><th>Score</th><th>Placement</th></tr></thead><tbody>";
+      //Fill in Block/Group Placement and create output table
+      temp_output = "<table><thead><tr><th>Block/Group Name</th><th>Percent</th><th>Score</th><th>Placement</th></tr></thead><tbody>";
       for (i=1; i <= block_count; i++) {
         if (temp_score_data[i-1][0]/highest_block_score >= 0.9) {
           temp_score_data[i-1][2] = "First Place";
@@ -542,8 +542,40 @@
       }
       temp_output = temp_output+"</tbody></table>";
 
-      //Update displayed Block Scores
+      //Update displayed Team & Block/Group Scores
       $("#block_scores").html(temp_output);
+      //Update Team and Block/Group Scores
+      //Create empty summary array
+      temp_score_data = new Array();
+      for (i=0; i < team_count; i++) {
+        temp_score_data[i] = new Array();
+        for (j=0; j < block_count; j++) {
+          temp_score_data[i].push([0,0]);
+        }
+      }
+      //Fill in Team and Block/Group Scores
+      highest_block_score = 0;
+      for (i=1; i <= team_count; i++) {
+        for (j=1; j <= question_count; j++) {
+          temp_block = Number(localStorage.getItem("session_"+current_session+"_question_"+j+"_block"));
+          temp_score_data[i-1][temp_block-1][0] += Number(localStorage.getItem("session_"+current_session+"_question_"+j+"_team_"+i+"_score"));
+          temp_score_data[i-1][temp_block-1][1] +=  Number(localStorage.getItem("session_"+current_session+"_question_"+j+"_score"));
+        }
+      }
+      //Fill in Team and Block/Group scores and create output table
+      temp_output = "<table><thead><tr><th>Team Name</th><th>Block/Group Name</th><th>Percent</th><th>Score</th>/tr></thead><tbody>";
+      for (i=1; i <= team_count; i++) {
+        for (j=1; j <= block_count; j++) {
+          temp_output = temp_output+"<tr><td>"+team_names[i]+"</td>";
+          temp_output = temp_output+"<td>"+block_names[j]+"</td>";
+          temp_output = temp_output+"<td>"+((temp_score_data[i-1][j-1][0]/temp_score_data[i-1][j-1][1])*100).toFixed(2)+"%</td>";
+          temp_output = temp_output+"<td>"+temp_score_data[i-1][j-1][0]+"/"+temp_score_data[i-1][j-1][1]+"</td></tr>\n"
+        }
+      }
+      temp_output = temp_output+"</tbody></table>";
+
+      //Update displayed Team and Block/Group Scores
+      $("#team_and_block_scores").html(temp_output);
     }
   </script>
   <style>
