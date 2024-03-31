@@ -1,7 +1,6 @@
 # Warning: Under Active Development and not yet functional
 Remaining items to complete before it is usable
 * Multiple session storage
-  * Fix Session Name Storage
   * Fix score entry display bugs
   * Fix all score display summaries
 
