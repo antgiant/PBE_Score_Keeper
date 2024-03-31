@@ -542,8 +542,10 @@
       }
       temp_output = temp_output+"</tbody></table>";
 
-      //Update displayed Team & Block/Group Scores
+      //Update displayed Block/Group Scores
       $("#block_scores").html(temp_output);
+
+
       //Update Team and Block/Group Scores
       //Create empty summary array
       temp_score_data = new Array();
@@ -563,7 +565,7 @@
         }
       }
       //Fill in Team and Block/Group scores and create output table
-      temp_output = "<table><thead><tr><th>Team Name</th><th>Block/Group Name</th><th>Percent</th><th>Score</th>/tr></thead><tbody>";
+      temp_output = "<table><thead><tr><th>Team Name</th><th>Block/Group Name</th><th>Percent</th><th>Score</th></tr></thead><tbody>";
       for (i=1; i <= team_count; i++) {
         for (j=1; j <= block_count; j++) {
           temp_output = temp_output+"<tr><td>"+team_names[i]+"</td>";
@@ -576,6 +578,38 @@
 
       //Update displayed Team and Block/Group Scores
       $("#team_and_block_scores").html(temp_output);
+
+      //Update displayed Question Log
+      //Create empty summary array
+      temp_score_data = new Array();
+      for (i=1; i <= question_count; i++) {
+        temp_row = Array();
+        temp_row.push(Number(localStorage.getItem("session_"+current_session+"_question_"+i+"_block")));
+        temp_row.push(Number(localStorage.getItem("session_"+current_session  +"_question_"+i+"_score")));
+        for (j=1; j <= team_count; j++) {
+          temp_row.push(Number(localStorage.getItem("session_"+current_session+"_question_"+i+"_team_"+j+"_score")));
+        }
+        temp_score_data.push(temp_row);
+      }
+      //Fill in Team and Block/Group scores and create output table
+      temp_output = "<table><thead><tr><th>Question</th><th>Block/Group</th><th>Possible Points</th>";
+      for (i=1; i <= team_count; i++) {
+        temp_output = temp_output + "<th>"+team_names[i]+" Score</th>";
+      }
+      temp_output = temp_output + "</tr></thead><tbody>";
+      for (i=1; i <= question_count; i++) {
+        temp_output = temp_output+"<tr><td>"+question_names[i]+"</td>";
+        temp_output = temp_output+"<td>"+block_names[temp_score_data[i-1][0]]+"</td>";
+        temp_output = temp_output+"<td>"+temp_score_data[i-1][1]+"</td>";
+        for (j=1; j <= team_count; j++) {
+          temp_output = temp_output+"<td>"+temp_score_data[i-1][j+1]+"</td>";
+        }
+        temp_output = temp_output+"</tr>\n"
+      }
+      temp_output = temp_output+"</tbody></table>";
+
+      //Update displayed Question Log
+      $("#scores").html(temp_output);
     }
   </script>
   <style>
