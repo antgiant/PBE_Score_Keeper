@@ -22,6 +22,8 @@ To Do list (Bonus Features)
 * Implement complete data change log
 * Multi-User support
 * ?pbe quiz engine integration?
+* Performance Improvements
+* Live Team Stats (xx% Team | xx% Block/Group X)
 
 Multi-User Master Plan
 * Get multiple windows on one machine working (Trigger sync model)

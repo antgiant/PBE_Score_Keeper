@@ -84,23 +84,24 @@
         question_names = JSON.parse(localStorage.getItem("session_"+current_session+"_question_names"));
         question_count = question_names.length - 1;
         if (Number(localStorage.getItem("session_"+current_session+"_question_"+question_count+"_score")) > 0) {
-          current_session++
-          localStorage.setItem("current_session", current_session);
-
-          //Setup session defaults
           session_names = JSON.parse(localStorage.getItem("session_names"));
-          var d = new Date();
-          var date = d.toLocaleString();
-          session_names.push(date);
-          localStorage.setItem("session_names", JSON.stringify(session_names)),
-          localStorage.setItem("session_"+current_session+"_max_points_per_question", JSON.stringify(12)),
-          localStorage.setItem("session_"+current_session+"_block_names", JSON.stringify(["", "Block/Group 1"])),
-          localStorage.setItem("session_"+current_session+"_team_names", JSON.stringify(["", "Team 1"])),
-          localStorage.setItem("session_"+current_session+"_question_names", JSON.stringify(["", "Question 1"])),
-          localStorage.setItem("session_"+current_session+"_current_question", JSON.stringify(1)),
-          localStorage.setItem("session_"+current_session+"_question_1_score", JSON.stringify(0)),
-          localStorage.setItem("session_"+current_session+"_question_1_block", JSON.stringify(0)),
-          localStorage.setItem("session_"+current_session+"_question_1_team_1_score", JSON.stringify(0))
+          current_session++;
+          localStorage.setItem("current_session", current_session);
+          if (current_session > (session_names.length - 1)) {
+            //Setup session defaults since there isn't one for this
+            var d = new Date();
+            var date = d.toLocaleString();
+            session_names.push(date);
+            localStorage.setItem("session_names", JSON.stringify(session_names));
+            localStorage.setItem("session_"+current_session+"_max_points_per_question", JSON.stringify(12));
+            localStorage.setItem("session_"+current_session+"_block_names", JSON.stringify(["", "Block/Group 1"]));
+            localStorage.setItem("session_"+current_session+"_team_names", JSON.stringify(["", "Team 1"]));
+            localStorage.setItem("session_"+current_session+"_question_names", JSON.stringify(["", "Question 1"]));
+            localStorage.setItem("session_"+current_session+"_current_question", JSON.stringify(1));
+            localStorage.setItem("session_"+current_session+"_question_1_score", JSON.stringify(0));
+            localStorage.setItem("session_"+current_session+"_question_1_block", JSON.stringify(0));
+            localStorage.setItem("session_"+current_session+"_question_1_team_1_score", JSON.stringify(0));
+          }
         }
       }
 
