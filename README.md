@@ -1,8 +1,8 @@
 # Warning: Under Active Development and not yet functional
 Remaining items to complete before it is usable
-* Implement Score by Block
 * Implement Score by Team & Block
 * Implement Question log
+* Multiple session storage
 
 # PBE Score Keeper
 A tool to help keep track of Pathfinder Bible Bowl (PBE) Scores by block and team
@@ -10,14 +10,12 @@ A tool to help keep track of Pathfinder Bible Bowl (PBE) Scores by block and tea
 To Do list (Bonus Features)
 * Delete Question
 * Rename Questions
-* Implement question navigaion
-  * Dropdown selector
+* Implement question navigaion by Dropdown
 * Implement data storage
   * https://github.com/macmcmeans/localDataStorage
 * Add Timer
 * Add Github issue link
 * ?Sticky scores?
-* Multiple session storage
 * Export data
 * Import data
 * Implement complete data change log
