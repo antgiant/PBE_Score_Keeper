@@ -492,13 +492,10 @@
 
       //Update Team Names (Yes this is ineffecient but the numbers are so small it doesn't really matter)
       for (i=1;i<=team_count;i++) {
-        temp_team_score = " (Team "+((team_score_summary[i-1][0]/team_score_summary[i-1][1])*100).toFixed(2)+"% | "+
-                        block_names[current_selected_block]+" "+
-                        ((team_and_block_score_summary[i-1][current_selected_block][0]/team_and_block_score_summary[i-1][current_selected_block][1])*100).toFixed(2)+"% )";
         if (team_names[i].slice(-1).toLowerCase() === "s") {
-          $("#team_"+i+"_points_label").text(team_names[i]+"' score"+temp_team_score);
+          $("#team_"+i+"_points_label").text(team_names[i]+"' score");
         } else {
-          $("#team_"+i+"_points_label").text(team_names[i]+"'s score"+temp_team_score);
+          $("#team_"+i+"_points_label").text(team_names[i]+"'s score");
         }
       }
 
