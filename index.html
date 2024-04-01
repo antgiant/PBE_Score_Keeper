@@ -296,7 +296,7 @@
       }     
 
       //Disable Next Session Button if this Session has no data
-      if (question_count > question_number) {
+      if (question_count <= 1) {
         $("#next_session").prop("disabled", true);
       } else {
         $("#next_session").prop("disabled", false);
