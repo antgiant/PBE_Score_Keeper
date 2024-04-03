@@ -23,6 +23,7 @@
       //Setup score entry buttons
       $( "#question_score" ).controlgroup();
       $( "#question_block" ).controlgroup();
+      $( "#rounding" ).controlgroup();
 
       sync_data_to_display();
     }
@@ -36,10 +37,11 @@
         var d = new Date();
         var date = d.toLocaleString();
         initial_state = {
-          "data_version": 1.0,
+          "data_version": 1.01,
           "session_names": ["", date],
           "current_session": 1,
           "session_1_max_points_per_question": 12,
+          "session_1_rounding": "false",
           "session_1_block_names": ["No Block/Group", "Block/Group 1"],
           "session_1_team_names": ["", "Team 1"],
           "session_1_question_names": ["", "Question 1"],
@@ -55,7 +57,15 @@
         }
         
       } //Data structure upgrades go here as else if required
-      //else if (condition) {}
+      else if (data_version == 1.0) {
+        session_names = JSON.parse(localStorage.getItem("session_names"));
+        for (i = 1; i < session_names.length; i++) {
+            //Add missing data element
+            localStorage.setItem("session_"+i+"_rounding", JSON.stringify("false"));
+        }
+        localStorage.setItem("data_version", 1.01);
+        current_session = localStorage.getItem("current_session");
+      }
       //Load current session from previously saved data
       else {
         current_session = localStorage.getItem("current_session");
@@ -94,6 +104,7 @@
             session_names.push(date);
             localStorage.setItem("session_names", JSON.stringify(session_names));
             localStorage.setItem("session_"+current_session+"_max_points_per_question", JSON.stringify(12));
+            localStorage.setItem("session_"+current_session+"_rounding", JSON.stringify("false"));
             localStorage.setItem("session_"+current_session+"_block_names", JSON.stringify(["No Block/Group", "Block/Group 1"]));
             localStorage.setItem("session_"+current_session+"_team_names", JSON.stringify(["", "Team 1"]));
             localStorage.setItem("session_"+current_session+"_question_names", JSON.stringify(["", "Question 1"]));
@@ -199,6 +210,14 @@
           localStorage.setItem("session_"+current_session+"_max_points_per_question", max_points);
         }
       }
+      //Update Rounding Status to Yes
+      else if (updated_id == "rounding_yes") {
+          localStorage.setItem("session_"+current_session+"_rounding", JSON.stringify("true"));
+      }
+      //Update Rounding Status to No
+      else if (updated_id == "rounding_no") {
+          localStorage.setItem("session_"+current_session+"_rounding", JSON.stringify("false"));
+      }
       //Update Current Question Max Possible Score
       else if (updated_id.search(question_max_points_check) > -1) {
         question_number = localStorage.getItem("session_"+current_session+"_current_question");
@@ -275,6 +294,7 @@
     function sync_data_to_display() {
       //Load "Universal" DB data into variables
       max_points = JSON.parse(localStorage.getItem("session_"+current_session+"_max_points_per_question"));
+      rounding = JSON.parse(localStorage.getItem("session_"+current_session+"_rounding"));
       team_names = JSON.parse(localStorage.getItem("session_"+current_session+"_team_names"));
       var team_count = team_names.length - 1;
       block_names = JSON.parse(localStorage.getItem("session_"+current_session+"_block_names"));
@@ -327,9 +347,14 @@
       //Fill in Team Placement and create output table
       temp_output = "<table><thead><tr><th>Team Name</th><th>Percent</th><th>Score</th><th>Placement</th></tr></thead><tbody>";
       for (i=1; i <= team_count; i++) {
-        if (team_score_summary[i-1][0]/highest_team_score >= 0.9) {
+        if (rounding == "true") {
+          temp_total = highest_team_score;
+        } else {
+          temp_total = team_score_summary[i-1][1];
+        }
+        if (team_score_summary[i-1][0]/temp_total >= 0.9) {
           team_score_summary[i-1][2] = "First Place";
-        } else if (team_score_summary[i-1][0]/highest_team_score >= 0.8) {
+        } else if (team_score_summary[i-1][0]/temp_total >= 0.8) {
           team_score_summary[i-1][2] = "Second Place";
         } else {
           team_score_summary[i-1][2] = "Third Place";
@@ -372,10 +397,15 @@
       //Fill in Block/Group Placement and create output table
       temp_output = "<table><thead><tr><th>Block/Group Name</th><th>Percent</th><th>Score</th><th>Placement</th></tr></thead><tbody>";
       for (i=0; i <= block_count; i++) {
-        if (i > 0 || block_score_summary[i][1] > 0) {
-          if (block_score_summary[i][0]/highest_block_score >= 0.9) {
+        if (block_score_summary[i][1] > 0) {
+          if (rounding == "true") {
+            temp_total = highest_block_score;
+          } else {
+            temp_total = block_score_summary[i][1];
+          }
+          if (block_score_summary[i][0]/temp_total >= 0.9) {
             block_score_summary[i][2] = "First Place";
-          } else if (block_score_summary[i][0]/highest_block_score >= 0.8) {
+          } else if (block_score_summary[i][0]/temp_total >= 0.8) {
             block_score_summary[i][2] = "Second Place";
           } else {
             block_score_summary[i][2] = "Third Place";
@@ -414,7 +444,7 @@
       temp_output = "<table><thead><tr><th>Team Name</th><th>Block/Group Name</th><th>Percent</th><th>Score</th></tr></thead><tbody>";
       for (i=1; i <= team_count; i++) {
         for (j=0; j <= block_count; j++) {
-          if (j > 0 || team_and_block_score_summary[i-1][j][1] > 0) {
+          if (team_and_block_score_summary[i-1][j][1] > 0) {
             temp_output = temp_output+"<tr><td>"+team_names[i]+"</td>";
             temp_output = temp_output+"<td>"+block_names[j]+"</td>";
             temp_output = temp_output+"<td>"+((team_and_block_score_summary[i-1][j][0]/team_and_block_score_summary[i-1][j][1])*100).toFixed(2)+"%</td>";
@@ -630,6 +660,17 @@
         $( "#team_"+i+"_score" ).controlgroup("refresh");
       }
 
+
+      //Show rounding status
+      if (rounding == "true") {
+        $("#rounding_yes").prop("checked", true);
+      } else {
+        $("#rounding_no").prop("checked", true);
+      }
+
+      //Refresh display
+      $( "#rounding" ).controlgroup("refresh");
+
       //Disable Previous Question Button if this is the first Question
       if (question_number == 1) {
         $("#previous_question").prop("disabled", true);
@@ -673,7 +714,6 @@
         <br><br>
         <fieldset>
           <legend>Set up your Teams</legend>
-
           <span id="total_teams"></span> <span id="total_teams_text">teams</span> <button id="total_teams_increase" onclick='local_data_update(this)'>+</button> <button id="total_teams_decrease" onclick='local_data_update(this)'>-</button><br>
           <br>
           <div id="team_names"></div>
@@ -689,6 +729,14 @@
           <legend>Maximum Points per Question</legend>
           <span id="max_points"></span> <span id="max_points_text">points</span> <button id="max_points_increase" onclick='local_data_update(this)'>+</button> <button id="max_points_decrease" onclick='local_data_update(this)'>-</button><br>
         </fieldset>
+        <fieldset>
+          <legend>First, Second, & Third Place Round to Best Team score?</legend>
+          <div id="rounding">
+            <label><input type="radio" id="rounding_yes" name="rounding" value="true" onchange="local_data_update(this)"><span>Yes</span></label>
+            <label><input type="radio" id="rounding_no" name="rounding" value="false" onchange="local_data_update(this)"><span>No</span></label>
+          </div>
+        </fieldset>
+        <br>
         <br>
         <button onclick="local_data_update(this);$( '#accordion' ).accordion({active: 1});">Enter Scores</button>
       </div>
