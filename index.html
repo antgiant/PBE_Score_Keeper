@@ -48,7 +48,7 @@
         var date = d.toLocaleString();
         initial_state = {
           "data_version": 1.01,
-          "session_names": ["", date],
+          "session_names": ["", "Session "+date],
           "current_session": 1,
           "session_1_max_points_per_question": 12,
           "session_1_rounding": "false",
@@ -111,7 +111,7 @@
             //Setup session defaults since there isn't one for this
             var d = new Date();
             var date = d.toLocaleString();
-            session_names.push(date);
+            session_names.push("Session "+date);
             localStorage.setItem("session_names", JSON.stringify(session_names));
             localStorage.setItem("session_"+current_session+"_max_points_per_question", JSON.stringify(12));
             localStorage.setItem("session_"+current_session+"_rounding", JSON.stringify("false"));
@@ -312,6 +312,8 @@
     
     function sync_data_to_display() {
       //Load "Universal" DB data into variables
+      session_names = JSON.parse(localStorage.getItem("session_names"));
+      session_count = session_names.length - 1;
       max_points = JSON.parse(localStorage.getItem("session_"+current_session+"_max_points_per_question"));
       rounding = JSON.parse(localStorage.getItem("session_"+current_session+"_rounding"));
       team_names = JSON.parse(localStorage.getItem("session_"+current_session+"_team_names"));
@@ -332,7 +334,11 @@
         $("#previous_session").prop("disabled", true);
       } else {
         $("#previous_session").prop("disabled", false);
-      }     
+      }
+
+      //Update Session name to saved name
+      $("#session_name").text(session_names[current_session]);
+      $("#session_display_count").text(current_session+" of "+session_count);
 
       //Disable Next Session Button if this Session has no data
       if (question_count <= 1) {
@@ -729,6 +735,7 @@
         <p>This is a score keeper for the Pathfinder Bible Experience (aka the Bible Bowl). Please enter your number of teams as well as blocks/groups below so that the scoring grid can be created</p>
         <h5>Data Storage Note</h5>
         <p>Data is stored only on your device, and is not shared in any way with any server. This also means that if you change devices your data will not appear on the new device.</p>
+        <h4><span id="session_name"></span> (<span id="session_display_count"></span>)</h4>
         <button id="previous_session" onclick='local_data_update(this)'>Previous Session</button>
         <button id="next_session" onclick='local_data_update(this)'>Next Session</button>
         <br><br>
