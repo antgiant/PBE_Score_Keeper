@@ -25,6 +25,16 @@
       $( "#question_block" ).controlgroup();
       $( "#rounding" ).controlgroup();
 
+      //Block multi-line question titles
+      $("#current_question_title").keypress(function(e){ 
+        if (e.which == 13) {
+          $("#current_question_title").trigger("onblur");
+          return false;
+        } else {
+          return true;
+        } 
+      });
+
       sync_data_to_display();
     }
     
@@ -209,6 +219,15 @@
           max_points--;
           localStorage.setItem("session_"+current_session+"_max_points_per_question", max_points);
         }
+      }
+      //Update Question Title
+      else if (updated_id == "current_question_title") {
+        new_value = $("#current_question_title").text();
+        question_number = localStorage.getItem("session_"+current_session+"_current_question");
+        question_names = JSON.parse(localStorage.getItem("session_"+current_session+"_question_names"));
+        question_names[question_number] = new_value;
+        localStorage.setItem("session_"+current_session+"_question_names", JSON.stringify(question_names));
+        $("#team_1_score_0").focus();
       }
       //Update Rounding Status to Yes
       else if (updated_id == "rounding_yes") {
@@ -578,7 +597,8 @@
       $( "#question_block" ).controlgroup( "refresh" );
 
       //Update Question name to saved name
-      $("#current_question_title").text(question_names[question_number]+" ("+question_number+" of "+question_count+")");
+      $("#current_question_title").text(question_names[question_number]);
+      $("#current_question_title_count").text(question_number+" of "+question_count);
 
       //Set up Max Points per Question
       
@@ -743,7 +763,7 @@
       <h3>Score Entry</h3>
       <div>
         <div data-role="score_entry">
-          <h4 id="current_question_title">Question</h4>
+          <h4><span id="current_question_title" contenteditable="plaintext-only" onblur="local_data_update(this)">Question</span> (<span id="current_question_title_count" ></span>)</h4>
           <fieldset>
             <legend id = "points_legend">Possible Points for Question</legend>
             <div id="question_score">
