@@ -243,7 +243,7 @@
         question_names = JSON.parse(localStorage.getItem("session_"+current_session+"_question_names"));
         question_names[question_number] = new_value;
         localStorage.setItem("session_"+current_session+"_question_names", JSON.stringify(question_names));
-        $("#team_1_score_0").focus();
+        $("#question_quick_nav").focus();
       }
       //Update Rounding Status to Yes
       else if (updated_id == "rounding_yes") {
@@ -323,6 +323,10 @@
           question_number--;
           localStorage.setItem("session_"+current_session+"_current_question", question_number);
         }
+      }
+      //Jump to specific question
+      else if (updated_id == "question_quick_nav") {
+        localStorage.setItem("session_"+current_session+"_current_question", new_value);
       }
     }
     
@@ -620,7 +624,19 @@
 
       //Update Question name to saved name
       $("#current_question_title").text(question_names[question_number]);
-      $("#current_question_title_count").text(question_number+" of "+question_count);
+
+      //Setup Question quick navigation
+      question_quick_nav = '<select name="question_quick_nav" id="question_quick_nav" onchange="local_data_update(this)"">';
+      temp_count = (question_number>question_count?question_number:question_count);
+      for (i=1; i <= temp_count; i++) {
+        if (i==question_number) {
+          question_quick_nav += '<option value="'+i+'"'+(i==question_number?' selected':'')+'>'+i+" of "+question_count+'</option>';
+        } else {
+          question_quick_nav += '<option value="'+i+'"'+(i==question_number?' selected':'')+'>'+i+" of "+question_count+' - '+question_names[i]+'</option>';
+        }
+      }
+      question_quick_nav += '</select>';
+      $("#current_question_title_count").html(question_quick_nav);
 
       //Set up Max Points per Question
       
