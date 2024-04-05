@@ -113,13 +113,16 @@
         session_names = JSON.parse(localStorage.getItem("session_names"));
         session_names[current_session] = new_value;
         localStorage.setItem("session_names", JSON.stringify(session_names));
-        $("#total_teams_increase").focus();
+        $("#session_quick_nav").focus();
       }
       //Goto next session
       else if (updated_id == "next_session") {
         question_names = JSON.parse(localStorage.getItem("session_"+current_session+"_question_names"));
         question_count = question_names.length - 1;
-        if (Number(localStorage.getItem("session_"+current_session+"_question_"+question_count+"_score")) > 0) {
+        if (Number(localStorage.getItem("session_"+current_session+"_question_"+question_count+"_score")) == 0) {
+          question_count--;
+        }
+        if (question_count > 1) {
           session_names = JSON.parse(localStorage.getItem("session_names"));
           current_session++;
           localStorage.setItem("current_session", current_session);
@@ -148,6 +151,12 @@
           current_session--;
           localStorage.setItem("current_session", current_session);
         }
+      }
+
+      //Jump to specific session
+      else if (updated_id == "session_quick_nav") {
+        localStorage.setItem("current_session", new_value);
+        current_session = new_value;
       }
       
       //Increase total teams count
@@ -358,13 +367,25 @@
 
       //Update Session name to saved name
       $("#session_name").text(session_names[current_session]);
-      $("#session_display_count").text(current_session+" of "+session_count);
+
+      //Setup Session quick navigation
+      session_quick_nav = '<select name="session_quick_nav" id="session_quick_nav" onchange="local_data_update(this)"">';
+      temp_count = (current_session>session_count?current_session:session_count);
+      for (i=1; i <= temp_count; i++) {
+        if (i==current_session) {
+          session_quick_nav += '<option value="'+i+'" selected>'+i+" of "+session_count+'</option>';
+        } else {
+          session_quick_nav += '<option value="'+i+'">'+i+" of "+session_count+' - '+session_names[i]+'</option>';
+        }
+      }
+      session_quick_nav += '</select>';
+      $("#session_display_count").html(session_quick_nav);
 
       //Disable Next Session Button if this Session has no data
-      if (question_count <= 1) {
-        $("#next_session").prop("disabled", true);
-      } else {
+      if (question_count > 1) {
         $("#next_session").prop("disabled", false);
+      } else {
+        $("#next_session").prop("disabled", true);
       }
       
       //Setup Summary Stats here so that those calculations can be reused elsewhere
@@ -630,9 +651,9 @@
       temp_count = (question_number>question_count?question_number:question_count);
       for (i=1; i <= temp_count; i++) {
         if (i==question_number) {
-          question_quick_nav += '<option value="'+i+'"'+(i==question_number?' selected':'')+'>'+i+" of "+question_count+'</option>';
+          question_quick_nav += '<option value="'+i+'" selected>'+i+" of "+question_count+'</option>';
         } else {
-          question_quick_nav += '<option value="'+i+'"'+(i==question_number?' selected':'')+'>'+i+" of "+question_count+' - '+question_names[i]+'</option>';
+          question_quick_nav += '<option value="'+i+'">'+i+" of "+question_count+' - '+question_names[i]+'</option>';
         }
       }
       question_quick_nav += '</select>';
