@@ -400,6 +400,13 @@
       session_quick_nav += '</select>';
       $("#session_display_count").html(session_quick_nav);
 
+      //Change Next Question to New Question if that is reality
+      if (current_session >= session_count) {
+        $("#next_session").text("New Session");
+      } else {
+        $("#next_session").text("Next Session");
+      }
+      
       //Disable Next Session Button if this Session has no data
       if (question_count > 1) {
         $("#next_session").prop("disabled", false);
@@ -794,6 +801,13 @@
         $("#previous_question").prop("disabled", true);
       } else {
         $("#previous_question").prop("disabled", false);
+      }
+
+      //Change Next Question to New Question if that is reality
+      if (question_number >= question_count) {
+        $("#next_question").text("New Question");
+      } else {
+        $("#next_question").text("Next Question");
       }
 
       //Disable Next Question Button if max possible points is not set
