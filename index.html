@@ -632,6 +632,7 @@
         } else {
           $("#team_"+i+"_points_label").text(team_names[i]+"'s score");
         }
+        $("#team_"+i+"_name").val(team_names[i]);
       }
 
       //Set up Blocks/Groups
@@ -671,6 +672,8 @@
         $( "#question_block" ).controlgroup( "destroy" );
         $("#block_"+i+"_label").html(block_names[i]);
         $( "#question_block" ).controlgroup();
+
+        $("#block_"+i+"_name").val(block_names[i]);
         //Check off saved block/group
         if (i == current_selected_block) {
           $("#question_block_"+i).prop("checked", true);
