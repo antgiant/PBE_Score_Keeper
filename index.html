@@ -791,9 +791,13 @@
       if (ignore_question == "true") {
         $("#ignore_question").prop("checked", true);
         $("#ignore_question_warning").show();
+        $("#ignored_question").css("opacity", 0.25);
+        $("#ignored_question").css("pointer-events", "none");
       } else {
         $("#ignore_question").prop("checked", false);
         $("#ignore_question_warning").hide();
+        $("#ignored_question").css("opacity", 1);
+        $("#ignored_question").css("pointer-events", "initial");
       }
 
       //Refresh display
@@ -880,6 +884,7 @@
       <div>
         <div data-role="score_entry">
           <div><label><span id="ignore_question_warning" style="font-size: xx-large;display:none">🚫</span><input type="checkbox" id="ignore_question" onchange="local_data_update(this)">Ignore this Question in Score Calculations</label></div>
+          <div id="ignored_question">
             <h4><span id="current_question_title" contenteditable="plaintext-only" onblur="local_data_update(this)">Question</span> (<span id="current_question_title_count" ></span>)</h4>
             <fieldset>
               <legend id = "points_legend">Possible Points for Question</legend>
@@ -891,9 +896,10 @@
               <div id="question_block"></div>
             </fieldset>
             <div id = "question_teams"></div>
-            <br>
-            <button id="previous_question" onclick='local_data_update(this)'>Previous Question</button>
-            <button id="next_question" onclick='local_data_update(this)'>Next Question</button>
+          </div>
+          <br>
+          <button id="previous_question" onclick='local_data_update(this)'>Previous Question</button>
+          <button id="next_question" onclick='local_data_update(this)'>Next Question</button>
         </div>
       </div>
       <h3>Score by Team</h3>
