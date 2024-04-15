@@ -136,6 +136,14 @@
         }
         if (question_count > 1) {
           session_names = JSON.parse(localStorage.getItem("session_names"));
+          //Get current settings to copy them forward
+          temp_max_points = localStorage.getItem("session_"+current_session+"_max_points_per_question");
+          temp_rounding = localStorage.getItem("session_"+current_session+"_rounding");
+          temp_block_names = localStorage.getItem("session_"+current_session+"_block_names");
+          temp_team_names = localStorage.getItem("session_"+current_session+"_team_names");
+          mythical_option = false;
+
+          //Move Current session forward one
           current_session++;
           localStorage.setItem("current_session", current_session);
           if (current_session > (session_names.length - 1)) {
@@ -144,10 +152,10 @@
             var date = d.toLocaleString();
             session_names.push("Session "+date);
             localStorage.setItem("session_names", JSON.stringify(session_names));
-            localStorage.setItem("session_"+current_session+"_max_points_per_question", JSON.stringify(12));
-            localStorage.setItem("session_"+current_session+"_rounding", JSON.stringify("false"));
-            localStorage.setItem("session_"+current_session+"_block_names", JSON.stringify(["No Block/Group", "Block/Group 1"]));
-            localStorage.setItem("session_"+current_session+"_team_names", JSON.stringify(["", "Team 1"]));
+            localStorage.setItem("session_"+current_session+"_max_points_per_question", (mythical_option?JSON.stringify(12):temp_max_points));
+            localStorage.setItem("session_"+current_session+"_rounding", (mythical_option?JSON.stringify("false"):temp_rounding));
+            localStorage.setItem("session_"+current_session+"_block_names", (mythical_option?JSON.stringify(["No Block/Group", "Block/Group 1"]):temp_block_names));
+            localStorage.setItem("session_"+current_session+"_team_names", (mythical_option?JSON.stringify(["", "Team 1"]):temp_team_names));
             localStorage.setItem("session_"+current_session+"_question_names", JSON.stringify(["", "Question 1"]));
             localStorage.setItem("session_"+current_session+"_current_question", JSON.stringify(1));
             localStorage.setItem("session_"+current_session+"_question_1_score", JSON.stringify(0));
