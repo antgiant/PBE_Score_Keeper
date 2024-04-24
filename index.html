@@ -871,6 +871,9 @@
           <div><label><span id="ignore_question_warning" style="font-size: xx-large;display:none">🚫</span><input type="checkbox" id="ignore_question" onchange="local_data_update(this)">Ignore this Question in Score Calculations</label></div>
           <div id="ignored_question">
             <h4><span id="current_question_title" contenteditable="plaintext-only" onblur="local_data_update(this)">Question</span> (<span id="current_question_title_count" ></span>)</h4>
+            <button id="previous_question" onclick='local_data_update(this)'>Previous Question</button>
+            <button id="next_question" onclick='local_data_update(this)'>Next Question</button>
+            <br><br>
             <fieldset>
               <legend id = "points_legend">Possible Points for Question</legend>
               <div id="question_score">
@@ -882,9 +885,6 @@
             </fieldset>
             <div id = "question_teams"></div>
           </div>
-          <br>
-          <button id="previous_question" onclick='local_data_update(this)'>Previous Question</button>
-          <button id="next_question" onclick='local_data_update(this)'>Next Question</button>
         </div>
       </div>
       <h3>Score by Team</h3>
