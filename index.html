@@ -128,7 +128,7 @@
         $("#session_quick_nav").focus();
       }
       //Goto next session
-      else if (updated_id == "next_session") {
+      else if (updated_id == "new_session") {
         question_names = JSON.parse(localStorage.getItem("session_"+current_session+"_question_names"));
         question_count = question_names.length - 1;
         if (Number(localStorage.getItem("session_"+current_session+"_question_"+question_count+"_score")) == 0) {
@@ -144,33 +144,24 @@
           mythical_option = false;
 
           //Move Current session forward one
-          current_session++;
+          current_session = session_names.length;
           localStorage.setItem("current_session", current_session);
-          if (current_session > (session_names.length - 1)) {
-            //Setup session defaults since there isn't one for this
-            var d = new Date();
-            var date = d.toLocaleString();
-            session_names.push("Session "+date);
-            localStorage.setItem("session_names", JSON.stringify(session_names));
-            localStorage.setItem("session_"+current_session+"_max_points_per_question", (mythical_option?JSON.stringify(12):temp_max_points));
-            localStorage.setItem("session_"+current_session+"_rounding", (mythical_option?JSON.stringify("false"):temp_rounding));
-            localStorage.setItem("session_"+current_session+"_block_names", (mythical_option?JSON.stringify(["No Block/Group", "Block/Group 1"]):temp_block_names));
-            localStorage.setItem("session_"+current_session+"_team_names", (mythical_option?JSON.stringify(["", "Team 1"]):temp_team_names));
-            localStorage.setItem("session_"+current_session+"_question_names", JSON.stringify(["", "Question 1"]));
-            localStorage.setItem("session_"+current_session+"_current_question", JSON.stringify(1));
-            localStorage.setItem("session_"+current_session+"_question_1_score", JSON.stringify(0));
-            localStorage.setItem("session_"+current_session+"_question_1_ignore", JSON.stringify("false"));
-            localStorage.setItem("session_"+current_session+"_question_1_block", JSON.stringify(0));
-            localStorage.setItem("session_"+current_session+"_question_1_team_1_score", JSON.stringify(0));
-          }
-        }
-      }
 
-      //Goto previous session
-      else if (updated_id == "previous_session") {
-        if (current_session > 1) {
-          current_session--;
-          localStorage.setItem("current_session", current_session);
+          //Setup session defaults since there isn't one for this
+          var d = new Date();
+          var date = d.toLocaleString();
+          session_names.push("Session "+date);
+          localStorage.setItem("session_names", JSON.stringify(session_names));
+          localStorage.setItem("session_"+current_session+"_max_points_per_question", (mythical_option?JSON.stringify(12):temp_max_points));
+          localStorage.setItem("session_"+current_session+"_rounding", (mythical_option?JSON.stringify("false"):temp_rounding));
+          localStorage.setItem("session_"+current_session+"_block_names", (mythical_option?JSON.stringify(["No Block/Group", "Block/Group 1"]):temp_block_names));
+          localStorage.setItem("session_"+current_session+"_team_names", (mythical_option?JSON.stringify(["", "Team 1"]):temp_team_names));
+          localStorage.setItem("session_"+current_session+"_question_names", JSON.stringify(["", "Question 1"]));
+          localStorage.setItem("session_"+current_session+"_current_question", JSON.stringify(1));
+          localStorage.setItem("session_"+current_session+"_question_1_score", JSON.stringify(0));
+          localStorage.setItem("session_"+current_session+"_question_1_ignore", JSON.stringify("false"));
+          localStorage.setItem("session_"+current_session+"_question_1_block", JSON.stringify(0));
+          localStorage.setItem("session_"+current_session+"_question_1_team_1_score", JSON.stringify(0));
         }
       }
 
@@ -387,13 +378,6 @@
       current_selected_block = JSON.parse(localStorage.getItem("session_"+current_session+"_question_"+question_number+"_block"));
       question_max_points = Number(localStorage.getItem("session_"+current_session+"_question_"+question_number+"_score"));
       ignore_question = JSON.parse(localStorage.getItem("session_"+current_session+"_question_"+question_number+"_ignore"));
-      
-      //Disable Previous Session Button if this is the first Session
-      if (current_session == 1) {
-        $("#previous_session").prop("disabled", true);
-      } else {
-        $("#previous_session").prop("disabled", false);
-      }
 
       //Update Session name to saved name
       $("#session_name").text(session_names[current_session]);
@@ -410,19 +394,12 @@
       }
       session_quick_nav += '</select>';
       $("#session_display_count").html(session_quick_nav);
-
-      //Change Next Question to New Question if that is reality
-      if (current_session >= session_count) {
-        $("#next_session").text("New Session");
-      } else {
-        $("#next_session").text("Next Session");
-      }
       
       //Disable Next Session Button if this Session has no data
       if (question_count > 1) {
-        $("#next_session").prop("disabled", false);
+        $("#new_session").prop("disabled", false);
       } else {
-        $("#next_session").prop("disabled", true);
+        $("#new_session").prop("disabled", true);
       }
       
       //Setup Summary Stats here so that those calculations can be reused elsewhere
@@ -859,10 +836,7 @@
         <p>This is a score keeper for the Pathfinder Bible Experience (aka the Bible Bowl). Please enter your number of teams as well as blocks/groups below so that the scoring grid can be created</p>
         <h5>Data Storage Note</h5>
         <p>Data is stored only on your device, and is not shared in any way with any server. This also means that if you change devices your data will not appear on the new device.</p>
-        <h4><span id="session_name" contenteditable="plaintext-only" onblur="local_data_update(this)"></span> (<span id="session_display_count"></span>)</h4>
-        <button id="previous_session" onclick='local_data_update(this)'>Previous Session</button>
-        <button id="next_session" onclick='local_data_update(this)'>Next Session</button>
-        <br><br>
+        <h4><span id="session_name" contenteditable="plaintext-only" onblur="local_data_update(this)"></span> (<span id="session_display_count"></span>) <button id="new_session" onclick='local_data_update(this)'>New Session</button></h4>
         <fieldset>
           <legend>Set up your Teams</legend>
           <span id="total_teams"></span> <span id="total_teams_text">teams</span> <button id="total_teams_decrease" onclick='local_data_update(this)'>-</button> <button id="total_teams_increase" onclick='local_data_update(this)'>+</button><br>
