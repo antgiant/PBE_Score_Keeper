@@ -15,12 +15,12 @@
     initialize_state();
 
     function initialize_display() {
-      //Setup Accordion display
+      //Set up Accordion display
       $("#accordion").accordion({
         heightStyle: "content"
       });
 
-      //Setup score entry buttons
+      //Set up score entry buttons
       $( "#question_score" ).controlgroup();
       $( "#question_block" ).controlgroup();
       $( "#rounding" ).controlgroup();
@@ -147,7 +147,7 @@
           current_session = session_names.length;
           localStorage.setItem("current_session", current_session);
 
-          //Setup session defaults since there isn't one for this
+          //Set up session defaults since there isn't one for this
           var d = new Date();
           var date = d.toLocaleString();
           session_names.push("Session "+date);
@@ -382,7 +382,7 @@
       //Update Session name to saved name
       $("#session_name").text(session_names[current_session]);
 
-      //Setup Session quick navigation
+      //Set up Session quick navigation
       session_quick_nav = '<select name="session_quick_nav" id="session_quick_nav" onchange="local_data_update(this)"">';
       temp_count = (current_session>session_count?current_session:session_count);
       for (i=1; i <= temp_count; i++) {
@@ -402,7 +402,7 @@
         $("#new_session").prop("disabled", true);
       }
       
-      //Setup Summary Stats here so that those calculations can be reused elsewhere
+      //Set up Summary Stats here so that those calculations can be reused elsewhere
       //Update Team Scores
       //Create empty summary array
       team_score_summary = new Array();
@@ -578,7 +578,7 @@
 
       //Update displayed Question Log
       $("#scores").html(temp_output);
-      //Setup Teams
+      //Set up Teams
 
       //Show Team Count
       $("#total_teams").text(team_count);
@@ -590,7 +590,7 @@
         $("#total_teams_decrease").prop("disabled", false);
       }
 
-      //Setup Team Name Editing
+      //Set up Team Name Editing
       displayed_teams_count = $("#team_names").children().length;
       if (displayed_teams_count < team_count) {
         for (i=displayed_teams_count + 1;i<=team_count;i++) {
@@ -632,7 +632,7 @@
         $("#total_blocks_decrease").prop("disabled", false);
       }
 
-      //Setup Block/Group renaming
+      //Set up Block/Group renaming
       displayed_block_count = $("#block_names").children().length;
       if (displayed_block_count < block_count) {
         for (i=displayed_block_count + 1;i<=block_count;i++) {
@@ -673,7 +673,7 @@
       //Update Question name to saved name
       $("#current_question_title").text(question_names[question_number]);
 
-      //Setup Question quick navigation
+      //Set up Question quick navigation
       question_quick_nav = '<select name="question_quick_nav" id="question_quick_nav" onchange="local_data_update(this)"">';
       temp_count = (question_number>question_count?question_number:question_count);
       for (i=1; i <= temp_count; i++) {
@@ -699,7 +699,7 @@
         $("#max_points_decrease").prop("disabled", false);
       }
       
-      //Setup max possible points for all questions
+      //Set up max possible points for all questions
       current_max_possible_points = $("#question_score").children().length;
       if (current_max_possible_points < max_points) {
         for (i=current_max_possible_points + 1;i<=max_points;i++) {
@@ -742,7 +742,7 @@
       //Add fancy options to new buttons
       $( "#question_score" ).controlgroup( "refresh" );
 
-      //Setup max possible points on this question (for each team)
+      //Set up max possible points on this question (for each team)
       for (i=1;i<=team_count;i++) {
         var current_team_and_question_score = localStorage.getItem("session_"+current_session+"_question_"+question_number+"_team_"+i+"_score");
         var current_point_count = $("#team_"+i+"_score").children().length - 1;
@@ -829,9 +829,9 @@
     <div data-role="header" class="jqm-header">
       <h1>PBE Score Keeper</h1>
     </div>
-    <div data-role="setup" id="accordion">
-      <h3>Setup</h3>
-      <div id="setup">
+    <div id="accordion">
+      <h3>Configuration (Session/Round/Game)</h3>
+      <div data-role="session_configuration" id="session_configuration">
         <h4>Instructions</h4>
         <p>This is a score keeper for the Pathfinder Bible Experience (aka the Bible Bowl). Please enter your number of teams as well as blocks/groups below so that the scoring grid can be created</p>
         <h5>Data Storage Note</h5>
