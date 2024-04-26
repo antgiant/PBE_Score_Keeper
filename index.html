@@ -306,7 +306,7 @@
         localStorage.setItem("session_"+current_session+"_question_"+question_number+"_team_"+team_number+"_score", new_value);
       }
       //Go forward one question
-      else if (updated_id == "next_question") {
+      else if (updated_id == "next_question" || updated_id == "next_question_2") {
         question_number = localStorage.getItem("session_"+current_session+"_current_question");
         question_names = JSON.parse(localStorage.getItem("session_"+current_session+"_question_names"));
         var question_count = question_names.length - 1;
@@ -346,7 +346,7 @@
         }
       }
       //Go to previous question
-      else if (updated_id == "previous_question") {
+      else if (updated_id == "previous_question" || updated_id == "previous_question_2") {
         question_number = localStorage.getItem("session_"+current_session+"_current_question");
         if (question_number > 1) {
           question_number--;
@@ -794,22 +794,28 @@
       //Disable Previous Question Button if this is the first Question
       if (question_number == 1) {
         $("#previous_question").prop("disabled", true);
+        $("#previous_question_2").prop("disabled", true);
       } else {
         $("#previous_question").prop("disabled", false);
+        $("#previous_question_2").prop("disabled", false);
       }
 
       //Change Next Question to New Question if that is reality
       if (question_number >= question_count) {
         $("#next_question").text("New Question");
+        $("#next_question_2").text("New Question");
       } else {
         $("#next_question").text("Next Question");
+        $("#next_question_2").text("Next Question");
       }
 
       //Disable Next Question Button if max possible points is not set
       if (question_max_points == 0) {
         $("#next_question").prop("disabled", true);
+        $("#next_question_2").prop("disabled", true);
       } else {
         $("#next_question").prop("disabled", false);
+        $("#next_question_2").prop("disabled", false);
       }
     }
   </script>
@@ -883,7 +889,9 @@
               <legend>Block/Group</legend>
               <div id="question_block"></div>
             </fieldset>
-            <div id = "question_teams"></div>
+            <div id = "question_teams"></div><br>
+            <button id="previous_question_2" onclick='local_data_update(this)'>Previous Question</button>
+            <button id="next_question_2" onclick='local_data_update(this)'>Next Question</button>
           </div>
         </div>
       </div>
