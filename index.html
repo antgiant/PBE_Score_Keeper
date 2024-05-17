@@ -357,6 +357,45 @@
       else if (updated_id == "question_quick_nav") {
         localStorage.setItem("session_"+current_session+"_current_question", new_value);
       }
+      //Delete current session
+      else if (updated_id == "session_delete") {
+        //Only Delete if more than one session exists
+        session_names = JSON.parse(localStorage.getItem("session_names"));
+        if (session_names.length > 2) {
+          if (window.confirm("Are you sure you want to irreversably delete this Session (Round/Game)?")) {
+            //Use loop starting with current session number to prevent accidental overwriting
+            for (i = current_session; i < session_names.length; i++) {
+              session_check = new RegExp(`session_${i}_(.*)`);
+              new_session = i - 1;
+              for (let key of Object.keys(localStorage)) {
+                if (key.search(session_check) > -1) {
+                  if (i == current_session) {
+                  //Erase Current Session's data
+                    localStorage.removeItem(key);
+                  } else {
+                    //Renumber all sessions after current session
+                    temp = key.replace(session_check,"session_"+(new_session)+"_$1")
+                    localStorage.setItem(temp, localStorage.getItem(key));
+                    localStorage.removeItem(key);
+                  }
+                }
+              }
+            }
+            //Delete the current session
+            session_names.splice(current_session, 1);
+            localStorage.setItem("session_names", JSON.stringify(session_names));
+
+            if (current_session > session_names.length - 1) {
+              current_session--;
+              localStorage.setItem("current_session", current_session);
+            }
+          }
+          alert("Deleted")
+        }
+        else {
+          alert("You may not delete the only Session (Round/Game)");
+        }
+      }
     }
     
     function sync_data_to_display() {
@@ -394,7 +433,7 @@
       }
       session_quick_nav += '</select>';
       $("#session_display_count").html(session_quick_nav);
-      
+
       //Disable Next Session Button if this Session has no data
       if (question_count > 1) {
         $("#new_session").prop("disabled", false);
@@ -917,6 +956,15 @@
       <div>
         <div data-role="scores" id="scores">
           Question Log Goes Here
+        </div>
+      </div>
+      <h3>Settings</h3>
+      <div>
+        <div data-role="settings" id="settings">
+          <fieldset>
+            <legend id = "danger_label">Danger Zone</legend>
+            <button id="session_delete" onclick='local_data_update(this)'>Delete this Session (Round/Game)</button>
+          </fieldset>
         </div>
       </div>
     </div>
