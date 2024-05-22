@@ -264,9 +264,9 @@
       //Update Question Title
       else if (updated_id == "current_question_title") {
         new_value = $("#current_question_title").text();
-        question_number = localStorage.getItem("session_"+current_session+"_current_question");
+        current_question = localStorage.getItem("session_"+current_session+"_current_question");
         question_names = JSON.parse(localStorage.getItem("session_"+current_session+"_question_names"));
-        question_names[question_number] = new_value;
+        question_names[current_question] = new_value;
         localStorage.setItem("session_"+current_session+"_question_names", JSON.stringify(question_names));
         $("#question_quick_nav").focus();
       }
@@ -281,80 +281,80 @@
       //Update Ignore Question Status
       else if (updated_id == "ignore_question") {
           temp = $("#ignore_question").prop("checked");
-          localStorage.setItem("session_"+current_session+"_question_"+question_number+"_ignore", JSON.stringify(temp+""));
+          localStorage.setItem("session_"+current_session+"_question_"+current_question+"_ignore", JSON.stringify(temp+""));
       }
       //Update Current Question Max Possible Score
       else if (updated_id.search(question_max_points_check) > -1) {
-        question_number = localStorage.getItem("session_"+current_session+"_current_question");
+        current_question = localStorage.getItem("session_"+current_session+"_current_question");
         //Disable selecting max possible score lower than already earned score
         var team_count = (JSON.parse(localStorage.getItem("session_"+current_session+"_team_names"))).length - 1;
         var temp_max = 0;
         for (i = 1; i <= team_count; i++) {
-          if (temp_max < Number(localStorage.getItem("session_"+current_session+"_question_"+question_number+"_team_"+i+"_score"))) {
-            temp_max = Number(localStorage.getItem("session_"+current_session+"_question_"+question_number+"_team_"+i+"_score"));
+          if (temp_max < Number(localStorage.getItem("session_"+current_session+"_question_"+current_question+"_team_"+i+"_score"))) {
+            temp_max = Number(localStorage.getItem("session_"+current_session+"_question_"+current_question+"_team_"+i+"_score"));
           }
         }
         if (new_value >= temp_max) {
-          localStorage.setItem("session_"+current_session+"_question_"+question_number+"_score", new_value);
+          localStorage.setItem("session_"+current_session+"_question_"+current_question+"_score", new_value);
         }
       }
       //Update Current Question's Block/Group
       else if (updated_id.search(question_block_check) > -1) {
-        question_number = localStorage.getItem("session_"+current_session+"_current_question");
-        localStorage.setItem("session_"+current_session+"_question_"+question_number+"_block", new_value);
+        current_question = localStorage.getItem("session_"+current_session+"_current_question");
+        localStorage.setItem("session_"+current_session+"_question_"+current_question+"_block", new_value);
       }
       //Update score for a team on the current question
       else if (updated_id.search(team_question_score_check) > -1) {
-        question_number = localStorage.getItem("session_"+current_session+"_current_question");
+        current_question = localStorage.getItem("session_"+current_session+"_current_question");
         team_number = updated_id.match(team_question_score_check)[1];
-        localStorage.setItem("session_"+current_session+"_question_"+question_number+"_team_"+team_number+"_score", new_value);
+        localStorage.setItem("session_"+current_session+"_question_"+current_question+"_team_"+team_number+"_score", new_value);
       }
       //Go forward one question
       else if (updated_id == "next_question" || updated_id == "next_question_2") {
-        question_number = localStorage.getItem("session_"+current_session+"_current_question");
+        current_question = localStorage.getItem("session_"+current_session+"_current_question");
         question_names = JSON.parse(localStorage.getItem("session_"+current_session+"_question_names"));
         var question_count = question_names.length - 1;
-        if (question_number == question_count) {
+        if (current_question == question_count) {
           //Only move forward if current question has a max possible score set
-          question_max_points = Number(localStorage.getItem("session_"+current_session+"_question_"+question_number+"_score"));
+          question_max_points = Number(localStorage.getItem("session_"+current_session+"_question_"+current_question+"_score"));
           if (question_max_points > 0) {
             //Add a new question
 
             //Move current Question forward one
-            question_number++;
-            localStorage.setItem("session_"+current_session+"_current_question", question_number);
+            current_question++;
+            localStorage.setItem("session_"+current_session+"_current_question", current_question);
 
             //Add new question name
-            question_names.push("Question "+question_number);
+            question_names.push("Question "+current_question);
             localStorage.setItem("session_"+current_session+"_question_names", JSON.stringify(question_names));
 
             //Set new question possible score to 0
-            localStorage.setItem("session_"+current_session+"_question_"+question_number+"_score", 0);
+            localStorage.setItem("session_"+current_session+"_question_"+current_question+"_score", 0);
 
             //Set new question block/group to 0 (aka none)
-            localStorage.setItem("session_"+current_session+"_question_"+question_number+"_block", 0);
+            localStorage.setItem("session_"+current_session+"_question_"+current_question+"_block", 0);
 
             //Set new question to not be ignored
-            localStorage.setItem("session_"+current_session+"_question_"+question_number+"_ignore", JSON.stringify("false"));
+            localStorage.setItem("session_"+current_session+"_question_"+current_question+"_ignore", JSON.stringify("false"));
 
             //Set default score for all teams on this question to 0
             var team_count = (JSON.parse(localStorage.getItem("session_"+current_session+"_team_names"))).length - 1;
             for (i = 1; i <= team_count; i++) {
-              localStorage.setItem("session_"+current_session+"_question_"+question_number+"_team_"+i+"_score", 0);
+              localStorage.setItem("session_"+current_session+"_question_"+current_question+"_team_"+i+"_score", 0);
             }
           }
         } else {
           //Move forward to existing quesiton
-          question_number++;
-          localStorage.setItem("session_"+current_session+"_current_question", question_number);
+          current_question++;
+          localStorage.setItem("session_"+current_session+"_current_question", current_question);
         }
       }
       //Go to previous question
       else if (updated_id == "previous_question" || updated_id == "previous_question_2") {
-        question_number = localStorage.getItem("session_"+current_session+"_current_question");
-        if (question_number > 1) {
-          question_number--;
-          localStorage.setItem("session_"+current_session+"_current_question", question_number);
+        current_question = localStorage.getItem("session_"+current_session+"_current_question");
+        if (current_question > 1) {
+          current_question--;
+          localStorage.setItem("session_"+current_session+"_current_question", current_question);
         }
       }
       //Jump to specific question
@@ -417,10 +417,10 @@
       if (Number(localStorage.getItem("session_"+current_session+"_question_"+question_count+"_score")) == 0) {
         question_count--;
       }
-      question_number = localStorage.getItem("session_"+current_session+"_current_question");
-      current_selected_block = JSON.parse(localStorage.getItem("session_"+current_session+"_question_"+question_number+"_block"));
-      question_max_points = Number(localStorage.getItem("session_"+current_session+"_question_"+question_number+"_score"));
-      ignore_question = JSON.parse(localStorage.getItem("session_"+current_session+"_question_"+question_number+"_ignore"));
+      current_question = localStorage.getItem("session_"+current_session+"_current_question");
+      current_selected_block = JSON.parse(localStorage.getItem("session_"+current_session+"_question_"+current_question+"_block"));
+      question_max_points = Number(localStorage.getItem("session_"+current_session+"_question_"+current_question+"_score"));
+      ignore_question = JSON.parse(localStorage.getItem("session_"+current_session+"_question_"+current_question+"_ignore"));
 
       //Update Session name to saved name
       $("#session_name").text(session_names[current_session]);
@@ -652,14 +652,14 @@
       $( "#question_block" ).controlgroup( "refresh" );
 
       //Update Question name to saved name
-      $("#current_question_title").text(question_names[question_number]);
+      $("#current_question_title").text(question_names[current_question]);
 
       //Set up Question quick navigation
       question_quick_nav = '<select name="question_quick_nav" id="question_quick_nav" onchange="local_data_update(this)"">';
-      temp_count = (question_number>question_count?question_number:question_count);
+      temp_count = (current_question>question_count?current_question:question_count);
       for (i=1; i <= temp_count; i++) {
         temp_ignore_question = JSON.parse(localStorage.getItem("session_"+current_session+"_question_"+i+"_ignore"));
-        if (i==question_number) {
+        if (i==current_question) {
           question_quick_nav += '<option value="'+i+'" selected>'+(temp_ignore_question == "true"?"🚫":"")+i+" of "+question_count+'</option>';
         } else {
           question_quick_nav += '<option value="'+i+'">'+(temp_ignore_question == "true"?"🚫":"")+i+" of "+question_count+' - '+question_names[i]+'</option>';
@@ -708,8 +708,8 @@
       //Disable selecting max possible score lower than already earned score
       var temp_max = 0;
       for (i = 1; i <= team_count; i++) {
-        if (temp_max < Number(localStorage.getItem("session_"+current_session+"_question_"+question_number+"_team_"+i+"_score"))) {
-          temp_max = Number(localStorage.getItem("session_"+current_session+"_question_"+question_number+"_team_"+i+"_score"));
+        if (temp_max < Number(localStorage.getItem("session_"+current_session+"_question_"+current_question+"_team_"+i+"_score"))) {
+          temp_max = Number(localStorage.getItem("session_"+current_session+"_question_"+current_question+"_team_"+i+"_score"));
         }
       }
       for (i = 0; i < max_points; i++) {
@@ -725,7 +725,7 @@
 
       //Set up max possible points on this question (for each team)
       for (i=1;i<=team_count;i++) {
-        var current_team_and_question_score = localStorage.getItem("session_"+current_session+"_question_"+question_number+"_team_"+i+"_score");
+        var current_team_and_question_score = localStorage.getItem("session_"+current_session+"_question_"+current_question+"_team_"+i+"_score");
         var current_point_count = $("#team_"+i+"_score").children().length - 1;
         if (current_point_count < question_max_points) {
           //Add new
@@ -773,7 +773,7 @@
       $( "#rounding" ).controlgroup("refresh");
 
       //Disable Previous Question Button if this is the first Question
-      if (question_number == 1) {
+      if (current_question == 1) {
         $("#previous_question").prop("disabled", true);
         $("#previous_question_2").prop("disabled", true);
       } else {
@@ -782,7 +782,7 @@
       }
 
       //Change Next Question to New Question if that is reality
-      if (question_number >= question_count) {
+      if (current_question >= question_count) {
         $("#next_question").text("New Question");
         $("#next_question_2").text("New Question");
       } else {
@@ -807,7 +807,7 @@
         question_count = temp_question_count;
       }
       team_count = JSON.parse(localStorage.getItem("session_"+current_session+"_team_names")).length - 1;
-      
+
       //Create empty summary array
       team_score_summary = new Array();
       for (i=0; i < team_count; i++) {
