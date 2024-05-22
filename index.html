@@ -452,18 +452,6 @@
       //Fill in Team Placement and create output table
       temp_output = "<table><thead><tr><th>Team Name</th><th>Percent</th><th>Score</th><th>Placement</th></tr></thead><tbody>";
       for (i=1; i <= team_count; i++) {
-        if (rounding == "true") {
-          temp_total = highest_team_score;
-        } else {
-          temp_total = team_score_summary[i-1][1];
-        }
-        if (team_score_summary[i-1][0]/temp_total >= 0.9) {
-          team_score_summary[i-1][2] = "First Place";
-        } else if (team_score_summary[i-1][0]/temp_total >= 0.8) {
-          team_score_summary[i-1][2] = "Second Place";
-        } else {
-          team_score_summary[i-1][2] = "Third Place";
-        }
         temp_output = temp_output+"<tr><td>"+team_names[i]+"</td>";
         temp_output = temp_output+"<td>"+((team_score_summary[i-1][0]/team_score_summary[i-1][1])*100).toFixed(2)+"%</td>";
         temp_output = temp_output+"<td>"+team_score_summary[i-1][0]+"/"+team_score_summary[i-1][1]+"</td>";
@@ -481,18 +469,6 @@
       temp_output = "<table><thead><tr><th>Block/Group Name</th><th>Percent</th><th>Score</th><th>Placement</th></tr></thead><tbody>";
       for (i=0; i <= block_count; i++) {
         if (block_score_summary[i][1] > 0) {
-          if (rounding == "true") {
-            temp_total = highest_block_score;
-          } else {
-            temp_total = block_score_summary[i][1];
-          }
-          if (block_score_summary[i][0]/temp_total >= 0.9) {
-            block_score_summary[i][2] = "First Place";
-          } else if (block_score_summary[i][0]/temp_total >= 0.8) {
-            block_score_summary[i][2] = "Second Place";
-          } else {
-            block_score_summary[i][2] = "Third Place";
-          }
           temp_output = temp_output+"<tr><td>"+block_names[i]+"</td>";
           temp_output = temp_output+"<td>"+((block_score_summary[i][0]/block_score_summary[i][1])*100).toFixed(2)+"%</td>";
           temp_output = temp_output+"<td>"+block_score_summary[i][0]+"/"+block_score_summary[i][1]+"</td>";
@@ -807,6 +783,7 @@
         question_count = temp_question_count;
       }
       team_count = JSON.parse(localStorage.getItem("session_"+current_session+"_team_names")).length - 1;
+      rounding = JSON.parse(localStorage.getItem("session_"+current_session+"_rounding"));
 
       //Create empty summary array
       team_score_summary = new Array();
@@ -831,6 +808,20 @@
           highest_team_score = team_earned;
         }
       }
+      for (i=1; i <= team_count; i++) {
+        if (rounding == "true") {
+          temp_total = highest_team_score;
+        } else {
+          temp_total = team_score_summary[i-1][1];
+        }
+        if (team_score_summary[i-1][0]/temp_total >= 0.9) {
+          team_score_summary[i-1][2] = "First Place";
+        } else if (team_score_summary[i-1][0]/temp_total >= 0.8) {
+          team_score_summary[i-1][2] = "Second Place";
+        } else {
+          team_score_summary[i-1][2] = "Third Place";
+        }
+      }
       return team_score_summary;
     }
 
@@ -842,6 +833,7 @@
       }
       team_count = JSON.parse(localStorage.getItem("session_"+current_session+"_team_names")).length - 1;
       block_count = JSON.parse(localStorage.getItem("session_"+current_session+"_block_names")).length - 1;
+      rounding = JSON.parse(localStorage.getItem("session_"+current_session+"_rounding"));
 
       //Create empty summary array
       block_score_summary = new Array();
@@ -866,6 +858,22 @@
         block_score_summary[i][1] = block_possible;
         if (block_earned > highest_block_score) {
           highest_block_score = block_earned;
+        }
+      }
+      for (i=0; i <= block_count; i++) {
+        if (block_score_summary[i][1] > 0) {
+          if (rounding == "true") {
+            temp_total = highest_block_score;
+          } else {
+            temp_total = block_score_summary[i][1];
+          }
+          if (block_score_summary[i][0]/temp_total >= 0.9) {
+            block_score_summary[i][2] = "First Place";
+          } else if (block_score_summary[i][0]/temp_total >= 0.8) {
+            block_score_summary[i][2] = "Second Place";
+          } else {
+            block_score_summary[i][2] = "Third Place";
+          }
         }
       }
       return block_score_summary;
