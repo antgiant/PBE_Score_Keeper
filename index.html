@@ -361,6 +361,11 @@
       else if (updated_id == "question_quick_nav") {
         localStorage.setItem("session_"+current_session+"_current_question", new_value);
       }
+      //Export team data for session
+      else if (updated_id == "export_team") {
+        let temp = get_team_score_summary();
+        downloadBlob(arrayToCsv(temp), 'team_data.csv', 'text/csv;charset=utf-8;');
+      }
       //Delete current session
       else if (updated_id == "session_delete") {
         //Only Delete if more than one session exists
@@ -452,10 +457,10 @@
       //Fill in Team Placement and create output table
       temp_output = "<table><thead><tr><th>Team Name</th><th>Percent</th><th>Score</th><th>Placement</th></tr></thead><tbody>";
       for (i=1; i <= team_count; i++) {
-        temp_output = temp_output+"<tr><td>"+team_names[i]+"</td>";
-        temp_output = temp_output+"<td>"+((team_score_summary[i-1][0]/team_score_summary[i-1][1])*100).toFixed(2)+"%</td>";
-        temp_output = temp_output+"<td>"+team_score_summary[i-1][0]+"/"+team_score_summary[i-1][1]+"</td>";
-        temp_output = temp_output+"<td>"+team_score_summary[i-1][2]+"</td></tr>\n"
+        temp_output = temp_output+"<tr><td>"+team_score_summary[i][0]+"</td>";
+        temp_output = temp_output+"<td>"+team_score_summary[i][1]+"%</td>";
+        temp_output = temp_output+"<td>"+team_score_summary[i][2]+"</td>";
+        temp_output = temp_output+"<td>"+team_score_summary[i][3]+"</td></tr>\n"
       }
       temp_output = temp_output+"</tbody></table>";
 
@@ -571,7 +576,7 @@
       for (i=1;i<=team_count;i++) {
         var temp_team_score_summary = get_team_score_summary(current_question);
         var temp_team_and_block_score_summary = get_team_and_block_score_summary(current_question);
-        var temp_team_score = " "+((temp_team_score_summary[i-1][0]/temp_team_score_summary[i-1][1])*100).toFixed(2)+"% ("+
+        var temp_team_score = " "+temp_team_score_summary[i][1]+" ("+
                         block_names[current_selected_block]+" "+
                         ((temp_team_and_block_score_summary[i-1][current_selected_block][0]/temp_team_and_block_score_summary[i-1][current_selected_block][1])*100).toFixed(2)+"%)";
         if (team_names[i].slice(-1).toLowerCase() === "s") {
@@ -787,13 +792,15 @@
       } else {
         var question_count = temp_question_count;
       }
-      team_count = JSON.parse(localStorage.getItem("session_"+current_session+"_team_names")).length - 1;
-      rounding = JSON.parse(localStorage.getItem("session_"+current_session+"_rounding"));
+      var team_names = JSON.parse(localStorage.getItem("session_"+current_session+"_team_names"));
+      var team_count = team_names.length - 1;
+      var rounding = JSON.parse(localStorage.getItem("session_"+current_session+"_rounding"));
 
       //Create empty summary array
       team_score_summary = new Array();
+      team_score_summary.push(["Team Name","Percent","Score","Placement","Earned Points","Total Points", "Total Points (Rounded)"]);
       for (var i=0; i < team_count; i++) {
-        team_score_summary.push([],[],[]);
+        team_score_summary.push([team_names[i + 1],,,,,,]);
       }
       //Fill in Team Scores
       highest_team_score = 0;
@@ -807,24 +814,27 @@
             team_possible += Number(localStorage.getItem("session_"+current_session+"_question_"+j+"_score"));
           }
         }
-        team_score_summary[i-1][0] = team_earned;
-        team_score_summary[i-1][1] = team_possible;
+        team_score_summary[i][4] = team_earned;
+        team_score_summary[i][5] = team_possible;
+        team_score_summary[i][1] = ((team_score_summary[i][4]/team_score_summary[i][5])*100).toFixed(2)+"%";
+        team_score_summary[i][2] = team_score_summary[i][4]+"/"+team_score_summary[i][5];
         if (team_earned > highest_team_score) {
           var highest_team_score = team_earned;
         }
       }
       for (var i=1; i <= team_count; i++) {
+        team_score_summary[i][6] = highest_team_score;
         if (rounding == "true") {
           temp_total = highest_team_score;
         } else {
-          temp_total = team_score_summary[i-1][1];
+          temp_total = team_score_summary[i][5];
         }
-        if (team_score_summary[i-1][0]/temp_total >= 0.9) {
-          team_score_summary[i-1][2] = "First Place";
-        } else if (team_score_summary[i-1][0]/temp_total >= 0.8) {
-          team_score_summary[i-1][2] = "Second Place";
+        if (team_score_summary[i][4]/temp_total >= 0.9) {
+          team_score_summary[i][3] = "First Place";
+        } else if (team_score_summary[i][4]/temp_total >= 0.8) {
+          team_score_summary[i][3] = "Second Place";
         } else {
-          team_score_summary[i-1][2] = "Third Place";
+          team_score_summary[i][3] = "Third Place";
         }
       }
       return team_score_summary;
@@ -843,7 +853,7 @@
       //Create empty summary array
       block_score_summary = new Array();
       for (var i=0; i <= block_count; i++) {
-        block_score_summary.push([],[],[]);
+        block_score_summary.push([,,]);
       }
       //Fill in Block/Group Scores
       highest_block_score = 0;
@@ -914,6 +924,34 @@
         }
       }
       return team_and_block_score_summary;
+    }
+
+    /** Convert a 2D array into a CSV string
+     * Source: https://stackoverflow.com/a/68146412
+     */
+    function arrayToCsv(data){
+      return data.map(row =>
+        row
+        .map(String)  // convert every value to String
+        .map(v => v.replaceAll('"', '""'))  // escape double quotes
+        .map(v => `"${v}"`)  // quote it
+        .join(',')  // comma-separated
+      ).join('\r\n');  // rows starting on new lines
+    }
+
+    /** Download contents as a file
+     * Source: https://stackoverflow.com/questions/14964035/how-to-export-javascript-array-info-to-csv-on-client-side
+     */
+    function downloadBlob(content, filename, contentType) {
+      // Create a blob
+      var blob = new Blob([content], { type: contentType });
+      var url = URL.createObjectURL(blob);
+
+      // Create a link to download it
+      var pom = document.createElement('a');
+      pom.href = url;
+      pom.setAttribute('download', filename);
+      pom.click();
     }
   </script>
   <style>
@@ -1016,9 +1054,13 @@
           Question Log Goes Here
         </div>
       </div>
-      <h3>Settings</h3>
+      <h3>Advanced</h3>
       <div>
-        <div data-role="settings" id="settings">
+        <div data-role="Advanced" id="Advanced">
+          <fieldset>
+            <legend id = "export_label">Export</legend>
+            <button id= "export_team" onclick='local_data_update(this)'>Export Score by Team (CSV)</button><br>
+          </fieldset>
           <fieldset>
             <legend id = "danger_label">Danger Zone</legend>
             <button id="session_delete" onclick='local_data_update(this)'>Delete this Session (Round/Game)</button>
@@ -1027,7 +1069,7 @@
       </div>
     </div>
     <footer><p>Have an idea to make this better? <a target="_blank" href="https://github.com/antgiant/PBE_Score_Keeper/issues">Let me know</a>.</p>
-    <p><center>v 1.2.3</center></p></footer>
+    <p><center>v 1.3.0</center></p></footer>
 </body>
 
 </html>
