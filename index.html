@@ -383,7 +383,7 @@
       }
       //Export session to JSON
       else if (updated_id == "export_session_json") {
-        
+        downloadBlob(JSON.stringify(localStorage, filter_to_current_session, 2).replaceAll(" \"session_"+current_session+"_", " \"session_1_"), 'pbe_session_data_' + (new Date().toJSON().slice(0,10)) + '.json', 'application/json; charset=utf-8;');
       }
       //Export all to JSON
       else if (updated_id == "export_all_json") {
@@ -978,6 +978,24 @@
       ).join('\r\n');  // rows starting on new lines
     }
 
+    function filter_to_current_session(key, value) {
+      if (key.substring(0,8) == "session_") {
+        var temp = "session_" + current_session;
+        if (key == "session_names") {
+          return JSON.stringify(["", session_names[current_session]]);
+        }
+        else if (key.substring(0,temp.length) != temp) {
+          return undefined;
+        }
+      }
+      
+      else if (key == "current_session") {
+        return "1";
+      }
+
+      return value;
+    }
+
     /** Download contents as a file
      * Source: https://stackoverflow.com/questions/14964035/how-to-export-javascript-array-info-to-csv-on-client-side
      */
@@ -1116,7 +1134,7 @@
       </div>
     </div>
     <footer><p>Have an idea to make this better? <a target="_blank" href="https://github.com/antgiant/PBE_Score_Keeper/issues">Let me know</a>.</p>
-    <p><center>v 1.4.0</center></p></footer>
+    <p><center>v 1.4.1</center></p></footer>
 </body>
 
 </html>
