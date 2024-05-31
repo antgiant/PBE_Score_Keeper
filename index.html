@@ -387,7 +387,7 @@
       }
       //Export all to JSON
       else if (updated_id == "export_all_json") {
-        
+        downloadBlob(JSON.stringify(localStorage, null, 2), 'all_pbe_score_data_' + (new Date().toJSON().slice(0,10)) + '.json', 'application/json; charset=utf-8;');
       }
       //Delete current session
       else if (updated_id == "session_delete") {
@@ -1105,8 +1105,8 @@
           </fieldset>
           <fieldset>
             <legend id = "export_json_label">Export for Importing (JSON)</legend>
-            <button id= "export_session" onclick='local_data_update(this)'>Export Session (Round/Game)</button><br>
-            <button id= "export_all" onclick='local_data_update(this)'>Export All</button>
+            <button id= "export_session_json" onclick='local_data_update(this)'>Export Session (Round/Game)</button><br>
+            <button id= "export_all_json" onclick='local_data_update(this)'>Export All</button>
           </fieldset>
           <fieldset>
             <legend id = "danger_label">Danger Zone</legend>
@@ -1116,7 +1116,7 @@
       </div>
     </div>
     <footer><p>Have an idea to make this better? <a target="_blank" href="https://github.com/antgiant/PBE_Score_Keeper/issues">Let me know</a>.</p>
-    <p><center>v 1.3.4</center></p></footer>
+    <p><center>v 1.4.0</center></p></footer>
 </body>
 
 </html>
