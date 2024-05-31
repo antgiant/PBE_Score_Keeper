@@ -373,6 +373,8 @@
       }
       //Export team and block data for session
       else if (updated_id == "export_team_and_block") {
+        let temp = get_team_and_block_score_summary();
+        downloadBlob(arrayToCsv(temp), 'team_and_block_data.csv', 'text/csv;charset=utf-8;');
         
       }
       //Export question log data for session
@@ -511,14 +513,12 @@
 
       //Fill in Team and Block/Group scores and create output table
       temp_output = "<table><thead><tr><th>Team Name</th><th>Block/Group Name</th><th>Percent</th><th>Score</th></tr></thead><tbody>";
-      for (i=1; i <= team_count; i++) {
-        for (j=0; j <= block_count; j++) {
-          if (team_and_block_score_summary[i-1][j][1] > 0) {
-            temp_output = temp_output+"<tr><td>"+team_names[i]+"</td>";
-            temp_output = temp_output+"<td>"+block_names[j]+"</td>";
-            temp_output = temp_output+"<td>"+((team_and_block_score_summary[i-1][j][0]/team_and_block_score_summary[i-1][j][1])*100).toFixed(2)+"%</td>";
-            temp_output = temp_output+"<td>"+team_and_block_score_summary[i-1][j][0]+"/"+team_and_block_score_summary[i-1][j][1]+"</td></tr>\n";
-          }
+      for (i=1; i < team_and_block_score_summary.length; i++) {
+        if (team_and_block_score_summary[i][5] > 0) {
+          temp_output = temp_output+"<tr><td>"+team_and_block_score_summary[i][0]+"</td>";
+          temp_output = temp_output+"<td>"+team_and_block_score_summary[i][1]+"</td>";
+          temp_output = temp_output+"<td>"+team_and_block_score_summary[i][2]+"</td>";
+          temp_output = temp_output+"<td>"+team_and_block_score_summary[i][3]+"</td></tr>\n";
         }
       }
       temp_output = temp_output+"</tbody></table>";
@@ -596,9 +596,10 @@
       for (i=1;i<=team_count;i++) {
         var temp_team_score_summary = get_team_score_summary(current_question);
         var temp_team_and_block_score_summary = get_team_and_block_score_summary(current_question);
+        team_and_block_row = (i - 1)*(block_count + 1) + 1 + current_selected_block;
         var temp_team_score = " "+temp_team_score_summary[i][1]+" ("+
                         block_names[current_selected_block]+" "+
-                        ((temp_team_and_block_score_summary[i-1][current_selected_block][0]/temp_team_and_block_score_summary[i-1][current_selected_block][1])*100).toFixed(2)+"%)";
+                        temp_team_and_block_score_summary[team_and_block_row][2]+")";
         if (team_names[i].slice(-1).toLowerCase() === "s") {
           $("#team_"+i+"_points_label").text(team_names[i]+"' score"+temp_team_score);
         } else {
@@ -905,26 +906,31 @@
       } else {
         var question_count = temp_question_count;
       }
-      team_count = JSON.parse(localStorage.getItem("session_"+current_session+"_team_names")).length - 1;
-      block_count = JSON.parse(localStorage.getItem("session_"+current_session+"_block_names")).length - 1;
+      var team_names = JSON.parse(localStorage.getItem("session_"+current_session+"_team_names"));
+      var team_count = team_names.length - 1;
+      var block_names = JSON.parse(localStorage.getItem("session_"+current_session+"_block_names"));
+      var block_count = block_names.length - 1;
 
       //Create empty summary array
       team_and_block_score_summary = new Array();
-      for (var i=0; i < team_count; i++) {
-        team_and_block_score_summary[i] = new Array();
+      team_and_block_score_summary.push(["Team Name","Block/Group Name","Percent","Score","Earned Points","Total Points"]);
+      for (var i=1; i <= team_count; i++) {
         for (var j=0; j <= block_count; j++) {
-          team_and_block_score_summary[i].push([0,0]);
+          team_and_block_score_summary.push([team_names[i],block_names[j],,,0,0]);
         }
       }
       //Fill in Team and Block/Group Scores
-      highest_block_score = 0;
       for (var i=1; i <= team_count; i++) {
+        temp_team_start = (i - 1)*(block_count + 1) + 1;
         for (var j=1; j <= question_count; j++) {
           temp_ignore_question = JSON.parse(localStorage.getItem("session_"+current_session+"_question_"+j+"_ignore"));
           if (temp_ignore_question === "false") {
-            temp_block = Number(localStorage.getItem("session_"+current_session+"_question_"+j+"_block"));
-            team_and_block_score_summary[i-1][temp_block][0] += Number(localStorage.getItem("session_"+current_session+"_question_"+j+"_team_"+i+"_score"));
-            team_and_block_score_summary[i-1][temp_block][1] +=  Number(localStorage.getItem("session_"+current_session+"_question_"+j+"_score"));
+            current_selected_block = Number(localStorage.getItem("session_"+current_session+"_question_"+j+"_block"));
+            temp_row_number = temp_team_start + current_selected_block;
+            team_and_block_score_summary[temp_row_number][4] += Number(localStorage.getItem("session_"+current_session+"_question_"+j+"_team_"+i+"_score"));
+            team_and_block_score_summary[temp_row_number][5] +=  Number(localStorage.getItem("session_"+current_session+"_question_"+j+"_score"));
+            team_and_block_score_summary[temp_row_number][2] = ((team_and_block_score_summary[temp_row_number][4]/team_and_block_score_summary[temp_row_number][5])*100).toFixed(2)+"%";;
+            team_and_block_score_summary[temp_row_number][3] = team_and_block_score_summary[temp_row_number][4]+"/"+team_and_block_score_summary[temp_row_number][5];
           }
         }
       }
@@ -1082,7 +1088,7 @@
       </div>
     </div>
     <footer><p>Have an idea to make this better? <a target="_blank" href="https://github.com/antgiant/PBE_Score_Keeper/issues">Let me know</a>.</p>
-    <p><center>v 1.3.2</center></p></footer>
+    <p><center>v 1.3.3</center></p></footer>
 </body>
 
 </html>
