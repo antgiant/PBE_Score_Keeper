@@ -375,11 +375,11 @@
       else if (updated_id == "export_team_and_block") {
         let temp = get_team_and_block_score_summary();
         downloadBlob(arrayToCsv(temp), 'team_and_block_data.csv', 'text/csv;charset=utf-8;');
-        
       }
       //Export question log data for session
       else if (updated_id == "export_question_log") {
-        
+        let temp = get_question_log();
+        downloadBlob(arrayToCsv(temp), 'question_log_data.csv', 'text/csv;charset=utf-8;');
       }
       //Export session to JSON
       else if (updated_id == "export_session_json") {
@@ -528,33 +528,24 @@
 
       //Update displayed Question Log
       //Create empty summary array
-      question_log_summary = new Array();
-      for (i=1; i <= question_count; i++) {
-        temp_row = Array();
-        temp_row.push(Number(localStorage.getItem("session_"+current_session+"_question_"+i+"_block")));
-        temp_row.push(Number(localStorage.getItem("session_"+current_session  +"_question_"+i+"_score")));
-        for (j=1; j <= team_count; j++) {
-          temp_row.push(Number(localStorage.getItem("session_"+current_session+"_question_"+i+"_team_"+j+"_score")));
-        }
-        question_log_summary.push(temp_row);
-      }
+      question_log_summary = get_question_log();
+      
       //Fill in Team and Block/Group scores and create output table
       temp_output = "<table><thead><tr><th>Question</th><th>Block/Group</th><th>Possible Points</th>";
       for (i=1; i <= team_count; i++) {
         temp_output = temp_output + "<th>"+team_names[i]+" Score</th>";
       }
       temp_output = temp_output + "</tr></thead><tbody>";
-      for (i=1; i <= question_count; i++) {
-        temp_ignore_question = JSON.parse(localStorage.getItem("session_"+current_session+"_question_"+i+"_ignore"));
-        if (temp_ignore_question === "false") {
-          temp_output = temp_output+"<tr><td>"+question_names[i]+"</td>";
-          temp_output = temp_output+"<td>"+block_names[question_log_summary[i-1][0]]+"</td>";
-          temp_output = temp_output+"<td>"+question_log_summary[i-1][1]+"</td>";
+      for (var i=1; i < question_log_summary.length; i++) {
+        if (question_log_summary[i][3] === "false") {
+          temp_output = temp_output+"<tr><td>"+question_log_summary[i][0]+"</td>";
+          temp_output = temp_output+"<td>"+question_log_summary[i][1]+"</td>";
+          temp_output = temp_output+"<td>"+question_log_summary[i][2]+"</td>";
           for (j=1; j <= team_count; j++) {
-            temp_output = temp_output+"<td>"+question_log_summary[i-1][j+1]+"</td>";
+            temp_output = temp_output+"<td>"+question_log_summary[i][j+3]+"</td>";
           }
-          temp_output = temp_output+"</tr>\n"
         }
+        temp_output = temp_output+"</tr>\n"
       }
       temp_output = temp_output+"</tbody></table>";
 
@@ -937,6 +928,43 @@
       return team_and_block_score_summary;
     }
 
+    function get_question_log(temp_question_count = -1) {
+      if (temp_question_count == -1) {
+        var question_count = JSON.parse(localStorage.getItem("session_"+current_session+"_question_names")).length - 1;
+      } else {
+        var question_count = temp_question_count;
+      }
+      var team_names = JSON.parse(localStorage.getItem("session_"+current_session+"_team_names"));
+      var team_count = team_names.length - 1;
+      var block_names = JSON.parse(localStorage.getItem("session_"+current_session+"_block_names"));
+      var block_count = block_names.length - 1;
+
+      //Create empty summary array
+      var temp_row = new Array();
+      temp_row.push("Question");
+      temp_row.push("Block/Group");
+      temp_row.push("Possible Points");
+      temp_row.push("Ignore Question");
+      for (var i=1; i <= team_count; i++) {
+        temp_row.push(team_names[i]);
+      }
+      var question_log_summary = Array()
+      question_log_summary.push(temp_row);
+      
+      for (var i=1; i < question_count; i++) {
+        var temp_row = Array();
+        temp_row.push(question_names[i]);
+        temp_row.push(block_names[Number(localStorage.getItem("session_"+current_session+"_question_"+i+"_block"))]);
+        temp_row.push(Number(localStorage.getItem("session_"+current_session  +"_question_"+i+"_score")));
+        temp_row.push(JSON.parse(localStorage.getItem("session_"+current_session+"_question_"+i+"_ignore")))
+        for (j=1; j <= team_count; j++) {
+          temp_row.push(Number(localStorage.getItem("session_"+current_session+"_question_"+i+"_team_"+j+"_score")));
+        }
+        question_log_summary.push(temp_row);
+      }
+      return question_log_summary;
+    }
+
     /** Convert a 2D array into a CSV string
      * Source: https://stackoverflow.com/a/68146412
      */
@@ -1088,7 +1116,7 @@
       </div>
     </div>
     <footer><p>Have an idea to make this better? <a target="_blank" href="https://github.com/antgiant/PBE_Score_Keeper/issues">Let me know</a>.</p>
-    <p><center>v 1.3.3</center></p></footer>
+    <p><center>v 1.3.4</center></p></footer>
 </body>
 
 </html>
