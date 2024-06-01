@@ -588,9 +588,15 @@
         var temp_team_score_summary = get_team_score_summary(current_question);
         var temp_team_and_block_score_summary = get_team_and_block_score_summary(current_question);
         team_and_block_row = (i - 1)*(block_count + 1) + 1 + current_selected_block;
-        var temp_team_score = " "+temp_team_score_summary[i][1]+" ("+
+        var temp_team_score = "";
+        if (temp_team_score_summary[i][5] > 0) {
+          temp_team_score += " "+temp_team_score_summary[i][1]
+        }
+        if (temp_team_and_block_score_summary[team_and_block_row][5] > 0) {
+          temp_team_score +=" ("+
                         block_names[current_selected_block]+" "+
                         temp_team_and_block_score_summary[team_and_block_row][2]+")";
+        }
         if (team_names[i].slice(-1).toLowerCase() === "s") {
           $("#team_"+i+"_points_label").text(team_names[i]+"' score"+temp_team_score);
         } else {
@@ -1134,7 +1140,7 @@
       </div>
     </div>
     <footer><p>Have an idea to make this better? <a target="_blank" href="https://github.com/antgiant/PBE_Score_Keeper/issues">Let me know</a>.</p>
-    <p><center>v 1.4.1</center></p></footer>
+    <p><center>v 1.4.2</center></p></footer>
 </body>
 
 </html>
