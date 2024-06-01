@@ -1072,12 +1072,13 @@
       <h3>Score Entry</h3>
       <div>
         <div data-role="score_entry">
-          <div><label><span id="ignore_question_warning" style="font-size: xx-large;display:none">🚫</span><input type="checkbox" id="ignore_question" onchange="local_data_update(this)">Ignore this Question in Score Calculations</label></div>
-          <div id="ignored_question">
-            <h4><span id="current_question_title" contenteditable="plaintext-only" onblur="local_data_update(this)">Question</span> (<span id="current_question_title_count" ></span>)</h4>
+          <div>
             <button id="previous_question" onclick='local_data_update(this)'>Previous Question</button>
             <button id="next_question" onclick='local_data_update(this)'>Next Question</button>
             <br><br>
+            <label><span id="ignore_question_warning" style="font-size: xx-large;display:none">🚫</span><input type="checkbox" id="ignore_question" onchange="local_data_update(this)">Ignore this Question in Score Calculations</label></div>
+        <div id="ignored_question">
+            <h4><span id="current_question_title" contenteditable="plaintext-only" onblur="local_data_update(this)">Question</span> (<span id="current_question_title_count" ></span>)</h4>
             <fieldset>
               <legend id = "points_legend">Possible Points for Question</legend>
               <div id="question_score">
@@ -1087,10 +1088,10 @@
               <legend>Block/Group</legend>
               <div id="question_block"></div>
             </fieldset>
-            <div id = "question_teams"></div><br>
-            <button id="previous_question_2" onclick='local_data_update(this)'>Previous Question</button>
-            <button id="next_question_2" onclick='local_data_update(this)'>Next Question</button>
-          </div>
+            <div id = "question_teams"></div>
+          </div><br>
+          <button id="previous_question_2" onclick='local_data_update(this)'>Previous Question</button>
+          <button id="next_question_2" onclick='local_data_update(this)'>Next Question</button>
         </div>
       </div>
       <h3>Score by Team</h3>
@@ -1140,7 +1141,7 @@
       </div>
     </div>
     <footer><p>Have an idea to make this better? <a target="_blank" href="https://github.com/antgiant/PBE_Score_Keeper/issues">Let me know</a>.</p>
-    <p><center>v 1.4.2</center></p></footer>
+    <p><center>v 1.4.3</center></p></footer>
 </body>
 
 </html>
