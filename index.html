@@ -940,6 +940,9 @@
       } else {
         var question_count = temp_question_count;
       }
+      if (Number(localStorage.getItem("session_"+current_session+"_question_"+question_count+"_score")) == 0) {
+        question_count--;
+      }
       var team_names = JSON.parse(localStorage.getItem("session_"+current_session+"_team_names"));
       var team_count = team_names.length - 1;
       var block_names = JSON.parse(localStorage.getItem("session_"+current_session+"_block_names"));
@@ -957,7 +960,7 @@
       var question_log_summary = Array()
       question_log_summary.push(temp_row);
       
-      for (var i=1; i < question_count; i++) {
+      for (var i=1; i <= question_count; i++) {
         var temp_row = Array();
         temp_row.push(question_names[i]);
         temp_row.push(block_names[Number(localStorage.getItem("session_"+current_session+"_question_"+i+"_block"))]);
