@@ -579,8 +579,18 @@
 
       //Update Team Names (Yes this is ineffecient but the numbers are so small it doesn't really matter)
       for (i=1;i<=team_count;i++) {
-        var temp_team_score_summary = get_team_score_summary(current_question);
-        var temp_team_and_block_score_summary = get_team_and_block_score_summary(current_question);
+        question_earned = 0;
+        //Get total points earned for this question
+        for (var j=1; j <= question_count; j++) {
+          question_earned += Number(get_element("session_"+current_session+"_question_"+current_question+"_team_"+j+"_score"));
+        }
+        temp_current_question_number = current_question;
+        //Go back one question if no one has answered this one yet
+        if (question_count == current_question && question_count > 0 && question_earned == 0) {
+          temp_current_question_number--;
+        }
+        var temp_team_score_summary = get_team_score_summary(temp_current_question_number);
+        var temp_team_and_block_score_summary = get_team_and_block_score_summary(temp_current_question_number);
         team_and_block_row = (i - 1)*(block_count + 1) + 1 + current_selected_block;
         var temp_team_score = "";
         if (temp_team_score_summary[i][5] > 0) {
@@ -1224,7 +1234,7 @@
       </div>
     </div>
     <footer><p>Have an idea to make this better? <a target="_blank" href="https://github.com/antgiant/PBE_Score_Keeper/issues">Let me know</a>.</p>
-    <p><center>v 1.4.7</center></p></footer>
+    <p><center>v 1.4.8</center></p></footer>
 </body>
 
 </html>
