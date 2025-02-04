@@ -59,7 +59,7 @@
         var d = new Date();
         var date = d.toLocaleString();
         initial_state = {
-          "data_version": 1.4,
+          "data_version": 1.5,
           "session_names": ["", "Session "+date],
           "current_session": 1,
           "session_1_max_points_per_question": 12,
@@ -71,7 +71,8 @@
           "session_1_question_1_score": 0,
           "session_1_question_1_block": 0,
           "session_1_question_1_ignore": "false",
-          "session_1_question_1_team_1_score": 0
+          "session_1_question_1_team_1_score": 0,
+          "session_1_question_1_team_1_extra_credit": 0
         };
         //Save it
         for (let [key, value] of Object.entries(initial_state)) {
@@ -102,6 +103,8 @@
       const question_max_points_check = /question_score_([0-9]+)/;
       const question_block_check = /question_block_([0-9]+)/;
       const team_question_score_check = /team_([0-9]+)_score_([0-9]+)/;
+      const decrease_team_extra_credit_check = /team_([0-9]+)_extra_credit_decrease/;
+      const increase_team_extra_credit_check = /team_([0-9]+)_extra_credit_increase/;
 
       //Update Session Name
       if (updated_id == "session_name") {
@@ -263,6 +266,46 @@
           temp = $("#ignore_question").prop("checked");
           set_element("session_"+current_session+"_question_"+current_question+"_ignore", JSON.stringify(temp+""));
       }
+      //Delete Extra Credit
+      else if (updated_id == "extra_credit") {
+        //Nothing to do if allowing extra credit
+        if (!$("#extra_credit").prop("checked")) {
+          var temp_extra_credit = 0;
+          var temp = 0;
+          var team_count = (JSON.parse(get_element("session_"+current_session+"_team_names"))).length - 1;
+          for (i=1;i<=team_count;i++) {
+            temp = get_element("session_"+current_session+"_question_"+current_question+"_team_"+i+"_extra_credit");
+            if (temp == undefined) {
+              temp = 0;
+            }
+            $('#team_'+i+'_extra_credit').text(temp);
+            temp_extra_credit += temp;
+          }
+          //Only display warning if there actualy is extra credit to delete
+          if (temp_extra_credit > 0 && window.confirm("Are you sure you want to irreversably delete this question's extra credit?")) {        
+            var team_count = (JSON.parse(get_element("session_"+current_session+"_team_names"))).length - 1;
+            for (i = 1; i <= team_count; i++) {
+              set_element("session_"+current_session+"_question_"+current_question+"_team_"+i+"_extra_credit", 0);
+            }
+          }
+        }
+      }
+      //increase team extra credit
+      else if (updated_id.search(increase_team_extra_credit_check) > -1) {
+        team_number = updated_id.match(increase_team_extra_credit_check)[1];
+        team_extra_credit = Number(get_element("session_"+current_session+"_question_"+current_question+"_team_"+team_number+"_extra_credit"));
+        team_extra_credit++;
+        set_element("session_"+current_session+"_question_"+current_question+"_team_"+team_number+"_extra_credit", team_extra_credit);
+      }
+      //decrease team extra credit
+      else if (updated_id.search(decrease_team_extra_credit_check) > -1) {
+        team_number = updated_id.match(decrease_team_extra_credit_check)[1];
+        team_extra_credit = Number(get_element("session_"+current_session+"_question_"+current_question+"_team_"+team_number+"_extra_credit"));
+        if (team_extra_credit > 0) {
+          team_extra_credit--;
+          set_element("session_"+current_session+"_question_"+current_question+"_team_"+team_number+"_extra_credit", team_extra_credit);
+        }
+      }
       //Update Current Question Max Possible Score
       else if (updated_id.search(question_max_points_check) > -1) {
         current_question = get_element("session_"+current_session+"_current_question");
@@ -321,6 +364,7 @@
             var team_count = (JSON.parse(get_element("session_"+current_session+"_team_names"))).length - 1;
             for (i = 1; i <= team_count; i++) {
               set_element("session_"+current_session+"_question_"+current_question+"_team_"+i+"_score", 0);
+              set_element("session_"+current_session+"_question_"+current_question+"_team_"+i+"_extra_credit", 0);
             }
           }
         } else {
@@ -563,7 +607,8 @@
         for (i=displayed_teams_count + 1;i<=team_count;i++) {
           //Add new
           $("#team_names").append('<label>Team '+i+' Name: <input type = "text" name = "team_'+i+'_name" id = "team_'+i+'_name" onchange="local_data_update(this)" value = "'+team_names[i]+'"><br></label>');
-          $("#question_teams").append('<fieldset><legend id=team_'+i+'_points_label>Team '+team_names[i]+' Score</legend><div id="team_'+i+'_score"></div></fieldset>');
+          $("#question_teams").append('<fieldset><legend id=team_'+i+'_points_label>Team '+team_names[i]+' Score</legend><div id="team_'+i+'_score"></div>'+
+                                       '<legend id=team_'+i+'_extra_credit_label style="display:none">Extra Credit<div><button id="team_'+i+'_extra_credit_decrease" onclick="local_data_update(this)" >-</button><span id="team_'+i+'_extra_credit" class="extra_credit_amount">0</span><button id ="team_'+i+'_extra_credit_increase" onclick="local_data_update(this)" >+</button></div></legend></fieldset>');
           $("#team_"+i+"_score").append('<label><input type="radio" id="team_'+i+'_score_0" name="team_'+i+'_score" value=0 onchange="local_data_update(this)">0</label>');
           $( "#team_"+i+"_score" ).controlgroup();
         }
@@ -781,6 +826,31 @@
         $("#ignored_question").css("pointer-events", "initial");
       }
 
+      //Manage extra credit status
+      var temp_extra_credit = 0;
+      var temp = 0;
+      for (i=1;i<=team_count;i++) {
+        temp = get_element("session_"+current_session+"_question_"+current_question+"_team_"+i+"_extra_credit");
+        if (temp == undefined) {
+          temp = 0;
+        }
+        $('#team_'+i+'_extra_credit').text(temp);
+        temp_extra_credit += temp;
+      }
+
+      if (temp_extra_credit > 0 || $("#extra_credit").prop("checked")) {
+        //Show Extra Credit
+        $("#extra_credit").prop("checked", true);
+        for (i=1;i<=team_count;i++) {
+          $('#team_'+i+'_extra_credit_label').show();
+        }
+      } else {
+        //Hide Extra Credit
+        for (i=1;i<=team_count;i++) {
+          $('#team_'+i+'_extra_credit_label').hide();
+        }
+      }
+
       //Refresh display
       $( "#rounding" ).controlgroup("refresh");
 
@@ -854,6 +924,24 @@
         }
         set_element("data_version", 1.4, data);
       }
+      //Add Extra Credit option
+      if (data_version < 1.5) {
+        var current_session = get_element("current_session", data);
+        var session_names = JSON.parse(get_element("session_names", data));
+        for (var i = 1; i < session_names.length; i++) {
+          var question_names = JSON.parse(get_element("session_"+current_session+"_question_names", data));
+          var question_count = question_names.length - 1;
+          for (j = 1; j <= question_count; j++) {  
+            var team_names = JSON.parse(get_element("session_"+current_session+"_team_names"));
+            var team_count = team_names.length - 1;
+            for (k = 1; k <= team_count; k++) {
+              //Add missing data element
+              set_element("session_"+i+"_question_"+j+"_team_"+k+"_extra_credit", JSON.stringify(0), data);
+            }
+          }
+        }
+        set_element("data_version", 1.5, data);
+      }
     }
 
     function get_element(element_name, data = "localStorage") {
@@ -904,11 +992,14 @@
       highest_team_score = 0;
       for (var i=1; i <= team_count; i++) {
         team_earned = 0;
+        team_earned_without_extra_credit = 0;
         team_possible = 0;
         for (var j=1; j <= question_count; j++) {
           temp_ignore_question = JSON.parse(get_element("session_"+current_session+"_question_"+j+"_ignore"));
           if (temp_ignore_question === "false") {
             team_earned += Number(get_element("session_"+current_session+"_question_"+j+"_team_"+i+"_score"));
+            team_earned += Number(get_element("session_"+current_session+"_question_"+j+"_team_"+i+"_extra_credit"));
+            team_earned_without_extra_credit += Number(get_element("session_"+current_session+"_question_"+j+"_team_"+i+"_score"));
             team_possible += Number(get_element("session_"+current_session+"_question_"+j+"_score"));
           }
         }
@@ -916,8 +1007,8 @@
         team_score_summary[i][5] = team_possible;
         team_score_summary[i][1] = ((team_score_summary[i][4]/team_score_summary[i][5])*100).toFixed(2)+"%";
         team_score_summary[i][2] = team_score_summary[i][4]+"/"+team_score_summary[i][5];
-        if (team_earned > highest_team_score) {
-          var highest_team_score = team_earned;
+        if (team_earned_without_extra_credit > highest_team_score) {
+          var highest_team_score = team_earned_without_extra_credit;
         }
       }
       for (var i=1; i <= team_count; i++) {
@@ -969,6 +1060,7 @@
           if (Number(get_element("session_"+current_session+"_question_"+j+"_block")) == i && temp_ignore_question === "false") {
             for (k=1; k <= team_count; k++) {
               block_earned += Number(get_element("session_"+current_session+"_question_"+j+"_team_"+k+"_score"));
+              block_earned += Number(get_element("session_"+current_session+"_question_"+j+"_team_"+k+"_extra_credit"));
               block_possible += Number(get_element("session_"+current_session+"_question_"+j+"_score"));
             }
           }
@@ -1009,6 +1101,7 @@
             current_selected_block = Number(get_element("session_"+current_session+"_question_"+j+"_block"));
             temp_row_number = temp_team_start + current_selected_block;
             team_and_block_score_summary[temp_row_number][4] += Number(get_element("session_"+current_session+"_question_"+j+"_team_"+i+"_score"));
+            team_and_block_score_summary[temp_row_number][4] += Number(get_element("session_"+current_session+"_question_"+j+"_team_"+i+"_extra_credit"));
             team_and_block_score_summary[temp_row_number][5] +=  Number(get_element("session_"+current_session+"_question_"+j+"_score"));
             team_and_block_score_summary[temp_row_number][2] = ((team_and_block_score_summary[temp_row_number][4]/team_and_block_score_summary[temp_row_number][5])*100).toFixed(2)+"%";;
             team_and_block_score_summary[temp_row_number][3] = team_and_block_score_summary[temp_row_number][4]+"/"+team_and_block_score_summary[temp_row_number][5];
@@ -1051,7 +1144,12 @@
         temp_row.push(Number(get_element("session_"+current_session  +"_question_"+i+"_score")));
         temp_row.push(JSON.parse(get_element("session_"+current_session+"_question_"+i+"_ignore")))
         for (j=1; j <= team_count; j++) {
-          temp_row.push(Number(get_element("session_"+current_session+"_question_"+i+"_team_"+j+"_score")));
+          var extra_credit = Number(get_element("session_"+current_session+"_question_"+i+"_team_"+j+"_extra_credit"));
+          if (extra_credit > 0) {
+            temp_row.push(Number(get_element("session_"+current_session+"_question_"+i+"_team_"+j+"_score"))+" + "+Number(get_element("session_"+current_session+"_question_"+i+"_team_"+j+"_extra_credit")));
+          } else {
+            temp_row.push(Number(get_element("session_"+current_session+"_question_"+i+"_team_"+j+"_score")));
+          }
         }
         question_log_summary.push(temp_row);
       }
@@ -1111,6 +1209,9 @@
     tr:nth-child(even){
       background-color : #ededed;
     }
+    .extra_credit_amount {
+      padding: 0 0.5em;
+    }
   </style>
 </head>
 
@@ -1165,7 +1266,8 @@
             <br><br>
             <label><span id="ignore_question_warning" style="font-size: xx-large;display:none">🚫</span><input type="checkbox" id="ignore_question" onchange="local_data_update(this)">Ignore this Question in Score Calculations</label></div>
         <div id="ignored_question">
-            <h4><span id="current_question_title" contenteditable="plaintext-only" onblur="local_data_update(this)">Question</span> (<span id="current_question_title_count" ></span>)</h4>
+          <label><input type="checkbox" id="extra_credit" onchange="local_data_update(this)">Allow Extra Credit</label>
+          <h4><span id="current_question_title" contenteditable="plaintext-only" onblur="local_data_update(this)">Question</span> (<span id="current_question_title_count" ></span>)</h4>
             <fieldset>
               <legend id = "points_legend">Possible Points for Question</legend>
               <div id="question_score">
@@ -1234,7 +1336,7 @@
       </div>
     </div>
     <footer><p>Have an idea to make this better? <a target="_blank" href="https://github.com/antgiant/PBE_Score_Keeper/issues">Let me know</a>.</p>
-    <p><center>v 1.4.8</center></p></footer>
+    <p><center>v 1.4.9</center></p></footer>
 </body>
 
 </html>
