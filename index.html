@@ -16,7 +16,19 @@
     $(document).ready(initialize_display);
 
     var current_session;
+
+    //Setup heml escape variables
+    var DOMtext = document.createTextNode("test");
+    var DOMnative = document.createElement("span");
+    DOMnative.appendChild(DOMtext);
+
     initialize_state();
+
+    //main work for each case
+    function HTMLescape(html){
+      DOMtext.nodeValue = html;
+      return DOMnative.innerHTML
+    }
 
     function initialize_display() {
       //Set up Accordion display
@@ -453,7 +465,7 @@
       //Load "Universal" DB data into variables
       var session_names = JSON.parse(get_element("session_names"));
       var session_count = session_names.length - 1;
-      var max_points = JSON.parse(get_element("session_"+current_session+"_max_points_per_question"));
+      var max_points = Number(JSON.parse(get_element("session_"+current_session+"_max_points_per_question")));
       var rounding = JSON.parse(get_element("session_"+current_session+"_rounding"));
       var team_names = JSON.parse(get_element("session_"+current_session+"_team_names"));
       var team_count = team_names.length - 1;
@@ -465,7 +477,7 @@
         question_count--;
       }
       var current_question = Number(get_element("session_"+current_session+"_current_question"));
-      var current_selected_block = JSON.parse(get_element("session_"+current_session+"_question_"+current_question+"_block"));
+      var current_selected_block = Number(JSON.parse(get_element("session_"+current_session+"_question_"+current_question+"_block")));
       var question_max_points = Number(get_element("session_"+current_session+"_question_"+current_question+"_score"));
       var ignore_question = JSON.parse(get_element("session_"+current_session+"_question_"+current_question+"_ignore"));
 
@@ -479,7 +491,7 @@
         if (i==current_session) {
           session_quick_nav += '<option value="'+i+'" selected>'+i+" of "+session_count+'</option>';
         } else {
-          session_quick_nav += '<option value="'+i+'">'+i+" of "+session_count+' - '+session_names[i]+'</option>';
+          session_quick_nav += '<option value="'+i+'">'+i+" of "+session_count+' - '+HTMLescape(session_names[i])+'</option>';
         }
       }
       session_quick_nav += '</select>';
@@ -499,7 +511,7 @@
       //Fill in Team Placement and create output table
       let temp_output = "<table><thead><tr><th>Team Name</th><th>Percent</th><th>Score</th><th>Placement</th></tr></thead><tbody>";
       for (let i=1; i <= team_count; i++) {
-        temp_output = temp_output+"<tr><td>"+team_score_summary[i][0]+"</td>";
+        temp_output = temp_output+"<tr><td>"+HTMLescape(team_score_summary[i][0])+"</td>";
         temp_output = temp_output+"<td>"+team_score_summary[i][1]+"</td>";
         temp_output = temp_output+"<td>"+team_score_summary[i][2]+"</td>";
         temp_output = temp_output+"<td>"+team_score_summary[i][3]+"</td></tr>\n"
@@ -513,7 +525,7 @@
       //Fill in Team Placement and create output table
       temp_output = "<table><thead><tr><th>Team Name</th><th>Percent</th><th>Score</th><th>Placement</th></tr></thead><tbody>";
       for (let i=1; i <= team_count; i++) {
-        temp_output = temp_output+"<tr><td>"+team_score_summary[i][0]+"</td>";
+        temp_output = temp_output+"<tr><td>"+HTMLescape(team_score_summary[i][0])+"</td>";
         temp_output = temp_output+"<td>"+team_score_summary[i][7]+"</td>";
         temp_output = temp_output+"<td>"+team_score_summary[i][8]+"</td>";
         temp_output = temp_output+"<td>"+team_score_summary[i][9]+"</td></tr>\n"
@@ -530,7 +542,7 @@
       temp_output = "<table><thead><tr><th>Block/Group Name</th><th>Percent</th><th>Score</th></tr></thead><tbody>";
       for (let i=1; i <= block_count + 1; i++) {
         if (block_score_summary[i][4] > 0) {
-          temp_output = temp_output+"<tr><td>"+block_score_summary[i][0]+"</td>";
+          temp_output = temp_output+"<tr><td>"+HTMLescape(block_score_summary[i][0])+"</td>";
           temp_output = temp_output+"<td>"+block_score_summary[i][1]+"</td>";
           temp_output = temp_output+"<td>"+block_score_summary[i][2]+"</td></tr>\n"
         }
@@ -548,8 +560,8 @@
       temp_output = "<table><thead><tr><th>Team Name</th><th>Block/Group Name</th><th>Percent</th><th>Score</th></tr></thead><tbody>";
       for (let i=1; i < team_and_block_score_summary.length; i++) {
         if (team_and_block_score_summary[i][5] > 0) {
-          temp_output = temp_output+"<tr><td>"+team_and_block_score_summary[i][0]+"</td>";
-          temp_output = temp_output+"<td>"+team_and_block_score_summary[i][1]+"</td>";
+          temp_output = temp_output+"<tr><td>"+HTMLescape(team_and_block_score_summary[i][0])+"</td>";
+          temp_output = temp_output+"<td>"+HTMLescape(team_and_block_score_summary[i][1])+"</td>";
           temp_output = temp_output+"<td>"+team_and_block_score_summary[i][2]+"</td>";
           temp_output = temp_output+"<td>"+team_and_block_score_summary[i][3]+"</td></tr>\n";
         }
@@ -566,13 +578,13 @@
       //Fill in Team and Block/Group scores and create output table
       temp_output = "<table><thead><tr><th>Question</th><th>Block/Group</th><th>Possible Points</th>";
       for (let i=1; i <= team_count; i++) {
-        temp_output = temp_output + "<th>"+team_names[i]+" Score</th>";
+        temp_output = temp_output + "<th>"+HTMLescape(team_names[i])+" Score</th>";
       }
       temp_output = temp_output + "</tr></thead><tbody>";
       for (var i=1; i < question_log_summary.length; i++) {
         if (question_log_summary[i][3] === "false") {
-          temp_output = temp_output+"<tr><td>"+question_log_summary[i][0]+"</td>";
-          temp_output = temp_output+"<td>"+question_log_summary[i][1]+"</td>";
+          temp_output = temp_output+"<tr><td>"+HTMLescape(question_log_summary[i][0])+"</td>";
+          temp_output = temp_output+"<td>"+HTMLescape(question_log_summary[i][1])+"</td>";
           temp_output = temp_output+"<td>"+question_log_summary[i][2]+"</td>";
           for (let j=1; j <= team_count; j++) {
             temp_output = temp_output+"<td>"+question_log_summary[i][j+3]+"</td>";
@@ -601,8 +613,8 @@
       if (displayed_teams_count < team_count) {
         for (let i=displayed_teams_count + 1;i<=team_count;i++) {
           //Add new
-          $("#team_names").append('<label>Team '+i+' Name: <input type = "text" name = "team_'+i+'_name" id = "team_'+i+'_name" onchange="local_data_update(this)" value = "'+team_names[i]+'"><br></label>');
-          $("#question_teams").append('<fieldset><legend id=team_'+i+'_points_label>Team '+team_names[i]+' Score</legend><div id="team_'+i+'_score"></div>'+
+          $("#team_names").append('<label>Team '+i+' Name: <input type = "text" name = "team_'+i+'_name" id = "team_'+i+'_name" onchange="local_data_update(this)" value = "'+team_names[i].replace('"', "&quote")+'"><br></label>');
+          $("#question_teams").append('<fieldset><legend id=team_'+i+'_points_label>Team '+HTMLescape(team_names[i])+' Score</legend><div id="team_'+i+'_score"></div>'+
                                        '<legend id=team_'+i+'_extra_credit_label style="display:none">Extra Credit<div><button id="team_'+i+'_extra_credit_decrease" onclick="local_data_update(this)" >-</button><span id="team_'+i+'_extra_credit" class="extra_credit_amount">0</span><button id ="team_'+i+'_extra_credit_increase" onclick="local_data_update(this)" >+</button></div></legend></fieldset>');
           $("#team_"+i+"_score").append('<label><input type="radio" id="team_'+i+'_score_0" name="team_'+i+'_score" value=0 onchange="local_data_update(this)">0</label>');
           $( "#team_"+i+"_score" ).controlgroup();
@@ -670,8 +682,8 @@
       if (displayed_block_count < block_count) {
         for (let i=displayed_block_count + 1;i<=block_count;i++) {
           //Add new
-          $("#block_names").append('<label>Block/Group '+i+' Name: <input type = "text" name = "block_'+i+'_name" id = "block_'+i+'_name" onchange="local_data_update(this)" value = "'+block_names[i]+'"><br></label>');
-          $("#question_block").append('<label><input type="radio" id="question_block_'+i+'" name="question_block" value="'+i+'" onchange="local_data_update(this)"><span id="block_'+i+'_label">'+block_names[i]+'</span></label>');
+          $("#block_names").append('<label>Block/Group '+i+' Name: <input type = "text" name = "block_'+i+'_name" id = "block_'+i+'_name" onchange="local_data_update(this)" value = "'+block_names[i].replace('"', "&quote")+'"><br></label>');
+          $("#question_block").append('<label><input type="radio" id="question_block_'+i+'" name="question_block" value="'+i+'" onchange="local_data_update(this)"><span id="block_'+i+'_label">'+HTMLescape(block_names[i])+'</span></label>');
         }
       }
       else if (displayed_block_count > block_count) {
@@ -688,7 +700,7 @@
       for (let i=1;i<=block_count;i++) {
         //Destroy and recreate as overly heavy handed technique (that actually works) to update label
         $( "#question_block" ).controlgroup( "destroy" );
-        $("#block_"+i+"_label").html(block_names[i]);
+        $("#block_"+i+"_label").text(block_names[i]);
         $( "#question_block" ).controlgroup();
 
         $("#block_"+i+"_name").val(block_names[i]);
@@ -714,7 +726,7 @@
         if (i==current_question) {
           question_quick_nav += '<option value="'+i+'" selected>'+(temp_ignore_question == "true"?"🚫":"")+i+" of "+question_count+'</option>';
         } else {
-          question_quick_nav += '<option value="'+i+'">'+(temp_ignore_question == "true"?"🚫":"")+i+" of "+question_count+' - '+question_names[i]+'</option>';
+          question_quick_nav += '<option value="'+i+'">'+(temp_ignore_question == "true"?"🚫":"")+i+" of "+question_count+' - '+HTMLescape(question_names[i])+'</option>';
         }
       }
       question_quick_nav += '</select>';
@@ -1330,7 +1342,7 @@
       </div>
     </div>
     <footer><p>Have an idea to make this better? <a target="_blank" href="https://github.com/antgiant/PBE_Score_Keeper/issues">Let me know</a>.</p>
-    <p><center>v 1.4.11</center></p></footer>
+    <p><center>v 1.4.12</center></p></footer>
 </body>
 
 </html>
