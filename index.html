@@ -17,6 +17,7 @@
 
     var current_session;
     var import_status = "append";
+    initialize_theme_preference();
 
     //Setup heml escape variables
     var DOMtext = document.createTextNode("test");
@@ -29,6 +30,12 @@
     function HTMLescape(html){
       DOMtext.nodeValue = html;
       return DOMnative.innerHTML
+    }
+
+    function initialize_theme_preference() {
+      var saved_theme = localStorage.getItem("theme_preference");
+      var resolved_theme = resolve_theme(saved_theme);
+      apply_theme(resolved_theme);
     }
 
     function initialize_display() {
@@ -61,9 +68,98 @@
         } 
       });
       
+      initialize_theme_controls();
       sync_data_to_display();
 
       setup_file_import();
+    }
+
+    function resolve_theme(saved_theme) {
+      if (saved_theme === "light" || saved_theme === "dark") {
+        return saved_theme;
+      }
+      if (saved_theme === "system") {
+        saved_theme = null;
+      }
+      if (typeof window !== "undefined"
+          && window.matchMedia
+          && window.matchMedia("(prefers-color-scheme: dark)").matches) {
+        return "dark";
+      }
+      return "light";
+    }
+
+    function initialize_theme_controls() {
+      if (!get_root_element()) {
+        return;
+      }
+      var saved_theme = localStorage.getItem("theme_preference");
+      apply_theme(resolve_theme(saved_theme));
+      update_theme_selector(saved_theme);
+
+      $("#theme_preference").on("change", function () {
+        var selected = $(this).val();
+        if (selected === "system") {
+          localStorage.setItem("theme_preference", "system");
+          apply_theme(resolve_theme("system"));
+        } else {
+          localStorage.setItem("theme_preference", selected);
+          apply_theme(selected);
+        }
+      });
+
+      if (saved_theme === "system") {
+        if (typeof window === "undefined" || !window.matchMedia) {
+          return;
+        }
+        var media = window.matchMedia("(prefers-color-scheme: dark)");
+        if (media && typeof media.addEventListener === "function") {
+          media.addEventListener("change", function (event) {
+            if (localStorage.getItem("theme_preference") === "system") {
+              apply_theme(event.matches ? "dark" : "light");
+              update_theme_selector("system");
+            }
+          });
+        } else if (media && typeof media.addListener === "function") {
+          media.addListener(function (event) {
+            if (localStorage.getItem("theme_preference") === "system") {
+              apply_theme(event.matches ? "dark" : "light");
+              update_theme_selector("system");
+            }
+          });
+        }
+      }
+    }
+
+    function get_root_element() {
+      if (typeof document === "undefined" || !document.documentElement) {
+        return null;
+      }
+      return document.documentElement;
+    }
+
+    function apply_theme(theme) {
+      var root = get_root_element();
+      if (!root) {
+        return;
+      }
+      root.setAttribute("data-theme", theme);
+    }
+
+    function update_theme_selector(saved_theme) {
+      var root = get_root_element();
+      if (!root) {
+        return;
+      }
+      var selector = $("#theme_preference");
+      if (!selector.length) {
+        return;
+      }
+      if (saved_theme === "light" || saved_theme === "dark" || saved_theme === "system") {
+        selector.val(saved_theme);
+      } else {
+        selector.val("system");
+      }
     }
     
     function initialize_state() {
@@ -1401,11 +1497,69 @@
     }
   </script>
   <style>
+    :root {
+      color-scheme: light;
+      --page-bg: #f6f6f6;
+      --panel-bg: #ffffff;
+      --control-bg: #ffffff;
+      --text-color: #1c1c1c;
+      --muted-text: #555555;
+      --border-color: #c5c5c5;
+      --row-alt: #ededed;
+      --header-bg: #ededed;
+      --link-color: #0b57d0;
+    }
+    [data-theme="dark"] {
+      color-scheme: dark;
+      --page-bg: #0f1115;
+      --panel-bg: #171a1f;
+      --control-bg: #1c2129;
+      --text-color: #e6e6e6;
+      --muted-text: #b7b7b7;
+      --border-color: #333842;
+      --row-alt: #1e2229;
+      --header-bg: #161a20;
+      --link-color: #8ab4f8;
+    }
+    body {
+      background-color: var(--page-bg);
+      color: var(--text-color);
+    }
+    a {
+      color: var(--link-color);
+    }
+    fieldset {
+      border-color: var(--border-color);
+    }
+    #accordion .ui-accordion-content {
+      background-color: var(--panel-bg);
+      color: var(--text-color);
+    }
+    .header-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      padding: 0.25rem 0.5rem;
+      flex-wrap: wrap;
+    }
+    .header-row h1 {
+      margin: 0.25rem 0;
+    }
+    .theme-picker {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.9rem;
+    }
+    #theme_preference {
+      font-size: 0.9rem;
+    }
     button {
       touch-action: manipulation;
     }
     tr:nth-child(even){
-      background-color : #ededed;
+      background-color : var(--row-alt);
     }
     .extra_credit_amount {
       padding: 0 0.5em;
@@ -1413,10 +1567,10 @@
     .jqm-header {
       position: sticky;
       top: 0;
-      background-color: #ededed;
+      background-color: var(--header-bg);
       z-index: 1000;
       padding: 0.01em 0;
-      border: 1px solid #c5c5c5;
+      border: 1px solid var(--border-color);
       border-radius: 3px;
     }
   </style>
@@ -1426,7 +1580,17 @@
 
   <div data-role="page" id="main">
     <div data-role="header" class="jqm-header">
-      <h1>PBE Score Keeper</h1>
+      <div class="header-row">
+        <h1>PBE Score Keeper</h1>
+        <label class="theme-picker" for="theme_preference">
+          Theme
+          <select id="theme_preference">
+            <option value="system">System</option>
+            <option value="light">Light</option>
+            <option value="dark">Dark</option>
+          </select>
+        </label>
+      </div>
     </div>
     <div id="accordion">
       <h3>Configuration (Session/Round/Game)</h3>
@@ -1558,7 +1722,7 @@
       </div>
     </div>
     <footer><p>Have an idea to make this better? <a target="_blank" href="https://github.com/antgiant/PBE_Score_Keeper/issues">Let me know</a>.</p>
-    <p><center>v 1.5.1</center></p></footer>
+    <p><center>v 1.5.2</center></p></footer>
 </body>
 
 </html>
