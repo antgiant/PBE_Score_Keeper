@@ -21,6 +21,7 @@ function buildContext(seed = {}) {
         id,
         children: [],
         props: {},
+        styles: {},
         textContent: '',
         htmlContent: '',
         value: '',
@@ -104,6 +105,12 @@ function buildContext(seed = {}) {
         return this;
       },
       css() {
+        if (arguments.length === 1) {
+          return element.styles[arguments[0]];
+        }
+        if (arguments.length >= 2) {
+          element.styles[arguments[0]] = arguments[1];
+        }
         return this;
       },
       show() {
