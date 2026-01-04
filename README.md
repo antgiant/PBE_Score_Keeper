@@ -14,7 +14,7 @@ The app is split into focused scripts loaded in `index.html`:
 - `scripts/app-summaries.js`: score summary and log builders.
 - `scripts/app-import-export.js`: CSV/JSON export and import handling.
 - `scripts/app-display.js`: UI wiring and display sync.
-- `app.js`: bootstrap (runs initialization).
+- `scripts/app.js`: bootstrap (runs initialization).
 
 ## Tests
 Run the unit tests with:
