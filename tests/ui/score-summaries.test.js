@@ -90,3 +90,27 @@ test('score summaries show team totals, rounded totals, block totals, and team-b
   assert.ok(teamAndBlockScores.includes('6/10'));
   assert.ok(teamAndBlockScores.includes('5/10'));
 });
+
+test('question log shows questions, blocks, possible points, and team scores', () => {
+  const { context } = loadApp(buildScoreSummarySeed());
+
+  context.sync_data_to_display();
+
+  const questionLog = context.$('#scores').html();
+  assert.ok(questionLog.includes('<th>Question</th>'));
+  assert.ok(questionLog.includes('<th>Block/Group</th>'));
+  assert.ok(questionLog.includes('<th>Possible Points</th>'));
+  assert.ok(questionLog.includes('<th>Alpha Score</th>'));
+  assert.ok(questionLog.includes('<th>Beta Score</th>'));
+  assert.ok(questionLog.includes('<th>Gamma Score</th>'));
+  assert.ok(
+    questionLog.includes(
+      '<td>Q1</td><td>No Block/Group</td><td>10</td><td>9 + 1</td><td>10</td><td>7</td>'
+    )
+  );
+  assert.ok(
+    questionLog.includes(
+      '<td>Q2</td><td>Block A</td><td>10</td><td>6</td><td>8 + 2</td><td>5</td>'
+    )
+  );
+});
