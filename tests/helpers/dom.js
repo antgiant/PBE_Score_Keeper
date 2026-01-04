@@ -3,12 +3,15 @@ const path = require('node:path');
 const vm = require('node:vm');
 const { createStorage } = require('./storage');
 
-function extractInlineScript(html) {
-  const match = html.match(/<script>([\s\S]*?)<\/script>/);
-  if (!match) {
-    throw new Error('Inline script not found in index.html');
-  }
-  return match[1];
+function extractScripts(html) {
+  const matches = [...html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/g)];
+  return matches.map((match) => {
+    const srcMatch = match[0].match(/src=["']([^"']+)["']/);
+    return {
+      src: srcMatch ? srcMatch[1] : null,
+      inline: match[1] ? match[1].trim() : '',
+    };
+  });
 }
 
 function buildContext(seed = {}) {
@@ -188,10 +191,25 @@ function buildContext(seed = {}) {
 
 function loadApp(seed = {}) {
   const html = fs.readFileSync(path.join(__dirname, '..', '..', 'index.html'), 'utf8');
-  const script = extractInlineScript(html);
   const { context, localStorage } = buildContext(seed);
   vm.createContext(context);
-  vm.runInContext(script, context);
+  const scripts = extractScripts(html);
+  if (!scripts.length) {
+    throw new Error('Inline script or script source not found in index.html');
+  }
+  scripts.forEach((script) => {
+    if (script.src) {
+      if (script.src.includes('jquery')) {
+        return;
+      }
+      const content = fs.readFileSync(path.join(__dirname, '..', '..', script.src), 'utf8');
+      vm.runInContext(content, context);
+      return;
+    }
+    if (script.inline) {
+      vm.runInContext(script.inline, context);
+    }
+  });
   return { context, localStorage };
 }
 

@@ -12,3 +12,7 @@ These instructions apply to any AI assistant working in this repository.
 - Place pure logic tests under `tests/unit/`.
 - Place UI/DOM interaction tests under `tests/ui/`.
 - Shared utilities belong in `tests/helpers/`.
+
+## JavaScript Structure
+- Keep browser logic split across the focused scripts in `scripts/` and only bootstrap in `app.js`.
+- Update `index.html` script order when adding/removing script files.
