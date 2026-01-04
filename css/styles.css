@@ -59,6 +59,34 @@ fieldset {
 button {
   touch-action: manipulation;
 }
+.reorder-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.35rem;
+  flex-wrap: wrap;
+}
+.reorder-item label {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+.drag-handle {
+  border: 1px solid var(--border-color);
+  background: var(--control-bg);
+  border-radius: 4px;
+  padding: 0.2rem 0.45rem;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+.drag-handle:active {
+  cursor: grabbing;
+}
+.reorder-item.dragging {
+  opacity: 0.6;
+}
 tr:nth-child(even){
   background-color : var(--row-alt);
 }

@@ -30,6 +30,7 @@ function initialize_display() {
   
   initialize_theme_controls();
   sync_data_to_display();
+  initialize_reorder_controls();
 
   setup_file_import();
 }
@@ -185,7 +186,7 @@ function sync_data_to_display() {
   if (displayed_teams_count < team_count) {
     for (let i=displayed_teams_count + 1;i<=team_count;i++) {
       //Add new
-      $("#team_names").append('<label>Team '+i+' Name: <input type = "text" name = "team_'+i+'_name" id = "team_'+i+'_name" onchange="local_data_update(this)" value = "'+team_names[i].replace('"', "&quote")+'"><br></label>');
+      $("#team_names").append('<div class="reorder-item" data-index="'+i+'"><button type="button" class="drag-handle" draggable="true" aria-label="Drag to reorder Team '+i+'">&equiv; &#8597;</button><label><span class="reorder-label">Team '+i+' Name:</span> <input type = "text" name = "team_'+i+'_name" id = "team_'+i+'_name" onchange="local_data_update(this)" value = "'+team_names[i].replace('"', "&quote")+'"></label></div>');
       $("#question_teams").append('<fieldset><legend id=team_'+i+'_points_label>Team '+HTMLescape(team_names[i])+' Score</legend><div id="team_'+i+'_score"></div>'+
                                    '<legend id=team_'+i+'_extra_credit_label style="display:none">Extra Credit<div><button id="team_'+i+'_extra_credit_decrease" onclick="local_data_update(this)" >-</button><span id="team_'+i+'_extra_credit" class="extra_credit_amount">0</span><button id ="team_'+i+'_extra_credit_increase" onclick="local_data_update(this)" >+</button></div></legend></fieldset>');
       $("#team_"+i+"_score").append('<label><input type="radio" id="team_'+i+'_score_0" name="team_'+i+'_score" value=0 onchange="local_data_update(this)">0</label>');
@@ -203,6 +204,16 @@ function sync_data_to_display() {
 
   //Update Team Names (Yes this is ineffecient but the numbers are so small it doesn't really matter)
   for (let i=1;i<=team_count;i++) {
+    let team_input = $("#team_"+i+"_name");
+    if (typeof team_input.closest === "function") {
+      let team_item = team_input.closest(".reorder-item");
+      if (team_item.length) {
+        team_item.attr("data-index", i);
+        team_item.find(".reorder-label").text("Team "+i+" Name:");
+        team_item.find(".drag-handle").attr("aria-label", "Drag to reorder Team "+i);
+        $("#team_names").append(team_item);
+      }
+    }
     var question_earned = 0;
     //Get total points earned for this question
     for (var j=1; j <= question_count; j++) {
@@ -237,6 +248,16 @@ function sync_data_to_display() {
     $("#team_"+i+"_name").val(team_names[i]);
   }
 
+  for (let i=1;i<=team_count;i++) {
+    let team_score = $("#team_"+i+"_score");
+    if (typeof team_score.closest === "function") {
+      let team_fieldset = team_score.closest("fieldset");
+      if (team_fieldset.length) {
+        $("#question_teams").append(team_fieldset);
+      }
+    }
+  }
+
   //Set up Blocks/Groups
   
   //Show block/group count
@@ -254,7 +275,7 @@ function sync_data_to_display() {
   if (displayed_block_count < block_count) {
     for (let i=displayed_block_count + 1;i<=block_count;i++) {
       //Add new
-      $("#block_names").append('<label>Block/Group '+i+' Name: <input type = "text" name = "block_'+i+'_name" id = "block_'+i+'_name" onchange="local_data_update(this)" value = "'+block_names[i].replace('"', "&quote")+'"><br></label>');
+      $("#block_names").append('<div class="reorder-item" data-index="'+i+'"><button type="button" class="drag-handle" draggable="true" aria-label="Drag to reorder Block/Group '+i+'">&equiv; &#8597;</button><label><span class="reorder-label">Block/Group '+i+' Name:</span> <input type = "text" name = "block_'+i+'_name" id = "block_'+i+'_name" onchange="local_data_update(this)" value = "'+block_names[i].replace('"', "&quote")+'"></label></div>');
       $("#question_block").append('<label><input type="radio" id="question_block_'+i+'" name="question_block" value="'+i+'" onchange="local_data_update(this)"><span id="block_'+i+'_label">'+HTMLescape(block_names[i])+'</span></label>');
     }
   }
@@ -269,11 +290,23 @@ function sync_data_to_display() {
   }
 
   //Update Block/Group Names (Yes this is ineffecient but the numbers are so small it doesn't really matter)
+  $( "#question_block" ).controlgroup( "destroy" );
   for (let i=1;i<=block_count;i++) {
-    //Destroy and recreate as overly heavy handed technique (that actually works) to update label
-    $( "#question_block" ).controlgroup( "destroy" );
+    let block_input = $("#block_"+i+"_name");
+    if (typeof block_input.closest === "function") {
+      let block_item = block_input.closest(".reorder-item");
+      if (block_item.length) {
+        block_item.attr("data-index", i);
+        block_item.find(".reorder-label").text("Block/Group "+i+" Name:");
+        block_item.find(".drag-handle").attr("aria-label", "Drag to reorder Block/Group "+i);
+        $("#block_names").append(block_item);
+      }
+    }
     $("#block_"+i+"_label").text(block_names[i]);
-    $( "#question_block" ).controlgroup();
+    let question_block = $("#question_block_"+i);
+    if (typeof question_block.closest === "function") {
+      $("#question_block").append(question_block.closest("label"));
+    }
 
     $("#block_"+i+"_name").val(block_names[i]);
     //Check off saved block/group
@@ -283,6 +316,7 @@ function sync_data_to_display() {
       $("#question_block_"+i).prop("checked", false);
     }
   }
+  $( "#question_block" ).controlgroup();
 
   //Add fancy options to new buttons
   $( "#question_block" ).controlgroup( "refresh" );
@@ -460,4 +494,3 @@ function sync_data_to_display() {
     $("#next_question_2").prop("disabled", false);
   }
 }
-

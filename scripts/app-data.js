@@ -367,3 +367,67 @@ function update_data_element(updated_id, new_value) {
   }
 }
 
+function reorder_teams(order) {
+  let team_names = JSON.parse(get_element("session_"+current_session+"_team_names"));
+  let team_count = team_names.length - 1;
+  if (order.length !== team_count) {
+    return;
+  }
+
+  let new_team_names = [team_names[0]];
+  for (let i = 0; i < order.length; i++) {
+    let index = Number(order[i]);
+    new_team_names.push(team_names[index]);
+  }
+  set_element("session_"+current_session+"_team_names", JSON.stringify(new_team_names));
+
+  let question_names = JSON.parse(get_element("session_"+current_session+"_question_names"));
+  let question_count = question_names.length - 1;
+  for (let i = 1; i <= question_count; i++) {
+    let new_scores = [];
+    let new_extra_credit = [];
+    for (let j = 0; j < order.length; j++) {
+      let index = Number(order[j]);
+      let score = Number(get_element("session_"+current_session+"_question_"+i+"_team_"+index+"_score"));
+      if (Number.isNaN(score)) {
+        score = 0;
+      }
+      new_scores.push(score);
+      let extra_credit = Number(get_element("session_"+current_session+"_question_"+i+"_team_"+index+"_extra_credit"));
+      if (Number.isNaN(extra_credit)) {
+        extra_credit = 0;
+      }
+      new_extra_credit.push(extra_credit);
+    }
+    for (let j = 0; j < new_scores.length; j++) {
+      set_element("session_"+current_session+"_question_"+i+"_team_"+(j + 1)+"_score", new_scores[j]);
+      set_element("session_"+current_session+"_question_"+i+"_team_"+(j + 1)+"_extra_credit", new_extra_credit[j]);
+    }
+  }
+}
+
+function reorder_blocks(order) {
+  let block_names = JSON.parse(get_element("session_"+current_session+"_block_names"));
+  let block_count = block_names.length - 1;
+  if (order.length !== block_count) {
+    return;
+  }
+
+  let new_block_names = [block_names[0]];
+  let block_map = {};
+  for (let i = 0; i < order.length; i++) {
+    let index = Number(order[i]);
+    block_map[index] = i + 1;
+    new_block_names.push(block_names[index]);
+  }
+  set_element("session_"+current_session+"_block_names", JSON.stringify(new_block_names));
+
+  let question_names = JSON.parse(get_element("session_"+current_session+"_question_names"));
+  let question_count = question_names.length - 1;
+  for (let i = 1; i <= question_count; i++) {
+    let existing_block = Number(get_element("session_"+current_session+"_question_"+i+"_block"));
+    if (existing_block > 0 && block_map[existing_block]) {
+      set_element("session_"+current_session+"_question_"+i+"_block", block_map[existing_block]);
+    }
+  }
+}
