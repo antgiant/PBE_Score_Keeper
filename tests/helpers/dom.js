@@ -114,9 +114,11 @@ function buildContext(seed = {}) {
         return this;
       },
       show() {
+        element.styles.display = 'block';
         return this;
       },
       hide() {
+        element.styles.display = 'none';
         return this;
       },
       trigger() {
