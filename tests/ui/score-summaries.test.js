@@ -34,6 +34,36 @@ function buildScoreSummarySeed() {
   };
 }
 
+function buildDeleteSessionSeed() {
+  return {
+    data_version: JSON.stringify(1.5),
+    session_names: JSON.stringify(['', 'Session 1', 'Session 2']),
+    current_session: JSON.stringify(2),
+    session_1_max_points_per_question: JSON.stringify(5),
+    session_1_rounding: JSON.stringify('false'),
+    session_1_block_names: JSON.stringify(['No Block/Group']),
+    session_1_team_names: JSON.stringify(['', 'Alpha']),
+    session_1_question_names: JSON.stringify(['', 'Q1']),
+    session_1_current_question: JSON.stringify(1),
+    session_1_question_1_score: JSON.stringify(5),
+    session_1_question_1_block: JSON.stringify(0),
+    session_1_question_1_ignore: JSON.stringify('false'),
+    session_1_question_1_team_1_score: JSON.stringify(4),
+    session_1_question_1_team_1_extra_credit: JSON.stringify(0),
+    session_2_max_points_per_question: JSON.stringify(10),
+    session_2_rounding: JSON.stringify('false'),
+    session_2_block_names: JSON.stringify(['No Block/Group']),
+    session_2_team_names: JSON.stringify(['', 'Beta']),
+    session_2_question_names: JSON.stringify(['', 'Q1']),
+    session_2_current_question: JSON.stringify(1),
+    session_2_question_1_score: JSON.stringify(10),
+    session_2_question_1_block: JSON.stringify(0),
+    session_2_question_1_ignore: JSON.stringify('false'),
+    session_2_question_1_team_1_score: JSON.stringify(7),
+    session_2_question_1_team_1_extra_credit: JSON.stringify(1),
+  };
+}
+
 test('score summaries show team totals, rounded totals, block totals, and team-by-block totals', () => {
   const { context } = loadApp(buildScoreSummarySeed());
 
@@ -113,4 +143,19 @@ test('question log shows questions, blocks, possible points, and team scores', (
       '<td>Q2</td><td>Block A</td><td>10</td><td>6</td><td>8 + 2</td><td>5</td>'
     )
   );
+});
+
+test('delete this session removes the current session data and updates the session list', () => {
+  const { context, localStorage } = loadApp(buildDeleteSessionSeed());
+
+  Object.assign(localStorage, localStorage.dump());
+  context.alert = () => {};
+  context.local_data_update({ id: 'session_delete', value: '' });
+
+  const stored = localStorage.dump();
+  assert.equal(stored.session_names, JSON.stringify(['', 'Session 1']));
+  assert.equal(stored.current_session, '1');
+  assert.ok(!Object.prototype.hasOwnProperty.call(stored, 'session_2_max_points_per_question'));
+  assert.ok(!Object.prototype.hasOwnProperty.call(stored, 'session_2_question_1_score'));
+  assert.equal(stored.session_1_question_1_score, JSON.stringify(5));
 });
