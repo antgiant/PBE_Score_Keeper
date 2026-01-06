@@ -7,20 +7,129 @@ function arrayToCsv(data){
     .join(',')  // comma-separated
   ).join('\r\n');  // rows starting on new lines
 }
-function filter_to_current_session(key, value) {    
-  let current_session = Number(get_element("current_session"));
+
+/**
+ * Convert Yjs document to plain JSON object
+ * @returns {Object} Plain object representation of Yjs data
+ */
+function yjs_to_json() {
+  if (!ydoc) return null;
+
+  const meta = ydoc.getMap('meta');
+  const sessions = ydoc.getArray('sessions');
+
+  const result = {
+    dataVersion: meta.get('dataVersion'),
+    currentSession: meta.get('currentSession'),
+    sessions: []
+  };
+
+  for (let i = 0; i < sessions.length; i++) {
+    const session = sessions.get(i);
+    if (session === null) {
+      result.sessions.push(null);
+      continue;
+    }
+
+    const sessionObj = {
+      name: session.get('name'),
+      config: {
+        maxPointsPerQuestion: session.get('config').get('maxPointsPerQuestion'),
+        rounding: session.get('config').get('rounding')
+      },
+      teams: [],
+      blocks: [],
+      questions: [],
+      currentQuestion: session.get('currentQuestion')
+    };
+
+    // Teams
+    const teams = session.get('teams');
+    for (let t = 0; t < teams.length; t++) {
+      const team = teams.get(t);
+      sessionObj.teams.push(team === null ? null : { name: team.get('name') });
+    }
+
+    // Blocks
+    const blocks = session.get('blocks');
+    for (let b = 0; b < blocks.length; b++) {
+      const block = blocks.get(b);
+      sessionObj.blocks.push({ name: block.get('name') });
+    }
+
+    // Questions
+    const questions = session.get('questions');
+    for (let q = 0; q < questions.length; q++) {
+      const question = questions.get(q);
+      if (question === null) {
+        sessionObj.questions.push(null);
+        continue;
+      }
+
+      const questionObj = {
+        name: question.get('name'),
+        score: question.get('score'),
+        block: question.get('block'),
+        ignore: question.get('ignore'),
+        teams: []
+      };
+
+      const questionTeams = question.get('teams');
+      for (let qt = 0; qt < questionTeams.length; qt++) {
+        const teamScore = questionTeams.get(qt);
+        questionObj.teams.push(teamScore === null ? null : {
+          score: teamScore.get('score'),
+          extraCredit: teamScore.get('extraCredit')
+        });
+      }
+
+      sessionObj.questions.push(questionObj);
+    }
+
+    result.sessions.push(sessionObj);
+  }
+
+  return result;
+}
+
+/**
+ * Export current session only as JSON
+ */
+function export_current_session_json() {
+  const fullData = yjs_to_json();
+  const session = fullData.sessions[current_session];
+
+  const singleSessionData = {
+    dataVersion: 2.0,
+    currentSession: 1,
+    sessions: [null, session]
+  };
+
+  return JSON.stringify(singleSessionData, null, 2);
+}
+
+/**
+ * Export all sessions as JSON
+ */
+function export_all_sessions_json() {
+  return JSON.stringify(yjs_to_json(), null, 2);
+}
+
+function filter_to_current_session(key, value) {
+  // Legacy function - kept for compatibility but not used with Yjs
+  let current_session_local = Number(get_element("current_session"));
   let session_names = JSON.parse(get_element("session_names"));
 
   if (key.substring(0,8) == "session_") {
-    let temp = "session_" + current_session;
+    let temp = "session_" + current_session_local;
     if (key == "session_names") {
-      return JSON.stringify(["", session_names[current_session]]);
+      return JSON.stringify(["", session_names[current_session_local]]);
     }
     else if (key.substring(0,temp.length) != temp) {
       return undefined;
     }
   }
-  
+
   else if (key == "current_session") {
     return "1";
   }
@@ -42,89 +151,243 @@ function downloadBlob(content, filename, contentType) {
   pom.setAttribute('download', filename);
   pom.click();
 }
+/**
+ * Import JSON data into Yjs from v2.0 format
+ */
+function import_yjs_from_json(data, mode) {
+  if (!ydoc) return;
+
+  const sessions = ydoc.getArray('sessions');
+  const meta = ydoc.getMap('meta');
+
+  if (mode === 'replace') {
+    ydoc.transact(() => {
+      // Clear existing data
+      while (sessions.length > 0) {
+        sessions.delete(0, 1);
+      }
+
+      // Import new data
+      meta.set('dataVersion', data.dataVersion);
+      meta.set('currentSession', data.currentSession);
+
+      // Import sessions
+      for (let i = 0; i < data.sessions.length; i++) {
+        if (data.sessions[i] === null) {
+          sessions.push([null]);
+          continue;
+        }
+
+        const sessionData = data.sessions[i];
+        const sessionMap = new Y.Map();
+        sessionMap.set('name', sessionData.name);
+
+        // Config
+        const config = new Y.Map();
+        config.set('maxPointsPerQuestion', sessionData.config.maxPointsPerQuestion);
+        config.set('rounding', sessionData.config.rounding);
+        sessionMap.set('config', config);
+
+        // Teams
+        const teams = new Y.Array();
+        for (let t = 0; t < sessionData.teams.length; t++) {
+          if (sessionData.teams[t] === null) {
+            teams.push([null]);
+          } else {
+            const teamMap = new Y.Map();
+            teamMap.set('name', sessionData.teams[t].name);
+            teams.push([teamMap]);
+          }
+        }
+        sessionMap.set('teams', teams);
+
+        // Blocks
+        const blocks = new Y.Array();
+        for (let b = 0; b < sessionData.blocks.length; b++) {
+          const blockMap = new Y.Map();
+          blockMap.set('name', sessionData.blocks[b].name);
+          blocks.push([blockMap]);
+        }
+        sessionMap.set('blocks', blocks);
+
+        // Questions
+        const questions = new Y.Array();
+        for (let q = 0; q < sessionData.questions.length; q++) {
+          if (sessionData.questions[q] === null) {
+            questions.push([null]);
+            continue;
+          }
+
+          const questionData = sessionData.questions[q];
+          const questionMap = new Y.Map();
+          questionMap.set('name', questionData.name);
+          questionMap.set('score', questionData.score);
+          questionMap.set('block', questionData.block);
+          questionMap.set('ignore', questionData.ignore);
+
+          const questionTeams = new Y.Array();
+          for (let qt = 0; qt < questionData.teams.length; qt++) {
+            if (questionData.teams[qt] === null) {
+              questionTeams.push([null]);
+            } else {
+              const teamScoreMap = new Y.Map();
+              teamScoreMap.set('score', questionData.teams[qt].score);
+              teamScoreMap.set('extraCredit', questionData.teams[qt].extraCredit);
+              questionTeams.push([teamScoreMap]);
+            }
+          }
+          questionMap.set('teams', questionTeams);
+
+          questions.push([questionMap]);
+        }
+        sessionMap.set('questions', questions);
+        sessionMap.set('currentQuestion', sessionData.currentQuestion);
+
+        sessions.push([sessionMap]);
+      }
+
+      // Update global current_session
+      current_session = data.currentSession;
+    }, 'import');
+  } else if (mode === 'append') {
+    ydoc.transact(() => {
+      const old_session_count = sessions.length - 1;
+
+      // Append sessions from import (skip index 0 placeholder)
+      for (let i = 1; i < data.sessions.length; i++) {
+        const sessionData = data.sessions[i];
+        const sessionMap = new Y.Map();
+        sessionMap.set('name', sessionData.name);
+
+        // Config
+        const config = new Y.Map();
+        config.set('maxPointsPerQuestion', sessionData.config.maxPointsPerQuestion);
+        config.set('rounding', sessionData.config.rounding);
+        sessionMap.set('config', config);
+
+        // Teams
+        const teams = new Y.Array();
+        for (let t = 0; t < sessionData.teams.length; t++) {
+          if (sessionData.teams[t] === null) {
+            teams.push([null]);
+          } else {
+            const teamMap = new Y.Map();
+            teamMap.set('name', sessionData.teams[t].name);
+            teams.push([teamMap]);
+          }
+        }
+        sessionMap.set('teams', teams);
+
+        // Blocks
+        const blocks = new Y.Array();
+        for (let b = 0; b < sessionData.blocks.length; b++) {
+          const blockMap = new Y.Map();
+          blockMap.set('name', sessionData.blocks[b].name);
+          blocks.push([blockMap]);
+        }
+        sessionMap.set('blocks', blocks);
+
+        // Questions
+        const questions = new Y.Array();
+        for (let q = 0; q < sessionData.questions.length; q++) {
+          if (sessionData.questions[q] === null) {
+            questions.push([null]);
+            continue;
+          }
+
+          const questionData = sessionData.questions[q];
+          const questionMap = new Y.Map();
+          questionMap.set('name', questionData.name);
+          questionMap.set('score', questionData.score);
+          questionMap.set('block', questionData.block);
+          questionMap.set('ignore', questionData.ignore);
+
+          const questionTeams = new Y.Array();
+          for (let qt = 0; qt < questionData.teams.length; qt++) {
+            if (questionData.teams[qt] === null) {
+              questionTeams.push([null]);
+            } else {
+              const teamScoreMap = new Y.Map();
+              teamScoreMap.set('score', questionData.teams[qt].score);
+              teamScoreMap.set('extraCredit', questionData.teams[qt].extraCredit);
+              questionTeams.push([teamScoreMap]);
+            }
+          }
+          questionMap.set('teams', questionTeams);
+
+          questions.push([questionMap]);
+        }
+        sessionMap.set('questions', questions);
+        sessionMap.set('currentQuestion', sessionData.currentQuestion);
+
+        sessions.push([sessionMap]);
+      }
+
+      // Set current session to last imported session
+      current_session = sessions.length - 1;
+      meta.set('currentSession', current_session);
+    }, 'import');
+  }
+}
+
 function setup_file_import() {
-  //Check the support for the File API support 
+  //Check the support for the File API support
   if (window.File && window.FileReader && window.FileList && window.Blob) {
     let fileSelected = document.getElementById('import_file');
-    fileSelected.addEventListener('change', function (e) { 
-      //Set the extension for the file 
-      let fileExtension = /json.*/; 
-      //Get the file object 
+    fileSelected.addEventListener('change', function (e) {
+      //Set the extension for the file
+      let fileExtension = /json.*/;
+      //Get the file object
       let fileTobeRead = fileSelected.files[0];
-      //Check of the extension match 
-      if (fileTobeRead.type.match(fileExtension)) { 
-        //Initialize the FileReader object to read the file 
-        let fileReader = new FileReader(); 
+      //Check of the extension match
+      if (fileTobeRead.type.match(fileExtension)) {
+        //Initialize the FileReader object to read the file
+        let fileReader = new FileReader();
         fileReader.onload = function (e) {
           let temp_import_data = JSON.parse(fileReader.result);
-          //Note: This is a very basic validation. It is only check for existence of required elements. It is not validating those elements to be safe.
-          if (validate_data(temp_import_data)) {
-            
-            //Upgrade the data structure to the current version
-            let data_version = JSON.parse(get_element("data_version", temp_import_data));
-            temp_import_data = data_upgrades(data_version, temp_import_data);
-            
-            if (import_status == "replace" 
-                && window.confirm("Are you sure you want to irreversably delete all of your current data and replace it with this import?")) {
 
-              //Clear existing data
-              localStorage.clear();
-              //Import new data
-              Object.keys(temp_import_data).forEach(function (k) {
-                //No need to parse and then stringify as it is already stringified
-                set_element(k, temp_import_data[k]);
-              });
-              //Force a refresh of the display
+          // Detect format: v2.0 (Yjs) vs v1.x (localStorage)
+          const is_v2 = temp_import_data.dataVersion === 2.0 && temp_import_data.sessions && Array.isArray(temp_import_data.sessions);
+
+          if (is_v2) {
+            // v2.0 format - import directly into Yjs
+            if (import_status == "replace"
+                && window.confirm("Are you sure you want to irreversably delete all of your current data and replace it with this import?")) {
+              import_yjs_from_json(temp_import_data, 'replace');
               sync_data_to_display();
-              //Change the on screen display to the Configuration screen
               $( '#accordion' ).accordion({active: 0});
             } else if (import_status == "append") {
-              //delete data version as it is already right
-              delete temp_import_data['data_version'];
-
-              //Merge Session Names and then delete from import
-              let old_session_count = JSON.parse(get_element("session_names")).length - 1;
-              let temp = JSON.parse(get_element("session_names", temp_import_data));
-              //Remove initial empty element
-              temp.splice(0, 1);
-              set_element("session_names", JSON.stringify(JSON.parse(get_element("session_names")).concat(temp)));
-              delete temp_import_data['session_names'];
-
-              //Set current session to last of merged in sessions and then delete from import
-              set_element("current_session", JSON.parse(get_element("session_names")).length - 1);
-              current_session = Number(JSON.parse(get_element("current_session")));
-              delete temp_import_data['current_session'];
-
-              //renumber sessions to be merged in
-              const session_locator = /^(.*session_)([0-9]+)(_.*)$/;
-              for (let key in temp_import_data){
-                let session_number = key.match(session_locator)[2];
-                let temp_key = key.match(session_locator)[1]+(Number(key.match(session_locator)[2]) + Number(old_session_count))+key.match(session_locator)[3];
-                set_element(temp_key, get_element(key, temp_import_data));
-                delete temp_import_data[key];
-              }
-
-              //Merge in the new data
-              Object.keys(temp_import_data).forEach(function (k) {
-                //No need to parse and then stringify as it is already stringified
-                set_element(k, temp_import_data[k]);
-              });
-
-              //Force a refresh of the display
+              import_yjs_from_json(temp_import_data, 'append');
               sync_data_to_display();
-              //Change the on screen display to the Configuration screen
               $( '#accordion' ).accordion({active: 0});
             }
-            else {
-              //Do nothing
-            }
           } else {
-            alert("Selected imported data is not valid.");
+            // v1.x format - validate, upgrade, then convert to Yjs
+            if (validate_data(temp_import_data)) {
+              let data_version = JSON.parse(get_element("data_version", temp_import_data));
+              temp_import_data = data_upgrades(data_version, temp_import_data);
+
+              // Convert localStorage format to v2.0 format
+              const converted_data = convert_localStorage_to_v2(temp_import_data);
+
+              if (import_status == "replace"
+                  && window.confirm("Are you sure you want to irreversably delete all of your current data and replace it with this import?")) {
+                import_yjs_from_json(converted_data, 'replace');
+                sync_data_to_display();
+                $( '#accordion' ).accordion({active: 0});
+              } else if (import_status == "append") {
+                import_yjs_from_json(converted_data, 'append');
+                sync_data_to_display();
+                $( '#accordion' ).accordion({active: 0});
+              }
+            } else {
+              alert("Selected imported data is not valid.");
+            }
           }
         }
         fileReader.readAsText(fileTobeRead);
       }
-      else { 
+      else {
         alert("Please select json file for import");
       }
       //Unselect file
@@ -132,9 +395,74 @@ function setup_file_import() {
 
     }, false);
   }
-  else { 
+  else {
     $("#import_group").html("<p>Your Browser does not support importing.</p>");
   }
+}
+
+/**
+ * Convert localStorage v1.5 format to v2.0 Yjs format
+ */
+function convert_localStorage_to_v2(localStorageData) {
+  const sessionNames = JSON.parse(localStorageData['session_names']);
+  const result = {
+    dataVersion: 2.0,
+    currentSession: Number(localStorageData['current_session']),
+    sessions: [null] // Placeholder at index 0
+  };
+
+  for (let s = 1; s < sessionNames.length; s++) {
+    const session = {
+      name: sessionNames[s],
+      config: {
+        maxPointsPerQuestion: Number(JSON.parse(localStorageData['session_' + s + '_max_points_per_question'])),
+        rounding: JSON.parse(localStorageData['session_' + s + '_rounding']) === 'true'
+      },
+      teams: [],
+      blocks: [],
+      questions: [],
+      currentQuestion: Number(JSON.parse(localStorageData['session_' + s + '_current_question']))
+    };
+
+    // Teams
+    const teamNames = JSON.parse(localStorageData['session_' + s + '_team_names']);
+    session.teams.push(null); // Placeholder
+    for (let t = 1; t < teamNames.length; t++) {
+      session.teams.push({ name: teamNames[t] });
+    }
+
+    // Blocks
+    const blockNames = JSON.parse(localStorageData['session_' + s + '_block_names']);
+    for (let b = 0; b < blockNames.length; b++) {
+      session.blocks.push({ name: blockNames[b] });
+    }
+
+    // Questions
+    const questionNames = JSON.parse(localStorageData['session_' + s + '_question_names']);
+    session.questions.push(null); // Placeholder
+    for (let q = 1; q < questionNames.length; q++) {
+      const question = {
+        name: questionNames[q],
+        score: Number(JSON.parse(localStorageData['session_' + s + '_question_' + q + '_score'] || '0')),
+        block: Number(JSON.parse(localStorageData['session_' + s + '_question_' + q + '_block'] || '0')),
+        ignore: JSON.parse(localStorageData['session_' + s + '_question_' + q + '_ignore'] || 'false') === 'true',
+        teams: [null] // Placeholder
+      };
+
+      for (let t = 1; t < teamNames.length; t++) {
+        question.teams.push({
+          score: Number(JSON.parse(localStorageData['session_' + s + '_question_' + q + '_team_' + t + '_score'] || '0')),
+          extraCredit: Number(JSON.parse(localStorageData['session_' + s + '_question_' + q + '_team_' + t + '_extra_credit'] || '0'))
+        });
+      }
+
+      session.questions.push(question);
+    }
+
+    result.sessions.push(session);
+  }
+
+  return result;
 }
 function validate_data(data_to_validate) {
   let row_count = 0;

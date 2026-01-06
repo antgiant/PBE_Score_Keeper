@@ -31,28 +31,38 @@ function initialize_display() {
   initialize_theme_controls();
   sync_data_to_display();
   initialize_reorder_controls();
+  initialize_history_viewer();
 
   setup_file_import();
 }
 function sync_data_to_display() {
-  //Load "Universal" DB data into variables
-  var session_names = JSON.parse(get_element("session_names"));
+  //Load "Universal" DB data into variables from Yjs
+  var session_names = get_session_names();
   var session_count = session_names.length - 1;
-  var max_points = Number(JSON.parse(get_element("session_"+current_session+"_max_points_per_question")));
-  var rounding = JSON.parse(get_element("session_"+current_session+"_rounding"));
-  var team_names = JSON.parse(get_element("session_"+current_session+"_team_names"));
+  const session = get_current_session();
+  if (!session) {
+    console.error('No current session found');
+    return;
+  }
+  const config = session.get('config');
+  var max_points = config.get('maxPointsPerQuestion');
+  var rounding = config.get('rounding');
+  var team_names = get_team_names();
   var team_count = team_names.length - 1;
-  var block_names = JSON.parse(get_element("session_"+current_session+"_block_names"));
+  var block_names = get_block_names();
   var block_count = block_names.length - 1;
-  var question_names = JSON.parse(get_element("session_"+current_session+"_question_names"));
+  var question_names = get_question_names();
   var question_count = question_names.length - 1;
-  if (Number(get_element("session_"+current_session+"_question_"+question_count+"_score")) == 0) {
+  const questions = session.get('questions');
+  if (questions.get(question_count).get('score') == 0) {
     question_count--;
   }
-  var current_question = Number(get_element("session_"+current_session+"_current_question"));
-  var current_selected_block = Number(JSON.parse(get_element("session_"+current_session+"_question_"+current_question+"_block")));
-  var question_max_points = Number(get_element("session_"+current_session+"_question_"+current_question+"_score"));
-  var ignore_question = JSON.parse(get_element("session_"+current_session+"_question_"+current_question+"_ignore"));
+  var current_question = session.get('currentQuestion');
+  const currentQuestionObj = questions.get(current_question);
+  const currentQuestionTeams = currentQuestionObj.get('teams');
+  var current_selected_block = currentQuestionObj.get('block');
+  var question_max_points = currentQuestionObj.get('score');
+  var ignore_question = currentQuestionObj.get('ignore');
 
   //Update Session name to saved name
   $("#session_name").text(session_names[current_session]);
@@ -186,8 +196,9 @@ function sync_data_to_display() {
   if (displayed_teams_count < team_count) {
     for (let i=displayed_teams_count + 1;i<=team_count;i++) {
       //Add new
-      $("#team_names").append('<div class="reorder-item" data-index="'+i+'"><button type="button" class="drag-handle" draggable="true" aria-label="Drag to reorder Team '+i+'">&equiv; &#8597;</button><label><span class="reorder-label">Team '+i+' Name:</span> <input type = "text" name = "team_'+i+'_name" id = "team_'+i+'_name" onchange="local_data_update(this)" value = "'+team_names[i].replace('"', "&quote")+'"></label></div>');
-      $("#question_teams").append('<fieldset><legend id=team_'+i+'_points_label>Team '+HTMLescape(team_names[i])+' Score</legend><div id="team_'+i+'_score"></div>'+
+      let teamName = team_names[i] || ('Team ' + i);
+      $("#team_names").append('<div class="reorder-item" data-index="'+i+'"><button type="button" class="drag-handle" draggable="true" aria-label="Drag to reorder Team '+i+'">&equiv; &#8597;</button><label><span class="reorder-label">Team '+i+' Name:</span> <input type = "text" name = "team_'+i+'_name" id = "team_'+i+'_name" onchange="local_data_update(this)" value = "'+teamName.replace('"', "&quote")+'"></label></div>');
+      $("#question_teams").append('<fieldset><legend id=team_'+i+'_points_label>Team '+HTMLescape(teamName)+' Score</legend><div id="team_'+i+'_score"></div>'+
                                    '<legend id=team_'+i+'_extra_credit_label style="display:none">Extra Credit<div><button id="team_'+i+'_extra_credit_decrease" onclick="local_data_update(this)" >-</button><span id="team_'+i+'_extra_credit" class="extra_credit_amount">0</span><button id ="team_'+i+'_extra_credit_increase" onclick="local_data_update(this)" >+</button></div></legend></fieldset>');
       $("#team_"+i+"_score").append('<label><input type="radio" id="team_'+i+'_score_0" name="team_'+i+'_score" value=0 onchange="local_data_update(this)">0</label>');
       $( "#team_"+i+"_score" ).controlgroup();
@@ -217,7 +228,7 @@ function sync_data_to_display() {
     var question_earned = 0;
     //Get total points earned for this question
     for (var j=1; j <= question_count; j++) {
-      question_earned += Number(get_element("session_"+current_session+"_question_"+current_question+"_team_"+j+"_score"));
+      question_earned += currentQuestionTeams.get(j).get('score');
     }
     let temp_current_question_number = current_question;
     //Go back one question if no one has answered this one yet
@@ -229,7 +240,7 @@ function sync_data_to_display() {
     let team_and_block_row = (i - 1)*(block_count + 1) + 1 + current_selected_block;
     let temp_team_score = "";
     if (temp_team_score_summary[i][5] > 0) {
-      if (rounding == "true") {
+      if (rounding === true) {
         temp_team_score += " "+temp_team_score_summary[i][7];
       } else {
         temp_team_score += " "+temp_team_score_summary[i][1];
@@ -240,12 +251,13 @@ function sync_data_to_display() {
                     block_names[current_selected_block]+" "+
                     temp_team_and_block_score_summary[team_and_block_row][2]+")";
     }
-    if (team_names[i].slice(-1).toLowerCase() === "s") {
-      $("#team_"+i+"_points_label").text(team_names[i]+"' score"+temp_team_score);
+    let currentTeamName = team_names[i] || ('Team ' + i);
+    if (currentTeamName.slice(-1).toLowerCase() === "s") {
+      $("#team_"+i+"_points_label").text(currentTeamName+"' score"+temp_team_score);
     } else {
-      $("#team_"+i+"_points_label").text(team_names[i]+"'s score"+temp_team_score);
+      $("#team_"+i+"_points_label").text(currentTeamName+"'s score"+temp_team_score);
     }
-    $("#team_"+i+"_name").val(team_names[i]);
+    $("#team_"+i+"_name").val(currentTeamName);
   }
 
   for (let i=1;i<=team_count;i++) {
@@ -275,8 +287,9 @@ function sync_data_to_display() {
   if (displayed_block_count < block_count) {
     for (let i=displayed_block_count + 1;i<=block_count;i++) {
       //Add new
-      $("#block_names").append('<div class="reorder-item" data-index="'+i+'"><button type="button" class="drag-handle" draggable="true" aria-label="Drag to reorder Block/Group '+i+'">&equiv; &#8597;</button><label><span class="reorder-label">Block/Group '+i+' Name:</span> <input type = "text" name = "block_'+i+'_name" id = "block_'+i+'_name" onchange="local_data_update(this)" value = "'+block_names[i].replace('"', "&quote")+'"></label></div>');
-      $("#question_block").append('<label><input type="radio" id="question_block_'+i+'" name="question_block" value="'+i+'" onchange="local_data_update(this)"><span id="block_'+i+'_label">'+HTMLescape(block_names[i])+'</span></label>');
+      let blockName = block_names[i] || ('Block/Group ' + i);
+      $("#block_names").append('<div class="reorder-item" data-index="'+i+'"><button type="button" class="drag-handle" draggable="true" aria-label="Drag to reorder Block/Group '+i+'">&equiv; &#8597;</button><label><span class="reorder-label">Block/Group '+i+' Name:</span> <input type = "text" name = "block_'+i+'_name" id = "block_'+i+'_name" onchange="local_data_update(this)" value = "'+blockName.replace('"', "&quote")+'"></label></div>');
+      $("#question_block").append('<label><input type="radio" id="question_block_'+i+'" name="question_block" value="'+i+'" onchange="local_data_update(this)"><span id="block_'+i+'_label">'+HTMLescape(blockName)+'</span></label>');
     }
   }
   else if (displayed_block_count > block_count) {
@@ -290,7 +303,11 @@ function sync_data_to_display() {
   }
 
   //Update Block/Group Names (Yes this is ineffecient but the numbers are so small it doesn't really matter)
-  $( "#question_block" ).controlgroup( "destroy" );
+  try {
+    $( "#question_block" ).controlgroup( "destroy" );
+  } catch(e) {
+    // Controlgroup not initialized yet, that's okay
+  }
   for (let i=1;i<=block_count;i++) {
     let block_input = $("#block_"+i+"_name");
     if (typeof block_input.closest === "function") {
@@ -302,13 +319,14 @@ function sync_data_to_display() {
         $("#block_names").append(block_item);
       }
     }
-    $("#block_"+i+"_label").text(block_names[i]);
+    let currentBlockName = block_names[i] || ('Block/Group ' + i);
+    $("#block_"+i+"_label").text(currentBlockName);
     let question_block = $("#question_block_"+i);
     if (typeof question_block.closest === "function") {
       $("#question_block").append(question_block.closest("label"));
     }
 
-    $("#block_"+i+"_name").val(block_names[i]);
+    $("#block_"+i+"_name").val(currentBlockName);
     //Check off saved block/group
     if (i == current_selected_block) {
       $("#question_block_"+i).prop("checked", true);
@@ -318,9 +336,6 @@ function sync_data_to_display() {
   }
   $( "#question_block" ).controlgroup();
 
-  //Add fancy options to new buttons
-  $( "#question_block" ).controlgroup( "refresh" );
-
   //Update Question name to saved name
   $("#current_question_title").text(question_names[current_question]);
 
@@ -328,18 +343,18 @@ function sync_data_to_display() {
   let question_quick_nav = '<select name="question_quick_nav" id="question_quick_nav" onchange="local_data_update(this)"">';
   temp_count = (current_question>question_count?current_question:question_count);
   for (let i=1; i <= temp_count; i++) {
-    let temp_ignore_question = JSON.parse(get_element("session_"+current_session+"_question_"+i+"_ignore"));
+    let temp_ignore_question = questions.get(i).get('ignore');
     if (i==current_question) {
-      question_quick_nav += '<option value="'+i+'" selected>'+(temp_ignore_question == "true"?"🚫":"")+i+" of "+question_count+'</option>';
+      question_quick_nav += '<option value="'+i+'" selected>'+(temp_ignore_question === true?"🚫":"")+i+" of "+question_count+'</option>';
     } else {
-      question_quick_nav += '<option value="'+i+'">'+(temp_ignore_question == "true"?"🚫":"")+i+" of "+question_count+' - '+HTMLescape(question_names[i])+'</option>';
+      question_quick_nav += '<option value="'+i+'">'+(temp_ignore_question === true?"🚫":"")+i+" of "+question_count+' - '+HTMLescape(question_names[i])+'</option>';
     }
   }
   question_quick_nav += '</select>';
   $("#current_question_title_count").html(question_quick_nav);
 
   //Set up Max Points per Question
-  
+
   //Show block/group count
   $("#max_points").text(max_points);
   if (max_points == 1) {
@@ -349,7 +364,7 @@ function sync_data_to_display() {
     $("#max_points_text").text("points");
     $("#max_points_decrease").prop("disabled", false);
   }
-  
+
   //Set up max possible points for all questions
   let current_max_possible_points = $("#question_score").children().length;
   if (current_max_possible_points < max_points) {
@@ -378,8 +393,8 @@ function sync_data_to_display() {
   //Disable selecting max possible score lower than already earned score
   let temp_max = 0;
   for (let i = 1; i <= team_count; i++) {
-    if (temp_max < Number(get_element("session_"+current_session+"_question_"+current_question+"_team_"+i+"_score"))) {
-      temp_max = Number(get_element("session_"+current_session+"_question_"+current_question+"_team_"+i+"_score"));
+    if (temp_max < currentQuestionTeams.get(i).get('score')) {
+      temp_max = currentQuestionTeams.get(i).get('score');
     }
   }
   for (let i = 0; i < max_points; i++) {
@@ -391,11 +406,15 @@ function sync_data_to_display() {
   }
 
   //Add fancy options to new buttons
-  $( "#question_score" ).controlgroup( "refresh" );
+  try {
+    $( "#question_score" ).controlgroup( "refresh" );
+  } catch(e) {
+    // Controlgroup not initialized yet
+  }
 
   //Set up max possible points on this question (for each team)
   for (let i=1;i<=team_count;i++) {
-    let current_team_and_question_score = Number(get_element("session_"+current_session+"_question_"+current_question+"_team_"+i+"_score"));
+    let current_team_and_question_score = currentQuestionTeams.get(i).get('score');
     let current_point_count = $("#team_"+i+"_score").children().length - 1;
     if (current_point_count < question_max_points) {
       //Add new
@@ -415,19 +434,23 @@ function sync_data_to_display() {
     $("#team_"+i+"_score_" + current_team_and_question_score).prop("checked", true);
 
     //Add corrected point options
-    $( "#team_"+i+"_score" ).controlgroup("refresh");
+    try {
+      $( "#team_"+i+"_score" ).controlgroup("refresh");
+    } catch(e) {
+      // Controlgroup not initialized yet
+    }
   }
 
 
   //Show rounding status
-  if (rounding == "true") {
+  if (rounding === true) {
     $("#rounding_yes").prop("checked", true);
   } else {
     $("#rounding_no").prop("checked", true);
   }
 
   //Show ignore status
-  if (ignore_question == "true") {
+  if (ignore_question === true) {
     $("#ignore_question").prop("checked", true);
     $("#ignore_question_warning").show();
     $("#ignored_question").css("opacity", 0.25);
@@ -443,7 +466,7 @@ function sync_data_to_display() {
   let temp_extra_credit = 0;
   let temp = 0;
   for (let i=1;i<=team_count;i++) {
-    temp = Number(get_element("session_"+current_session+"_question_"+current_question+"_team_"+i+"_extra_credit"));
+    temp = currentQuestionTeams.get(i).get('extraCredit');
     if (temp == undefined) {
       temp = 0;
     }
@@ -459,13 +482,18 @@ function sync_data_to_display() {
     }
   } else {
     //Hide Extra Credit
+    $("#extra_credit").prop("checked", false);
     for (let i=1;i<=team_count;i++) {
       $('#team_'+i+'_extra_credit_label').hide();
     }
   }
 
   //Refresh display
-  $( "#rounding" ).controlgroup("refresh");
+  try {
+    $( "#rounding" ).controlgroup("refresh");
+  } catch(e) {
+    // Controlgroup not initialized yet
+  }
 
   //Disable Previous Question Button if this is the first Question
   if (current_question == 1) {

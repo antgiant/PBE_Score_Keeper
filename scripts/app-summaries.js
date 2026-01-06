@@ -1,12 +1,16 @@
 function get_team_score_summary(temp_question_count = -1) {
+  const session = get_current_session();
+  if (!session) return [["Team Name","Percent","Score","Placement","Earned Points","Total Points", "Total Points (Rounded)", "Percent (Rounded)", "Score (Rounded)", "Placement (Rounded)"]];
+
+  const questions = session.get('questions');
   if (temp_question_count == -1) {
-    var question_count = JSON.parse(get_element("session_"+current_session+"_question_names")).length - 1;
+    var question_count = questions.length - 1;
   } else {
     var question_count = temp_question_count;
   }
-  let team_names = JSON.parse(get_element("session_"+current_session+"_team_names"));
+  let team_names = get_team_names();
   let team_count = team_names.length - 1;
-  let rounding = JSON.parse(get_element("session_"+current_session+"_rounding"));
+  let rounding = session.get('config').get('rounding');
 
   //Create empty summary array
   let team_score_summary = new Array();
@@ -21,12 +25,14 @@ function get_team_score_summary(temp_question_count = -1) {
     let team_earned_without_extra_credit = 0;
     let team_possible = 0;
     for (let j=1; j <= question_count; j++) {
-      let temp_ignore_question = JSON.parse(get_element("session_"+current_session+"_question_"+j+"_ignore"));
-      if (temp_ignore_question === "false") {
-        team_earned += Number(get_element("session_"+current_session+"_question_"+j+"_team_"+i+"_score"));
-        team_earned += Number(get_element("session_"+current_session+"_question_"+j+"_team_"+i+"_extra_credit"));
-        team_earned_without_extra_credit += Number(get_element("session_"+current_session+"_question_"+j+"_team_"+i+"_score"));
-        team_possible += Number(get_element("session_"+current_session+"_question_"+j+"_score"));
+      const question = questions.get(j);
+      let temp_ignore_question = question.get('ignore');
+      if (temp_ignore_question === false) {
+        const questionTeams = question.get('teams');
+        team_earned += questionTeams.get(i).get('score');
+        team_earned += questionTeams.get(i).get('extraCredit');
+        team_earned_without_extra_credit += questionTeams.get(i).get('score');
+        team_possible += question.get('score');
       }
     }
     team_score_summary[i][4] = team_earned;
@@ -59,13 +65,17 @@ function get_team_score_summary(temp_question_count = -1) {
   return team_score_summary;
 }
 function get_block_score_summary(temp_question_count = -1) {
+  const session = get_current_session();
+  if (!session) return [["Block/Group Name","Percent","Score","Earned Points","Total Points"]];
+
+  const questions = session.get('questions');
   if (temp_question_count == -1) {
-    var question_count = JSON.parse(get_element("session_"+current_session+"_question_names")).length - 1;
+    var question_count = questions.length - 1;
   } else {
     var question_count = temp_question_count;
   }
-  let team_count = JSON.parse(get_element("session_"+current_session+"_team_names")).length - 1;
-  let block_names = JSON.parse(get_element("session_"+current_session+"_block_names"));
+  let team_count = get_team_names().length - 1;
+  let block_names = get_block_names();
   let block_count = block_names.length - 1;
 
   //Create empty summary array
@@ -79,12 +89,14 @@ function get_block_score_summary(temp_question_count = -1) {
     let block_earned = 0;
     let block_possible = 0;
     for (let j=1; j <= question_count; j++) {
-      let temp_ignore_question = JSON.parse(get_element("session_"+current_session+"_question_"+j+"_ignore"));
-      if (Number(get_element("session_"+current_session+"_question_"+j+"_block")) == i && temp_ignore_question === "false") {
+      const question = questions.get(j);
+      let temp_ignore_question = question.get('ignore');
+      if (question.get('block') == i && temp_ignore_question === false) {
+        const questionTeams = question.get('teams');
         for (let k=1; k <= team_count; k++) {
-          block_earned += Number(get_element("session_"+current_session+"_question_"+j+"_team_"+k+"_score"));
-          block_earned += Number(get_element("session_"+current_session+"_question_"+j+"_team_"+k+"_extra_credit"));
-          block_possible += Number(get_element("session_"+current_session+"_question_"+j+"_score"));
+          block_earned += questionTeams.get(k).get('score');
+          block_earned += questionTeams.get(k).get('extraCredit');
+          block_possible += question.get('score');
         }
       }
     }
@@ -96,14 +108,18 @@ function get_block_score_summary(temp_question_count = -1) {
   return block_score_summary;
 }
 function get_team_and_block_score_summary(temp_question_count = -1) {
+  const session = get_current_session();
+  if (!session) return [["Team Name","Block/Group Name","Percent","Score","Earned Points","Total Points"]];
+
+  const questions = session.get('questions');
   if (temp_question_count == -1) {
-    var question_count = JSON.parse(get_element("session_"+current_session+"_question_names")).length - 1;
+    var question_count = questions.length - 1;
   } else {
     var question_count = temp_question_count;
   }
-  let team_names = JSON.parse(get_element("session_"+current_session+"_team_names"));
+  let team_names = get_team_names();
   let team_count = team_names.length - 1;
-  let block_names = JSON.parse(get_element("session_"+current_session+"_block_names"));
+  let block_names = get_block_names();
   let block_count = block_names.length - 1;
 
   //Create empty summary array
@@ -118,13 +134,15 @@ function get_team_and_block_score_summary(temp_question_count = -1) {
   for (let i=1; i <= team_count; i++) {
     let temp_team_start = (i - 1)*(block_count + 1) + 1;
     for (let j=1; j <= question_count; j++) {
-      let temp_ignore_question = JSON.parse(get_element("session_"+current_session+"_question_"+j+"_ignore"));
-      if (temp_ignore_question === "false") {
-        let current_selected_block = Number(get_element("session_"+current_session+"_question_"+j+"_block"));
+      const question = questions.get(j);
+      let temp_ignore_question = question.get('ignore');
+      if (temp_ignore_question === false) {
+        let current_selected_block = question.get('block');
         let temp_row_number = temp_team_start + current_selected_block;
-        team_and_block_score_summary[temp_row_number][4] += Number(get_element("session_"+current_session+"_question_"+j+"_team_"+i+"_score"));
-        team_and_block_score_summary[temp_row_number][4] += Number(get_element("session_"+current_session+"_question_"+j+"_team_"+i+"_extra_credit"));
-        team_and_block_score_summary[temp_row_number][5] +=  Number(get_element("session_"+current_session+"_question_"+j+"_score"));
+        const questionTeams = question.get('teams');
+        team_and_block_score_summary[temp_row_number][4] += questionTeams.get(i).get('score');
+        team_and_block_score_summary[temp_row_number][4] += questionTeams.get(i).get('extraCredit');
+        team_and_block_score_summary[temp_row_number][5] += question.get('score');
         team_and_block_score_summary[temp_row_number][2] = ((team_and_block_score_summary[temp_row_number][4]/team_and_block_score_summary[temp_row_number][5])*100).toFixed(2)+"%";;
         team_and_block_score_summary[temp_row_number][3] = team_and_block_score_summary[temp_row_number][4]+"/"+team_and_block_score_summary[temp_row_number][5];
       }
@@ -133,18 +151,22 @@ function get_team_and_block_score_summary(temp_question_count = -1) {
   return team_and_block_score_summary;
 }
 function get_question_log(temp_question_count = -1) {
-  var question_names = JSON.parse(get_element("session_"+current_session+"_question_names"));
+  const session = get_current_session();
+  if (!session) return [["Question", "Block/Group", "Possible Points", "Ignore Question"]];
+
+  var question_names = get_question_names();
+  const questions = session.get('questions');
   if (temp_question_count == -1) {
     var question_count = question_names.length - 1;
   } else {
     var question_count = temp_question_count;
   }
-  if (Number(get_element("session_"+current_session+"_question_"+question_count+"_score")) == 0) {
+  if (questions.get(question_count).get('score') == 0) {
     question_count--;
   }
-  let team_names = JSON.parse(get_element("session_"+current_session+"_team_names"));
+  let team_names = get_team_names();
   let team_count = team_names.length - 1;
-  let block_names = JSON.parse(get_element("session_"+current_session+"_block_names"));
+  let block_names = get_block_names();
   let block_count = block_names.length - 1;
 
   //Create empty summary array
@@ -158,19 +180,21 @@ function get_question_log(temp_question_count = -1) {
   }
   let question_log_summary = Array()
   question_log_summary.push(temp_row);
-  
+
   for (let i=1; i <= question_count; i++) {
     temp_row = Array();
+    const question = questions.get(i);
     temp_row.push(question_names[i]);
-    temp_row.push(block_names[Number(get_element("session_"+current_session+"_question_"+i+"_block"))]);
-    temp_row.push(Number(get_element("session_"+current_session  +"_question_"+i+"_score")));
-    temp_row.push(JSON.parse(get_element("session_"+current_session+"_question_"+i+"_ignore")))
+    temp_row.push(block_names[question.get('block')]);
+    temp_row.push(question.get('score'));
+    temp_row.push(question.get('ignore'))
+    const questionTeams = question.get('teams');
     for (let j=1; j <= team_count; j++) {
-      let extra_credit = Number(get_element("session_"+current_session+"_question_"+i+"_team_"+j+"_extra_credit"));
+      let extra_credit = questionTeams.get(j).get('extraCredit');
       if (extra_credit > 0) {
-        temp_row.push(Number(get_element("session_"+current_session+"_question_"+i+"_team_"+j+"_score"))+" + "+Number(get_element("session_"+current_session+"_question_"+i+"_team_"+j+"_extra_credit")));
+        temp_row.push(questionTeams.get(j).get('score')+" + "+extra_credit);
       } else {
-        temp_row.push(Number(get_element("session_"+current_session+"_question_"+i+"_team_"+j+"_score")));
+        temp_row.push(questionTeams.get(j).get('score'));
       }
     }
     question_log_summary.push(temp_row);
