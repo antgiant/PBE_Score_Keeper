@@ -210,44 +210,91 @@ function buildContext(seed = {}) {
 
 function loadApp(seed = {}) {
   const html = fs.readFileSync(path.join(__dirname, '..', '..', 'index.html'), 'utf8');
-  const { context, localStorage } = buildContext(seed);
-  vm.createContext(context);
-  const scripts = extractScripts(html);
-  if (!scripts.length) {
-    throw new Error('Inline script or script source not found in index.html');
-  }
-  scripts.forEach((script) => {
-    if (script.src) {
-      if (script.src.includes('jquery')) {
+
+  // Check if seed is a Yjs document
+  const isYjsSeed = seed && seed.constructor && seed.constructor.name === 'Doc';
+
+  if (isYjsSeed) {
+    // New Yjs-based test - load app with pre-built Yjs document
+    const { context, localStorage } = buildContext({});
+    vm.createContext(context);
+
+    const scripts = extractScripts(html);
+    if (!scripts.length) {
+      throw new Error('Inline script or script source not found in index.html');
+    }
+
+    // Load all scripts (skip auto-init)
+    scripts.forEach((script) => {
+      if (script.src) {
+        if (script.src.includes('jquery')) {
+          return;
+        }
+        const content = fs.readFileSync(path.join(__dirname, '..', '..', script.src), 'utf8');
+
+        // Load all app-*.js files but not app.js (which auto-initializes)
+        if (script.src.includes('app-') || !script.src.includes('app.js')) {
+          vm.runInContext(content, context);
+        }
         return;
       }
-      const content = fs.readFileSync(path.join(__dirname, '..', '..', script.src), 'utf8');
-
-      // Load all app-*.js files but not app.js (which auto-initializes)
-      if (script.src.includes('app-') || !script.src.includes('app.js')) {
-        vm.runInContext(content, context);
+      if (script.inline) {
+        // Skip inline scripts that might auto-initialize
       }
-      return;
-    }
-    if (script.inline) {
-      // Skip inline scripts that might auto-initialize
-      // We don't want automatic initialization in tests
-      // vm.runInContext(script.inline, context);
-    }
-  });
+    });
 
-  // Force synchronous initialization for tests
-  // Since IndexedDB is not available, we need to manually set up Yjs
-  // The scripts define global variables ydoc and yjsReady
-  if (context.Y) {
-    // Set up Yjs manually for tests
-    vm.runInContext('ydoc = new Y.Doc(); yjsReady = true;', context);
+    // Set the provided Yjs document directly (no migration needed)
+    if (context.Y) {
+      // Make the seed ydoc available in the VM context
+      context.ydoc = seed;
+      context.yjsReady = true;
 
-    // Now manually run initialization which will trigger migration from localStorage
-    vm.runInContext('initialize_state();', context);
+      // Load from the existing Yjs doc (no migration)
+      vm.runInContext('load_from_yjs(); window.stateInitialized = true;', context);
+    }
+
+    return { context, localStorage, ydoc: seed };
+  } else {
+    // Legacy localStorage-based test - keep existing behavior
+    const { context, localStorage } = buildContext(seed);
+    vm.createContext(context);
+
+    const scripts = extractScripts(html);
+    if (!scripts.length) {
+      throw new Error('Inline script or script source not found in index.html');
+    }
+
+    scripts.forEach((script) => {
+      if (script.src) {
+        if (script.src.includes('jquery')) {
+          return;
+        }
+        const content = fs.readFileSync(path.join(__dirname, '..', '..', script.src), 'utf8');
+
+        // Load all app-*.js files but not app.js (which auto-initializes)
+        if (script.src.includes('app-') || !script.src.includes('app.js')) {
+          vm.runInContext(content, context);
+        }
+        return;
+      }
+      if (script.inline) {
+        // Skip inline scripts that might auto-initialize
+      }
+    });
+
+    // Force synchronous initialization for tests
+    // Since IndexedDB is not available, we need to manually set up Yjs
+    // The scripts define global variables ydoc and yjsReady
+    if (context.Y) {
+      // Set up Yjs manually for tests
+      vm.runInContext('ydoc = new Y.Doc(); yjsReady = true;', context);
+
+      // Now manually run initialization which will trigger migration from localStorage
+      vm.runInContext('initialize_state();', context);
+    }
+
+    return { context, localStorage };
   }
-
-  return { context, localStorage };
 }
 
 module.exports = { buildContext, loadApp };
