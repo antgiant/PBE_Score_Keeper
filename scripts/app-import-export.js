@@ -9,6 +9,17 @@ function arrayToCsv(data){
 }
 
 /**
+ * Check if a string is a valid UUID v4 format
+ * @param {string} str - String to validate
+ * @returns {boolean} True if valid UUID
+ */
+function isValidUUID(str) {
+  if (typeof str !== 'string') return false;
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(str);
+}
+
+/**
  * Convert session from Y.Doc to plain JSON object (multi-doc architecture)
  * @param {string} sessionId - Session UUID to convert
  * @returns {Object} Plain object representation of session data
@@ -220,14 +231,22 @@ async function import_yjs_from_json(data, mode) {
     const sessionData = data.sessions[i];
     if (!sessionData) continue;
 
-    // Generate new UUID for imported session
-    const sessionId = generateSessionId();
+    // Preserve session ID if it's a valid UUID, otherwise generate new
+    const sessionId = (sessionData.id && isValidUUID(sessionData.id)) ? sessionData.id : generateSessionId();
     
-    // Create session doc
-    const sessionDoc = new Y.Doc();
+    // Check if session already exists (for merge support)
+    let existingDoc = DocManager.sessionDocs.get(sessionId);
+    if (!existingDoc && window.indexedDB && typeof IndexeddbPersistence !== 'undefined') {
+      // Try to load from IndexedDB
+      existingDoc = await initSessionDoc(sessionId);
+    }
+    
+    // Create session doc or use existing
+    const sessionDoc = existingDoc || new Y.Doc();
     const session = sessionDoc.getMap('session');
     
     sessionDoc.transact(() => {
+      session.set('id', sessionId);
       session.set('name', sessionData.name);
       session.set('currentQuestion', sessionData.currentQuestion || 1);
 
@@ -295,13 +314,15 @@ async function import_yjs_from_json(data, mode) {
       session.set('historyLog', new Y.Array());
     }, 'import');
 
-    // Store session doc
-    DocManager.sessionDocs.set(sessionId, sessionDoc);
-    
-    // Set up IndexedDB persistence and track provider
-    if (window.indexedDB && typeof IndexeddbPersistence !== 'undefined') {
-      const persistence = new IndexeddbPersistence('pbe-score-keeper-session-' + sessionId, sessionDoc);
-      DocManager.sessionProviders.set(sessionId, persistence);
+    // Store session doc if not already stored
+    if (!DocManager.sessionDocs.has(sessionId)) {
+      DocManager.sessionDocs.set(sessionId, sessionDoc);
+      
+      // Set up IndexedDB persistence and track provider
+      if (window.indexedDB && typeof IndexeddbPersistence !== 'undefined') {
+        const persistence = new IndexeddbPersistence('pbe-score-keeper-session-' + sessionId, sessionDoc);
+        DocManager.sessionProviders.set(sessionId, persistence);
+      }
     }
     
     importedSessionIds.push(sessionId);
@@ -821,6 +842,16 @@ async function importSessionData(data) {
         }
       }
       
+      // Merge global doc state if present
+      if (container.global) {
+        try {
+          const globalData = base64ToUint8Array(container.global);
+          Y.applyUpdate(getGlobalDoc(), globalData, 'import');
+        } catch (error) {
+          result.errors.push('Failed to merge global state: ' + error.message);
+        }
+      }
+      
       if (container.sessions && typeof container.sessions === 'object') {
         const importedSessionIds = [];
         
@@ -833,10 +864,16 @@ async function importSessionData(data) {
             // This allows merging changes from the same session across devices
             const sessionId = originalSessionId;
             
-            // Check if this session already exists
+            // Check if this session already exists in memory
             let sessionDoc = DocManager.sessionDocs.get(sessionId);
+            
+            // If not in memory, try to load from IndexedDB first
+            if (!sessionDoc && window.indexedDB && typeof IndexeddbPersistence !== 'undefined') {
+              sessionDoc = await initSessionDoc(sessionId);
+            }
+            
             if (sessionDoc) {
-              // Merge into existing session doc
+              // Merge into existing session doc (CRDT merge)
               Y.applyUpdate(sessionDoc, sessionData, 'import');
             } else {
               // Create new session doc and apply the imported state
@@ -903,11 +940,19 @@ async function importSessionData(data) {
           sessionId = generateSessionId();
         }
         
-        // Check if this session already exists
+        // Check if this session already exists in memory
         let sessionDoc = DocManager.sessionDocs.get(sessionId);
+        
+        // If not in memory, try to load from IndexedDB first
+        if (!sessionDoc && window.indexedDB && typeof IndexeddbPersistence !== 'undefined') {
+          sessionDoc = await initSessionDoc(sessionId);
+        }
+        
         if (sessionDoc) {
-          // Merge into existing session doc
+          // Merge into existing session doc (CRDT merge)
           Y.applyUpdate(sessionDoc, data, 'import');
+          // Destroy the temp doc since we used the existing one
+          tempDoc.destroy();
         } else {
           // Use the temp doc as our session doc
           sessionDoc = tempDoc;
