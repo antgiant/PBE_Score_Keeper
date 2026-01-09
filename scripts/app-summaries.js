@@ -105,6 +105,10 @@ function get_block_score_summary(temp_question_count = -1) {
     block_score_summary[i + 1][1] = ((block_earned/block_possible)*100).toFixed(2)+"%";
     block_score_summary[i + 1][2] = block_earned+"/"+block_possible;
   }
+  
+  //Remove blocks with no questions (where total points = 0)
+  block_score_summary = block_score_summary.filter((row, index) => index === 0 || row[4] > 0);
+  
   return block_score_summary;
 }
 function get_team_and_block_score_summary(temp_question_count = -1) {
@@ -148,6 +152,10 @@ function get_team_and_block_score_summary(temp_question_count = -1) {
       }
     }
   }
+  
+  //Remove team-block combinations with no questions (where total points = 0)
+  team_and_block_score_summary = team_and_block_score_summary.filter((row, index) => index === 0 || row[5] > 0);
+  
   return team_and_block_score_summary;
 }
 function get_question_log(temp_question_count = -1) {

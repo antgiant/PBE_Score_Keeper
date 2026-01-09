@@ -123,12 +123,10 @@ function sync_data_to_display() {
 
   //Fill in Block/Group Placement and create output table
   temp_output = "<table><thead><tr><th>Block/Group Name</th><th>Percent</th><th>Score</th></tr></thead><tbody>";
-  for (let i=1; i <= block_count + 1; i++) {
-    if (block_score_summary[i][4] > 0) {
-      temp_output = temp_output+"<tr><td>"+HTMLescape(block_score_summary[i][0])+"</td>";
-      temp_output = temp_output+"<td>"+block_score_summary[i][1]+"</td>";
-      temp_output = temp_output+"<td>"+block_score_summary[i][2]+"</td></tr>\n"
-    }
+  for (let i=1; i < block_score_summary.length; i++) {
+    temp_output = temp_output+"<tr><td>"+HTMLescape(block_score_summary[i][0])+"</td>";
+    temp_output = temp_output+"<td>"+block_score_summary[i][1]+"</td>";
+    temp_output = temp_output+"<td>"+block_score_summary[i][2]+"</td></tr>\n"
   }
   temp_output = temp_output+"</tbody></table>";
 
@@ -142,12 +140,10 @@ function sync_data_to_display() {
   //Fill in Team and Block/Group scores and create output table
   temp_output = "<table><thead><tr><th>Team Name</th><th>Block/Group Name</th><th>Percent</th><th>Score</th></tr></thead><tbody>";
   for (let i=1; i < team_and_block_score_summary.length; i++) {
-    if (team_and_block_score_summary[i][5] > 0) {
-      temp_output = temp_output+"<tr><td>"+HTMLescape(team_and_block_score_summary[i][0])+"</td>";
-      temp_output = temp_output+"<td>"+HTMLescape(team_and_block_score_summary[i][1])+"</td>";
-      temp_output = temp_output+"<td>"+team_and_block_score_summary[i][2]+"</td>";
-      temp_output = temp_output+"<td>"+team_and_block_score_summary[i][3]+"</td></tr>\n";
-    }
+    temp_output = temp_output+"<tr><td>"+HTMLescape(team_and_block_score_summary[i][0])+"</td>";
+    temp_output = temp_output+"<td>"+HTMLescape(team_and_block_score_summary[i][1])+"</td>";
+    temp_output = temp_output+"<td>"+team_and_block_score_summary[i][2]+"</td>";
+    temp_output = temp_output+"<td>"+team_and_block_score_summary[i][3]+"</td></tr>\n";
   }
   temp_output = temp_output+"</tbody></table>";
 
@@ -237,7 +233,18 @@ function sync_data_to_display() {
     }
     let temp_team_score_summary = get_team_score_summary(temp_current_question_number);
     let temp_team_and_block_score_summary = get_team_and_block_score_summary(temp_current_question_number);
-    let team_and_block_row = (i - 1)*(block_count + 1) + 1 + current_selected_block;
+    
+    // Find the row for this team and block combination (now that filtered data doesn't have predictable indices)
+    let team_and_block_row = -1;
+    let currentTeamName = team_names[i] || ('Team ' + i);
+    for (let j = 1; j < temp_team_and_block_score_summary.length; j++) {
+      if (temp_team_and_block_score_summary[j][0] === currentTeamName && 
+          temp_team_and_block_score_summary[j][1] === block_names[current_selected_block]) {
+        team_and_block_row = j;
+        break;
+      }
+    }
+    
     let temp_team_score = "";
     if (temp_team_score_summary[i][5] > 0) {
       if (rounding === true) {
@@ -246,12 +253,11 @@ function sync_data_to_display() {
         temp_team_score += " "+temp_team_score_summary[i][1];
       }
     }
-    if (temp_team_and_block_score_summary[team_and_block_row][5] > 0) {
+    if (temp_team_and_block_score_summary[team_and_block_row] && temp_team_and_block_score_summary[team_and_block_row][5] > 0) {
       temp_team_score +=" ("+
                     block_names[current_selected_block]+" "+
                     temp_team_and_block_score_summary[team_and_block_row][2]+")";
     }
-    let currentTeamName = team_names[i] || ('Team ' + i);
     if (currentTeamName.slice(-1).toLowerCase() === "s") {
       $("#team_"+i+"_points_label").text(currentTeamName+"' score"+temp_team_score);
     } else {

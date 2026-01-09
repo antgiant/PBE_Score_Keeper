@@ -81,6 +81,7 @@ test('export score by team downloads the expected CSV', () => {
   );
 });
 
+
 test('export score by block/group downloads the expected CSV', () => {
   const { context } = loadApp(buildExportSeed());
   const downloads = captureDownloads(context);
@@ -97,6 +98,57 @@ test('export score by block/group downloads the expected CSV', () => {
   assert.ok(content.includes('"No Block/Group","90.00%","27/30","27","30"'));
   assert.ok(content.includes('"Block A","70.00%","21/30","21","30"'));
 });
+
+test('export score by block/group excludes empty blocks', () => {
+  const { context } = loadApp(createYjsDoc({
+    currentSession: 1,
+    sessions: [{
+      name: 'Session 1',
+      maxPointsPerQuestion: 10,
+      rounding: false,
+      teams: ['Alpha', 'Beta'],
+      blocks: ['No Block/Group', 'Block A', 'Empty Block'],
+      questions: [
+        {
+          name: 'Q1',
+          score: 10,
+          block: 0,
+          ignore: false,
+          teamScores: [
+            { score: 5, extraCredit: 0 },
+            { score: 8, extraCredit: 0 }
+          ]
+        },
+        {
+          name: 'Q2',
+          score: 10,
+          block: 1,
+          ignore: false,
+          teamScores: [
+            { score: 7, extraCredit: 0 },
+            { score: 9, extraCredit: 0 }
+          ]
+        }
+      ],
+      currentQuestion: 2
+    }]
+  }));
+  const downloads = captureDownloads(context);
+
+  context.local_data_update({ id: 'export_block' });
+
+  assert.equal(downloads.length, 1);
+  const { content } = downloads[0];
+  // Should have header + 2 data rows (No Block/Group and Block A)
+  const lines = content.trim().split('\n');
+  assert.equal(lines.length, 3, 'Should have 1 header + 2 data rows (no empty blocks)');
+  // Should NOT contain "Empty Block"
+  assert.ok(!content.includes('Empty Block'), 'Export should not contain empty blocks');
+  // Should contain the blocks with data
+  assert.ok(content.includes('"No Block/Group"'));
+  assert.ok(content.includes('"Block A"'));
+});
+
 
 test('export score by team and block/group downloads the expected CSV', () => {
   const { context } = loadApp(buildExportSeed());
@@ -115,6 +167,56 @@ test('export score by team and block/group downloads the expected CSV', () => {
   assert.ok(content.includes('"Alpha","Block A","60.00%","6/10","6","10"'));
   assert.ok(content.includes('"Beta","Block A","100.00%","10/10","10","10"'));
   assert.ok(content.includes('"Gamma","Block A","50.00%","5/10","5","10"'));
+});
+
+test('export score by team and block/group excludes empty blocks', () => {
+  const { context } = loadApp(createYjsDoc({
+    currentSession: 1,
+    sessions: [{
+      name: 'Session 1',
+      maxPointsPerQuestion: 10,
+      rounding: false,
+      teams: ['Alpha', 'Beta'],
+      blocks: ['No Block/Group', 'Block A', 'Empty Block'],
+      questions: [
+        {
+          name: 'Q1',
+          score: 10,
+          block: 0,
+          ignore: false,
+          teamScores: [
+            { score: 5, extraCredit: 0 },
+            { score: 8, extraCredit: 0 }
+          ]
+        },
+        {
+          name: 'Q2',
+          score: 10,
+          block: 1,
+          ignore: false,
+          teamScores: [
+            { score: 7, extraCredit: 0 },
+            { score: 9, extraCredit: 0 }
+          ]
+        }
+      ],
+      currentQuestion: 2
+    }]
+  }));
+  const downloads = captureDownloads(context);
+
+  context.local_data_update({ id: 'export_team_and_block' });
+
+  assert.equal(downloads.length, 1);
+  const { content } = downloads[0];
+  // Should have header + 4 data rows (2 teams x 2 blocks with data = 4)
+  const lines = content.trim().split('\n');
+  assert.equal(lines.length, 5, 'Should have 1 header + 4 data rows (no empty blocks)');
+  // Should NOT contain "Empty Block"
+  assert.ok(!content.includes('Empty Block'), 'Export should not contain empty blocks');
+  // Should contain the blocks with data
+  assert.ok(content.includes('"No Block/Group"'));
+  assert.ok(content.includes('"Block A"'));
 });
 
 test('export question log downloads the expected CSV', () => {
