@@ -541,4 +541,167 @@ function validate_data(data_to_validate) {
   }
   return false;
 }
+
+/**
+ * [Phase 3.1] Export current session as binary Y.Doc update
+ * @returns {Uint8Array} Encoded session state
+ */
+function exportSession(sessionNum) {
+  sessionNum = sessionNum || current_session;
+  if (!getGlobalDoc()) {
+    console.error('Yjs not initialized');
+    return null;
+  }
+
+  // Create a temporary doc with just this session
+  const tempDoc = new Y.Doc();
+  const tempSessions = tempDoc.getArray('sessions');
+  const sessions = getGlobalDoc().getArray('sessions');
   
+  // Copy the session to temp doc
+  const sessionToCopy = sessions.get(sessionNum);
+  if (!sessionToCopy) {
+    console.error('Session not found:', sessionNum);
+    return null;
+  }
+
+  // Add null placeholder and the session
+  tempSessions.push([null]);
+  tempSessions.push([sessionToCopy]);
+
+  // Encode as binary update
+  const state = Y.encodeStateAsUpdate(tempDoc);
+  tempDoc.destroy();
+  
+  return state;
+}
+
+/**
+ * [Phase 3.1] Export all sessions as binary Y.Doc update
+ * @returns {Object} Object with global and sessions binary updates
+ */
+function exportAllSessions() {
+  if (!getGlobalDoc()) {
+    console.error('Yjs not initialized');
+    return null;
+  }
+
+  // Encode global doc state
+  const globalState = Y.encodeStateAsUpdate(getGlobalDoc());
+
+  // Return both as object
+  return {
+    version: "3.0",
+    exportedAt: Date.now(),
+    global: globalState
+  };
+}
+
+/**
+ * [Phase 3.1] Download binary export as file
+ * @param {Uint8Array} binary - Binary data to export
+ * @param {string} filename - Filename for download
+ */
+function downloadBinaryExport(binary, filename) {
+  const blob = new Blob([binary], { type: 'application/octet-stream' });
+  const url = URL.createObjectURL(blob);
+  
+  const link = document.createElement('a');
+  link.href = url;
+  link.setAttribute('download', filename);
+  link.click();
+  
+  URL.revokeObjectURL(url);
+}
+
+/**
+ * [Phase 3.2] Detect import format (binary or JSON)
+ * @param {any} data - Data to detect format of
+ * @returns {string} Format: 'binary-single', 'binary-full', 'json-v3', 'json-legacy', or 'invalid'
+ */
+function detectImportFormat(data) {
+  // Check if binary (Uint8Array)
+  if (data instanceof Uint8Array) {
+    // Try to determine if single session or full export
+    // For now, assume single session
+    return 'binary-single';
+  }
+
+  // Check if JSON object
+  if (typeof data === 'object' && data !== null) {
+    if (data.dataVersion === 3.0 || (data.dataVersion === 2.0 && data.sessions)) {
+      return 'json-v3';
+    }
+    if (data.dataVersion && typeof data.dataVersion === 'number') {
+      return 'json-legacy';
+    }
+    if (data.global !== undefined && data.sessions !== undefined) {
+      return 'binary-full';
+    }
+  }
+
+  // Check if JSON string
+  if (typeof data === 'string') {
+    try {
+      const parsed = JSON.parse(data);
+      return detectImportFormat(parsed);
+    } catch (e) {
+      return 'invalid';
+    }
+  }
+
+  return 'invalid';
+}
+
+/**
+ * [Phase 3.2] Universal import function for all formats
+ * @param {any} data - Data to import (binary or JSON)
+ * @returns {Object} Import result { success, importedCount, errors }
+ */
+function importSessionData(data) {
+  if (!getGlobalDoc()) {
+    console.error('Yjs not initialized');
+    return { success: false, importedCount: 0, errors: ['Yjs not initialized'] };
+  }
+
+  // Detect format
+  const format = detectImportFormat(data);
+  
+  if (format === 'invalid') {
+    return { success: false, importedCount: 0, errors: ['Invalid import format'] };
+  }
+
+  const result = { success: true, importedCount: 0, errors: [] };
+
+  try {
+    if (format === 'binary-single') {
+      // Import single session binary update
+      const tempDoc = new Y.Doc();
+      Y.applyUpdate(tempDoc, data);
+      const tempSessions = tempDoc.getArray('sessions');
+      
+      if (tempSessions.length > 1) {
+        const sessionToImport = tempSessions.get(1);
+        if (sessionToImport) {
+          // Create new session with imported data
+          const sessions = getGlobalDoc().getArray('sessions');
+          getGlobalDoc().transact(() => {
+            sessions.push([sessionToImport]);
+          }, 'import');
+          result.importedCount = 1;
+        }
+      }
+      tempDoc.destroy();
+    } 
+    else if (format === 'json-v3' || format === 'json-legacy') {
+      // Import JSON format
+      import_yjs_from_json(data, 'append');
+      result.importedCount = data.sessions ? data.sessions.length - 1 : 0;
+    }
+  } catch (error) {
+    result.success = false;
+    result.errors.push(error.message);
+  }
+
+  return result;
+}

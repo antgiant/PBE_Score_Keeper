@@ -85,6 +85,22 @@ function getGlobalDoc() {
 }
 
 /**
+ * Get the global undo manager
+ * @returns {Y.UndoManager} Global undo manager
+ */
+function getGlobalUndoManager() {
+  return DocManager.getGlobalUndoManager();
+}
+
+/**
+ * Get undo manager for the active session
+ * @returns {Y.UndoManager} Active session undo manager
+ */
+function getActiveSessionUndoManager() {
+  return DocManager.getActiveSessionUndoManager();
+}
+
+/**
  * [FUTURE: Multi-doc] Initialize a session-specific Y.Doc
  * For now, this is a placeholder that returns the global doc
  * @param {string} sessionId - UUID of the session
@@ -130,9 +146,26 @@ async function destroyAllDocs() {
 }
 
 /**
- * Initialize Yjs document and IndexedDB persistence
- * Called on app startup before initialize_state()
+ * [FUTURE: Multi-doc] Get or create an undo manager for a specific session
+ * @param {string} sessionId - UUID of the session
+ * @returns {Y.UndoManager} UndoManager for the session
  */
+function getOrCreateSessionUndoManager(sessionId) {
+  // Future: retrieve or create per-session undo manager
+  // For now: return global undo manager (single-doc mode)
+  return getGlobalUndoManager();
+}
+
+/**
+ * [FUTURE: Multi-doc] Destroy an undo manager for a session
+ * @param {string} sessionId - UUID of the session
+ */
+function destroySessionUndoManager(sessionId) {
+  // Future: clean up session-specific undo manager
+  // For now: no-op in single-doc mode
+}
+
+
 function initialize_yjs() {
   // Check if IndexedDB is available
   if (!window.indexedDB) {

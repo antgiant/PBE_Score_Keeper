@@ -220,8 +220,58 @@ function migrate_localStorage_to_yjs(oldVersion) {
 }
 
 /**
- * Create a backup of localStorage before migration
+ * [FUTURE: Multi-doc] Migrate single Y.Doc to multi-doc architecture
+ * For now: placeholder that works with single-doc architecture
+ * @returns {Promise<object>} Migration result with { success, migratedCount, errors }
  */
+async function migrateFromSingleDoc() {
+  // Future: Split single Y.Doc into global + per-session docs
+  // For now: no-op in single-doc mode
+  return Promise.resolve({ success: true, migratedCount: 0, errors: [] });
+}
+
+/**
+ * [FUTURE: Multi-doc] Migrate legacy localStorage to multi-doc architecture
+ * For now: placeholder that delegates to migrate_localStorage_to_yjs
+ * @param {number} dataVersion - Current data version
+ * @returns {Promise<object>} Migration result with { success, migratedCount, errors }
+ */
+async function migrateFromLegacy(dataVersion) {
+  // Future: Convert to multi-doc structure with error recovery
+  // For now: existing migration_localStorage_to_yjs handles this
+  try {
+    migrate_localStorage_to_yjs(dataVersion);
+    return Promise.resolve({ success: true, migratedCount: 1, errors: [] });
+  } catch (error) {
+    return Promise.resolve({ success: false, migratedCount: 0, errors: [error.message] });
+  }
+}
+
+/**
+ * [FUTURE: Multi-doc] Detect import format and handle accordingly
+ * For now: placeholder for future universal import function
+ * @param {any} data - Data to import (binary, JSON, or legacy format)
+ * @returns {string} Detected format: 'binary-single', 'binary-full', 'json-v3', 'json-legacy', 'invalid'
+ */
+function detectImportFormat(data) {
+  // Future: Auto-detect import format
+  // For now: placeholder
+  return 'invalid';
+}
+
+/**
+ * [FUTURE: Multi-doc] Universal import function with native Y.Doc merge
+ * For now: placeholder for future implementation
+ * @param {any} data - Data to import
+ * @returns {Promise<object>} Import result with { success, importedCount, errors }
+ */
+async function importSessionData(data) {
+  // Future: Universal import with format detection and Y.Doc merge
+  // For now: no-op
+  return Promise.resolve({ success: false, importedCount: 0, errors: ['Import not yet implemented for multi-doc'] });
+}
+
+
 function backup_localStorage() {
   const backupKey = 'pbe_legacy_backup_' + new Date().toISOString();
   const allData = {};
