@@ -675,18 +675,6 @@ async function load_from_yjs() {
   // Create undo manager for session
   getOrCreateSessionUndoManager(currentSessionId);
 
-  // Set legacy current_session variable (for compatibility)
-  // In v3.0, we use UUID, but some code still expects index
-  // We'll use the position in sessionOrder as the "index"
-  const sessionOrder = meta.get('sessionOrder') || [];
-  const sessionIndex = sessionOrder.indexOf(currentSessionId) + 1;
-  
-  if (typeof current_session !== 'undefined') {
-    current_session = sessionIndex;
-  } else {
-    window.current_session = sessionIndex;
-  }
-
   console.log('Loaded from Yjs v3.0, current session:', currentSessionId);
 }
 
@@ -795,6 +783,19 @@ function get_current_session() {
  */
 function get_current_session_id() {
   return DocManager.activeSessionId;
+}
+
+/**
+ * Get current session index (1-based) from session order
+ * This replaces the legacy current_session global variable
+ * @returns {number} 1-based session index, or 0 if no session active
+ */
+function get_current_session_index() {
+  const sessionId = DocManager.activeSessionId;
+  if (!sessionId) return 0;
+  const sessionOrder = get_session_order();
+  const index = sessionOrder.indexOf(sessionId);
+  return index >= 0 ? index + 1 : 0;
 }
 
 /**

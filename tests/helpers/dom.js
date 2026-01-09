@@ -267,6 +267,8 @@ function loadApp(seed = {}) {
         // Initialize DocManager
         DocManager.globalDoc = ydoc;
         DocManager.sessionDocs = new Map();
+        DocManager.sessionProviders = new Map();
+        DocManager.sessionUndoManagers = new Map();
         
         ydoc.transact(() => {
           const meta = ydoc.getMap('meta');
@@ -285,7 +287,11 @@ function loadApp(seed = {}) {
               const sessionDoc = new Y.Doc();
               const session = sessionDoc.getMap('session');
               
+              // Store session ID in the session doc
+              session.set('id', sessionId);
               session.set('name', sessionConfig.name || 'Test Session');
+              session.set('createdAt', Date.now());
+              session.set('lastModified', Date.now());
 
               // Config
               const configMap = new Y.Map();
@@ -359,12 +365,11 @@ function loadApp(seed = {}) {
           // Set active session in DocManager
           DocManager.activeSessionId = currentSessionId;
           
-          // Initialize global history
-          meta.set('globalHistory', new Y.Array());
+          // Initialize global history array
+          ydoc.getArray('globalHistory');
         }, 'test');
         
         yjsReady = true;
-        current_session = _seedConfig.currentSession || 1;
         window.stateInitialized = true;
       `;
 
@@ -419,26 +424,30 @@ function loadApp(seed = {}) {
       vm.runInContext('initialize_state();', context);
 
       // For tests, we need to sync Yjs changes back to localStorage so tests can verify
-      // that data was properly updated
+      // that data was properly updated - use multi-doc v3.0 architecture
       vm.runInContext(`
-        // After each transaction, sync Yjs state back to localStorage
+        // After each transaction, sync Yjs state back to localStorage for test verification
         if (typeof ydoc !== 'undefined' && ydoc) {
           ydoc.on('update', function() {
             // Sync current session data back to localStorage for test verification
+            // Using v3.0 multi-doc architecture
             const meta = ydoc.getMap('meta');
-            const currentSessionNum = meta.get('currentSession');
-            const sessions = ydoc.getArray('sessions');
+            const currentSessionId = meta.get('currentSession');
+            const sessionOrder = meta.get('sessionOrder') || [];
+            const currentSessionIndex = sessionOrder.indexOf(currentSessionId) + 1;
             
-            if (currentSessionNum && sessions && sessions.get(currentSessionNum)) {
-              const session = sessions.get(currentSessionNum);
+            // Get session from DocManager using the session ID
+            const sessionDoc = DocManager.sessionDocs.get(currentSessionId);
+            if (sessionDoc) {
+              const session = sessionDoc.getMap('session');
               
-              // Sync team extra credit data
+              // Sync team data
               const teams = session.get('teams');
               if (teams) {
                 for (let t = 1; t < teams.length; t++) {
                   const team = teams.get(t);
                   if (team && team.get('name')) {
-                    localStorage.setItem('session_' + currentSessionNum + '_team_' + t + '_name', JSON.stringify(team.get('name')));
+                    localStorage.setItem('session_' + currentSessionIndex + '_team_' + t + '_name', JSON.stringify(team.get('name')));
                   }
                 }
               }
@@ -449,17 +458,17 @@ function loadApp(seed = {}) {
                 for (let q = 1; q < questions.length; q++) {
                   const question = questions.get(q);
                   if (question) {
-                    localStorage.setItem('session_' + currentSessionNum + '_question_' + q + '_score', JSON.stringify(question.get('score')));
-                    localStorage.setItem('session_' + currentSessionNum + '_question_' + q + '_block', JSON.stringify(question.get('block')));
-                    localStorage.setItem('session_' + currentSessionNum + '_question_' + q + '_ignore', JSON.stringify(question.get('ignore')));
+                    localStorage.setItem('session_' + currentSessionIndex + '_question_' + q + '_score', JSON.stringify(question.get('score')));
+                    localStorage.setItem('session_' + currentSessionIndex + '_question_' + q + '_block', JSON.stringify(question.get('block')));
+                    localStorage.setItem('session_' + currentSessionIndex + '_question_' + q + '_ignore', JSON.stringify(question.get('ignore')));
                     
                     const questionTeams = question.get('teams');
                     if (questionTeams) {
                       for (let qt = 1; qt < questionTeams.length; qt++) {
                         const teamScore = questionTeams.get(qt);
                         if (teamScore) {
-                          localStorage.setItem('session_' + currentSessionNum + '_question_' + q + '_team_' + qt + '_score', JSON.stringify(teamScore.get('score')));
-                          localStorage.setItem('session_' + currentSessionNum + '_question_' + q + '_team_' + qt + '_extra_credit', JSON.stringify(teamScore.get('extraCredit')));
+                          localStorage.setItem('session_' + currentSessionIndex + '_question_' + q + '_team_' + qt + '_score', JSON.stringify(teamScore.get('score')));
+                          localStorage.setItem('session_' + currentSessionIndex + '_question_' + q + '_team_' + qt + '_extra_credit', JSON.stringify(teamScore.get('extraCredit')));
                         }
                       }
                     }
@@ -477,30 +486,45 @@ function loadApp(seed = {}) {
 }
 
 // Helper function to export Yjs document data to localStorage-compatible format
-function exportYjsToLocalStorageFormat(ydoc) {
+// Uses v3.0 multi-doc architecture
+function exportYjsToLocalStorageFormat(ydoc, DocManager) {
   const result = {};
   
   if (!ydoc) return result;
   
   const meta = ydoc.getMap('meta');
-  const sessions = ydoc.getArray('sessions');
+  const sessionOrder = meta.get('sessionOrder') || [];
+  const currentSessionId = meta.get('currentSession');
+  const currentSessionIndex = sessionOrder.indexOf(currentSessionId) + 1;
   
   // Add metadata
-  result.data_version = JSON.stringify(2.0);
-  result.current_session = JSON.stringify(meta.get('currentSession') || 1);
+  result.data_version = JSON.stringify(3.0);
+  result.current_session = JSON.stringify(currentSessionIndex);
   
-  // Build session names array
+  // Build session names array from DocManager
   const sessionNames = [''];
-  for (let i = 1; i < sessions.length; i++) {
-    const session = sessions.get(i);
-    sessionNames.push(session ? session.get('name') : '');
+  for (let i = 0; i < sessionOrder.length; i++) {
+    const sessionId = sessionOrder[i];
+    const sessionDoc = DocManager && DocManager.sessionDocs ? DocManager.sessionDocs.get(sessionId) : null;
+    if (sessionDoc) {
+      const session = sessionDoc.getMap('session');
+      sessionNames.push(session ? session.get('name') : '');
+    } else {
+      sessionNames.push('');
+    }
   }
   result.session_names = JSON.stringify(sessionNames);
   
-  // Export each session
-  for (let s = 1; s < sessions.length; s++) {
-    const session = sessions.get(s);
+  // Export each session from DocManager
+  for (let s = 0; s < sessionOrder.length; s++) {
+    const sessionId = sessionOrder[s];
+    const sessionDoc = DocManager && DocManager.sessionDocs ? DocManager.sessionDocs.get(sessionId) : null;
+    if (!sessionDoc) continue;
+    
+    const session = sessionDoc.getMap('session');
     if (!session) continue;
+    
+    const sessionIndex = s + 1; // 1-based index for localStorage compatibility
     
     const config = session.get('config');
     const teams = session.get('teams');
@@ -509,8 +533,8 @@ function exportYjsToLocalStorageFormat(ydoc) {
     
     // Config
     if (config) {
-      result[`session_${s}_max_points_per_question`] = JSON.stringify(config.get('maxPointsPerQuestion'));
-      result[`session_${s}_rounding`] = JSON.stringify(config.get('rounding'));
+      result[`session_${sessionIndex}_max_points_per_question`] = JSON.stringify(config.get('maxPointsPerQuestion'));
+      result[`session_${sessionIndex}_rounding`] = JSON.stringify(config.get('rounding'));
     }
     
     // Teams
@@ -520,7 +544,7 @@ function exportYjsToLocalStorageFormat(ydoc) {
         const team = teams.get(t);
         teamNames.push(team ? team.get('name') : '');
       }
-      result[`session_${s}_team_names`] = JSON.stringify(teamNames);
+      result[`session_${sessionIndex}_team_names`] = JSON.stringify(teamNames);
     }
     
     // Blocks
@@ -530,7 +554,7 @@ function exportYjsToLocalStorageFormat(ydoc) {
         const block = blocks.get(b);
         blockNames.push(block ? block.get('name') : '');
       }
-      result[`session_${s}_block_names`] = JSON.stringify(blockNames);
+      result[`session_${sessionIndex}_block_names`] = JSON.stringify(blockNames);
     }
     
     // Questions
@@ -541,9 +565,9 @@ function exportYjsToLocalStorageFormat(ydoc) {
         if (!question) continue;
         
         questionNames.push(question.get('name') || '');
-        result[`session_${s}_question_${q}_score`] = JSON.stringify(question.get('score'));
-        result[`session_${s}_question_${q}_block`] = JSON.stringify(question.get('block'));
-        result[`session_${s}_question_${q}_ignore`] = JSON.stringify(question.get('ignore'));
+        result[`session_${sessionIndex}_question_${q}_score`] = JSON.stringify(question.get('score'));
+        result[`session_${sessionIndex}_question_${q}_block`] = JSON.stringify(question.get('block'));
+        result[`session_${sessionIndex}_question_${q}_ignore`] = JSON.stringify(question.get('ignore'));
         
         // Team scores for this question
         const questionTeams = question.get('teams');
@@ -551,14 +575,14 @@ function exportYjsToLocalStorageFormat(ydoc) {
           for (let qt = 1; qt < questionTeams.length; qt++) {
             const teamScore = questionTeams.get(qt);
             if (teamScore) {
-              result[`session_${s}_question_${q}_team_${qt}_score`] = JSON.stringify(teamScore.get('score'));
-              result[`session_${s}_question_${q}_team_${qt}_extra_credit`] = JSON.stringify(teamScore.get('extraCredit'));
+              result[`session_${sessionIndex}_question_${q}_team_${qt}_score`] = JSON.stringify(teamScore.get('score'));
+              result[`session_${sessionIndex}_question_${q}_team_${qt}_extra_credit`] = JSON.stringify(teamScore.get('extraCredit'));
             }
           }
         }
       }
-      result[`session_${s}_question_names`] = JSON.stringify(questionNames);
-      result[`session_${s}_current_question`] = JSON.stringify(session.get('currentQuestion'));
+      result[`session_${sessionIndex}_question_names`] = JSON.stringify(questionNames);
+      result[`session_${sessionIndex}_current_question`] = JSON.stringify(session.get('currentQuestion'));
     }
   }
   

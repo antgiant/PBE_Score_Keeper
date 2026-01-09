@@ -97,6 +97,7 @@ All Y.Doc access goes through the `DocManager` object in `app-yjs.js`:
 - `getGlobalDoc()` - Returns global metadata doc
 - `getActiveSessionDoc()` - Returns current session's doc
 - `getSessionDoc(sessionId)` - Returns specific session doc by ID
+- `get_current_session_index()` - Returns 1-based session index (replaces legacy `current_session` global)
 - `getGlobalUndoManager()` - Undo/redo for global changes
 - `getActiveSessionUndoManager()` - Undo/redo for session data
 
@@ -125,12 +126,13 @@ Also in `app-state.js`:
 - All `.yjs` exports are native Yjs binary format created via `Y.encodeStateAsUpdate()`
 - `exportAllSessions()` returns `{ version, exportedAt, global: Uint8Array, sessions: {} }`
   - `global`: Encoded state of global Y.Doc (metadata and session references)
-  - `sessions`: Map of individual session doc states from multi-doc mode
+  - `sessions`: Map of individual session doc states keyed by their session UUID
 - Exported files can be merged using `Y.applyUpdate(targetDoc, binaryData)` for conflict-free sync
+- **Import preserves session UUIDs** for conflict-free merging of the same session across devices
 - Import function handles all formats:
-  - **binary-full**: Multi-doc exports with global + individual session docs
-  - **binary-single**: Single session exports with just that session
-  - **json-v3/json-legacy**: Legacy JSON save files from previous versions
+  - **binary-full**: Multi-doc exports with global + individual session docs (UUIDs preserved)
+  - **binary-single**: Single session exports (UUID preserved if present in session doc)
+  - **json-v3/json-legacy**: Legacy JSON save files from previous versions (new UUIDs generated)
 - This enables conflict-free synchronization across different sessions and users
 
 ### Loading and Error Handling

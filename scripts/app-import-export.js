@@ -298,8 +298,11 @@ async function import_yjs_from_json(data, mode) {
     // Store session doc
     DocManager.sessionDocs.set(sessionId, sessionDoc);
     
-    // Set up IndexedDB persistence
-    const persistence = new IndexeddbPersistence('pbe-score-keeper-session-' + sessionId, sessionDoc);
+    // Set up IndexedDB persistence and track provider
+    if (window.indexedDB && typeof IndexeddbPersistence !== 'undefined') {
+      const persistence = new IndexeddbPersistence('pbe-score-keeper-session-' + sessionId, sessionDoc);
+      DocManager.sessionProviders.set(sessionId, persistence);
+    }
     
     importedSessionIds.push(sessionId);
   }
@@ -318,9 +321,13 @@ async function import_yjs_from_json(data, mode) {
     if (targetSessionId) {
       meta.set('currentSession', targetSessionId);
       DocManager.setActiveSession(targetSessionId);
-      current_session = newOrder.indexOf(targetSessionId) + 1;
     }
   }, 'import');
+
+  // Create undo managers for imported sessions
+  for (const sessionId of importedSessionIds) {
+    getOrCreateSessionUndoManager(sessionId);
+  }
 
   // Add import history entry
   add_global_history_entry('Import', 'Imported ' + importedSessionIds.length + ' session(s)');
@@ -601,7 +608,7 @@ function exportSession(sessionNumOrId) {
       sessionId = sessionNumOrId;
     } else {
       // It's a number (1-based index)
-      const index = (sessionNumOrId || current_session) - 1;
+      const index = (sessionNumOrId || get_current_session_index()) - 1;
       sessionId = sessionOrder[index];
     }
 
@@ -755,8 +762,8 @@ async function importSessionData(data) {
 
   try {
     if (format === 'binary-full') {
-      // Import multi-doc export: create new sessions from the binary data
-      // Note: We DON'T merge into existing - we create new sessions to avoid conflicts
+      // Import multi-doc export: preserve session UUIDs for conflict-free merge
+      // If session with same UUID exists, we merge; otherwise create new
       
       if (data.sessions && typeof data.sessions === 'object') {
         const importedSessionIds = [];
@@ -764,20 +771,39 @@ async function importSessionData(data) {
         for (const [originalSessionId, sessionData] of Object.entries(data.sessions)) {
           if (sessionData instanceof Uint8Array) {
             try {
-              // Generate new UUID for the imported session
-              const newSessionId = generateSessionId();
+              // Preserve original session UUID for conflict-free import
+              // This allows merging changes from the same session across devices
+              const sessionId = originalSessionId;
               
-              // Create new session doc and apply the imported state
-              const sessionDoc = new Y.Doc();
-              Y.applyUpdate(sessionDoc, sessionData, 'import');
+              // Check if this session already exists
+              let sessionDoc = DocManager.sessionDocs.get(sessionId);
+              if (sessionDoc) {
+                // Merge into existing session doc
+                Y.applyUpdate(sessionDoc, sessionData, 'import');
+              } else {
+                // Create new session doc and apply the imported state
+                sessionDoc = new Y.Doc();
+                Y.applyUpdate(sessionDoc, sessionData, 'import');
+                
+                // Ensure session doc has correct ID stored
+                const session = sessionDoc.getMap('session');
+                if (session && session.get('id') !== sessionId) {
+                  sessionDoc.transact(() => {
+                    session.set('id', sessionId);
+                  }, 'import');
+                }
+                
+                // Store the session doc
+                DocManager.sessionDocs.set(sessionId, sessionDoc);
+                
+                // Set up IndexedDB persistence and track provider
+                if (window.indexedDB && typeof IndexeddbPersistence !== 'undefined') {
+                  const persistence = new IndexeddbPersistence('pbe-score-keeper-session-' + sessionId, sessionDoc);
+                  DocManager.sessionProviders.set(sessionId, persistence);
+                }
+              }
               
-              // Store the session doc
-              DocManager.sessionDocs.set(newSessionId, sessionDoc);
-              
-              // Set up IndexedDB persistence
-              const persistence = new IndexeddbPersistence('pbe-score-keeper-session-' + newSessionId, sessionDoc);
-              
-              importedSessionIds.push(newSessionId);
+              importedSessionIds.push(sessionId);
               result.importedCount++;
             } catch (error) {
               result.errors.push(`Failed to import session: ${error.message}`);
@@ -789,42 +815,75 @@ async function importSessionData(data) {
         if (importedSessionIds.length > 0) {
           getGlobalDoc().transact(() => {
             const existingOrder = meta.get('sessionOrder') || [];
-            const newOrder = [...existingOrder, ...importedSessionIds];
+            // Only add sessions that aren't already in the order
+            const newSessions = importedSessionIds.filter(id => !existingOrder.includes(id));
+            const newOrder = [...existingOrder, ...newSessions];
             meta.set('sessionOrder', newOrder);
             
             // Set current session to first imported
             meta.set('currentSession', importedSessionIds[0]);
             DocManager.setActiveSession(importedSessionIds[0]);
-            current_session = newOrder.indexOf(importedSessionIds[0]) + 1;
           }, 'import');
+          
+          // Create undo managers for imported sessions
+          for (const sessionId of importedSessionIds) {
+            getOrCreateSessionUndoManager(sessionId);
+          }
         }
       }
     } 
     else if (format === 'binary-single') {
       // Import single session binary update
       try {
-        // Generate new UUID for imported session
-        const newSessionId = generateSessionId();
+        // Create temp doc to read the session ID from the binary
+        const tempDoc = new Y.Doc();
+        Y.applyUpdate(tempDoc, data, 'import');
+        const tempSession = tempDoc.getMap('session');
         
-        // Create session doc and apply the imported state
-        const sessionDoc = new Y.Doc();
-        Y.applyUpdate(sessionDoc, data, 'import');
+        // Get the original session ID if it exists, otherwise generate new
+        let sessionId = tempSession.get('id');
+        if (!sessionId) {
+          sessionId = generateSessionId();
+        }
         
-        // Store session doc
-        DocManager.sessionDocs.set(newSessionId, sessionDoc);
-        
-        // Set up IndexedDB persistence
-        const persistence = new IndexeddbPersistence('pbe-score-keeper-session-' + newSessionId, sessionDoc);
+        // Check if this session already exists
+        let sessionDoc = DocManager.sessionDocs.get(sessionId);
+        if (sessionDoc) {
+          // Merge into existing session doc
+          Y.applyUpdate(sessionDoc, data, 'import');
+        } else {
+          // Use the temp doc as our session doc
+          sessionDoc = tempDoc;
+          
+          // Ensure session doc has correct ID stored
+          if (!tempSession.get('id')) {
+            sessionDoc.transact(() => {
+              tempSession.set('id', sessionId);
+            }, 'import');
+          }
+          
+          // Store session doc
+          DocManager.sessionDocs.set(sessionId, sessionDoc);
+          
+          // Set up IndexedDB persistence and track provider
+          if (window.indexedDB && typeof IndexeddbPersistence !== 'undefined') {
+            const persistence = new IndexeddbPersistence('pbe-score-keeper-session-' + sessionId, sessionDoc);
+            DocManager.sessionProviders.set(sessionId, persistence);
+          }
+        }
         
         // Update global doc
         getGlobalDoc().transact(() => {
           const existingOrder = meta.get('sessionOrder') || [];
-          const newOrder = [...existingOrder, newSessionId];
+          // Only add if not already in order
+          const newOrder = existingOrder.includes(sessionId) ? existingOrder : [...existingOrder, sessionId];
           meta.set('sessionOrder', newOrder);
-          meta.set('currentSession', newSessionId);
-          DocManager.setActiveSession(newSessionId);
-          current_session = newOrder.indexOf(newSessionId) + 1;
+          meta.set('currentSession', sessionId);
+          DocManager.setActiveSession(sessionId);
         }, 'import');
+        
+        // Create undo manager for imported session
+        getOrCreateSessionUndoManager(sessionId);
         
         result.importedCount = 1;
       } catch (error) {

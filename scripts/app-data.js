@@ -494,7 +494,7 @@ function update_data_element(updated_id, new_value) {
   else if (updated_id == "export_session_json") {
     // Try binary export first (Phase 3.1)
     try {
-      const binary = exportSession(current_session);
+      const binary = exportSession(get_current_session_index());
       if (binary && binary.length > 0) {
         downloadBinaryExport(binary, 'pbe_session_' + (new Date().toJSON().slice(0,10)) + '.yjs');
       } else {

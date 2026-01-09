@@ -1,4 +1,3 @@
-var current_session;
 var import_status = "append";
 
 //Setup heml escape variables

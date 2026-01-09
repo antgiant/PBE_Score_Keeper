@@ -36,11 +36,11 @@ test('Session Management - switchSession changes current session', async (t) => 
   const { context } = loadApp(buildMultiSessionSeed(2));
   
   // Initial session should be 1
-  assert.strictEqual(context.current_session, 1, 'Should start at session 1');
+  assert.strictEqual(context.get_current_session_index(), 1, 'Should start at session 1');
   
   // Switch to session 2 (async function)
   await context.switchSession(2);
-  assert.strictEqual(context.current_session, 2, 'Should switch to session 2');
+  assert.strictEqual(context.get_current_session_index(), 2, 'Should switch to session 2');
 });
 
 test('Session Management - deleteSession requires minimum 2 sessions', (t) => {
