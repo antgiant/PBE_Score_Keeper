@@ -1,33 +1,42 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { loadApp } = require('../helpers/dom');
+const { createYjsDoc } = require('../helpers/yjs-seeds');
 
 function buildIgnoreSeed() {
-  return {
-    data_version: JSON.stringify(1.5),
-    session_names: JSON.stringify(['', 'Session 1']),
-    current_session: JSON.stringify(1),
-    session_1_max_points_per_question: JSON.stringify(5),
-    session_1_rounding: JSON.stringify('false'),
-    session_1_block_names: JSON.stringify(['No Block/Group']),
-    session_1_team_names: JSON.stringify(['', 'Alpha', 'Beta']),
-    session_1_question_names: JSON.stringify(['', 'Q1', 'Q2']),
-    session_1_current_question: JSON.stringify(2),
-    session_1_question_1_score: JSON.stringify(5),
-    session_1_question_1_block: JSON.stringify(0),
-    session_1_question_1_ignore: JSON.stringify('false'),
-    session_1_question_1_team_1_score: JSON.stringify(5),
-    session_1_question_1_team_1_extra_credit: JSON.stringify(0),
-    session_1_question_1_team_2_score: JSON.stringify(3),
-    session_1_question_1_team_2_extra_credit: JSON.stringify(0),
-    session_1_question_2_score: JSON.stringify(5),
-    session_1_question_2_block: JSON.stringify(0),
-    session_1_question_2_ignore: JSON.stringify('true'),
-    session_1_question_2_team_1_score: JSON.stringify(2),
-    session_1_question_2_team_1_extra_credit: JSON.stringify(0),
-    session_1_question_2_team_2_score: JSON.stringify(5),
-    session_1_question_2_team_2_extra_credit: JSON.stringify(0),
-  };
+  return createYjsDoc({
+    currentSession: 1,
+    sessions: [{
+      name: 'Session 1',
+      maxPointsPerQuestion: 5,
+      rounding: false,
+      teams: ['Alpha', 'Beta'],
+      blocks: ['No Block/Group'],
+      questions: [
+        {
+          name: 'Q1',
+          score: 5,
+          block: 0,
+          ignore: false,
+          teamScores: [
+            { score: 5, extraCredit: 0 },
+            { score: 3, extraCredit: 0 }
+          ]
+        },
+        {
+          name: 'Q2',
+          score: 5,
+          block: 0,
+          ignore: true,
+          teamScores: [
+            { score: 2, extraCredit: 0 },
+            { score: 5, extraCredit: 0 }
+          ]
+        }
+      ],
+      currentQuestion: 2
+    }]
+  });
 }
 
 test('ignoring a question disables score entry and removes it from totals', () => {

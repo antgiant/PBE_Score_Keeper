@@ -1,37 +1,44 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { loadApp } = require('../helpers/dom');
+const { createYjsDoc } = require('../helpers/yjs-seeds');
 
 function buildExportSeed() {
-  return {
-    data_version: JSON.stringify(1.5),
-    session_names: JSON.stringify(['', 'Session 1']),
-    current_session: JSON.stringify(1),
-    session_1_max_points_per_question: JSON.stringify(10),
-    session_1_rounding: JSON.stringify('false'),
-    session_1_block_names: JSON.stringify(['No Block/Group', 'Block A']),
-    session_1_team_names: JSON.stringify(['', 'Alpha', 'Beta', 'Gamma']),
-    session_1_question_names: JSON.stringify(['', 'Q1', 'Q2']),
-    session_1_current_question: JSON.stringify(2),
-    session_1_question_1_score: JSON.stringify(10),
-    session_1_question_1_block: JSON.stringify(0),
-    session_1_question_1_ignore: JSON.stringify('false'),
-    session_1_question_1_team_1_score: JSON.stringify(9),
-    session_1_question_1_team_1_extra_credit: JSON.stringify(1),
-    session_1_question_1_team_2_score: JSON.stringify(10),
-    session_1_question_1_team_2_extra_credit: JSON.stringify(0),
-    session_1_question_1_team_3_score: JSON.stringify(7),
-    session_1_question_1_team_3_extra_credit: JSON.stringify(0),
-    session_1_question_2_score: JSON.stringify(10),
-    session_1_question_2_block: JSON.stringify(1),
-    session_1_question_2_ignore: JSON.stringify('false'),
-    session_1_question_2_team_1_score: JSON.stringify(6),
-    session_1_question_2_team_1_extra_credit: JSON.stringify(0),
-    session_1_question_2_team_2_score: JSON.stringify(8),
-    session_1_question_2_team_2_extra_credit: JSON.stringify(2),
-    session_1_question_2_team_3_score: JSON.stringify(5),
-    session_1_question_2_team_3_extra_credit: JSON.stringify(0),
-  };
+  return createYjsDoc({
+    currentSession: 1,
+    sessions: [{
+      name: 'Session 1',
+      maxPointsPerQuestion: 10,
+      rounding: false,
+      teams: ['Alpha', 'Beta', 'Gamma'],
+      blocks: ['No Block/Group', 'Block A'],
+      questions: [
+        {
+          name: 'Q1',
+          score: 10,
+          block: 0,
+          ignore: false,
+          teamScores: [
+            { score: 9, extraCredit: 1 },
+            { score: 10, extraCredit: 0 },
+            { score: 7, extraCredit: 0 }
+          ]
+        },
+        {
+          name: 'Q2',
+          score: 10,
+          block: 1,
+          ignore: false,
+          teamScores: [
+            { score: 6, extraCredit: 0 },
+            { score: 8, extraCredit: 2 },
+            { score: 5, extraCredit: 0 }
+          ]
+        }
+      ],
+      currentQuestion: 2
+    }]
+  });
 }
 
 function captureDownloads(context) {

@@ -1,49 +1,55 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { loadApp } = require('../helpers/dom');
+const { createYjsDoc } = require('../helpers/yjs-seeds');
 
 function buildMaxPointsSeed(maxPoints, questionScore) {
-  return {
-    data_version: JSON.stringify(1.5),
-    session_names: JSON.stringify(['', 'Session 1']),
-    current_session: JSON.stringify(1),
-    session_1_max_points_per_question: JSON.stringify(maxPoints),
-    session_1_rounding: JSON.stringify('false'),
-    session_1_block_names: JSON.stringify(['No Block/Group']),
-    session_1_team_names: JSON.stringify(['', 'Team 1']),
-    session_1_question_names: JSON.stringify(['', 'Q1']),
-    session_1_current_question: JSON.stringify(1),
-    session_1_question_1_score: JSON.stringify(questionScore),
-    session_1_question_1_block: JSON.stringify(0),
-    session_1_question_1_ignore: JSON.stringify('false'),
-    session_1_question_1_team_1_score: JSON.stringify(0),
-    session_1_question_1_team_1_extra_credit: JSON.stringify(0),
-  };
+  return createYjsDoc({
+    currentSession: 1,
+    sessions: [{
+      name: 'Session 1',
+      maxPointsPerQuestion: maxPoints,
+      rounding: false,
+      teams: ['Team 1'],
+      blocks: ['No Block/Group'],
+      questions: [{
+        name: 'Q1',
+        score: questionScore,
+        block: 0,
+        ignore: false,
+        teamScores: [{ score: 0, extraCredit: 0 }]
+      }],
+      currentQuestion: 1
+    }]
+  });
 }
 
 function buildQuestionPointsSeed(questionScore) {
-  return {
-    data_version: JSON.stringify(1.5),
-    session_names: JSON.stringify(['', 'Session 1']),
-    current_session: JSON.stringify(1),
-    session_1_max_points_per_question: JSON.stringify(6),
-    session_1_rounding: JSON.stringify('false'),
-    session_1_block_names: JSON.stringify(['No Block/Group']),
-    session_1_team_names: JSON.stringify(['', 'Alpha', 'Beta']),
-    session_1_question_names: JSON.stringify(['', 'Q1']),
-    session_1_current_question: JSON.stringify(1),
-    session_1_question_1_score: JSON.stringify(questionScore),
-    session_1_question_1_block: JSON.stringify(0),
-    session_1_question_1_ignore: JSON.stringify('false'),
-    session_1_question_1_team_1_score: JSON.stringify(0),
-    session_1_question_1_team_1_extra_credit: JSON.stringify(0),
-    session_1_question_1_team_2_score: JSON.stringify(0),
-    session_1_question_1_team_2_extra_credit: JSON.stringify(0),
-  };
+  return createYjsDoc({
+    currentSession: 1,
+    sessions: [{
+      name: 'Session 1',
+      maxPointsPerQuestion: 6,
+      rounding: false,
+      teams: ['Alpha', 'Beta'],
+      blocks: ['No Block/Group'],
+      questions: [{
+        name: 'Q1',
+        score: questionScore,
+        block: 0,
+        ignore: false,
+        teamScores: [
+          { score: 0, extraCredit: 0 },
+          { score: 0, extraCredit: 0 }
+        ]
+      }],
+      currentQuestion: 1
+    }]
+  });
 }
 
 test('max points increase updates totals and possible point options', () => {
-  const { context, localStorage } = loadApp(buildMaxPointsSeed(4, 2));
+  const { context, ydoc } = loadApp(buildMaxPointsSeed(4, 2));
 
   context.sync_data_to_display();
 
@@ -53,13 +59,16 @@ test('max points increase updates totals and possible point options', () => {
   context.update_data_element('max_points_increase');
   context.sync_data_to_display();
 
-  assert.equal(Number(localStorage.getItem('session_1_max_points_per_question')), 5);
+  // Check Yjs instead of localStorage
+  const session = ydoc.getArray('sessions').get(1);
+  const config = session.get('config');
+  assert.equal(config.get('maxPointsPerQuestion'), 5);
   assert.equal(Number(context.$('#max_points').text()), 5);
   assert.equal(context.$('#question_score').children().length, 5);
 });
 
 test('max points decrease updates totals and possible point options', () => {
-  const { context, localStorage } = loadApp(buildMaxPointsSeed(6, 4));
+  const { context, ydoc } = loadApp(buildMaxPointsSeed(6, 4));
 
   context.sync_data_to_display();
 
@@ -69,7 +78,10 @@ test('max points decrease updates totals and possible point options', () => {
   context.update_data_element('max_points_decrease');
   context.sync_data_to_display();
 
-  assert.equal(Number(localStorage.getItem('session_1_max_points_per_question')), 5);
+  // Check Yjs instead of localStorage
+  const session = ydoc.getArray('sessions').get(1);
+  const config = session.get('config');
+  assert.equal(config.get('maxPointsPerQuestion'), 5);
   assert.equal(Number(context.$('#max_points').text()), 5);
   assert.equal(context.$('#question_score').children().length, 5);
 });

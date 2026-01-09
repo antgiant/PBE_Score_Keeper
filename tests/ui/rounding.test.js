@@ -1,6 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { loadApp } = require('../helpers/dom');
+const { createYjsDoc } = require('../helpers/yjs-seeds');
 
 function buildRoundingSeed() {
   const questionScores = [5, 5, 5];
@@ -8,39 +9,58 @@ function buildRoundingSeed() {
     [4, 4, 5],
     [4, 4, 4],
   ];
-  const seed = {
-    data_version: JSON.stringify(1.5),
-    session_names: JSON.stringify(['', 'Session 1']),
-    current_session: JSON.stringify(1),
-    session_1_max_points_per_question: JSON.stringify(5),
-    session_1_rounding: JSON.stringify('false'),
-    session_1_block_names: JSON.stringify(['No Block/Group']),
-    session_1_team_names: JSON.stringify(['', 'Alpha', 'Beta']),
-    session_1_question_names: JSON.stringify(['', 'Q1', 'Q2', 'Q3']),
-    session_1_current_question: JSON.stringify(3),
-  };
 
-  questionScores.forEach((score, index) => {
-    const questionNumber = index + 1;
-    seed[`session_1_question_${questionNumber}_score`] = JSON.stringify(score);
-    seed[`session_1_question_${questionNumber}_block`] = JSON.stringify(0);
-    seed[`session_1_question_${questionNumber}_ignore`] = JSON.stringify('false');
-    teamScores.forEach((scores, teamIndex) => {
-      const teamNumber = teamIndex + 1;
-      seed[`session_1_question_${questionNumber}_team_${teamNumber}_score`] =
-        JSON.stringify(scores[index]);
-      seed[`session_1_question_${questionNumber}_team_${teamNumber}_extra_credit`] =
-        JSON.stringify(0);
-    });
+  // Build questions array from the scores
+  const questions = questionScores.map((score, index) => ({
+    name: `Q${index + 1}`,
+    score: score,
+    block: 0,
+    ignore: false,
+    teamScores: teamScores.map(scores => ({
+      score: scores[index],
+      extraCredit: 0
+    }))
+  }));
+
+  return createYjsDoc({
+    currentSession: 1,
+    sessions: [{
+      name: 'Session 1',
+      maxPointsPerQuestion: 5,
+      rounding: false,
+      teams: ['Alpha', 'Beta'],
+      blocks: ['No Block/Group'],
+      questions: questions,
+      currentQuestion: 3
+    }]
   });
-
-  return seed;
 }
 
 test('rounding uses the top team total for live scores and totals', () => {
   const { context } = loadApp(buildRoundingSeed());
 
-  context.sync_data_to_display();
+  // Execute debug code directly in VM to check state
+  const vm = require('vm');
+  const debugScript = `
+    (function() {
+      return {
+        current_session: typeof current_session !== 'undefined' ? current_session : 'UNDEFINED',
+        has_ydoc: typeof ydoc !== 'undefined',
+        session_result: typeof get_current_session !== 'undefined' ? (get_current_session() ? 'HAS_SESSION' : 'NULL_SESSION') : 'NO_FUNCTION'
+      };
+    })()
+  `;
+  const debugInfo = vm.runInContext(debugScript, context);
+  console.log('Debug from VM:', debugInfo);
+
+  try {
+    context.sync_data_to_display();
+  } catch (err) {
+    console.error('Error during sync_data_to_display:');
+    console.error('Message:', err.message);
+    console.error('Stack:', err.stack);
+    throw err;
+  }
 
   const teamScores = context.$('#team_scores').html();
   assert.ok(teamScores.includes('86.67%'));

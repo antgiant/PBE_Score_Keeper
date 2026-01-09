@@ -227,7 +227,7 @@ function sync_data_to_display() {
     }
     var question_earned = 0;
     //Get total points earned for this question
-    for (var j=1; j <= question_count; j++) {
+    for (var j=1; j <= team_count; j++) {
       question_earned += currentQuestionTeams.get(j).get('score');
     }
     let temp_current_question_number = current_question;

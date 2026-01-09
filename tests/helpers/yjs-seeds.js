@@ -13,14 +13,14 @@
  */
 
 /**
- * Create a complete Yjs document from plain JSON configuration
+ * Create a Yjs seed configuration object for tests
  * @param {Object} config - Configuration object
  * @param {number} config.currentSession - Current active session number (default: 1)
  * @param {Array<Object>} config.sessions - Array of session configurations
- * @returns {Y.Doc} A fully initialized Yjs document
+ * @returns {Object} A seed configuration object (not a Y.Doc - that will be created in the VM)
  *
  * @example
- * const ydoc = createYjsDoc({
+ * const seed = createYjsDoc({
  *   currentSession: 1,
  *   sessions: [{
  *     name: 'Test Session',
@@ -43,32 +43,11 @@
  * });
  */
 function createYjsDoc(config) {
-  // We need to require Y here since it's loaded by the VM context
-  // In tests, Y will be available globally after scripts load
-  const Y = typeof global.Y !== 'undefined' ? global.Y : require('../../scripts/yjs.min.js');
-
-  const ydoc = new Y.Doc();
-
-  ydoc.transact(() => {
-    // Set metadata
-    const meta = ydoc.getMap('meta');
-    meta.set('dataVersion', 2.0);
-    meta.set('currentSession', config.currentSession || 1);
-
-    // Create sessions array with null placeholder at index 0
-    const sessions = ydoc.getArray('sessions');
-    sessions.push([null]); // 1-indexed placeholder
-
-    // Build each session
-    if (config.sessions) {
-      config.sessions.forEach(sessionConfig => {
-        const session = buildSession(sessionConfig, Y);
-        sessions.push([session]);
-      });
-    }
-  }, 'test');
-
-  return ydoc;
+  // Return the config with a marker so loadApp() knows it's a Yjs seed
+  return {
+    ...config,
+    _yjsConfig: true
+  };
 }
 
 /**

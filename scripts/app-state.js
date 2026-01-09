@@ -80,7 +80,7 @@ function data_upgrades(data_version, data = "localStorage") {
       let question_names = JSON.parse(get_element("session_"+current_session+"_question_names", data));
       let question_count = question_names.length - 1;
       for (let j = 1; j <= question_count; j++) {  
-        let team_names = JSON.parse(get_element("session_"+current_session+"_team_names"));
+        let team_names = JSON.parse(get_element("session_"+current_session+"_team_names", data));
         let team_count = team_names.length - 1;
         for (let k = 1; k <= team_count; k++) {
           //Add missing data element

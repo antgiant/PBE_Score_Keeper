@@ -1,24 +1,27 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { loadApp } = require('../helpers/dom');
+const { createYjsDoc } = require('../helpers/yjs-seeds');
 
 function buildBlockSeed() {
-  return {
-    data_version: JSON.stringify(1.5),
-    session_names: JSON.stringify(['', 'Session 1']),
-    current_session: JSON.stringify(1),
-    session_1_max_points_per_question: JSON.stringify(6),
-    session_1_rounding: JSON.stringify('false'),
-    session_1_block_names: JSON.stringify(['No Block/Group', 'Block/Group 1']),
-    session_1_team_names: JSON.stringify(['', 'Team 1']),
-    session_1_question_names: JSON.stringify(['', 'Q1']),
-    session_1_current_question: JSON.stringify(1),
-    session_1_question_1_score: JSON.stringify(4),
-    session_1_question_1_block: JSON.stringify(1),
-    session_1_question_1_ignore: JSON.stringify('false'),
-    session_1_question_1_team_1_score: JSON.stringify(3),
-    session_1_question_1_team_1_extra_credit: JSON.stringify(0),
-  };
+  return createYjsDoc({
+    currentSession: 1,
+    sessions: [{
+      name: 'Session 1',
+      maxPointsPerQuestion: 6,
+      rounding: false,
+      teams: ['Team 1'],
+      blocks: ['No Block/Group', 'Block/Group 1'],
+      questions: [{
+        name: 'Q1',
+        score: 4,
+        block: 1,
+        ignore: false,
+        teamScores: [{ score: 3, extraCredit: 0 }]
+      }],
+      currentQuestion: 1
+    }]
+  });
 }
 
 test('adding a block updates score entry and summaries', () => {

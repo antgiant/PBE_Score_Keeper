@@ -1,37 +1,44 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { loadApp } = require('../helpers/dom');
+const { createYjsDoc } = require('../helpers/yjs-seeds');
 
 function buildReorderSeed() {
-  return {
-    data_version: JSON.stringify(1.5),
-    session_names: JSON.stringify(['', 'Session 1']),
-    current_session: JSON.stringify(1),
-    session_1_max_points_per_question: JSON.stringify(10),
-    session_1_rounding: JSON.stringify('false'),
-    session_1_block_names: JSON.stringify(['No Block/Group', 'Block A', 'Block B']),
-    session_1_team_names: JSON.stringify(['', 'Alpha', 'Beta', 'Gamma']),
-    session_1_question_names: JSON.stringify(['', 'Q1', 'Q2']),
-    session_1_current_question: JSON.stringify(2),
-    session_1_question_1_score: JSON.stringify(10),
-    session_1_question_1_block: JSON.stringify(1),
-    session_1_question_1_ignore: JSON.stringify('false'),
-    session_1_question_1_team_1_score: JSON.stringify(8),
-    session_1_question_1_team_1_extra_credit: JSON.stringify(0),
-    session_1_question_1_team_2_score: JSON.stringify(9),
-    session_1_question_1_team_2_extra_credit: JSON.stringify(0),
-    session_1_question_1_team_3_score: JSON.stringify(7),
-    session_1_question_1_team_3_extra_credit: JSON.stringify(0),
-    session_1_question_2_score: JSON.stringify(10),
-    session_1_question_2_block: JSON.stringify(2),
-    session_1_question_2_ignore: JSON.stringify('false'),
-    session_1_question_2_team_1_score: JSON.stringify(6),
-    session_1_question_2_team_1_extra_credit: JSON.stringify(0),
-    session_1_question_2_team_2_score: JSON.stringify(5),
-    session_1_question_2_team_2_extra_credit: JSON.stringify(0),
-    session_1_question_2_team_3_score: JSON.stringify(10),
-    session_1_question_2_team_3_extra_credit: JSON.stringify(0),
-  };
+  return createYjsDoc({
+    currentSession: 1,
+    sessions: [{
+      name: 'Session 1',
+      maxPointsPerQuestion: 10,
+      rounding: false,
+      teams: ['Alpha', 'Beta', 'Gamma'],
+      blocks: ['No Block/Group', 'Block A', 'Block B'],
+      questions: [
+        {
+          name: 'Q1',
+          score: 10,
+          block: 1,
+          ignore: false,
+          teamScores: [
+            { score: 8, extraCredit: 0 },
+            { score: 9, extraCredit: 0 },
+            { score: 7, extraCredit: 0 }
+          ]
+        },
+        {
+          name: 'Q2',
+          score: 10,
+          block: 2,
+          ignore: false,
+          teamScores: [
+            { score: 6, extraCredit: 0 },
+            { score: 5, extraCredit: 0 },
+            { score: 10, extraCredit: 0 }
+          ]
+        }
+      ],
+      currentQuestion: 2
+    }]
+  });
 }
 
 function indexOrder(html, labels) {
@@ -67,17 +74,28 @@ test('reordering teams updates display order', () => {
 });
 
 test('reordering teams saves to the data store', () => {
-  const { context, localStorage } = loadApp(buildReorderSeed());
+  const { context, ydoc } = loadApp(buildReorderSeed());
 
   context.reorder_teams(['3', '1', '2']);
 
-  const stored = localStorage.dump();
-  assert.equal(
-    stored.session_1_team_names,
-    JSON.stringify(['', 'Gamma', 'Alpha', 'Beta'])
-  );
-  assert.equal(stored.session_1_question_1_team_1_score, JSON.stringify(7));
-  assert.equal(stored.session_1_question_2_team_1_score, JSON.stringify(10));
+  // Check Yjs instead of localStorage
+  const session = ydoc.getArray('sessions').get(1);
+  const teams = session.get('teams');
+  const teamNames = [];
+  for (let t = 1; t < teams.length; t++) {
+    teamNames.push(teams.get(t).get('name'));
+  }
+  assert.deepEqual(teamNames, ['Gamma', 'Alpha', 'Beta']);
+  
+  // Check that team scores were reordered correctly
+  const question1 = session.get('questions').get(1);
+  const q1_team1 = question1.get('teams').get(1);
+  assert.equal(q1_team1.get('score'), 7);  // Was team 3
+  
+  const question2 = session.get('questions').get(2);
+  const q2_team1 = question2.get('teams').get(1);
+  assert.equal(q2_team1.get('score'), 10);  // Was team 3
+
 });
 
 test('reordering blocks updates display order', () => {
@@ -98,17 +116,24 @@ test('reordering blocks updates display order', () => {
 });
 
 test('reordering blocks saves to the data store', () => {
-  const { context, localStorage } = loadApp(buildReorderSeed());
+  const { context, ydoc } = loadApp(buildReorderSeed());
 
   context.reorder_blocks(['2', '1']);
 
-  const stored = localStorage.dump();
-  assert.equal(
-    stored.session_1_block_names,
-    JSON.stringify(['No Block/Group', 'Block B', 'Block A'])
-  );
-  assert.equal(stored.session_1_question_1_block, '2');
-  assert.equal(stored.session_1_question_2_block, '1');
+  // Check Yjs instead of localStorage
+  const session = ydoc.getArray('sessions').get(1);
+  const blocks = session.get('blocks');
+  const blockNames = [];
+  for (let b = 0; b < blocks.length; b++) {
+    blockNames.push(blocks.get(b).get('name'));
+  }
+  assert.deepEqual(blockNames, ['No Block/Group', 'Block B', 'Block A']);
+  
+  // Check that question blocks were updated
+  const question1 = session.get('questions').get(1);
+  assert.equal(question1.get('block'), 2);
+  const question2 = session.get('questions').get(2);
+  assert.equal(question2.get('block'), 1);
 });
 
 test('reordering keeps score summaries intact', () => {
