@@ -326,7 +326,10 @@ function initialize_yjs() {
     getGlobalDoc().on('update', function(updateData, origin) {
       if (origin !== 'local' && origin !== 'migration' && origin !== 'import' && origin !== 'history') {
         console.log('Remote update on global doc, refreshing');
-        sync_data_to_display();
+        // Only sync if we have an active session to prevent errors during initialization
+        if (DocManager.activeSessionId) {
+          sync_data_to_display();
+        }
       }
     });
 
