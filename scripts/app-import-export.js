@@ -368,77 +368,38 @@ function setup_file_import() {
       if (isJsonFile) {
         // Handle JSON import
         let fileReader = new FileReader();
-        fileReader.onload = function (e) {
-          let temp_import_data = JSON.parse(fileReader.result);
-
-          // Detect format: v2.0 (Yjs) vs v1.x (localStorage)
-          const is_v2 = temp_import_data.dataVersion === 2.0 && temp_import_data.sessions && Array.isArray(temp_import_data.sessions);
-
-          if (is_v2) {
-            // v2.0 format - import directly into Yjs
-            if (import_status == "replace"
-                && window.confirm("Are you sure you want to irreversably delete all of your current data and replace it with this import?")) {
-              import_yjs_from_json(temp_import_data, 'replace');
+        fileReader.onload = async function (e) {
+          try {
+            let temp_import_data = JSON.parse(fileReader.result);
+            const result = await importSessionData(temp_import_data);
+            if (result.success) {
               sync_data_to_display();
+              alert('Import successful: ' + result.importedCount + ' session(s) imported');
               $( '#accordion' ).accordion({active: 0});
-            } else if (import_status == "append") {
-              import_yjs_from_json(temp_import_data, 'append');
-              sync_data_to_display();
-              $( '#accordion' ).accordion({active: 0});
-            }
-          } else {
-            // v1.x format - validate, upgrade, then convert to Yjs
-            if (validate_data(temp_import_data)) {
-              let data_version = JSON.parse(get_element("data_version", temp_import_data));
-              temp_import_data = data_upgrades(data_version, temp_import_data);
-
-              // Convert localStorage format to v2.0 format
-              const converted_data = convert_localStorage_to_v2(temp_import_data);
-
-              if (import_status == "replace"
-                  && window.confirm("Are you sure you want to irreversably delete all of your current data and replace it with this import?")) {
-                import_yjs_from_json(converted_data, 'replace');
-                sync_data_to_display();
-                $( '#accordion' ).accordion({active: 0});
-              } else if (import_status == "append") {
-                import_yjs_from_json(converted_data, 'append');
-                sync_data_to_display();
-                $( '#accordion' ).accordion({active: 0});
-              }
             } else {
-              alert("Selected imported data is not valid.");
+              const errorMsg = result.errors.length > 0 ? result.errors[0] : 'Unknown import error';
+              alert('Import failed: ' + errorMsg);
             }
+          } catch (error) {
+            console.error('JSON import error:', error);
+            alert('Failed to import JSON file: ' + error.message);
           }
         }
         fileReader.readAsText(fileTobeRead);
       } else if (isBinaryFile) {
-        // Handle binary import (Phase 3.2)
+        // Handle binary import (.yjs files)
         let fileReader = new FileReader();
         fileReader.onload = async function (e) {
           try {
             const binaryData = new Uint8Array(fileReader.result);
-            
-            if (import_status == "replace"
-                && window.confirm("Are you sure you want to irreversably delete all of your current data and replace it with this import?")) {
-              const result = await importSessionData(binaryData);
-              if (result.success) {
-                sync_data_to_display();
-                alert('Import successful: ' + result.importedCount + ' session(s) imported');
-                $( '#accordion' ).accordion({active: 0});
-              } else {
-                const errorMsg = result.errors.length > 0 ? result.errors[0] : 'Unknown import error';
-                alert('Import failed: ' + errorMsg);
-              }
-            } else if (import_status == "append") {
-              const result = await importSessionData(binaryData);
-              if (result.success) {
-                sync_data_to_display();
-                alert('Import successful: ' + result.importedCount + ' session(s) imported');
-                $( '#accordion' ).accordion({active: 0});
-              } else {
-                const errorMsg = result.errors.length > 0 ? result.errors[0] : 'Unknown import error';
-                alert('Import failed: ' + errorMsg);
-              }
+            const result = await importSessionData(binaryData);
+            if (result.success) {
+              sync_data_to_display();
+              alert('Import successful: ' + result.importedCount + ' session(s) imported');
+              $( '#accordion' ).accordion({active: 0});
+            } else {
+              const errorMsg = result.errors.length > 0 ? result.errors[0] : 'Unknown import error';
+              alert('Import failed: ' + errorMsg);
             }
           } catch (error) {
             console.error('Binary import error:', error);

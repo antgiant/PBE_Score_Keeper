@@ -182,19 +182,15 @@
             <button id= "export_all_json" onclick='local_data_update(this)'>Export All</button>
           </fieldset>
           <fieldset>
+            <legend id = "import_json_label">Import</legend>
+            <p>Warning: Importing bad files can corrupt your data. It is strongly recommended that you run an "Export for Importing" before importing.</p>
+            <div id = "import_group">
+              Please Select file to import: 
+              <input type="file" id="import_file" />
+            </div>
+          </fieldset>
+          <fieldset>
             <legend id = "danger_label">Danger Zone</legend>
-            <fieldset>
-              <legend id = "import_json_label">Import</legend>
-              <p>Warning: Importing bad files can corrupt your data. It is strongly recommended that you run an "Export for Importing" before importing.</p>
-              <div id = "import_group">
-                <div id="import" onchange="$(this).controlgroup('refresh')">
-                  <label><input type="radio" id="import_json_append" name="import" value="append" checked="checked" onchange="local_data_update(this)"><span>Add this import as new Session(s) (Round(s)/Game(s))</span></label>
-                  <label><input type="radio" id="import_json_replace" name="import" value="replace" onchange="local_data_update(this)"><span>Replace All Data with this Import</span></label>
-                </div><br>
-                Please Select file to import: 
-                <input type="file" id="import_file" />
-              </div>
-            </fieldset>
             <fieldset>
               <legend id = "delete_label">Delete</legend>
               <button id="session_delete" onclick='local_data_update(this)'>Delete this Session (Round/Game)</button>

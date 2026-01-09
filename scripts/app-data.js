@@ -522,14 +522,6 @@ function update_data_element(updated_id, new_value) {
       downloadBlob(export_all_sessions_json(), 'all_pbe_score_data_' + (new Date().toJSON().slice(0,10)) + '.json', 'application/json; charset=utf-8;');
     }
   }
-  //Import Replacing Everything
-  else if (updated_id == "import_json_replace") {
-    import_status = "replace";
-  }
-  //Import Appending Everything
-  else if (updated_id == "import_json_append") {
-    import_status = "append"
-  }
   //Delete current session
   else if (updated_id == "session_delete") {
     const globalDoc = getGlobalDoc();

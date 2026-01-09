@@ -1,5 +1,3 @@
-var import_status = "append";
-
 //Setup heml escape variables
 var DOMtext = document.createTextNode("test");
 var DOMnative = document.createElement("span");
