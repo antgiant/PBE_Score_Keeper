@@ -259,20 +259,32 @@ function loadApp(seed = {}) {
       // Pass the config to the VM and create the doc there
       context._seedConfig = seed;
 
-      // Create Y.Doc using the Y instance in the VM
+      // Create Y.Doc using the Y instance in the VM - multi-doc v3.0 architecture
       const buildScript = `
+        // Initialize global doc
         setYdoc(new Y.Doc());
+        
+        // Initialize DocManager
+        DocManager.globalDoc = ydoc;
+        DocManager.sessionDocs = new Map();
+        
         ydoc.transact(() => {
           const meta = ydoc.getMap('meta');
-          meta.set('dataVersion', 2.0);
-          meta.set('currentSession', _seedConfig.currentSession || 1);
-
-          const sessions = ydoc.getArray('sessions');
-          sessions.push([null]); // 1-indexed placeholder
-
+          meta.set('dataVersion', 3.0);
+          
+          // sessionOrder will hold UUIDs in display order
+          const sessionOrder = [];
+          
           if (_seedConfig.sessions) {
-            _seedConfig.sessions.forEach(sessionConfig => {
-              const session = new Y.Map();
+            _seedConfig.sessions.forEach((sessionConfig, index) => {
+              // Generate a test UUID for each session
+              const sessionId = 'test-session-' + (index + 1);
+              sessionOrder.push(sessionId);
+              
+              // Create a separate Y.Doc for this session
+              const sessionDoc = new Y.Doc();
+              const session = sessionDoc.getMap('session');
+              
               session.set('name', sessionConfig.name || 'Test Session');
 
               // Config
@@ -329,19 +341,34 @@ function loadApp(seed = {}) {
               });
               session.set('questions', questions);
               session.set('currentQuestion', sessionConfig.currentQuestion || 1);
-
-              sessions.push([session]);
+              
+              // Initialize empty history for this session
+              session.set('historyLog', new Y.Array());
+              
+              // Store session doc in DocManager
+              DocManager.sessionDocs.set(sessionId, sessionDoc);
             });
           }
+          
+          meta.set('sessionOrder', sessionOrder);
+          
+          // Set current session to first one
+          const currentSessionId = sessionOrder[_seedConfig.currentSession - 1] || sessionOrder[0];
+          meta.set('currentSession', currentSessionId);
+          
+          // Set active session in DocManager
+          DocManager.activeSessionId = currentSessionId;
+          
+          // Initialize global history
+          meta.set('globalHistory', new Y.Array());
         }, 'test');
+        
         yjsReady = true;
+        current_session = _seedConfig.currentSession || 1;
+        window.stateInitialized = true;
       `;
 
       vm.runInContext(buildScript, context);
-      vm.runInContext('load_from_yjs();', context);
-      // Manually set current_session in the global scope since load_from_yjs sets it on window
-      vm.runInContext('current_session = window.current_session;', context);
-      vm.runInContext('window.stateInitialized = true;', context);
     }
 
     return { context, localStorage, ydoc: context.ydoc };

@@ -111,7 +111,7 @@ test('allowing extra credit shows extra credit controls for each team', () => {
 });
 
 test('extra credit buttons update the stored value and display', () => {
-  const { context, ydoc } = loadApp(buildExtraCreditUiSeed());
+  const { context } = loadApp(buildExtraCreditUiSeed());
 
   context.$('#extra_credit').prop('checked', true);
   context.sync_data_to_display();
@@ -123,8 +123,8 @@ test('extra credit buttons update the stored value and display', () => {
 
   assert.equal(context.$('#team_1_extra_credit').text(), '1');
   
-  // Check Yjs data instead of localStorage
-  const session = ydoc.getArray('sessions').get(1);
+  // Check Yjs session doc
+  const session = context.get_current_session();
   const question = session.get('questions').get(1);
   const teamScore = question.get('teams').get(1);
   assert.equal(teamScore.get('extraCredit'), 1);

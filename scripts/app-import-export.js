@@ -9,84 +9,96 @@ function arrayToCsv(data){
 }
 
 /**
- * Convert Yjs document to plain JSON object
- * @returns {Object} Plain object representation of Yjs data
+ * Convert session from Y.Doc to plain JSON object (multi-doc architecture)
+ * @param {string} sessionId - Session UUID to convert
+ * @returns {Object} Plain object representation of session data
  */
-function yjs_to_json() {
-  if (!ydoc) return null;
+function session_to_json(sessionId) {
+  const sessionDoc = getSessionDoc(sessionId);
+  if (!sessionDoc) return null;
 
-  const meta = getGlobalDoc().getMap('meta');
-  const sessions = getGlobalDoc().getArray('sessions');
+  const session = sessionDoc.getMap('session');
+  if (!session) return null;
 
-  const result = {
-    dataVersion: meta.get('dataVersion'),
-    currentSession: meta.get('currentSession'),
-    sessions: []
+  const sessionObj = {
+    id: sessionId,
+    name: session.get('name'),
+    config: {
+      maxPointsPerQuestion: session.get('config').get('maxPointsPerQuestion'),
+      rounding: session.get('config').get('rounding')
+    },
+    teams: [],
+    blocks: [],
+    questions: [],
+    currentQuestion: session.get('currentQuestion')
   };
 
-  for (let i = 0; i < sessions.length; i++) {
-    const session = sessions.get(i);
-    if (session === null) {
-      result.sessions.push(null);
+  // Teams
+  const teams = session.get('teams');
+  for (let t = 0; t < teams.length; t++) {
+    const team = teams.get(t);
+    sessionObj.teams.push(team === null ? null : { name: team.get('name') });
+  }
+
+  // Blocks
+  const blocks = session.get('blocks');
+  for (let b = 0; b < blocks.length; b++) {
+    const block = blocks.get(b);
+    sessionObj.blocks.push({ name: block.get('name') });
+  }
+
+  // Questions
+  const questions = session.get('questions');
+  for (let q = 0; q < questions.length; q++) {
+    const question = questions.get(q);
+    if (question === null) {
+      sessionObj.questions.push(null);
       continue;
     }
 
-    const sessionObj = {
-      name: session.get('name'),
-      config: {
-        maxPointsPerQuestion: session.get('config').get('maxPointsPerQuestion'),
-        rounding: session.get('config').get('rounding')
-      },
-      teams: [],
-      blocks: [],
-      questions: [],
-      currentQuestion: session.get('currentQuestion')
+    const questionObj = {
+      name: question.get('name'),
+      score: question.get('score'),
+      block: question.get('block'),
+      ignore: question.get('ignore'),
+      teams: []
     };
 
-    // Teams
-    const teams = session.get('teams');
-    for (let t = 0; t < teams.length; t++) {
-      const team = teams.get(t);
-      sessionObj.teams.push(team === null ? null : { name: team.get('name') });
+    const questionTeams = question.get('teams');
+    for (let qt = 0; qt < questionTeams.length; qt++) {
+      const teamScore = questionTeams.get(qt);
+      questionObj.teams.push(teamScore === null ? null : {
+        score: teamScore.get('score'),
+        extraCredit: teamScore.get('extraCredit')
+      });
     }
 
-    // Blocks
-    const blocks = session.get('blocks');
-    for (let b = 0; b < blocks.length; b++) {
-      const block = blocks.get(b);
-      sessionObj.blocks.push({ name: block.get('name') });
-    }
+    sessionObj.questions.push(questionObj);
+  }
 
-    // Questions
-    const questions = session.get('questions');
-    for (let q = 0; q < questions.length; q++) {
-      const question = questions.get(q);
-      if (question === null) {
-        sessionObj.questions.push(null);
-        continue;
-      }
+  return sessionObj;
+}
 
-      const questionObj = {
-        name: question.get('name'),
-        score: question.get('score'),
-        block: question.get('block'),
-        ignore: question.get('ignore'),
-        teams: []
-      };
+/**
+ * Convert all sessions to plain JSON object (multi-doc architecture)
+ * @returns {Object} Plain object representation of all Yjs data
+ */
+function yjs_to_json() {
+  if (!getGlobalDoc()) return null;
 
-      const questionTeams = question.get('teams');
-      for (let qt = 0; qt < questionTeams.length; qt++) {
-        const teamScore = questionTeams.get(qt);
-        questionObj.teams.push(teamScore === null ? null : {
-          score: teamScore.get('score'),
-          extraCredit: teamScore.get('extraCredit')
-        });
-      }
+  const meta = getGlobalDoc().getMap('meta');
+  const sessionOrder = meta.get('sessionOrder') || [];
+  const currentSessionId = meta.get('currentSession');
 
-      sessionObj.questions.push(questionObj);
-    }
+  const result = {
+    dataVersion: meta.get('dataVersion') || 3.0,
+    currentSession: sessionOrder.indexOf(currentSessionId) + 1,
+    sessions: [null]  // Index 0 is null placeholder
+  };
 
-    result.sessions.push(sessionObj);
+  for (const sessionId of sessionOrder) {
+    const sessionJson = session_to_json(sessionId);
+    result.sessions.push(sessionJson);
   }
 
   return result;
@@ -96,13 +108,26 @@ function yjs_to_json() {
  * Export current session only as JSON
  */
 function export_current_session_json() {
-  const fullData = yjs_to_json();
-  const session = fullData.sessions[current_session];
+  const meta = getGlobalDoc().getMap('meta');
+  const sessionOrder = meta.get('sessionOrder') || [];
+  const currentSessionId = meta.get('currentSession');
+  const currentIndex = sessionOrder.indexOf(currentSessionId);
+  
+  if (currentIndex < 0 || !currentSessionId) {
+    console.error('No current session found');
+    return '{}';
+  }
+  
+  const sessionJson = session_to_json(currentSessionId);
+  if (!sessionJson) {
+    console.error('Failed to export current session');
+    return '{}';
+  }
 
   const singleSessionData = {
-    dataVersion: 2.0,
+    dataVersion: 3.0,
     currentSession: 1,
-    sessions: [null, session]
+    sessions: [null, sessionJson]
   };
 
   return JSON.stringify(singleSessionData, null, 2);
@@ -152,182 +177,153 @@ function downloadBlob(content, filename, contentType) {
   pom.click();
 }
 /**
- * Import JSON data into Yjs from v2.0 format
+ * Import JSON data into multi-doc architecture
+ * Creates new session Y.Docs for each imported session
+ * @param {Object} data - v2.0/v3.0 format JSON data
+ * @param {string} mode - 'replace' or 'append'
  */
-function import_yjs_from_json(data, mode) {
-  if (!ydoc) return;
+async function import_yjs_from_json(data, mode) {
+  if (!getGlobalDoc()) return;
 
-  const sessions = getGlobalDoc().getArray('sessions');
   const meta = getGlobalDoc().getMap('meta');
 
   if (mode === 'replace') {
-    getGlobalDoc().transact(() => {
-      // Clear existing data
-      while (sessions.length > 0) {
-        sessions.delete(0, 1);
+    // Clear existing sessions
+    const currentSessionOrder = meta.get('sessionOrder') || [];
+    
+    // Destroy existing session docs
+    for (const sessionId of currentSessionOrder) {
+      const existingDoc = getSessionDoc(sessionId);
+      if (existingDoc) {
+        existingDoc.destroy();
       }
+      DocManager.sessionDocs.delete(sessionId);
+      // Clear from IndexedDB
+      try {
+        indexedDB.deleteDatabase('pbe-score-keeper-session-' + sessionId);
+      } catch (e) {
+        console.warn('Failed to delete session DB:', sessionId, e);
+      }
+    }
 
-      // Import new data
-      meta.set('dataVersion', data.dataVersion);
-      meta.set('currentSession', data.currentSession);
+    // Reset global doc
+    getGlobalDoc().transact(() => {
+      meta.set('dataVersion', 3.0);
+      meta.set('sessionOrder', []);
+      meta.set('currentSession', null);
+    }, 'import');
+  }
 
-      // Import sessions
-      for (let i = 0; i < data.sessions.length; i++) {
-        if (data.sessions[i] === null) {
-          sessions.push([null]);
+  // Import sessions (skip index 0 placeholder)
+  const importedSessionIds = [];
+  for (let i = 1; i < data.sessions.length; i++) {
+    const sessionData = data.sessions[i];
+    if (!sessionData) continue;
+
+    // Generate new UUID for imported session
+    const sessionId = generateSessionId();
+    
+    // Create session doc
+    const sessionDoc = new Y.Doc();
+    const session = sessionDoc.getMap('session');
+    
+    sessionDoc.transact(() => {
+      session.set('name', sessionData.name);
+      session.set('currentQuestion', sessionData.currentQuestion || 1);
+
+      // Config
+      const config = new Y.Map();
+      config.set('maxPointsPerQuestion', sessionData.config.maxPointsPerQuestion);
+      config.set('rounding', sessionData.config.rounding);
+      session.set('config', config);
+
+      // Teams
+      const teams = new Y.Array();
+      for (let t = 0; t < sessionData.teams.length; t++) {
+        if (sessionData.teams[t] === null) {
+          teams.push([null]);
+        } else {
+          const teamMap = new Y.Map();
+          teamMap.set('name', sessionData.teams[t].name);
+          teams.push([teamMap]);
+        }
+      }
+      session.set('teams', teams);
+
+      // Blocks
+      const blocks = new Y.Array();
+      for (let b = 0; b < sessionData.blocks.length; b++) {
+        const blockMap = new Y.Map();
+        blockMap.set('name', sessionData.blocks[b].name);
+        blocks.push([blockMap]);
+      }
+      session.set('blocks', blocks);
+
+      // Questions
+      const questions = new Y.Array();
+      for (let q = 0; q < sessionData.questions.length; q++) {
+        if (sessionData.questions[q] === null) {
+          questions.push([null]);
           continue;
         }
 
-        const sessionData = data.sessions[i];
-        const sessionMap = new Y.Map();
-        sessionMap.set('name', sessionData.name);
+        const questionData = sessionData.questions[q];
+        const questionMap = new Y.Map();
+        questionMap.set('name', questionData.name);
+        questionMap.set('score', questionData.score);
+        questionMap.set('block', questionData.block);
+        questionMap.set('ignore', questionData.ignore);
 
-        // Config
-        const config = new Y.Map();
-        config.set('maxPointsPerQuestion', sessionData.config.maxPointsPerQuestion);
-        config.set('rounding', sessionData.config.rounding);
-        sessionMap.set('config', config);
-
-        // Teams
-        const teams = new Y.Array();
-        for (let t = 0; t < sessionData.teams.length; t++) {
-          if (sessionData.teams[t] === null) {
-            teams.push([null]);
+        const questionTeams = new Y.Array();
+        for (let qt = 0; qt < questionData.teams.length; qt++) {
+          if (questionData.teams[qt] === null) {
+            questionTeams.push([null]);
           } else {
-            const teamMap = new Y.Map();
-            teamMap.set('name', sessionData.teams[t].name);
-            teams.push([teamMap]);
+            const teamScoreMap = new Y.Map();
+            teamScoreMap.set('score', questionData.teams[qt].score);
+            teamScoreMap.set('extraCredit', questionData.teams[qt].extraCredit || 0);
+            questionTeams.push([teamScoreMap]);
           }
         }
-        sessionMap.set('teams', teams);
+        questionMap.set('teams', questionTeams);
 
-        // Blocks
-        const blocks = new Y.Array();
-        for (let b = 0; b < sessionData.blocks.length; b++) {
-          const blockMap = new Y.Map();
-          blockMap.set('name', sessionData.blocks[b].name);
-          blocks.push([blockMap]);
-        }
-        sessionMap.set('blocks', blocks);
-
-        // Questions
-        const questions = new Y.Array();
-        for (let q = 0; q < sessionData.questions.length; q++) {
-          if (sessionData.questions[q] === null) {
-            questions.push([null]);
-            continue;
-          }
-
-          const questionData = sessionData.questions[q];
-          const questionMap = new Y.Map();
-          questionMap.set('name', questionData.name);
-          questionMap.set('score', questionData.score);
-          questionMap.set('block', questionData.block);
-          questionMap.set('ignore', questionData.ignore);
-
-          const questionTeams = new Y.Array();
-          for (let qt = 0; qt < questionData.teams.length; qt++) {
-            if (questionData.teams[qt] === null) {
-              questionTeams.push([null]);
-            } else {
-              const teamScoreMap = new Y.Map();
-              teamScoreMap.set('score', questionData.teams[qt].score);
-              teamScoreMap.set('extraCredit', questionData.teams[qt].extraCredit);
-              questionTeams.push([teamScoreMap]);
-            }
-          }
-          questionMap.set('teams', questionTeams);
-
-          questions.push([questionMap]);
-        }
-        sessionMap.set('questions', questions);
-        sessionMap.set('currentQuestion', sessionData.currentQuestion);
-
-        sessions.push([sessionMap]);
+        questions.push([questionMap]);
       }
+      session.set('questions', questions);
 
-      // Update global current_session
-      current_session = data.currentSession;
+      // Initialize history
+      session.set('historyLog', new Y.Array());
     }, 'import');
-  } else if (mode === 'append') {
-    getGlobalDoc().transact(() => {
-      const old_session_count = sessions.length - 1;
 
-      // Append sessions from import (skip index 0 placeholder)
-      for (let i = 1; i < data.sessions.length; i++) {
-        const sessionData = data.sessions[i];
-        const sessionMap = new Y.Map();
-        sessionMap.set('name', sessionData.name);
-
-        // Config
-        const config = new Y.Map();
-        config.set('maxPointsPerQuestion', sessionData.config.maxPointsPerQuestion);
-        config.set('rounding', sessionData.config.rounding);
-        sessionMap.set('config', config);
-
-        // Teams
-        const teams = new Y.Array();
-        for (let t = 0; t < sessionData.teams.length; t++) {
-          if (sessionData.teams[t] === null) {
-            teams.push([null]);
-          } else {
-            const teamMap = new Y.Map();
-            teamMap.set('name', sessionData.teams[t].name);
-            teams.push([teamMap]);
-          }
-        }
-        sessionMap.set('teams', teams);
-
-        // Blocks
-        const blocks = new Y.Array();
-        for (let b = 0; b < sessionData.blocks.length; b++) {
-          const blockMap = new Y.Map();
-          blockMap.set('name', sessionData.blocks[b].name);
-          blocks.push([blockMap]);
-        }
-        sessionMap.set('blocks', blocks);
-
-        // Questions
-        const questions = new Y.Array();
-        for (let q = 0; q < sessionData.questions.length; q++) {
-          if (sessionData.questions[q] === null) {
-            questions.push([null]);
-            continue;
-          }
-
-          const questionData = sessionData.questions[q];
-          const questionMap = new Y.Map();
-          questionMap.set('name', questionData.name);
-          questionMap.set('score', questionData.score);
-          questionMap.set('block', questionData.block);
-          questionMap.set('ignore', questionData.ignore);
-
-          const questionTeams = new Y.Array();
-          for (let qt = 0; qt < questionData.teams.length; qt++) {
-            if (questionData.teams[qt] === null) {
-              questionTeams.push([null]);
-            } else {
-              const teamScoreMap = new Y.Map();
-              teamScoreMap.set('score', questionData.teams[qt].score);
-              teamScoreMap.set('extraCredit', questionData.teams[qt].extraCredit);
-              questionTeams.push([teamScoreMap]);
-            }
-          }
-          questionMap.set('teams', questionTeams);
-
-          questions.push([questionMap]);
-        }
-        sessionMap.set('questions', questions);
-        sessionMap.set('currentQuestion', sessionData.currentQuestion);
-
-        sessions.push([sessionMap]);
-      }
-
-      // Set current session to last imported session
-      current_session = sessions.length - 1;
-      meta.set('currentSession', current_session);
-    }, 'import');
+    // Store session doc
+    DocManager.sessionDocs.set(sessionId, sessionDoc);
+    
+    // Set up IndexedDB persistence
+    const persistence = new IndexeddbPersistence('pbe-score-keeper-session-' + sessionId, sessionDoc);
+    
+    importedSessionIds.push(sessionId);
   }
+
+  // Update global doc with imported sessions
+  getGlobalDoc().transact(() => {
+    const existingOrder = meta.get('sessionOrder') || [];
+    const newOrder = mode === 'replace' ? importedSessionIds : [...existingOrder, ...importedSessionIds];
+    meta.set('sessionOrder', newOrder);
+    
+    // Set current session
+    const targetSessionId = mode === 'replace' 
+      ? (importedSessionIds.length > 0 ? importedSessionIds[0] : null)
+      : (importedSessionIds.length > 0 ? importedSessionIds[importedSessionIds.length - 1] : existingOrder[existingOrder.length - 1]);
+    
+    if (targetSessionId) {
+      meta.set('currentSession', targetSessionId);
+      DocManager.setActiveSession(targetSessionId);
+      current_session = newOrder.indexOf(targetSessionId) + 1;
+    }
+  }, 'import');
+
+  // Add import history entry
+  add_global_history_entry('Import', 'Imported ' + importedSessionIds.length + ' session(s)');
 }
 
 function setup_file_import() {
@@ -581,39 +577,61 @@ function validate_data(data_to_validate) {
  * [Phase 3.1] Export current session as binary Y.Doc update
  * @returns {Uint8Array} Encoded session state
  */
-function exportSession(sessionNum) {
-  sessionNum = sessionNum || current_session;
+/**
+ * Export single session as native Yjs binary update (multi-doc architecture)
+ * Creates encoded state of the session's Y.Doc for export.
+ * The exported file can be imported using Y.applyUpdate() to merge into existing doc.
+ * @param {number|string} sessionNumOrId - Session number (1-based) or UUID to export
+ * @returns {Uint8Array} Native Yjs binary update (can be merged via Y.applyUpdate)
+ */
+function exportSession(sessionNumOrId) {
   if (!getGlobalDoc()) {
     console.error('Yjs not initialized');
     return null;
   }
 
-  // Create a temporary doc with just this session
-  const tempDoc = new Y.Doc();
-  const tempSessions = tempDoc.getArray('sessions');
-  const sessions = getGlobalDoc().getArray('sessions');
-  
-  // Copy the session to temp doc
-  const sessionToCopy = sessions.get(sessionNum);
-  if (!sessionToCopy) {
-    console.error('Session not found:', sessionNum);
+  try {
+    const meta = getGlobalDoc().getMap('meta');
+    const sessionOrder = meta.get('sessionOrder') || [];
+    
+    // Resolve session ID
+    let sessionId;
+    if (typeof sessionNumOrId === 'string' && sessionNumOrId.length > 10) {
+      // It's a UUID
+      sessionId = sessionNumOrId;
+    } else {
+      // It's a number (1-based index)
+      const index = (sessionNumOrId || current_session) - 1;
+      sessionId = sessionOrder[index];
+    }
+
+    if (!sessionId) {
+      console.error('Session not found:', sessionNumOrId);
+      return null;
+    }
+
+    // Get the session doc
+    const sessionDoc = getSessionDoc(sessionId);
+    if (!sessionDoc) {
+      console.error('Session doc not found:', sessionId);
+      return null;
+    }
+
+    // Encode the session doc as native Yjs binary
+    const state = Y.encodeStateAsUpdate(sessionDoc);
+    
+    return state;
+  } catch (error) {
+    console.error('Session export error:', error);
     return null;
   }
-
-  // Add null placeholder and the session
-  tempSessions.push([null]);
-  tempSessions.push([sessionToCopy]);
-
-  // Encode as binary update
-  const state = Y.encodeStateAsUpdate(tempDoc);
-  tempDoc.destroy();
-  
-  return state;
 }
 
 /**
- * [Phase 3.1] Export all sessions as binary Y.Doc update
- * @returns {Object} Object with global and sessions binary updates
+ * Export all sessions as native Yjs binary updates (multi-doc architecture)
+ * Encodes the global Y.Doc and individual session docs for export.
+ * The exported file can be imported using Y.applyUpdate() to merge into existing docs.
+ * @returns {Object} { version, exportedAt, global: Uint8Array, sessions: Map<sessionId, Uint8Array> }
  */
 function exportAllSessions() {
   if (!getGlobalDoc()) {
@@ -621,19 +639,42 @@ function exportAllSessions() {
     return null;
   }
 
-  // Encode global doc state
-  const globalState = Y.encodeStateAsUpdate(getGlobalDoc());
+  try {
+    // Encode the entire global doc as native Yjs binary
+    // This captures metadata and session list
+    const globalState = Y.encodeStateAsUpdate(getGlobalDoc());
 
-  // Return both as object
-  return {
-    version: "3.0",
-    exportedAt: Date.now(),
-    global: globalState
-  };
+    // Get session order from meta
+    const meta = getGlobalDoc().getMap('meta');
+    const sessionOrder = meta.get('sessionOrder') || [];
+
+    // Export each session doc
+    const sessions = {};
+    for (const sessionId of sessionOrder) {
+      const sessionDoc = getSessionDoc(sessionId);
+      if (sessionDoc) {
+        try {
+          sessions[sessionId] = Y.encodeStateAsUpdate(sessionDoc);
+        } catch (error) {
+          console.warn(`Failed to export session ${sessionId}:`, error);
+        }
+      }
+    }
+
+    return {
+      version: "3.0",
+      exportedAt: Date.now(),
+      global: globalState,
+      sessions: sessions
+    };
+  } catch (error) {
+    console.error('All sessions export error:', error);
+    return null;
+  }
 }
 
 /**
- * [Phase 3.1] Download binary export as file
+ * Download binary export as file
  * @param {Uint8Array} binary - Binary data to export
  * @param {string} filename - Filename for download
  */
@@ -650,28 +691,30 @@ function downloadBinaryExport(binary, filename) {
 }
 
 /**
- * [Phase 3.2] Detect import format (binary or JSON)
+ * Detect import format (binary or JSON)
  * @param {any} data - Data to detect format of
  * @returns {string} Format: 'binary-single', 'binary-full', 'json-v3', 'json-legacy', or 'invalid'
  */
 function detectImportFormat(data) {
   // Check if binary (Uint8Array)
   if (data instanceof Uint8Array) {
-    // Try to determine if single session or full export
-    // For now, assume single session
+    // Single binary blob without metadata structure
     return 'binary-single';
   }
 
   // Check if JSON object
   if (typeof data === 'object' && data !== null) {
+    // Check for multi-doc export (has both global and sessions)
+    if (data.global instanceof Uint8Array && (data.sessions === undefined || typeof data.sessions === 'object')) {
+      return 'binary-full';
+    }
+    // Check for v3.0 JSON format
     if (data.dataVersion === 3.0 || (data.dataVersion === 2.0 && data.sessions)) {
       return 'json-v3';
     }
+    // Check for legacy JSON format
     if (data.dataVersion && typeof data.dataVersion === 'number') {
       return 'json-legacy';
-    }
-    if (data.global !== undefined && data.sessions !== undefined) {
-      return 'binary-full';
     }
   }
 
@@ -689,11 +732,12 @@ function detectImportFormat(data) {
 }
 
 /**
- * [Phase 3.2] Universal import function for all formats
+ * Universal import function for all formats (multi-doc architecture)
+ * Supports native Yjs binary (single and multi-doc) and legacy JSON formats
  * @param {any} data - Data to import (binary or JSON)
- * @returns {Object} Import result { success, importedCount, errors }
+ * @returns {Promise<Object>} Import result { success, importedCount, errors }
  */
-function importSessionData(data) {
+async function importSessionData(data) {
   if (!getGlobalDoc()) {
     console.error('Yjs not initialized');
     return { success: false, importedCount: 0, errors: ['Yjs not initialized'] };
@@ -707,31 +751,91 @@ function importSessionData(data) {
   }
 
   const result = { success: true, importedCount: 0, errors: [] };
+  const meta = getGlobalDoc().getMap('meta');
 
   try {
-    if (format === 'binary-single') {
-      // Import single session binary update
-      const tempDoc = new Y.Doc();
-      Y.applyUpdate(tempDoc, data);
-      const tempSessions = tempDoc.getArray('sessions');
+    if (format === 'binary-full') {
+      // Import multi-doc export: create new sessions from the binary data
+      // Note: We DON'T merge into existing - we create new sessions to avoid conflicts
       
-      if (tempSessions.length > 1) {
-        const sessionToImport = tempSessions.get(1);
-        if (sessionToImport) {
-          // Create new session with imported data
-          const sessions = getGlobalDoc().getArray('sessions');
+      if (data.sessions && typeof data.sessions === 'object') {
+        const importedSessionIds = [];
+        
+        for (const [originalSessionId, sessionData] of Object.entries(data.sessions)) {
+          if (sessionData instanceof Uint8Array) {
+            try {
+              // Generate new UUID for the imported session
+              const newSessionId = generateSessionId();
+              
+              // Create new session doc and apply the imported state
+              const sessionDoc = new Y.Doc();
+              Y.applyUpdate(sessionDoc, sessionData, 'import');
+              
+              // Store the session doc
+              DocManager.sessionDocs.set(newSessionId, sessionDoc);
+              
+              // Set up IndexedDB persistence
+              const persistence = new IndexeddbPersistence('pbe-score-keeper-session-' + newSessionId, sessionDoc);
+              
+              importedSessionIds.push(newSessionId);
+              result.importedCount++;
+            } catch (error) {
+              result.errors.push(`Failed to import session: ${error.message}`);
+            }
+          }
+        }
+        
+        // Update global doc with imported sessions
+        if (importedSessionIds.length > 0) {
           getGlobalDoc().transact(() => {
-            sessions.push([sessionToImport]);
+            const existingOrder = meta.get('sessionOrder') || [];
+            const newOrder = [...existingOrder, ...importedSessionIds];
+            meta.set('sessionOrder', newOrder);
+            
+            // Set current session to first imported
+            meta.set('currentSession', importedSessionIds[0]);
+            DocManager.setActiveSession(importedSessionIds[0]);
+            current_session = newOrder.indexOf(importedSessionIds[0]) + 1;
           }, 'import');
-          result.importedCount = 1;
         }
       }
-      tempDoc.destroy();
+    } 
+    else if (format === 'binary-single') {
+      // Import single session binary update
+      try {
+        // Generate new UUID for imported session
+        const newSessionId = generateSessionId();
+        
+        // Create session doc and apply the imported state
+        const sessionDoc = new Y.Doc();
+        Y.applyUpdate(sessionDoc, data, 'import');
+        
+        // Store session doc
+        DocManager.sessionDocs.set(newSessionId, sessionDoc);
+        
+        // Set up IndexedDB persistence
+        const persistence = new IndexeddbPersistence('pbe-score-keeper-session-' + newSessionId, sessionDoc);
+        
+        // Update global doc
+        getGlobalDoc().transact(() => {
+          const existingOrder = meta.get('sessionOrder') || [];
+          const newOrder = [...existingOrder, newSessionId];
+          meta.set('sessionOrder', newOrder);
+          meta.set('currentSession', newSessionId);
+          DocManager.setActiveSession(newSessionId);
+          current_session = newOrder.indexOf(newSessionId) + 1;
+        }, 'import');
+        
+        result.importedCount = 1;
+      } catch (error) {
+        result.success = false;
+        result.errors.push(`Failed to import session: ${error.message}`);
+      }
     } 
     else if (format === 'json-v3' || format === 'json-legacy') {
-      // Import JSON format
-      import_yjs_from_json(data, 'append');
-      result.importedCount = data.sessions ? data.sessions.length - 1 : 0;
+      // Import JSON format (legacy save files)
+      await import_yjs_from_json(data, 'append');
+      result.importedCount = data.sessions ? Math.max(0, data.sessions.length - 1) : 0;
     }
   } catch (error) {
     result.success = false;

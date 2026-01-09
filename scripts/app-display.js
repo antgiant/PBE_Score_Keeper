@@ -529,21 +529,17 @@ function sync_data_to_display() {
   }
 }
 /**
- * [FUTURE: Multi-doc] Show loading indicator
+ * Show loading indicator
  * @param {string} message - Loading message to display
  */
 function showLoading(message = 'Loading...') {
-  // Future: Display loading overlay/spinner
-  // For now: log to console
   console.log('Loading: ' + message);
 }
 
 /**
- * [FUTURE: Multi-doc] Hide loading indicator
+ * Hide loading indicator
  */
 function hideLoading() {
-  // Future: Hide loading overlay/spinner
-  // For now: log to console
   console.log('Loading complete');
 }
 
@@ -553,8 +549,6 @@ function hideLoading() {
  * @param {Array} recoveryOptions - Array of {label, action} recovery options
  */
 function showError(message, recoveryOptions = []) {
-  // Future: Display error dialog with recovery options
-  // For now: log to console
   console.error('Error: ' + message);
   if (recoveryOptions.length > 0) {
     console.log('Recovery options:', recoveryOptions);
@@ -562,12 +556,11 @@ function showError(message, recoveryOptions = []) {
 }
 
 /**
- * [FUTURE: Multi-doc] Disable session switching controls
+ * Disable session switching controls
  * Used when operations are in progress
  */
 function disableSessionControls() {
-  // Future: Disable session switching buttons/dropdowns
-  // For now: no-op
+  // Placeholder: Can be expanded to disable UI controls
 }
 
 /**
@@ -575,6 +568,5 @@ function disableSessionControls() {
  * Used when operations are complete
  */
 function enableSessionControls() {
-  // Future: Enable session switching buttons/dropdowns
-  // For now: no-op
+  // Placeholder: Can be expanded to enable UI controls
 }

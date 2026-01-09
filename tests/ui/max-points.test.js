@@ -49,7 +49,7 @@ function buildQuestionPointsSeed(questionScore) {
 }
 
 test('max points increase updates totals and possible point options', () => {
-  const { context, ydoc } = loadApp(buildMaxPointsSeed(4, 2));
+  const { context } = loadApp(buildMaxPointsSeed(4, 2));
 
   context.sync_data_to_display();
 
@@ -59,8 +59,8 @@ test('max points increase updates totals and possible point options', () => {
   context.update_data_element('max_points_increase');
   context.sync_data_to_display();
 
-  // Check Yjs instead of localStorage
-  const session = ydoc.getArray('sessions').get(1);
+  // Check Yjs session doc
+  const session = context.get_current_session();
   const config = session.get('config');
   assert.equal(config.get('maxPointsPerQuestion'), 5);
   assert.equal(Number(context.$('#max_points').text()), 5);
@@ -68,7 +68,7 @@ test('max points increase updates totals and possible point options', () => {
 });
 
 test('max points decrease updates totals and possible point options', () => {
-  const { context, ydoc } = loadApp(buildMaxPointsSeed(6, 4));
+  const { context } = loadApp(buildMaxPointsSeed(6, 4));
 
   context.sync_data_to_display();
 
@@ -78,8 +78,8 @@ test('max points decrease updates totals and possible point options', () => {
   context.update_data_element('max_points_decrease');
   context.sync_data_to_display();
 
-  // Check Yjs instead of localStorage
-  const session = ydoc.getArray('sessions').get(1);
+  // Check Yjs session doc
+  const session = context.get_current_session();
   const config = session.get('config');
   assert.equal(config.get('maxPointsPerQuestion'), 5);
   assert.equal(Number(context.$('#max_points').text()), 5);

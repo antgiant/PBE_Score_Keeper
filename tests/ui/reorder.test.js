@@ -74,12 +74,12 @@ test('reordering teams updates display order', () => {
 });
 
 test('reordering teams saves to the data store', () => {
-  const { context, ydoc } = loadApp(buildReorderSeed());
+  const { context } = loadApp(buildReorderSeed());
 
   context.reorder_teams(['3', '1', '2']);
 
-  // Check Yjs instead of localStorage
-  const session = ydoc.getArray('sessions').get(1);
+  // Check Yjs session doc
+  const session = context.get_current_session();
   const teams = session.get('teams');
   const teamNames = [];
   for (let t = 1; t < teams.length; t++) {
@@ -116,12 +116,12 @@ test('reordering blocks updates display order', () => {
 });
 
 test('reordering blocks saves to the data store', () => {
-  const { context, ydoc } = loadApp(buildReorderSeed());
+  const { context } = loadApp(buildReorderSeed());
 
   context.reorder_blocks(['2', '1']);
 
-  // Check Yjs instead of localStorage
-  const session = ydoc.getArray('sessions').get(1);
+  // Check Yjs session doc
+  const session = context.get_current_session();
   const blocks = session.get('blocks');
   const blockNames = [];
   for (let b = 0; b < blocks.length; b++) {

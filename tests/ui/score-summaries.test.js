@@ -78,44 +78,50 @@ function buildDeleteSessionSeed() {
   });
 }
 
-// Test that seed data loads correctly into Yjs
+// Test that seed data loads correctly into Yjs (v3.0 multi-doc)
 test('score summary seed data loads correctly', () => {
-  const { ydoc } = loadApp(buildScoreSummarySeed());
-  const sessions = ydoc.getArray('sessions');
-  if (sessions && sessions.length > 0) {
-    const session = sessions.get(1);
-    if (session && session.get) {
+  const { context, ydoc } = loadApp(buildScoreSummarySeed());
+  const meta = ydoc.getMap('meta');
+  const sessionOrder = meta.get('sessionOrder');
+  
+  if (sessionOrder && sessionOrder.length > 0) {
+    const sessionDoc = context.DocManager.sessionDocs.get(sessionOrder[0]);
+    if (sessionDoc) {
+      const session = sessionDoc.getMap('session');
       const name = session.get('name');
       if (name === 'Session 1') {
         // Success - data structure is correct
       } else {
-        throw new Error('Session name mismatch');
+        throw new Error('Session name mismatch, got: ' + name);
       }
     } else {
-      throw new Error('Session not found');
+      throw new Error('Session doc not found');
     }
   } else {
     throw new Error('No sessions found');
   }
 });
 
-// Test that question log seed data is correct
+// Test that question log seed data is correct (v3.0 multi-doc)
 test('question log seed data is valid', () => {
-  const { ydoc } = loadApp(buildScoreSummarySeed());
-  const sessions = ydoc.getArray('sessions');
-  const session = sessions.get(1);
+  const { context, ydoc } = loadApp(buildScoreSummarySeed());
+  const meta = ydoc.getMap('meta');
+  const sessionOrder = meta.get('sessionOrder');
+  const sessionDoc = context.DocManager.sessionDocs.get(sessionOrder[0]);
+  const session = sessionDoc.getMap('session');
   const questions = session.get('questions');
   if (!questions || questions.length < 2) {
     throw new Error('Questions not properly loaded');
   }
 });
 
-// Test that delete session seed has two sessions
+// Test that delete session seed has two sessions (v3.0 multi-doc)
 test('delete session seed has correct structure', () => {
-  const { ydoc } = loadApp(buildDeleteSessionSeed());
-  const sessions = ydoc.getArray('sessions');
-  // Yjs arrays have null placeholder at index 0, so length should be 3 (null + 2 sessions)
-  if (!sessions || sessions.length !== 3) {
-    throw new Error(`Expected 3 total sessions (including null placeholder), got ${sessions.length}`);
+  const { context, ydoc } = loadApp(buildDeleteSessionSeed());
+  const meta = ydoc.getMap('meta');
+  const sessionOrder = meta.get('sessionOrder');
+  // sessionOrder should have 2 UUIDs for 2 sessions
+  if (!sessionOrder || sessionOrder.length !== 2) {
+    throw new Error(`Expected 2 sessions in sessionOrder, got ${sessionOrder ? sessionOrder.length : 0}`);
   }
 });

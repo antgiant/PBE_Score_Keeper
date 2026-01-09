@@ -8,6 +8,14 @@ These instructions apply to any AI assistant working in this repository.
 - If tests cannot be run, state why and provide the closest possible validation.
 - Use the summary reporter when you want a compact output (`node --test --test-reporter ./tests/helpers/table-reporter.js`).
 
+## Export Requirements
+**ALL EXPORTS MUST BE NATIVE YJS BINARY FORMAT**
+- Exports MUST use `Y.encodeStateAsUpdate()` to create native Yjs binary format
+- Exported files MUST be importable via `Y.applyUpdate()` for merging into existing documents
+- File extension `.yjs` indicates native Yjs binary format that can be merged
+- JSON exports are acceptable ONLY as fallback format (use `.json` extension)
+- When importing, the system MUST support merging native Yjs exports without data loss
+
 ## Test Structure
 - Place pure logic tests under `tests/unit/`.
 - Place UI/DOM interaction tests under `tests/ui/`.
@@ -100,18 +108,30 @@ Available in `app-state.js`:
 - `switchSession(sessionId)` - Changes active session
 - `deleteSession(sessionId)` - Removes session with safeguards
 - `getAllSessions()` - Returns array of all sessions
-- `updateSessionLastModified(sessionId)` - Updates timestamp (future use)
+- `updateSessionLastModified(sessionId)` - Updates timestamp for session tracking
 
 ### Export/Import Functions
 
 Available in `app-import-export.js`:
-- `exportSession(sessionNum)` - Binary export of single session
-- `exportAllSessions()` - Binary export of all sessions
-- `downloadBinaryExport(binary, filename)` - Trigger download
-- `importSessionData(data)` - Universal import (all formats)
+- `exportSession(sessionNum)` - Exports single session as native Yjs binary (can be merged via Y.applyUpdate)
+- `exportAllSessions()` - Exports global Y.Doc and all referenced session docs as native Yjs binary with metadata
+- `downloadBinaryExport(binary, filename)` - Triggers browser download of binary file
+- `importSessionData(data)` - Universal import supporting native Yjs binary (single/multi-doc) and legacy JSON
 
 Also in `app-state.js`:
-- `detectImportFormat(data)` - Auto-detect format (binary/JSON/legacy)
+- `detectImportFormat(data)` - Auto-detect format (binary-single, binary-full, json-v3, json-legacy)
+
+**CRITICAL: Export/Import Specifications**
+- All `.yjs` exports are native Yjs binary format created via `Y.encodeStateAsUpdate()`
+- `exportAllSessions()` returns `{ version, exportedAt, global: Uint8Array, sessions: {} }`
+  - `global`: Encoded state of global Y.Doc (metadata and session references)
+  - `sessions`: Map of individual session doc states from multi-doc mode
+- Exported files can be merged using `Y.applyUpdate(targetDoc, binaryData)` for conflict-free sync
+- Import function handles all formats:
+  - **binary-full**: Multi-doc exports with global + individual session docs
+  - **binary-single**: Single session exports with just that session
+  - **json-v3/json-legacy**: Legacy JSON save files from previous versions
+- This enables conflict-free synchronization across different sessions and users
 
 ### Loading and Error Handling
 
@@ -119,8 +139,8 @@ Available in `app-display.js`:
 - `showLoading(message)` - Show loading indicator with message
 - `hideLoading()` - Hide loading indicator
 - `showError(message, recoveryOptions)` - Show error with recovery options
-- `disableSessionControls()` - Disable session switching (future)
-- `enableSessionControls()` - Enable session switching (future)
+- `disableSessionControls()` - Disable session switching during operations
+- `enableSessionControls()` - Enable session switching when ready
 
 ### Key Design Decisions
 
@@ -131,9 +151,14 @@ Available in `app-display.js`:
 5. **Import Behavior**: Always creates new sessions (no merge ambiguity)
 6. **Error Handling**: Skip-and-continue for batch operations with user feedback
 
-### Single-Doc Compatibility
+### Multi-Doc Architecture
 
-Current code operates in single-doc mode but uses DocManager abstraction. The global Y.Doc is named `pbe-score-keeper` (same as v2.0) for backward compatibility. Multi-doc migration is transparent when Phase 2 implementations are activated.
+The application operates in multi-doc mode with:
+- **Global Y.Doc**: Stores metadata (dataVersion, currentSession) and session references
+- **Per-session Y.Docs**: Each session has its own Y.Doc for isolation and independent import/export
+- **DocManager**: Centralizes access to all docs via getter/setter functions
+
+IndexedDB persistence uses separate keys for each Y.Doc (`pbe-score-keeper-global`, `pbe-score-keeper-session-{id}`).
 
 ### Testing
 

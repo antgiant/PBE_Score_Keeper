@@ -57,8 +57,8 @@ test('renaming a session updates session_names storage', () => {
   context.$('#session_name').text('Finals Round');
   context.update_data_element('session_name');
 
-  // Check Yjs instead of localStorage
-  const session = ydoc.getArray('sessions').get(1);
+  // Check session doc instead of old sessions array
+  const session = context.get_current_session();
   assert.equal(session.get('name'), 'Finals Round');
 });
 
@@ -70,20 +70,27 @@ test('new session stays disabled until the first question has a score', () => {
   assert.equal(context.$('#new_session').prop('disabled'), true);
 });
 
-test('creating a new session works after scoring and writes to storage', () => {
+test('creating a new session works after scoring and writes to storage', async () => {
   const { context, ydoc } = loadApp(buildSessionSeed([5, 3]));
 
   context.sync_data_to_display();
 
   assert.equal(context.$('#new_session').prop('disabled'), false);
 
-  context.update_data_element('new_session');
+  // createNewSession is async
+  await context.update_data_element('new_session');
 
-  // Check Yjs instead of localStorage
-  const sessions = ydoc.getArray('sessions');
-  assert.equal(sessions.length, 3);
+  // Check v3.0 multi-doc structure
   const meta = ydoc.getMap('meta');
-  assert.equal(meta.get('currentSession'), 2);
-  const newSession = sessions.get(2);
-  assert.equal(newSession.get('questions').length, 2);
+  const sessionOrder = meta.get('sessionOrder');
+  assert.equal(sessionOrder.length, 2, 'Should have 2 sessions');
+  
+  // Current session should be the new one (index 1 in sessionOrder, but current_session is 2 for UI)
+  const currentSessionId = meta.get('currentSession');
+  assert.equal(sessionOrder.indexOf(currentSessionId), 1, 'Current session should be second');
+  
+  // New session should have the right structure
+  const newSessionDoc = context.DocManager.sessionDocs.get(currentSessionId);
+  const newSession = newSessionDoc.getMap('session');
+  assert.equal(newSession.get('questions').length, 2, 'New session should have 2 questions (including placeholder)');
 });

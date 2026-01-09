@@ -24,103 +24,30 @@ function update_data_element(updated_id, new_value) {
   if (updated_id == "session_name") {
     let new_value = $("#session_name").text();
     const oldName = session.get('name');
-    getGlobalDoc().transact(() => {
-      session.set('name', new_value);
-      add_history_entry('Rename Session', 'Renamed "' + oldName + '" to "' + new_value + '"');
-    }, 'local');
+    const sessionDoc = getActiveSessionDoc();
+    if (sessionDoc) {
+      sessionDoc.transact(() => {
+        session.set('name', new_value);
+        add_history_entry('Rename Session', 'Renamed "' + oldName + '" to "' + new_value + '"');
+      }, 'local');
+    }
     $("#session_quick_nav").focus();
   }
   //Goto next session
   else if (updated_id == "new_session") {
-    const questions = session.get('questions');
-    let question_count = questions.length - 1;
-    if (questions.get(question_count).get('score') == 0) {
-      question_count--;
-    }
-    if (question_count > 1) {
-      const sessions = getGlobalDoc().getArray('sessions');
-      const meta = getGlobalDoc().getMap('meta');
-
-      //Get current settings to copy them forward
-      const config = session.get('config');
-      let temp_max_points = config.get('maxPointsPerQuestion');
-      let temp_rounding = config.get('rounding');
-      let temp_block_names = get_block_names();
-      let temp_team_names = get_team_names();
-
-      getGlobalDoc().transact(() => {
-        //Move Current session forward one
-        current_session = sessions.length;
-        meta.set('currentSession', current_session);
-
-        //Set up session defaults
-        var d = new Date();
-        var date = d.toLocaleString();
-
-        const newSession = new Y.Map();
-        newSession.set('name', 'Session ' + date);
-
-        // Copy config
-        const newConfig = new Y.Map();
-        newConfig.set('maxPointsPerQuestion', temp_max_points);
-        newConfig.set('rounding', temp_rounding);
-        newSession.set('config', newConfig);
-
-        // Copy teams
-        const newTeams = new Y.Array();
-        newTeams.push([null]); // Placeholder at index 0
-        for (let i = 1; i < temp_team_names.length; i++) {
-          const teamMap = new Y.Map();
-          teamMap.set('name', temp_team_names[i]);
-          newTeams.push([teamMap]);
-        }
-        newSession.set('teams', newTeams);
-
-        // Copy blocks
-        const newBlocks = new Y.Array();
-        for (let i = 0; i < temp_block_names.length; i++) {
-          const blockMap = new Y.Map();
-          blockMap.set('name', temp_block_names[i]);
-          newBlocks.push([blockMap]);
-        }
-        newSession.set('blocks', newBlocks);
-
-        // Create first question
-        const newQuestions = new Y.Array();
-        newQuestions.push([null]); // Placeholder at index 0
-
-        const question1 = new Y.Map();
-        question1.set('name', 'Question 1');
-        question1.set('score', 0);
-        question1.set('block', 0);
-        question1.set('ignore', false);
-
-        const question1Teams = new Y.Array();
-        question1Teams.push([null]); // Placeholder
-        for (let i = 1; i < temp_team_names.length; i++) {
-          const teamScore = new Y.Map();
-          teamScore.set('score', 0);
-          teamScore.set('extraCredit', 0);
-          question1Teams.push([teamScore]);
-        }
-        question1.set('teams', question1Teams);
-
-        newQuestions.push([question1]);
-        newSession.set('questions', newQuestions);
-        newSession.set('currentQuestion', 1);
-
-        sessions.push([newSession]);
-      }, 'local');
-    }
+    // Use multi-doc createNewSession - return promise for await support
+    return createNewSession().then(function(newSessionId) {
+      if (newSessionId) {
+        sync_data_to_display();
+      }
+      return newSessionId;
+    });
   }
 
   //Jump to specific session
   else if (updated_id == "session_quick_nav") {
-    getGlobalDoc().transact(() => {
-      const meta = getGlobalDoc().getMap('meta');
-      meta.set('currentSession', Number(new_value));
-      current_session = Number(new_value);
-    }, 'local');
+    // Use multi-doc switchSession
+    switchSession(Number(new_value));
   }
 
   //Increase total teams count
@@ -128,25 +55,28 @@ function update_data_element(updated_id, new_value) {
     const teams = session.get('teams');
     const questions = session.get('questions');
     const new_team_num = teams.length;
+    const sessionDoc = getActiveSessionDoc();
 
-    getGlobalDoc().transact(() => {
-      // Add new team
-      const newTeam = new Y.Map();
-      newTeam.set('name', 'Team ' + new_team_num);
-      teams.push([newTeam]);
+    if (sessionDoc) {
+      sessionDoc.transact(() => {
+        // Add new team
+        const newTeam = new Y.Map();
+        newTeam.set('name', 'Team ' + new_team_num);
+        teams.push([newTeam]);
 
-      // Add placeholder scores for all existing questions
-      for (let i = 1; i < questions.length; i++) {
-        const question = questions.get(i);
-        const questionTeams = question.get('teams');
-        const teamScore = new Y.Map();
-        teamScore.set('score', 0);
-        teamScore.set('extraCredit', 0);
-        questionTeams.push([teamScore]);
-      }
+        // Add placeholder scores for all existing questions
+        for (let i = 1; i < questions.length; i++) {
+          const question = questions.get(i);
+          const questionTeams = question.get('teams');
+          const teamScore = new Y.Map();
+          teamScore.set('score', 0);
+          teamScore.set('extraCredit', 0);
+          questionTeams.push([teamScore]);
+        }
 
-      add_history_entry('Add Team', 'Added "Team ' + new_team_num + '"');
-    }, 'local');
+        add_history_entry('Add Team', 'Added "Team ' + new_team_num + '"');
+      }, 'local');
+    }
   }
   //Decrease total teams count
   else if (updated_id == "total_teams_decrease") {
@@ -156,19 +86,22 @@ function update_data_element(updated_id, new_value) {
       const lastTeam = teams.get(teams.length - 1);
       const teamName = lastTeam.get('name');
       if (window.confirm("Do you really want Delete " + teamName + "?")) {
-        getGlobalDoc().transact(() => {
-          // Remove team from teams array
-          teams.delete(teams.length - 1, 1);
+        const sessionDoc = getActiveSessionDoc();
+        if (sessionDoc) {
+          sessionDoc.transact(() => {
+            // Remove team from teams array
+            teams.delete(teams.length - 1, 1);
 
-          // Remove team scores from all questions
-          for (let i = 1; i < questions.length; i++) {
-            const question = questions.get(i);
-            const questionTeams = question.get('teams');
-            questionTeams.delete(questionTeams.length - 1, 1);
-          }
+            // Remove team scores from all questions
+            for (let i = 1; i < questions.length; i++) {
+              const question = questions.get(i);
+              const questionTeams = question.get('teams');
+              questionTeams.delete(questionTeams.length - 1, 1);
+            }
 
-          add_history_entry('Delete Team', 'Deleted "' + teamName + '"');
-        }, 'local');
+            add_history_entry('Delete Team', 'Deleted "' + teamName + '"');
+          }, 'local');
+        }
       }
     }
   }
@@ -177,21 +110,27 @@ function update_data_element(updated_id, new_value) {
     let updated_team_number = Number(updated_id.match(team_name_check)[1]);
     const teams = session.get('teams');
     const oldName = teams.get(updated_team_number).get('name');
-    getGlobalDoc().transact(() => {
-      teams.get(updated_team_number).set('name', new_value);
-      add_history_entry('Rename Team', 'Renamed "' + oldName + '" to "' + new_value + '"');
-    }, 'local');
+    const sessionDoc = getActiveSessionDoc();
+    if (sessionDoc) {
+      sessionDoc.transact(() => {
+        teams.get(updated_team_number).set('name', new_value);
+        add_history_entry('Rename Team', 'Renamed "' + oldName + '" to "' + new_value + '"');
+      }, 'local');
+    }
   }
   //Increase total Block/Group Count
   if (updated_id == "total_blocks_increase") {
     const blocks = session.get('blocks');
     const blockNum = blocks.length;
-    getGlobalDoc().transact(() => {
-      const newBlock = new Y.Map();
-      newBlock.set('name', 'Block/Group ' + blockNum);
-      blocks.push([newBlock]);
-      add_history_entry('Add Block/Group', 'Added "Block/Group ' + blockNum + '"');
-    }, 'local');
+    const sessionDoc = getActiveSessionDoc();
+    if (sessionDoc) {
+      sessionDoc.transact(() => {
+        const newBlock = new Y.Map();
+        newBlock.set('name', 'Block/Group ' + blockNum);
+        blocks.push([newBlock]);
+        add_history_entry('Add Block/Group', 'Added "Block/Group ' + blockNum + '"');
+      }, 'local');
+    }
   }
   //Decrease total Blocks/Groups count
   else if (updated_id == "total_blocks_decrease") {
@@ -210,10 +149,13 @@ function update_data_element(updated_id, new_value) {
     if (blocks.length > (smallest_valid_number_of_blocks + 1)) {
       const blockToDelete = blocks.get(blocks.length - 1);
       const blockName = blockToDelete.get('name');
-      getGlobalDoc().transact(() => {
-        blocks.delete(blocks.length - 1, 1);
-        add_history_entry('Delete Block/Group', 'Deleted "' + blockName + '"');
-      }, 'local');
+      const sessionDoc = getActiveSessionDoc();
+      if (sessionDoc) {
+        sessionDoc.transact(() => {
+          blocks.delete(blocks.length - 1, 1);
+          add_history_entry('Delete Block/Group', 'Deleted "' + blockName + '"');
+        }, 'local');
+      }
     }
   }
   //Update Block/Group Name
@@ -221,19 +163,25 @@ function update_data_element(updated_id, new_value) {
     let updated_block_number = Number(updated_id.match(block_name_check)[1]);
     const blocks = session.get('blocks');
     const oldName = blocks.get(updated_block_number).get('name');
-    getGlobalDoc().transact(() => {
-      blocks.get(updated_block_number).set('name', new_value);
-      add_history_entry('Rename Block/Group', 'Renamed "' + oldName + '" to "' + new_value + '"');
-    }, 'local');
+    const sessionDoc = getActiveSessionDoc();
+    if (sessionDoc) {
+      sessionDoc.transact(() => {
+        blocks.get(updated_block_number).set('name', new_value);
+        add_history_entry('Rename Block/Group', 'Renamed "' + oldName + '" to "' + new_value + '"');
+      }, 'local');
+    }
   }
   //Increase Max Points per Question
   if (updated_id == "max_points_increase") {
     const config = session.get('config');
     const oldValue = config.get('maxPointsPerQuestion');
-    getGlobalDoc().transact(() => {
-      config.set('maxPointsPerQuestion', oldValue + 1);
-      add_history_entry('Change Max Points', 'Increased max points from ' + oldValue + ' to ' + (oldValue + 1));
-    }, 'local');
+    const sessionDoc = getActiveSessionDoc();
+    if (sessionDoc) {
+      sessionDoc.transact(() => {
+        config.set('maxPointsPerQuestion', oldValue + 1);
+        add_history_entry('Change Max Points', 'Increased max points from ' + oldValue + ' to ' + (oldValue + 1));
+      }, 'local');
+    }
   }
   //Decrease Max Points per Question
   else if (updated_id == "max_points_decrease") {
@@ -251,10 +199,13 @@ function update_data_element(updated_id, new_value) {
     }
     let max_points = config.get('maxPointsPerQuestion');
     if (max_points > smallest_valid_max_points) {
-      getGlobalDoc().transact(() => {
-        config.set('maxPointsPerQuestion', max_points - 1);
-        add_history_entry('Change Max Points', 'Decreased max points from ' + max_points + ' to ' + (max_points - 1));
-      }, 'local');
+      const sessionDoc = getActiveSessionDoc();
+      if (sessionDoc) {
+        sessionDoc.transact(() => {
+          config.set('maxPointsPerQuestion', max_points - 1);
+          add_history_entry('Change Max Points', 'Decreased max points from ' + max_points + ' to ' + (max_points - 1));
+        }, 'local');
+      }
     }
   }
   //Update Question Title
@@ -262,39 +213,51 @@ function update_data_element(updated_id, new_value) {
     let new_value = $("#current_question_title").text();
     const questions = session.get('questions');
     const oldName = questions.get(current_question).get('name');
-    getGlobalDoc().transact(() => {
-      questions.get(current_question).set('name', new_value);
-      add_history_entry('Rename Question', 'Renamed "' + oldName + '" to "' + new_value + '"');
-    }, 'local');
+    const sessionDoc = getActiveSessionDoc();
+    if (sessionDoc) {
+      sessionDoc.transact(() => {
+        questions.get(current_question).set('name', new_value);
+        add_history_entry('Rename Question', 'Renamed "' + oldName + '" to "' + new_value + '"');
+      }, 'local');
+    }
     $("#question_quick_nav").focus();
   }
   //Update Rounding Status to Yes
   else if (updated_id == "rounding_yes") {
-    getGlobalDoc().transact(() => {
-      session.get('config').set('rounding', true);
-      add_history_entry('Change Rounding', 'Enabled rounding to best team\'s total');
-    }, 'local');
+    const sessionDoc = getActiveSessionDoc();
+    if (sessionDoc) {
+      sessionDoc.transact(() => {
+        session.get('config').set('rounding', true);
+        add_history_entry('Change Rounding', 'Enabled rounding to best team\'s total');
+      }, 'local');
+    }
   }
   //Update Rounding Status to No
   else if (updated_id == "rounding_no") {
-    getGlobalDoc().transact(() => {
-      session.get('config').set('rounding', false);
-      add_history_entry('Change Rounding', 'Disabled rounding');
-    }, 'local');
+    const sessionDoc = getActiveSessionDoc();
+    if (sessionDoc) {
+      sessionDoc.transact(() => {
+        session.get('config').set('rounding', false);
+        add_history_entry('Change Rounding', 'Disabled rounding');
+      }, 'local');
+    }
   }
   //Update Ignore Question Status
   else if (updated_id == "ignore_question") {
     let temp = $("#ignore_question").prop("checked");
     const questions = session.get('questions');
     const questionName = questions.get(current_question).get('name');
-    getGlobalDoc().transact(() => {
-      questions.get(current_question).set('ignore', temp);
-      if (temp) {
-        add_history_entry('Ignore Question', 'Set "' + questionName + '" to be ignored');
-      } else {
-        add_history_entry('Include Question', 'Set "' + questionName + '" to be included');
-      }
-    }, 'local');
+    const sessionDoc = getActiveSessionDoc();
+    if (sessionDoc) {
+      sessionDoc.transact(() => {
+        questions.get(current_question).set('ignore', temp);
+        if (temp) {
+          add_history_entry('Ignore Question', 'Set "' + questionName + '" to be ignored');
+        } else {
+          add_history_entry('Include Question', 'Set "' + questionName + '" to be included');
+        }
+      }, 'local');
+    }
   }
   //Toggle Extra Credit
   else if (updated_id == "extra_credit") {
@@ -304,9 +267,12 @@ function update_data_element(updated_id, new_value) {
 
     if ($("#extra_credit").prop("checked")) {
       // Log enabling extra credit
-      getGlobalDoc().transact(() => {
-        add_history_entry('Enable Extra Credit', 'Enabled extra credit for "' + questionName + '"');
-      }, 'local');
+      const sessionDoc = getActiveSessionDoc();
+      if (sessionDoc) {
+        sessionDoc.transact(() => {
+          add_history_entry('Enable Extra Credit', 'Enabled extra credit for "' + questionName + '"');
+        }, 'local');
+      }
     } else {
       // Disabling extra credit - may need to clear existing extra credit
       const questionTeams = currentQuestionObj.get('teams');
@@ -321,17 +287,23 @@ function update_data_element(updated_id, new_value) {
       }
       //Only display warning if there actually is extra credit to delete
       if (temp_extra_credit > 0 && window.confirm("Are you sure you want to irreversably delete this question's extra credit?")) {
-        getGlobalDoc().transact(() => {
-          for (let i = 1; i <= team_count; i++) {
-            questionTeams.get(i).set('extraCredit', 0);
-          }
-          add_history_entry('Clear Extra Credit', 'Cleared all extra credit for "' + questionName + '"');
-        }, 'local');
+        const sessionDoc = getActiveSessionDoc();
+        if (sessionDoc) {
+          sessionDoc.transact(() => {
+            for (let i = 1; i <= team_count; i++) {
+              questionTeams.get(i).set('extraCredit', 0);
+            }
+            add_history_entry('Clear Extra Credit', 'Cleared all extra credit for "' + questionName + '"');
+          }, 'local');
+        }
       } else {
         // Just log disabling extra credit (no clearing needed)
-        getGlobalDoc().transact(() => {
-          add_history_entry('Disable Extra Credit', 'Disabled extra credit for "' + questionName + '"');
-        }, 'local');
+        const sessionDoc = getActiveSessionDoc();
+        if (sessionDoc) {
+          sessionDoc.transact(() => {
+            add_history_entry('Disable Extra Credit', 'Disabled extra credit for "' + questionName + '"');
+          }, 'local');
+        }
       }
     }
   }
@@ -343,11 +315,14 @@ function update_data_element(updated_id, new_value) {
     const questionTeams = questions.get(current_question).get('teams');
     const questionName = questions.get(current_question).get('name');
     const teamName = teams.get(team_number).get('name');
-    getGlobalDoc().transact(() => {
-      let team_extra_credit = questionTeams.get(team_number).get('extraCredit');
-      questionTeams.get(team_number).set('extraCredit', team_extra_credit + 1);
-      add_history_entry('Extra Credit', 'Increased extra credit for "' + teamName + '" on "' + questionName + '" to ' + (team_extra_credit + 1));
-    }, 'local');
+    const sessionDoc = getActiveSessionDoc();
+    if (sessionDoc) {
+      sessionDoc.transact(() => {
+        let team_extra_credit = questionTeams.get(team_number).get('extraCredit');
+        questionTeams.get(team_number).set('extraCredit', team_extra_credit + 1);
+        add_history_entry('Extra Credit', 'Increased extra credit for "' + teamName + '" on "' + questionName + '" to ' + (team_extra_credit + 1));
+      }, 'local');
+    }
   }
   //decrease team extra credit
   else if (updated_id.search(decrease_team_extra_credit_check) > -1) {
@@ -359,10 +334,13 @@ function update_data_element(updated_id, new_value) {
     const teamName = teams.get(team_number).get('name');
     let team_extra_credit = questionTeams.get(team_number).get('extraCredit');
     if (team_extra_credit > 0) {
-      getGlobalDoc().transact(() => {
-        questionTeams.get(team_number).set('extraCredit', team_extra_credit - 1);
-        add_history_entry('Extra Credit', 'Decreased extra credit for "' + teamName + '" on "' + questionName + '" to ' + (team_extra_credit - 1));
-      }, 'local');
+      const sessionDoc = getActiveSessionDoc();
+      if (sessionDoc) {
+        sessionDoc.transact(() => {
+          questionTeams.get(team_number).set('extraCredit', team_extra_credit - 1);
+          add_history_entry('Extra Credit', 'Decreased extra credit for "' + teamName + '" on "' + questionName + '" to ' + (team_extra_credit - 1));
+        }, 'local');
+      }
     }
   }
   //Update Current Question Max Possible Score
@@ -381,10 +359,13 @@ function update_data_element(updated_id, new_value) {
       }
     }
     if (new_value >= temp_max) {
-      getGlobalDoc().transact(() => {
-        questions.get(current_question).set('score', Number(new_value));
-        add_history_entry('Set Question Points', 'Set max points for "' + questionName + '" from ' + oldScore + ' to ' + new_value);
-      }, 'local');
+      const sessionDoc = getActiveSessionDoc();
+      if (sessionDoc) {
+        sessionDoc.transact(() => {
+          questions.get(current_question).set('score', Number(new_value));
+          add_history_entry('Set Question Points', 'Set max points for "' + questionName + '" from ' + oldScore + ' to ' + new_value);
+        }, 'local');
+      }
     }
   }
   //Update Current Question's Block/Group
@@ -395,10 +376,13 @@ function update_data_element(updated_id, new_value) {
     const oldBlockNum = questions.get(current_question).get('block');
     const oldBlockName = blocks.get(oldBlockNum).get('name');
     const newBlockName = blocks.get(Number(new_value)).get('name');
-    getGlobalDoc().transact(() => {
-      questions.get(current_question).set('block', Number(new_value));
-      add_history_entry('Change Question Block', 'Changed "' + questionName + '" from "' + oldBlockName + '" to "' + newBlockName + '"');
-    }, 'local');
+    const sessionDoc = getActiveSessionDoc();
+    if (sessionDoc) {
+      sessionDoc.transact(() => {
+        questions.get(current_question).set('block', Number(new_value));
+        add_history_entry('Change Question Block', 'Changed "' + questionName + '" from "' + oldBlockName + '" to "' + newBlockName + '"');
+      }, 'local');
+    }
   }
   //Update score for a team on the current question
   else if (updated_id.search(team_question_score_check) > -1) {
@@ -408,10 +392,13 @@ function update_data_element(updated_id, new_value) {
     const questionName = questions.get(current_question).get('name');
     const teamName = teams.get(team_number).get('name');
     const oldScore = questions.get(current_question).get('teams').get(team_number).get('score');
-    getGlobalDoc().transact(() => {
-      questions.get(current_question).get('teams').get(team_number).set('score', Number(new_value));
-      add_history_entry('Score Change', '"' + teamName + '" on "' + questionName + '" from ' + oldScore + ' to ' + new_value);
-    }, 'local');
+    const sessionDoc = getActiveSessionDoc();
+    if (sessionDoc) {
+      sessionDoc.transact(() => {
+        questions.get(current_question).get('teams').get(team_number).set('score', Number(new_value));
+        add_history_entry('Score Change', '"' + teamName + '" on "' + questionName + '" from ' + oldScore + ' to ' + new_value);
+      }, 'local');
+    }
   }
   //Go forward one question
   else if (updated_id == "next_question" || updated_id == "next_question_2") {
@@ -425,51 +412,63 @@ function update_data_element(updated_id, new_value) {
         const teams = session.get('teams');
         let team_count = teams.length - 1;
 
-        getGlobalDoc().transact(() => {
-          //Move current Question forward one
-          session.set('currentQuestion', current_question + 1);
+        const sessionDoc = getActiveSessionDoc();
+        if (sessionDoc) {
+          sessionDoc.transact(() => {
+            //Move current Question forward one
+            session.set('currentQuestion', current_question + 1);
 
-          //Create new question
-          const newQuestion = new Y.Map();
-          newQuestion.set('name', 'Question ' + (current_question + 1));
-          newQuestion.set('score', 0);
-          newQuestion.set('block', 0);
-          newQuestion.set('ignore', false);
+            //Create new question
+            const newQuestion = new Y.Map();
+            newQuestion.set('name', 'Question ' + (current_question + 1));
+            newQuestion.set('score', 0);
+            newQuestion.set('block', 0);
+            newQuestion.set('ignore', false);
 
-          //Set default score for all teams on this question to 0
-          const newQuestionTeams = new Y.Array();
-          newQuestionTeams.push([null]); // Placeholder
-          for (let i = 1; i <= team_count; i++) {
-            const teamScore = new Y.Map();
-            teamScore.set('score', 0);
-            teamScore.set('extraCredit', 0);
-            newQuestionTeams.push([teamScore]);
-          }
-          newQuestion.set('teams', newQuestionTeams);
+            //Set default score for all teams on this question to 0
+            const newQuestionTeams = new Y.Array();
+            newQuestionTeams.push([null]); // Placeholder
+            for (let i = 1; i <= team_count; i++) {
+              const teamScore = new Y.Map();
+              teamScore.set('score', 0);
+              teamScore.set('extraCredit', 0);
+              newQuestionTeams.push([teamScore]);
+            }
+            newQuestion.set('teams', newQuestionTeams);
 
-          questions.push([newQuestion]);
-        }, 'local');
+            questions.push([newQuestion]);
+          }, 'local');
+        }
       }
     } else {
       //Move forward to existing question
-      getGlobalDoc().transact(() => {
-        session.set('currentQuestion', current_question + 1);
-      }, 'local');
+      const sessionDoc = getActiveSessionDoc();
+      if (sessionDoc) {
+        sessionDoc.transact(() => {
+          session.set('currentQuestion', current_question + 1);
+        }, 'local');
+      }
     }
   }
   //Go to previous question
   else if (updated_id == "previous_question" || updated_id == "previous_question_2") {
     if (current_question > 1) {
-      getGlobalDoc().transact(() => {
-        session.set('currentQuestion', current_question - 1);
-      }, 'local');
+      const sessionDoc = getActiveSessionDoc();
+      if (sessionDoc) {
+        sessionDoc.transact(() => {
+          session.set('currentQuestion', current_question - 1);
+        }, 'local');
+      }
     }
   }
   //Jump to specific question
   else if (updated_id == "question_quick_nav") {
-    getGlobalDoc().transact(() => {
-      session.set('currentQuestion', Number(new_value));
-    }, 'local');
+    const sessionDoc = getActiveSessionDoc();
+    if (sessionDoc) {
+      sessionDoc.transact(() => {
+        session.set('currentQuestion', Number(new_value));
+      }, 'local');
+    }
   }
   //Export team data for session
   else if (updated_id == "export_team") {
@@ -533,24 +532,16 @@ function update_data_element(updated_id, new_value) {
   }
   //Delete current session
   else if (updated_id == "session_delete") {
-    const sessions = getGlobalDoc().getArray('sessions');
-    const meta = getGlobalDoc().getMap('meta');
+    const globalDoc = getGlobalDoc();
+    const sessionOrder = globalDoc.getArray('sessionOrder');
+    const meta = globalDoc.getMap('meta');
+    const currentSessionId = meta.get('currentSession');
 
     //Only Delete if more than one session exists
-    if (sessions.length > 2) {
-      const sessionToDelete = sessions.get(current_session);
+    if (sessionOrder.length > 1) {
       if (window.confirm("Are you sure you want to irreversably delete this Session (Round/Game)?")) {
-        getGlobalDoc().transact(() => {
-          // Delete the session at the current index
-          sessions.delete(current_session, 1);
-
-          // Update current session pointer if needed
-          if (current_session > sessions.length - 1) {
-            current_session--;
-            meta.set('currentSession', current_session);
-          }
-        }, 'local');
-        alert("Deleted")
+        deleteSession(currentSessionId);
+        alert("Deleted");
       }
     }
     else {
@@ -582,58 +573,61 @@ function reorder_teams(order) {
     newOrder.push(oldOrder[index - 1]);
   }
 
-  getGlobalDoc().transact(() => {
-    // Collect team data in new order
-    let temp_team_data = [];
-    for (let i = 0; i < order.length; i++) {
-      let index = Number(order[i]);
-      const team = teams.get(index);
-      temp_team_data.push({ name: team.get('name') });
-    }
-
-    // Delete all teams (except index 0)
-    teams.delete(1, teams.length - 1);
-
-    // Create new team objects in new order
-    for (let i = 0; i < temp_team_data.length; i++) {
-      const newTeam = new Y.Map();
-      newTeam.set('name', temp_team_data[i].name);
-      teams.push([newTeam]);
-    }
-
-    // Reorder team scores for all questions
-    const questions = session.get('questions');
-    let question_count = questions.length - 1;
-    for (let i = 1; i <= question_count; i++) {
-      const question = questions.get(i);
-      const questionTeams = question.get('teams');
-
-      // Collect score data in new order
-      let temp_score_data = [];
-      for (let j = 0; j < order.length; j++) {
-        let index = Number(order[j]);
-        const teamScore = questionTeams.get(index);
-        temp_score_data.push({
-          score: teamScore.get('score'),
-          extraCredit: teamScore.get('extraCredit')
-        });
+  const sessionDoc = getActiveSessionDoc();
+  if (sessionDoc) {
+    sessionDoc.transact(() => {
+      // Collect team data in new order
+      let temp_team_data = [];
+      for (let i = 0; i < order.length; i++) {
+        let index = Number(order[i]);
+        const team = teams.get(index);
+        temp_team_data.push({ name: team.get('name') });
       }
 
-      // Delete all scores (except index 0)
-      questionTeams.delete(1, questionTeams.length - 1);
+      // Delete all teams (except index 0)
+      teams.delete(1, teams.length - 1);
 
-      // Create new score objects in new order
-      for (let j = 0; j < temp_score_data.length; j++) {
-        const newScore = new Y.Map();
-        newScore.set('score', temp_score_data[j].score);
-        newScore.set('extraCredit', temp_score_data[j].extraCredit);
-        questionTeams.push([newScore]);
+      // Create new team objects in new order
+      for (let i = 0; i < temp_team_data.length; i++) {
+        const newTeam = new Y.Map();
+        newTeam.set('name', temp_team_data[i].name);
+        teams.push([newTeam]);
       }
-    }
 
-    // Add history entry
-    add_history_entry('Reorder Teams', 'New order: ' + newOrder.join(', '));
-  }, 'local');
+      // Reorder team scores for all questions
+      const questions = session.get('questions');
+      let question_count = questions.length - 1;
+      for (let i = 1; i <= question_count; i++) {
+        const question = questions.get(i);
+        const questionTeams = question.get('teams');
+
+        // Collect score data in new order
+        let temp_score_data = [];
+        for (let j = 0; j < order.length; j++) {
+          let index = Number(order[j]);
+          const teamScore = questionTeams.get(index);
+          temp_score_data.push({
+            score: teamScore.get('score'),
+            extraCredit: teamScore.get('extraCredit')
+          });
+        }
+
+        // Delete all scores (except index 0)
+        questionTeams.delete(1, questionTeams.length - 1);
+
+        // Create new score objects in new order
+        for (let j = 0; j < temp_score_data.length; j++) {
+          const newScore = new Y.Map();
+          newScore.set('score', temp_score_data[j].score);
+          newScore.set('extraCredit', temp_score_data[j].extraCredit);
+          questionTeams.push([newScore]);
+        }
+      }
+
+      // Add history entry
+      add_history_entry('Reorder Teams', 'New order: ' + newOrder.join(', '));
+    }, 'local');
+  }
 }
 
 function reorder_blocks(order) {
@@ -659,39 +653,42 @@ function reorder_blocks(order) {
     newOrder.push(oldOrder[index - 1]);
   }
 
-  getGlobalDoc().transact(() => {
-    // Collect block data in new order
-    let temp_block_data = [];
-    let block_map = {};
-    for (let i = 0; i < order.length; i++) {
-      let index = Number(order[i]);
-      block_map[index] = i + 1;
-      const block = blocks.get(index);
-      temp_block_data.push({ name: block.get('name') });
-    }
-
-    // Delete all blocks (except index 0)
-    blocks.delete(1, blocks.length - 1);
-
-    // Create new block objects in new order
-    for (let i = 0; i < temp_block_data.length; i++) {
-      const newBlock = new Y.Map();
-      newBlock.set('name', temp_block_data[i].name);
-      blocks.push([newBlock]);
-    }
-
-    // Update question block references
-    const questions = session.get('questions');
-    let question_count = questions.length - 1;
-    for (let i = 1; i <= question_count; i++) {
-      const question = questions.get(i);
-      let existing_block = question.get('block');
-      if (existing_block > 0 && block_map[existing_block]) {
-        question.set('block', block_map[existing_block]);
+  const sessionDoc = getActiveSessionDoc();
+  if (sessionDoc) {
+    sessionDoc.transact(() => {
+      // Collect block data in new order
+      let temp_block_data = [];
+      let block_map = {};
+      for (let i = 0; i < order.length; i++) {
+        let index = Number(order[i]);
+        block_map[index] = i + 1;
+        const block = blocks.get(index);
+        temp_block_data.push({ name: block.get('name') });
       }
-    }
 
-    // Add history entry
-    add_history_entry('Reorder Blocks/Groups', 'New order: ' + newOrder.join(', '));
-  }, 'local');
+      // Delete all blocks (except index 0)
+      blocks.delete(1, blocks.length - 1);
+
+      // Create new block objects in new order
+      for (let i = 0; i < temp_block_data.length; i++) {
+        const newBlock = new Y.Map();
+        newBlock.set('name', temp_block_data[i].name);
+        blocks.push([newBlock]);
+      }
+
+      // Update question block references
+      const questions = session.get('questions');
+      let question_count = questions.length - 1;
+      for (let i = 1; i <= question_count; i++) {
+        const question = questions.get(i);
+        let existing_block = question.get('block');
+        if (existing_block > 0 && block_map[existing_block]) {
+          question.set('block', block_map[existing_block]);
+        }
+      }
+
+      // Add history entry
+      add_history_entry('Reorder Blocks/Groups', 'New order: ' + newOrder.join(', '));
+    }, 'local');
+  }
 }
