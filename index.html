@@ -177,15 +177,15 @@
             <button id= "export_question_log" onclick='local_data_update(this)'>Export Question Log</button><br>
           </fieldset>
           <fieldset>
-            <legend id = "export_json_label">Export for Importing (JSON)</legend>
+            <legend id = "export_json_label">Export for Importing</legend>
             <button id= "export_session_json" onclick='local_data_update(this)'>Export Session (Round/Game)</button><br>
             <button id= "export_all_json" onclick='local_data_update(this)'>Export All</button>
           </fieldset>
           <fieldset>
             <legend id = "danger_label">Danger Zone</legend>
             <fieldset>
-              <legend id = "import_json_label">Import (JSON)</legend>
-              <p>Warning: Importing bad files can curropt your data. It is strongly recommended that you run an "Export for Importing (JSON)" before importing.</p>
+              <legend id = "import_json_label">Import</legend>
+              <p>Warning: Importing bad files can corrupt your data. It is strongly recommended that you run an "Export for Importing" before importing.</p>
               <div id = "import_group">
                 <div id="import" onchange="$(this).controlgroup('refresh')">
                   <label><input type="radio" id="import_json_append" name="import" value="append" checked="checked" onchange="local_data_update(this)"><span>Add this import as new Session(s) (Round(s)/Game(s))</span></label>

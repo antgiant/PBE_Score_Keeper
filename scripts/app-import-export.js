@@ -637,8 +637,9 @@ function exportSession(sessionNumOrId) {
 /**
  * Export all sessions as native Yjs binary updates (multi-doc architecture)
  * Encodes the global Y.Doc and individual session docs for export.
+ * Returns a serialized container that can be saved as a single .yjs file.
  * The exported file can be imported using Y.applyUpdate() to merge into existing docs.
- * @returns {Object} { version, exportedAt, global: Uint8Array, sessions: Map<sessionId, Uint8Array> }
+ * @returns {Uint8Array} Serialized container with global and all session binary updates
  */
 function exportAllSessions() {
   if (!getGlobalDoc()) {
@@ -661,23 +662,58 @@ function exportAllSessions() {
       const sessionDoc = getSessionDoc(sessionId);
       if (sessionDoc) {
         try {
-          sessions[sessionId] = Y.encodeStateAsUpdate(sessionDoc);
+          // Convert Uint8Array to Base64 for JSON serialization
+          const updateBytes = Y.encodeStateAsUpdate(sessionDoc);
+          sessions[sessionId] = uint8ArrayToBase64(updateBytes);
         } catch (error) {
           console.warn(`Failed to export session ${sessionId}:`, error);
         }
       }
     }
 
-    return {
-      version: "3.0",
+    // Create container object with Base64-encoded binaries
+    const container = {
+      format: 'pbe-multi-doc',
+      version: '3.0',
       exportedAt: Date.now(),
-      global: globalState,
+      global: uint8ArrayToBase64(globalState),
       sessions: sessions
     };
+
+    // Serialize to JSON and convert to Uint8Array for download
+    const jsonString = JSON.stringify(container);
+    return new TextEncoder().encode(jsonString);
   } catch (error) {
     console.error('All sessions export error:', error);
     return null;
   }
+}
+
+/**
+ * Convert Uint8Array to Base64 string
+ * @param {Uint8Array} bytes - Binary data
+ * @returns {string} Base64-encoded string
+ */
+function uint8ArrayToBase64(bytes) {
+  let binary = '';
+  for (let i = 0; i < bytes.length; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binary);
+}
+
+/**
+ * Convert Base64 string to Uint8Array
+ * @param {string} base64 - Base64-encoded string
+ * @returns {Uint8Array} Binary data
+ */
+function base64ToUint8Array(base64) {
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return bytes;
 }
 
 /**
@@ -703,16 +739,25 @@ function downloadBinaryExport(binary, filename) {
  * @returns {string} Format: 'binary-single', 'binary-full', 'json-v3', 'json-legacy', or 'invalid'
  */
 function detectImportFormat(data) {
-  // Check if binary (Uint8Array)
+  // Check if binary (Uint8Array) - could be single session or multi-doc container
   if (data instanceof Uint8Array) {
-    // Single binary blob without metadata structure
+    // Try to parse as multi-doc container (JSON with Base64 binaries)
+    try {
+      const jsonString = new TextDecoder().decode(data);
+      const parsed = JSON.parse(jsonString);
+      if (parsed.format === 'pbe-multi-doc' && parsed.global && parsed.sessions) {
+        return 'binary-full';
+      }
+    } catch (e) {
+      // Not a JSON container, treat as single Yjs binary
+    }
     return 'binary-single';
   }
 
   // Check if JSON object
   if (typeof data === 'object' && data !== null) {
-    // Check for multi-doc export (has both global and sessions)
-    if (data.global instanceof Uint8Array && (data.sessions === undefined || typeof data.sessions === 'object')) {
+    // Check for multi-doc export container (has format marker)
+    if (data.format === 'pbe-multi-doc' && data.global && data.sessions) {
       return 'binary-full';
     }
     // Check for v3.0 JSON format
@@ -765,49 +810,61 @@ async function importSessionData(data) {
       // Import multi-doc export: preserve session UUIDs for conflict-free merge
       // If session with same UUID exists, we merge; otherwise create new
       
-      if (data.sessions && typeof data.sessions === 'object') {
+      // Parse container if it's a Uint8Array
+      let container = data;
+      if (data instanceof Uint8Array) {
+        try {
+          const jsonString = new TextDecoder().decode(data);
+          container = JSON.parse(jsonString);
+        } catch (e) {
+          return { success: false, importedCount: 0, errors: ['Failed to parse multi-doc container'] };
+        }
+      }
+      
+      if (container.sessions && typeof container.sessions === 'object') {
         const importedSessionIds = [];
         
-        for (const [originalSessionId, sessionData] of Object.entries(data.sessions)) {
-          if (sessionData instanceof Uint8Array) {
-            try {
-              // Preserve original session UUID for conflict-free import
-              // This allows merging changes from the same session across devices
-              const sessionId = originalSessionId;
+        for (const [originalSessionId, sessionDataBase64] of Object.entries(container.sessions)) {
+          try {
+            // Decode Base64 to Uint8Array
+            const sessionData = base64ToUint8Array(sessionDataBase64);
+            
+            // Preserve original session UUID for conflict-free import
+            // This allows merging changes from the same session across devices
+            const sessionId = originalSessionId;
+            
+            // Check if this session already exists
+            let sessionDoc = DocManager.sessionDocs.get(sessionId);
+            if (sessionDoc) {
+              // Merge into existing session doc
+              Y.applyUpdate(sessionDoc, sessionData, 'import');
+            } else {
+              // Create new session doc and apply the imported state
+              sessionDoc = new Y.Doc();
+              Y.applyUpdate(sessionDoc, sessionData, 'import');
               
-              // Check if this session already exists
-              let sessionDoc = DocManager.sessionDocs.get(sessionId);
-              if (sessionDoc) {
-                // Merge into existing session doc
-                Y.applyUpdate(sessionDoc, sessionData, 'import');
-              } else {
-                // Create new session doc and apply the imported state
-                sessionDoc = new Y.Doc();
-                Y.applyUpdate(sessionDoc, sessionData, 'import');
-                
-                // Ensure session doc has correct ID stored
-                const session = sessionDoc.getMap('session');
-                if (session && session.get('id') !== sessionId) {
-                  sessionDoc.transact(() => {
-                    session.set('id', sessionId);
-                  }, 'import');
-                }
-                
-                // Store the session doc
-                DocManager.sessionDocs.set(sessionId, sessionDoc);
-                
-                // Set up IndexedDB persistence and track provider
-                if (window.indexedDB && typeof IndexeddbPersistence !== 'undefined') {
-                  const persistence = new IndexeddbPersistence('pbe-score-keeper-session-' + sessionId, sessionDoc);
-                  DocManager.sessionProviders.set(sessionId, persistence);
-                }
+              // Ensure session doc has correct ID stored
+              const session = sessionDoc.getMap('session');
+              if (session && session.get('id') !== sessionId) {
+                sessionDoc.transact(() => {
+                  session.set('id', sessionId);
+                }, 'import');
               }
               
-              importedSessionIds.push(sessionId);
-              result.importedCount++;
-            } catch (error) {
-              result.errors.push(`Failed to import session: ${error.message}`);
+              // Store the session doc
+              DocManager.sessionDocs.set(sessionId, sessionDoc);
+              
+              // Set up IndexedDB persistence and track provider
+              if (window.indexedDB && typeof IndexeddbPersistence !== 'undefined') {
+                const persistence = new IndexeddbPersistence('pbe-score-keeper-session-' + sessionId, sessionDoc);
+                DocManager.sessionProviders.set(sessionId, persistence);
+              }
             }
+            
+            importedSessionIds.push(sessionId);
+            result.importedCount++;
+          } catch (error) {
+            result.errors.push(`Failed to import session ${originalSessionId}: ${error.message}`);
           }
         }
         

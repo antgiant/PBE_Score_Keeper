@@ -508,11 +508,11 @@ function update_data_element(updated_id, new_value) {
   }
   //Export all to JSON and binary formats
   else if (updated_id == "export_all_json") {
-    // Try binary export first (Phase 3.1)
+    // Export as binary container with all sessions
     try {
       const exportData = exportAllSessions();
-      if (exportData && exportData.global && exportData.global.length > 0) {
-        downloadBinaryExport(exportData.global, 'pbe_all_sessions_' + (new Date().toJSON().slice(0,10)) + '.yjs');
+      if (exportData && exportData.length > 0) {
+        downloadBinaryExport(exportData, 'pbe_all_sessions_' + (new Date().toJSON().slice(0,10)) + '.yjs');
       } else {
         // Fallback to JSON if binary export fails
         downloadBlob(export_all_sessions_json(), 'all_pbe_score_data_' + (new Date().toJSON().slice(0,10)) + '.json', 'application/json; charset=utf-8;');
