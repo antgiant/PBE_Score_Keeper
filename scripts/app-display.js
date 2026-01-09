@@ -165,7 +165,7 @@ function sync_data_to_display() {
   }
   temp_output = temp_output + "</tr></thead><tbody>";
   for (var i=1; i < question_log_summary.length; i++) {
-    if (question_log_summary[i][3] === "false") {
+    if (question_log_summary[i][3] === false) {
       temp_output = temp_output+"<tr><td>"+HTMLescape(question_log_summary[i][0])+"</td>";
       temp_output = temp_output+"<td>"+HTMLescape(question_log_summary[i][1])+"</td>";
       temp_output = temp_output+"<td>"+question_log_summary[i][2]+"</td>";
