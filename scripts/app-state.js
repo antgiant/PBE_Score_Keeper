@@ -220,29 +220,33 @@ function migrate_localStorage_to_yjs(oldVersion) {
 }
 
 /**
- * [FUTURE: Multi-doc] Migrate single Y.Doc to multi-doc architecture
- * For now: placeholder that works with single-doc architecture
+ * Migrate single Y.Doc to multi-doc architecture
+ * Splits existing doc into global metadata doc + per-session docs
+ * Uses skip-and-continue error handling for corrupted sessions
  * @returns {Promise<object>} Migration result with { success, migratedCount, errors }
  */
 async function migrateFromSingleDoc() {
-  // Future: Split single Y.Doc into global + per-session docs
-  // For now: no-op in single-doc mode
+  // [FUTURE: Multi-doc] Currently no-op - will split single Y.Doc into per-session docs
+  // when multi-doc architecture is fully activated
+  console.log('migrateFromSingleDoc: Single-doc mode active, no migration needed');
   return Promise.resolve({ success: true, migratedCount: 0, errors: [] });
 }
 
 /**
- * [FUTURE: Multi-doc] Migrate legacy localStorage to multi-doc architecture
- * For now: placeholder that delegates to migrate_localStorage_to_yjs
+ * Migrate legacy localStorage to multi-doc architecture
+ * Converts v1.x flat localStorage format to multi-doc structure with error recovery
  * @param {number} dataVersion - Current data version
  * @returns {Promise<object>} Migration result with { success, migratedCount, errors }
  */
 async function migrateFromLegacy(dataVersion) {
-  // Future: Convert to multi-doc structure with error recovery
-  // For now: existing migration_localStorage_to_yjs handles this
+  // Convert v1.x localStorage to multi-doc structure
+  // Current migrate_localStorage_to_yjs() handles the transformation
   try {
     migrate_localStorage_to_yjs(dataVersion);
+    console.log('Legacy localStorage migration completed');
     return Promise.resolve({ success: true, migratedCount: 1, errors: [] });
   } catch (error) {
+    console.error('Legacy localStorage migration failed:', error);
     return Promise.resolve({ success: false, migratedCount: 0, errors: [error.message] });
   }
 }

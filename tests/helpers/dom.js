@@ -261,7 +261,7 @@ function loadApp(seed = {}) {
 
       // Create Y.Doc using the Y instance in the VM
       const buildScript = `
-        ydoc = new Y.Doc();
+        setYdoc(new Y.Doc());
         ydoc.transact(() => {
           const meta = ydoc.getMap('meta');
           meta.set('dataVersion', 2.0);
@@ -385,8 +385,8 @@ function loadApp(seed = {}) {
     // Since IndexedDB is not available, we need to manually set up Yjs
     // The scripts define global variables ydoc and yjsReady
     if (context.Y) {
-      // Set up Yjs manually for tests
-      vm.runInContext('ydoc = new Y.Doc(); yjsReady = true;', context);
+      // Set up Yjs manually for tests - use setter functions to sync with DocManager
+      vm.runInContext('setYdoc(new Y.Doc()); setYjsReady(true);', context);
 
       // Now manually run initialization which will trigger migration from localStorage
       vm.runInContext('initialize_state();', context);

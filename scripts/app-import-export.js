@@ -335,13 +335,14 @@ function setup_file_import() {
   if (window.File && window.FileReader && window.FileList && window.Blob) {
     let fileSelected = document.getElementById('import_file');
     fileSelected.addEventListener('change', function (e) {
-      //Set the extension for the file
-      let fileExtension = /json.*/;
-      //Get the file object
       let fileTobeRead = fileSelected.files[0];
-      //Check of the extension match
-      if (fileTobeRead.type.match(fileExtension)) {
-        //Initialize the FileReader object to read the file
+      
+      // Support both JSON and binary formats
+      let isJsonFile = /json.*/.test(fileTobeRead.type) || fileTobeRead.name.endsWith('.json');
+      let isBinaryFile = fileTobeRead.name.endsWith('.yjs') || fileTobeRead.type === 'application/octet-stream';
+      
+      if (isJsonFile) {
+        // Handle JSON import
         let fileReader = new FileReader();
         fileReader.onload = function (e) {
           let temp_import_data = JSON.parse(fileReader.result);
@@ -386,9 +387,43 @@ function setup_file_import() {
           }
         }
         fileReader.readAsText(fileTobeRead);
-      }
-      else {
-        alert("Please select json file for import");
+      } else if (isBinaryFile) {
+        // Handle binary import (Phase 3.2)
+        let fileReader = new FileReader();
+        fileReader.onload = async function (e) {
+          try {
+            const binaryData = new Uint8Array(fileReader.result);
+            
+            if (import_status == "replace"
+                && window.confirm("Are you sure you want to irreversably delete all of your current data and replace it with this import?")) {
+              const result = await importSessionData(binaryData);
+              if (result.success) {
+                sync_data_to_display();
+                alert('Import successful: ' + result.importedCount + ' session(s) imported');
+                $( '#accordion' ).accordion({active: 0});
+              } else {
+                const errorMsg = result.errors.length > 0 ? result.errors[0] : 'Unknown import error';
+                alert('Import failed: ' + errorMsg);
+              }
+            } else if (import_status == "append") {
+              const result = await importSessionData(binaryData);
+              if (result.success) {
+                sync_data_to_display();
+                alert('Import successful: ' + result.importedCount + ' session(s) imported');
+                $( '#accordion' ).accordion({active: 0});
+              } else {
+                const errorMsg = result.errors.length > 0 ? result.errors[0] : 'Unknown import error';
+                alert('Import failed: ' + errorMsg);
+              }
+            }
+          } catch (error) {
+            console.error('Binary import error:', error);
+            alert('Failed to import binary file: ' + error.message);
+          }
+        }
+        fileReader.readAsArrayBuffer(fileTobeRead);
+      } else {
+        alert("Please select json or yjs file for import");
       }
       //Unselect file
       fileSelected.value = "";

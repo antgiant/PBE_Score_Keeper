@@ -491,13 +491,37 @@ function update_data_element(updated_id, new_value) {
     let temp = get_question_log();
     downloadBlob(arrayToCsv(temp), 'question_log_data.csv', 'text/csv;charset=utf-8;');
   }
-  //Export session to JSON
+  //Export session to JSON and binary formats
   else if (updated_id == "export_session_json") {
-    downloadBlob(export_current_session_json(), 'pbe_session_data_' + (new Date().toJSON().slice(0,10)) + '.json', 'application/json; charset=utf-8;');
+    // Try binary export first (Phase 3.1)
+    try {
+      const binary = exportSession(current_session);
+      if (binary && binary.length > 0) {
+        downloadBinaryExport(binary, 'pbe_session_' + (new Date().toJSON().slice(0,10)) + '.yjs');
+      } else {
+        // Fallback to JSON if binary export fails
+        downloadBlob(export_current_session_json(), 'pbe_session_data_' + (new Date().toJSON().slice(0,10)) + '.json', 'application/json; charset=utf-8;');
+      }
+    } catch (error) {
+      console.warn('Binary export failed, falling back to JSON:', error);
+      downloadBlob(export_current_session_json(), 'pbe_session_data_' + (new Date().toJSON().slice(0,10)) + '.json', 'application/json; charset=utf-8;');
+    }
   }
-  //Export all to JSON
+  //Export all to JSON and binary formats
   else if (updated_id == "export_all_json") {
-    downloadBlob(export_all_sessions_json(), 'all_pbe_score_data_' + (new Date().toJSON().slice(0,10)) + '.json', 'application/json; charset=utf-8;');
+    // Try binary export first (Phase 3.1)
+    try {
+      const exportData = exportAllSessions();
+      if (exportData && exportData.global && exportData.global.length > 0) {
+        downloadBinaryExport(exportData.global, 'pbe_all_sessions_' + (new Date().toJSON().slice(0,10)) + '.yjs');
+      } else {
+        // Fallback to JSON if binary export fails
+        downloadBlob(export_all_sessions_json(), 'all_pbe_score_data_' + (new Date().toJSON().slice(0,10)) + '.json', 'application/json; charset=utf-8;');
+      }
+    } catch (error) {
+      console.warn('Binary export failed, falling back to JSON:', error);
+      downloadBlob(export_all_sessions_json(), 'all_pbe_score_data_' + (new Date().toJSON().slice(0,10)) + '.json', 'application/json; charset=utf-8;');
+    }
   }
   //Import Replacing Everything
   else if (updated_id == "import_json_replace") {
