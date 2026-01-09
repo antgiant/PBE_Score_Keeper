@@ -269,8 +269,42 @@ function destroySessionUndoManager(sessionId) {
 }
 
 /**
+ * Check if old v2.0 single-doc database exists in IndexedDB
+ * @returns {Promise<boolean>} True if old 'pbe-score-keeper' database exists
+ */
+function check_old_v2_database_exists() {
+  return new Promise((resolve) => {
+    if (!window.indexedDB) {
+      resolve(false);
+      return;
+    }
+
+    // List all databases (if supported)
+    if (window.indexedDB.databases && typeof window.indexedDB.databases === 'function') {
+      window.indexedDB.databases().then(dbs => {
+        const exists = dbs.some(db => db.name === 'pbe-score-keeper');
+        resolve(exists);
+      }).catch(() => resolve(false));
+    } else {
+      // Fallback: try to open the database to see if it exists
+      // If it opens successfully, it exists
+      const request = window.indexedDB.open('pbe-score-keeper', 1);
+      request.onsuccess = function() {
+        const db = request.result;
+        db.close();
+        resolve(true);
+      };
+      request.onerror = function() {
+        resolve(false);
+      };
+    }
+  });
+}
+
+/**
  * Initialize Yjs with multi-doc architecture
  * Sets up global doc for metadata and prepares for per-session docs
+ * Checks for old v2.0 database and loads from it if available
  */
 function initialize_yjs() {
   // Check if IndexedDB is available
@@ -284,25 +318,31 @@ function initialize_yjs() {
 
     // Setup IndexedDB persistence for global doc
     if (window.indexedDB && typeof IndexeddbPersistence !== 'undefined') {
-      setYProvider(new IndexeddbPersistence('pbe-score-keeper-global', getGlobalDoc()));
+      // Check if old v2.0 database exists and use it, otherwise use new v3.0 key
+      check_old_v2_database_exists().then(oldDbExists => {
+        const dbKey = oldDbExists ? 'pbe-score-keeper' : 'pbe-score-keeper-global';
+        console.log('Using IndexedDB key:', dbKey);
+        
+        setYProvider(new IndexeddbPersistence(dbKey, getGlobalDoc()));
 
-      yProvider.on('synced', function() {
-        console.log('Global Yjs doc synced with IndexedDB');
-        setYjsReady(true);
+        yProvider.on('synced', function() {
+          console.log('Global Yjs doc synced with IndexedDB from:', dbKey);
+          setYjsReady(true);
 
-        // Check document state
-        const meta = getGlobalDoc().getMap('meta');
-        if (meta.size === 0) {
-          console.log('Empty Yjs document detected - will initialize');
-        } else {
-          const version = meta.get('dataVersion');
-          console.log('Existing Yjs data found, version:', version);
-          
-          // Handle migration from v2.0 (single-doc) to v3.0 (multi-doc)
-          if (version === 2.0) {
-            console.log('Migration from v2.0 to v3.0 needed');
+          // Check document state
+          const meta = getGlobalDoc().getMap('meta');
+          if (meta.size === 0) {
+            console.log('Empty Yjs document detected - will initialize');
+          } else {
+            const version = meta.get('dataVersion');
+            console.log('Existing Yjs data found, version:', version);
+            
+            // Handle migration from v2.0 (single-doc) to v3.0 (multi-doc)
+            if (version === 2.0) {
+              console.log('Migration from v2.0 to v3.0 needed');
+            }
           }
-        }
+        });
       });
     } else {
       // No IndexedDB persistence
@@ -666,6 +706,9 @@ async function load_from_yjs() {
   if (version === 2.0) {
     // Migrate to v3.0 first
     await migrate_v2_to_v3();
+    
+    // After migration, switch to new database key and clean up old one
+    await switch_to_new_database_key();
   }
 
   // Load v3.0 format
@@ -679,6 +722,70 @@ async function load_from_yjs() {
   getOrCreateSessionUndoManager(currentSessionId);
 
   console.log('Loaded from Yjs v3.0, current session:', currentSessionId);
+}
+
+/**
+ * Switch from old v2.0 'pbe-score-keeper' key to new v3.0 'pbe-score-keeper-global' key
+ * Encodes current state to new database and deletes old one
+ * @returns {Promise<void>}
+ */
+async function switch_to_new_database_key() {
+  if (!window.indexedDB || typeof IndexeddbPersistence === 'undefined') {
+    console.warn('Cannot switch database keys: IndexedDB not available');
+    return;
+  }
+
+  try {
+    console.log('Switching from pbe-score-keeper to pbe-score-keeper-global');
+    
+    // Encode current state of global doc and all session docs
+    const globalState = Y.encodeStateAsUpdate(getGlobalDoc());
+    const sessionStates = new Map();
+    
+    const meta = getGlobalDoc().getMap('meta');
+    const sessionOrder = meta.get('sessionOrder') || [];
+    
+    for (const sessionId of sessionOrder) {
+      const sessionDoc = getSessionDoc(sessionId);
+      if (sessionDoc) {
+        sessionStates.set(sessionId, Y.encodeStateAsUpdate(sessionDoc));
+      }
+    }
+
+    // Disconnect old provider
+    if (yProvider) {
+      yProvider.destroy();
+    }
+
+    // Delete old database
+    await new Promise((resolve, reject) => {
+      const deleteRequest = window.indexedDB.deleteDatabase('pbe-score-keeper');
+      deleteRequest.onsuccess = () => {
+        console.log('Deleted old pbe-score-keeper database');
+        resolve();
+      };
+      deleteRequest.onerror = () => {
+        console.warn('Failed to delete old pbe-score-keeper database:', deleteRequest.error);
+        resolve(); // Don't reject, continue anyway
+      };
+    });
+
+    // Create new provider with v3.0 key
+    setYProvider(new IndexeddbPersistence('pbe-score-keeper-global', getGlobalDoc()));
+
+    // Wait for sync
+    await new Promise((resolve) => {
+      if (yProvider.synced) {
+        resolve();
+      } else {
+        yProvider.once('synced', resolve);
+      }
+    });
+
+    console.log('Successfully switched to pbe-score-keeper-global database');
+  } catch (error) {
+    console.error('Error switching database keys:', error);
+  }
 }
 
 /**
