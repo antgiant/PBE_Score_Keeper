@@ -15,8 +15,8 @@ function arrayToCsv(data){
 function yjs_to_json() {
   if (!ydoc) return null;
 
-  const meta = ydoc.getMap('meta');
-  const sessions = ydoc.getArray('sessions');
+  const meta = getGlobalDoc().getMap('meta');
+  const sessions = getGlobalDoc().getArray('sessions');
 
   const result = {
     dataVersion: meta.get('dataVersion'),
@@ -157,11 +157,11 @@ function downloadBlob(content, filename, contentType) {
 function import_yjs_from_json(data, mode) {
   if (!ydoc) return;
 
-  const sessions = ydoc.getArray('sessions');
-  const meta = ydoc.getMap('meta');
+  const sessions = getGlobalDoc().getArray('sessions');
+  const meta = getGlobalDoc().getMap('meta');
 
   if (mode === 'replace') {
-    ydoc.transact(() => {
+    getGlobalDoc().transact(() => {
       // Clear existing data
       while (sessions.length > 0) {
         sessions.delete(0, 1);
@@ -250,7 +250,7 @@ function import_yjs_from_json(data, mode) {
       current_session = data.currentSession;
     }, 'import');
   } else if (mode === 'append') {
-    ydoc.transact(() => {
+    getGlobalDoc().transact(() => {
       const old_session_count = sessions.length - 1;
 
       // Append sessions from import (skip index 0 placeholder)

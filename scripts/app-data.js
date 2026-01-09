@@ -24,7 +24,7 @@ function update_data_element(updated_id, new_value) {
   if (updated_id == "session_name") {
     let new_value = $("#session_name").text();
     const oldName = session.get('name');
-    ydoc.transact(() => {
+    getGlobalDoc().transact(() => {
       session.set('name', new_value);
       add_history_entry('Rename Session', 'Renamed "' + oldName + '" to "' + new_value + '"');
     }, 'local');
@@ -38,8 +38,8 @@ function update_data_element(updated_id, new_value) {
       question_count--;
     }
     if (question_count > 1) {
-      const sessions = ydoc.getArray('sessions');
-      const meta = ydoc.getMap('meta');
+      const sessions = getGlobalDoc().getArray('sessions');
+      const meta = getGlobalDoc().getMap('meta');
 
       //Get current settings to copy them forward
       const config = session.get('config');
@@ -48,7 +48,7 @@ function update_data_element(updated_id, new_value) {
       let temp_block_names = get_block_names();
       let temp_team_names = get_team_names();
 
-      ydoc.transact(() => {
+      getGlobalDoc().transact(() => {
         //Move Current session forward one
         current_session = sessions.length;
         meta.set('currentSession', current_session);
@@ -116,8 +116,8 @@ function update_data_element(updated_id, new_value) {
 
   //Jump to specific session
   else if (updated_id == "session_quick_nav") {
-    ydoc.transact(() => {
-      const meta = ydoc.getMap('meta');
+    getGlobalDoc().transact(() => {
+      const meta = getGlobalDoc().getMap('meta');
       meta.set('currentSession', Number(new_value));
       current_session = Number(new_value);
     }, 'local');
@@ -129,7 +129,7 @@ function update_data_element(updated_id, new_value) {
     const questions = session.get('questions');
     const new_team_num = teams.length;
 
-    ydoc.transact(() => {
+    getGlobalDoc().transact(() => {
       // Add new team
       const newTeam = new Y.Map();
       newTeam.set('name', 'Team ' + new_team_num);
@@ -156,7 +156,7 @@ function update_data_element(updated_id, new_value) {
       const lastTeam = teams.get(teams.length - 1);
       const teamName = lastTeam.get('name');
       if (window.confirm("Do you really want Delete " + teamName + "?")) {
-        ydoc.transact(() => {
+        getGlobalDoc().transact(() => {
           // Remove team from teams array
           teams.delete(teams.length - 1, 1);
 
@@ -177,7 +177,7 @@ function update_data_element(updated_id, new_value) {
     let updated_team_number = Number(updated_id.match(team_name_check)[1]);
     const teams = session.get('teams');
     const oldName = teams.get(updated_team_number).get('name');
-    ydoc.transact(() => {
+    getGlobalDoc().transact(() => {
       teams.get(updated_team_number).set('name', new_value);
       add_history_entry('Rename Team', 'Renamed "' + oldName + '" to "' + new_value + '"');
     }, 'local');
@@ -186,7 +186,7 @@ function update_data_element(updated_id, new_value) {
   if (updated_id == "total_blocks_increase") {
     const blocks = session.get('blocks');
     const blockNum = blocks.length;
-    ydoc.transact(() => {
+    getGlobalDoc().transact(() => {
       const newBlock = new Y.Map();
       newBlock.set('name', 'Block/Group ' + blockNum);
       blocks.push([newBlock]);
@@ -210,7 +210,7 @@ function update_data_element(updated_id, new_value) {
     if (blocks.length > (smallest_valid_number_of_blocks + 1)) {
       const blockToDelete = blocks.get(blocks.length - 1);
       const blockName = blockToDelete.get('name');
-      ydoc.transact(() => {
+      getGlobalDoc().transact(() => {
         blocks.delete(blocks.length - 1, 1);
         add_history_entry('Delete Block/Group', 'Deleted "' + blockName + '"');
       }, 'local');
@@ -221,7 +221,7 @@ function update_data_element(updated_id, new_value) {
     let updated_block_number = Number(updated_id.match(block_name_check)[1]);
     const blocks = session.get('blocks');
     const oldName = blocks.get(updated_block_number).get('name');
-    ydoc.transact(() => {
+    getGlobalDoc().transact(() => {
       blocks.get(updated_block_number).set('name', new_value);
       add_history_entry('Rename Block/Group', 'Renamed "' + oldName + '" to "' + new_value + '"');
     }, 'local');
@@ -230,7 +230,7 @@ function update_data_element(updated_id, new_value) {
   if (updated_id == "max_points_increase") {
     const config = session.get('config');
     const oldValue = config.get('maxPointsPerQuestion');
-    ydoc.transact(() => {
+    getGlobalDoc().transact(() => {
       config.set('maxPointsPerQuestion', oldValue + 1);
       add_history_entry('Change Max Points', 'Increased max points from ' + oldValue + ' to ' + (oldValue + 1));
     }, 'local');
@@ -251,7 +251,7 @@ function update_data_element(updated_id, new_value) {
     }
     let max_points = config.get('maxPointsPerQuestion');
     if (max_points > smallest_valid_max_points) {
-      ydoc.transact(() => {
+      getGlobalDoc().transact(() => {
         config.set('maxPointsPerQuestion', max_points - 1);
         add_history_entry('Change Max Points', 'Decreased max points from ' + max_points + ' to ' + (max_points - 1));
       }, 'local');
@@ -262,7 +262,7 @@ function update_data_element(updated_id, new_value) {
     let new_value = $("#current_question_title").text();
     const questions = session.get('questions');
     const oldName = questions.get(current_question).get('name');
-    ydoc.transact(() => {
+    getGlobalDoc().transact(() => {
       questions.get(current_question).set('name', new_value);
       add_history_entry('Rename Question', 'Renamed "' + oldName + '" to "' + new_value + '"');
     }, 'local');
@@ -270,14 +270,14 @@ function update_data_element(updated_id, new_value) {
   }
   //Update Rounding Status to Yes
   else if (updated_id == "rounding_yes") {
-    ydoc.transact(() => {
+    getGlobalDoc().transact(() => {
       session.get('config').set('rounding', true);
       add_history_entry('Change Rounding', 'Enabled rounding to best team\'s total');
     }, 'local');
   }
   //Update Rounding Status to No
   else if (updated_id == "rounding_no") {
-    ydoc.transact(() => {
+    getGlobalDoc().transact(() => {
       session.get('config').set('rounding', false);
       add_history_entry('Change Rounding', 'Disabled rounding');
     }, 'local');
@@ -287,7 +287,7 @@ function update_data_element(updated_id, new_value) {
     let temp = $("#ignore_question").prop("checked");
     const questions = session.get('questions');
     const questionName = questions.get(current_question).get('name');
-    ydoc.transact(() => {
+    getGlobalDoc().transact(() => {
       questions.get(current_question).set('ignore', temp);
       if (temp) {
         add_history_entry('Ignore Question', 'Set "' + questionName + '" to be ignored');
@@ -304,7 +304,7 @@ function update_data_element(updated_id, new_value) {
 
     if ($("#extra_credit").prop("checked")) {
       // Log enabling extra credit
-      ydoc.transact(() => {
+      getGlobalDoc().transact(() => {
         add_history_entry('Enable Extra Credit', 'Enabled extra credit for "' + questionName + '"');
       }, 'local');
     } else {
@@ -321,7 +321,7 @@ function update_data_element(updated_id, new_value) {
       }
       //Only display warning if there actually is extra credit to delete
       if (temp_extra_credit > 0 && window.confirm("Are you sure you want to irreversably delete this question's extra credit?")) {
-        ydoc.transact(() => {
+        getGlobalDoc().transact(() => {
           for (let i = 1; i <= team_count; i++) {
             questionTeams.get(i).set('extraCredit', 0);
           }
@@ -329,7 +329,7 @@ function update_data_element(updated_id, new_value) {
         }, 'local');
       } else {
         // Just log disabling extra credit (no clearing needed)
-        ydoc.transact(() => {
+        getGlobalDoc().transact(() => {
           add_history_entry('Disable Extra Credit', 'Disabled extra credit for "' + questionName + '"');
         }, 'local');
       }
@@ -343,7 +343,7 @@ function update_data_element(updated_id, new_value) {
     const questionTeams = questions.get(current_question).get('teams');
     const questionName = questions.get(current_question).get('name');
     const teamName = teams.get(team_number).get('name');
-    ydoc.transact(() => {
+    getGlobalDoc().transact(() => {
       let team_extra_credit = questionTeams.get(team_number).get('extraCredit');
       questionTeams.get(team_number).set('extraCredit', team_extra_credit + 1);
       add_history_entry('Extra Credit', 'Increased extra credit for "' + teamName + '" on "' + questionName + '" to ' + (team_extra_credit + 1));
@@ -359,7 +359,7 @@ function update_data_element(updated_id, new_value) {
     const teamName = teams.get(team_number).get('name');
     let team_extra_credit = questionTeams.get(team_number).get('extraCredit');
     if (team_extra_credit > 0) {
-      ydoc.transact(() => {
+      getGlobalDoc().transact(() => {
         questionTeams.get(team_number).set('extraCredit', team_extra_credit - 1);
         add_history_entry('Extra Credit', 'Decreased extra credit for "' + teamName + '" on "' + questionName + '" to ' + (team_extra_credit - 1));
       }, 'local');
@@ -381,7 +381,7 @@ function update_data_element(updated_id, new_value) {
       }
     }
     if (new_value >= temp_max) {
-      ydoc.transact(() => {
+      getGlobalDoc().transact(() => {
         questions.get(current_question).set('score', Number(new_value));
         add_history_entry('Set Question Points', 'Set max points for "' + questionName + '" from ' + oldScore + ' to ' + new_value);
       }, 'local');
@@ -395,7 +395,7 @@ function update_data_element(updated_id, new_value) {
     const oldBlockNum = questions.get(current_question).get('block');
     const oldBlockName = blocks.get(oldBlockNum).get('name');
     const newBlockName = blocks.get(Number(new_value)).get('name');
-    ydoc.transact(() => {
+    getGlobalDoc().transact(() => {
       questions.get(current_question).set('block', Number(new_value));
       add_history_entry('Change Question Block', 'Changed "' + questionName + '" from "' + oldBlockName + '" to "' + newBlockName + '"');
     }, 'local');
@@ -408,7 +408,7 @@ function update_data_element(updated_id, new_value) {
     const questionName = questions.get(current_question).get('name');
     const teamName = teams.get(team_number).get('name');
     const oldScore = questions.get(current_question).get('teams').get(team_number).get('score');
-    ydoc.transact(() => {
+    getGlobalDoc().transact(() => {
       questions.get(current_question).get('teams').get(team_number).set('score', Number(new_value));
       add_history_entry('Score Change', '"' + teamName + '" on "' + questionName + '" from ' + oldScore + ' to ' + new_value);
     }, 'local');
@@ -425,7 +425,7 @@ function update_data_element(updated_id, new_value) {
         const teams = session.get('teams');
         let team_count = teams.length - 1;
 
-        ydoc.transact(() => {
+        getGlobalDoc().transact(() => {
           //Move current Question forward one
           session.set('currentQuestion', current_question + 1);
 
@@ -452,7 +452,7 @@ function update_data_element(updated_id, new_value) {
       }
     } else {
       //Move forward to existing question
-      ydoc.transact(() => {
+      getGlobalDoc().transact(() => {
         session.set('currentQuestion', current_question + 1);
       }, 'local');
     }
@@ -460,14 +460,14 @@ function update_data_element(updated_id, new_value) {
   //Go to previous question
   else if (updated_id == "previous_question" || updated_id == "previous_question_2") {
     if (current_question > 1) {
-      ydoc.transact(() => {
+      getGlobalDoc().transact(() => {
         session.set('currentQuestion', current_question - 1);
       }, 'local');
     }
   }
   //Jump to specific question
   else if (updated_id == "question_quick_nav") {
-    ydoc.transact(() => {
+    getGlobalDoc().transact(() => {
       session.set('currentQuestion', Number(new_value));
     }, 'local');
   }
@@ -509,14 +509,14 @@ function update_data_element(updated_id, new_value) {
   }
   //Delete current session
   else if (updated_id == "session_delete") {
-    const sessions = ydoc.getArray('sessions');
-    const meta = ydoc.getMap('meta');
+    const sessions = getGlobalDoc().getArray('sessions');
+    const meta = getGlobalDoc().getMap('meta');
 
     //Only Delete if more than one session exists
     if (sessions.length > 2) {
       const sessionToDelete = sessions.get(current_session);
       if (window.confirm("Are you sure you want to irreversably delete this Session (Round/Game)?")) {
-        ydoc.transact(() => {
+        getGlobalDoc().transact(() => {
           // Delete the session at the current index
           sessions.delete(current_session, 1);
 
@@ -558,7 +558,7 @@ function reorder_teams(order) {
     newOrder.push(oldOrder[index - 1]);
   }
 
-  ydoc.transact(() => {
+  getGlobalDoc().transact(() => {
     // Collect team data in new order
     let temp_team_data = [];
     for (let i = 0; i < order.length; i++) {
@@ -635,7 +635,7 @@ function reorder_blocks(order) {
     newOrder.push(oldOrder[index - 1]);
   }
 
-  ydoc.transact(() => {
+  getGlobalDoc().transact(() => {
     // Collect block data in new order
     let temp_block_data = [];
     let block_map = {};

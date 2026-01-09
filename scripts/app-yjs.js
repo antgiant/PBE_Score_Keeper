@@ -1,11 +1,133 @@
 // Yjs CRDT Implementation for PBE Score Keeper
 // This file handles Yjs initialization, IndexedDB persistence, and undo/redo functionality
 
-// Global Yjs variables
+// DocManager - Central manager for all Y.Doc instances (single-doc or multi-doc)
+// For now, operates in single-doc mode; refactored for multi-doc in future phases
+var DocManager = {
+  globalDoc: null,
+  globalProvider: null,
+  globalUndoManager: null,
+  sessionDocs: new Map(),
+  sessionProviders: new Map(),
+  sessionUndoManagers: new Map(),
+  activeSessionId: null,
+  yjsReady: false,
+
+  /**
+   * Get the currently active session doc
+   * In single-doc mode: returns the global doc (sessions array accessor)
+   * @returns {Y.Doc} Current session doc or null
+   */
+  getActiveSessionDoc: function() {
+    return this.globalDoc;
+  },
+
+  /**
+   * Get the global metadata doc
+   * @returns {Y.Doc} Global doc or null
+   */
+  getGlobalDoc: function() {
+    return this.globalDoc;
+  },
+
+  /**
+   * Get undo manager for current session
+   * @returns {Y.UndoManager} Current session undo manager
+   */
+  getActiveSessionUndoManager: function() {
+    return this.globalUndoManager;
+  },
+
+  /**
+   * Get global undo manager
+   * @returns {Y.UndoManager} Global undo manager
+   */
+  getGlobalUndoManager: function() {
+    return this.globalUndoManager;
+  }
+};
+
+// Legacy global variables - kept for compatibility during transition
+// These are now backed by DocManager
 var ydoc;
 var yProvider;
 var yUndoManager;
 var yjsReady = false;
+
+// Setter functions to sync legacy variables with DocManager
+function setYdoc(doc) {
+  ydoc = doc;
+  DocManager.globalDoc = doc;
+}
+
+function setYProvider(provider) {
+  yProvider = provider;
+  DocManager.globalProvider = provider;
+}
+
+function setYUndoManager(manager) {
+  yUndoManager = manager;
+  DocManager.globalUndoManager = manager;
+}
+
+function setYjsReady(ready) {
+  yjsReady = ready;
+  DocManager.yjsReady = ready;
+}
+
+// Getter functions that use DocManager
+function getActiveSessionDoc() {
+  return DocManager.getActiveSessionDoc();
+}
+
+function getGlobalDoc() {
+  return DocManager.getGlobalDoc();
+}
+
+/**
+ * [FUTURE: Multi-doc] Initialize a session-specific Y.Doc
+ * For now, this is a placeholder that returns the global doc
+ * @param {string} sessionId - UUID of the session
+ * @returns {Y.Doc} The session Y.Doc
+ */
+async function initSessionDoc(sessionId) {
+  // Future: Create separate doc for each session
+  // For now: return global doc (single-doc mode)
+  return Promise.resolve(getGlobalDoc());
+}
+
+/**
+ * [FUTURE: Multi-doc] Get or load a session-specific doc
+ * @param {string} sessionId - UUID of the session
+ * @returns {Y.Doc} The session Y.Doc
+ */
+function getSessionDoc(sessionId) {
+  // Future: retrieve from sessionDocs map
+  // For now: return global doc (single-doc mode)
+  return getGlobalDoc();
+}
+
+/**
+ * [FUTURE: Multi-doc] Destroy a session doc and clean up resources
+ * @param {string} sessionId - UUID of the session
+ * @returns {Promise<void>}
+ */
+async function destroySessionDoc(sessionId) {
+  // Future: clean up session-specific doc
+  // For now: no-op in single-doc mode
+  return Promise.resolve();
+}
+
+/**
+ * [FUTURE: Multi-doc] Clean up all session docs
+ * Used mainly for testing
+ * @returns {Promise<void>}
+ */
+async function destroyAllDocs() {
+  // Future: destroy all session docs
+  // For now: no-op in single-doc mode
+  return Promise.resolve();
+}
 
 /**
  * Initialize Yjs document and IndexedDB persistence
@@ -20,17 +142,17 @@ function initialize_yjs() {
 
   try {
     // Create Yjs document
-    ydoc = new Y.Doc();
+    setYdoc(new Y.Doc());
 
     // Setup IndexedDB persistence
-    yProvider = new IndexeddbPersistence('pbe-score-keeper', ydoc);
+    setYProvider(new IndexeddbPersistence('pbe-score-keeper', getGlobalDoc()));
 
     yProvider.on('synced', function() {
       console.log('Yjs synced with IndexedDB');
-      yjsReady = true;
+      setYjsReady(true);
 
       // Check if document is empty (first run or migration needed)
-      const meta = ydoc.getMap('meta');
+      const meta = getGlobalDoc().getMap('meta');
       if (meta.size === 0) {
         console.log('Empty Yjs document detected');
         // Will be handled by initialize_state()
@@ -40,13 +162,13 @@ function initialize_yjs() {
     });
 
     // Setup undo manager (will be fully configured after data is loaded)
-    yUndoManager = new Y.UndoManager([
-      ydoc.getMap('meta'),
-      ydoc.getArray('sessions')
+    setYUndoManager(new Y.UndoManager([
+      getGlobalDoc().getMap('meta'),
+      getGlobalDoc().getArray('sessions')
     ], {
       trackedOrigins: new Set(['local']),
       captureTimeout: 500  // Group rapid changes within 500ms
-    });
+    }));
 
     // Listen for undo/redo stack changes to update button states
     yUndoManager.on('stack-item-added', update_undo_redo_buttons);
@@ -54,7 +176,7 @@ function initialize_yjs() {
     yUndoManager.on('stack-cleared', update_undo_redo_buttons);
 
     // Listen for remote changes (for future multi-device sync)
-    ydoc.on('update', function(updateData, origin) {
+    getGlobalDoc().on('update', function(updateData, origin) {
       if (origin !== 'local' && origin !== 'migration' && origin !== 'import') {
         // Remote change detected, refresh display
         console.log('Remote update detected, refreshing display');
@@ -74,8 +196,8 @@ function initialize_yjs() {
  * @returns {boolean} True if Yjs data exists
  */
 function has_yjs_data() {
-  if (!yjsReady || !ydoc) return false;
-  const meta = ydoc.getMap('meta');
+  if (!yjsReady || !getGlobalDoc()) return false;
+  const meta = getGlobalDoc().getMap('meta');
   return meta.size > 0 && meta.get('dataVersion') === 2.0;
 }
 
@@ -84,7 +206,7 @@ function has_yjs_data() {
  * Creates the initial data structure in Yjs format
  */
 function initialize_new_yjs_state() {
-  if (!ydoc) {
+  if (!getGlobalDoc()) {
     console.error('Yjs not initialized');
     return;
   }
@@ -92,14 +214,14 @@ function initialize_new_yjs_state() {
   var d = new Date();
   var date = d.toLocaleString();
 
-  ydoc.transact(function() {
+  getGlobalDoc().transact(function() {
     // Set metadata
-    const meta = ydoc.getMap('meta');
+    const meta = getGlobalDoc().getMap('meta');
     meta.set('dataVersion', 2.0);
     meta.set('currentSession', 1);
 
     // Create sessions array
-    const sessions = ydoc.getArray('sessions');
+    const sessions = getGlobalDoc().getArray('sessions');
     sessions.push([null]); // Placeholder at index 0
 
     // Create first session
@@ -170,7 +292,7 @@ function load_from_yjs() {
     return;
   }
 
-  const meta = ydoc.getMap('meta');
+  const meta = getGlobalDoc().getMap('meta');
   // Set global current_session variable (declared in app-globals.js)
   if (typeof current_session !== 'undefined') {
     current_session = meta.get('currentSession');
@@ -194,7 +316,7 @@ function perform_undo() {
 
     // Log the undo action with 'history' origin so it doesn't get tracked by UndoManager
     // This prevents clearing the redo stack
-    ydoc.transact(() => {
+    getGlobalDoc().transact(() => {
       add_history_entry('Undo', 'Undid: ' + actionDescription);
     }, 'history');
 
@@ -211,7 +333,7 @@ function perform_redo() {
     yUndoManager.redo();
 
     // Log the redo action with 'history' origin so it doesn't get tracked by UndoManager
-    ydoc.transact(() => {
+    getGlobalDoc().transact(() => {
       add_history_entry('Redo', 'Redid the previously undone action');
     }, 'history');
 
@@ -241,16 +363,16 @@ function update_undo_redo_buttons() {
  * @returns {any} The value at the path, or undefined if not found
  */
 function get_yjs_value(path) {
-  if (!ydoc) return undefined;
+  if (!getGlobalDoc()) return undefined;
 
   const parts = path.split('.');
-  let current = ydoc;
+  let current = getGlobalDoc();
 
   for (let i = 0; i < parts.length; i++) {
     const part = parts[i];
 
     if (part === 'meta' || part === 'sessions') {
-      current = i === 0 ? (part === 'meta' ? ydoc.getMap(part) : ydoc.getArray(part)) : current.get(part);
+      current = i === 0 ? (part === 'meta' ? getGlobalDoc().getMap(part) : getGlobalDoc().getArray(part)) : current.get(part);
     } else if (!isNaN(part)) {
       const index = Number(part);
       current = current.get(index);
@@ -273,7 +395,7 @@ function get_yjs_value(path) {
  * @param {string} origin - Origin tag for the transaction (default: 'local')
  */
 function set_yjs_value(path, value, origin = 'local') {
-  if (!ydoc) {
+  if (!getGlobalDoc()) {
     console.error('Yjs not initialized');
     return;
   }
@@ -281,14 +403,14 @@ function set_yjs_value(path, value, origin = 'local') {
   const parts = path.split('.');
   const lastPart = parts.pop();
 
-  ydoc.transact(function() {
+  getGlobalDoc().transact(function() {
     // Navigate to parent
-    let current = ydoc;
+    let current = getGlobalDoc();
     for (let i = 0; i < parts.length; i++) {
       const part = parts[i];
 
       if (part === 'meta' || part === 'sessions') {
-        current = i === 0 ? (part === 'meta' ? ydoc.getMap(part) : ydoc.getArray(part)) : current.get(part);
+        current = i === 0 ? (part === 'meta' ? getGlobalDoc().getMap(part) : getGlobalDoc().getArray(part)) : current.get(part);
       } else if (!isNaN(part)) {
         const index = Number(part);
         current = current.get(index);
@@ -318,9 +440,9 @@ function set_yjs_value(path, value, origin = 'local') {
  * @returns {Y.Map} Current session map
  */
 function get_current_session() {
-  if (!ydoc) return null;
-  const sessions = ydoc.getArray('sessions');
-  const meta = ydoc.getMap('meta');
+  if (!getGlobalDoc()) return null;
+  const sessions = getGlobalDoc().getArray('sessions');
+  const meta = getGlobalDoc().getMap('meta');
   const currentSessionNum = meta.get('currentSession');
   return sessions.get(currentSessionNum);
 }
@@ -330,8 +452,8 @@ function get_current_session() {
  * @returns {Array<string>} Array of session names (index 0 is empty string)
  */
 function get_session_names() {
-  if (!ydoc) return ['', ''];
-  const sessions = ydoc.getArray('sessions');
+  if (!getGlobalDoc()) return ['', ''];
+  const sessions = getGlobalDoc().getArray('sessions');
   const names = [''];  // Index 0 is empty
   for (let i = 1; i < sessions.length; i++) {
     const session = sessions.get(i);

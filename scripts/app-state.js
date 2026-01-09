@@ -120,9 +120,9 @@ function migrate_localStorage_to_yjs(oldVersion) {
     data_upgrades(oldVersion, upgradedData);
 
     // Step 3: Transform flat localStorage structure to nested Yjs structure
-    ydoc.transact(function() {
-      const meta = ydoc.getMap('meta');
-      const sessions = ydoc.getArray('sessions');
+    getGlobalDoc().transact(function() {
+      const meta = getGlobalDoc().getMap('meta');
+      const sessions = getGlobalDoc().getArray('sessions');
 
       // Set metadata
       meta.set('dataVersion', 2.0);
@@ -265,4 +265,197 @@ function remove_element(element_name, data = "localStorage") {
 }
 function get_all_data() {
   return localStorage;
+}
+/**
+ * [FUTURE: Multi-doc] Generate a UUID for a new session
+ * @returns {string} New UUID
+ */
+function generateSessionId() {
+  // Use crypto.randomUUID if available, fallback to manual generation
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+  // Fallback UUID generation
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0;
+    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+}
+
+/**
+ * [FUTURE: Multi-doc] Create a new session
+ * For now: works with current single-doc architecture
+ * @param {string} name - Name of the session
+ * @returns {string} Session ID (currently just incremented number)
+ */
+function createNewSession(name) {
+  const session = get_current_session();
+  const questions = session.get('questions');
+  let question_count = questions.length - 1;
+  if (questions.get(question_count).get('score') === 0) {
+    question_count--;
+  }
+  
+  if (question_count > 1) {
+    const sessions = getGlobalDoc().getArray('sessions');
+    const meta = getGlobalDoc().getMap('meta');
+
+    // Get current settings to copy them forward
+    const config = session.get('config');
+    let temp_max_points = config.get('maxPointsPerQuestion');
+    let temp_rounding = config.get('rounding');
+    let temp_block_names = get_block_names();
+    let temp_team_names = get_team_names();
+
+    getGlobalDoc().transact(() => {
+      // Move current session forward one
+      current_session = sessions.length;
+      meta.set('currentSession', current_session);
+
+      // Set up session defaults
+      var d = new Date();
+      var date = d.toLocaleString();
+
+      const newSession = new Y.Map();
+      newSession.set('name', name || 'Session ' + date);
+
+      // Copy config
+      const newConfig = new Y.Map();
+      newConfig.set('maxPointsPerQuestion', temp_max_points);
+      newConfig.set('rounding', temp_rounding);
+      newSession.set('config', newConfig);
+
+      // Copy teams
+      const newTeams = new Y.Array();
+      newTeams.push([null]); // Placeholder at index 0
+      for (let i = 1; i < temp_team_names.length; i++) {
+        const teamMap = new Y.Map();
+        teamMap.set('name', temp_team_names[i]);
+        newTeams.push([teamMap]);
+      }
+      newSession.set('teams', newTeams);
+
+      // Copy blocks
+      const newBlocks = new Y.Array();
+      for (let i = 0; i < temp_block_names.length; i++) {
+        const blockMap = new Y.Map();
+        blockMap.set('name', temp_block_names[i]);
+        newBlocks.push([blockMap]);
+      }
+      newSession.set('blocks', newBlocks);
+
+      // Create first question
+      const newQuestions = new Y.Array();
+      newQuestions.push([null]); // Placeholder at index 0
+
+      const question1 = new Y.Map();
+      question1.set('name', 'Question 1');
+      question1.set('score', 0);
+      question1.set('block', 0);
+      question1.set('ignore', false);
+
+      const question1Teams = new Y.Array();
+      question1Teams.push([null]); // Placeholder
+      for (let i = 1; i < temp_team_names.length; i++) {
+        const teamScore = new Y.Map();
+        teamScore.set('score', 0);
+        teamScore.set('extraCredit', 0);
+        question1Teams.push([teamScore]);
+      }
+      question1.set('teams', question1Teams);
+
+      newQuestions.push([question1]);
+      newSession.set('questions', newQuestions);
+      newSession.set('currentQuestion', 1);
+
+      sessions.push([newSession]);
+    }, 'local');
+
+    return current_session; // Return array index for now
+  }
+  
+  return null;
+}
+
+/**
+ * [FUTURE: Multi-doc] Switch to a different session
+ * For now: works with current single-doc architecture
+ * @param {string|number} sessionId - Session ID or array index
+ */
+function switchSession(sessionId) {
+  const meta = getGlobalDoc().getMap('meta');
+  const numId = Number(sessionId);
+  
+  if (numId > 0) {
+    getGlobalDoc().transact(() => {
+      meta.set('currentSession', numId);
+      current_session = numId;
+    }, 'local');
+    
+    sync_data_to_display();
+  }
+}
+
+/**
+ * [FUTURE: Multi-doc] Delete a session
+ * For now: works with current single-doc architecture
+ * @param {string|number} sessionId - Session ID or array index
+ */
+function deleteSession(sessionId) {
+  const sessions = getGlobalDoc().getArray('sessions');
+  const meta = getGlobalDoc().getMap('meta');
+  const numId = Number(sessionId);
+
+  // Only delete if more than one session exists
+  if (sessions.length > 2 && numId > 0 && numId < sessions.length) {
+    const sessionToDelete = sessions.get(numId);
+    if (window.confirm("Are you sure you want to irreversably delete this Session?")) {
+      getGlobalDoc().transact(() => {
+        // Delete the session at the index
+        sessions.delete(numId, 1);
+
+        // Update current session pointer if needed
+        if (numId >= sessions.length - 1) {
+          current_session = Math.max(1, sessions.length - 1);
+          meta.set('currentSession', current_session);
+        }
+      }, 'local');
+      alert("Deleted");
+      sync_data_to_display();
+    }
+  } else {
+    alert("You may not delete the only Session");
+  }
+}
+
+/**
+ * [FUTURE: Multi-doc] Get all sessions
+ * For now: returns array of sessions from global doc
+ * @returns {Array} Array of session Y.Maps
+ */
+function getAllSessions() {
+  const sessions = getGlobalDoc().getArray('sessions');
+  const result = [];
+  for (let i = 1; i < sessions.length; i++) {
+    const session = sessions.get(i);
+    if (session) {
+      result.push({
+        id: i,  // For now, use array index as ID
+        name: session.get('name'),
+        session: session
+      });
+    }
+  }
+  return result;
+}
+
+/**
+ * [FUTURE: Multi-doc] Update last modified timestamp for a session
+ * For now: no-op in single-doc mode
+ * @param {string} sessionId - Session ID
+ */
+function updateSessionLastModified(sessionId) {
+  // Future: update metadata in global doc
+  // For now: no-op
 }

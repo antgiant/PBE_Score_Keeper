@@ -12,7 +12,7 @@ function initialize_history_viewer() {
   }
 
   // Set up listener for document updates to refresh history display
-  ydoc.on('update', function(_update, origin) {
+  getGlobalDoc().on('update', function(_update, origin) {
     // Refresh on local changes or history logging
     if (origin === 'local' || origin === 'history') {
       refresh_history_display();
