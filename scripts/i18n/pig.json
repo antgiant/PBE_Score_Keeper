@@ -76,14 +76,62 @@
     "question": "Estionquay",
     "possible_points": "Ossiblepay Ointspay"
   },
+  "placements": {
+    "first": "Irstfay Aceplay",
+    "second": "Econdsay Aceplay",
+    "third": "Irdthay Aceplay"
+  },
   "history": {
     "title": "Istoryhay",
     "change_log": "Angechay Oglay",
     "time": "Imetay",
     "session": "Essionsay",
     "action": "Actionay",
-    "details": "Etailsday",
-    "no_changes": "Onay angeschay ecordedray etyay. Akemay omesay angeschay otay eesay emthay erehay!"
+    "details_header": "Etailsday",
+    "no_changes": "Onay angeschay ecordedray etyay. Akemay omesay angeschay otay eesay emthay erehay!",
+    "global": "Obalglay",
+    "current_session": "Urrentcay Essionsay",
+    "unknown_time": "Unknownay",
+    "actions": {
+      "rename_session": "Enameray Essionsay",
+      "add_team": "Adday Eamtay",
+      "delete_team": "Eleteday Eamtay",
+      "rename_team": "Enameray Eamtay",
+      "add_block": "Adday Ockblay/Oupgray",
+      "delete_block": "Eleteday Ockblay/Oupgray",
+      "rename_block": "Enameray Ockblay/Oupgray",
+      "change_max_points": "Angechay Axmay Ointspay",
+      "rename_question": "Enameray Estionquay",
+      "change_rounding": "Angechay Oundingray",
+      "ignore_question": "Ignoreay Estionquay",
+      "include_question": "Includeay Estionquay",
+      "enable_extra_credit": "Enableay Extraay Editcray",
+      "disable_extra_credit": "Isableday Extraay Editcray",
+      "clear_extra_credit": "Earclay Extraay Editcray",
+      "extra_credit": "Extraay Editcray",
+      "set_question_points": "Etsay Estionquay Ointspay",
+      "change_question_block": "Angechay Estionquay Ockblay",
+      "score_change": "Orescay Angechay"
+    },
+    "details_templates": {
+      "renamed": "Enameray \"{{old}}\" otay \"{{new}}\"",
+      "added": "Addeday \"{{name}}\"",
+      "deleted": "Eletedday \"{{name}}\"",
+      "increased_max_points": "Increasedday axmay ointspay omfray {{old}} otay {{new}}",
+      "decreased_max_points": "Ecreasedday axmay ointspay omfray {{old}} otay {{new}}",
+      "enabled_rounding": "Enableday oundingray otay estbay eamtay's otaltay",
+      "disabled_rounding": "Isabledday oundingray",
+      "set_ignored": "Etsay \"{{name}}\" otay ebay ignoredway",
+      "set_included": "Etsay \"{{name}}\" otay ebay includedway",
+      "enabled_extra_credit": "Enableday extraay editcray orfay \"{{name}}\"",
+      "disabled_extra_credit": "Isabledday extraay editcray orfay \"{{name}}\"",
+      "cleared_extra_credit": "Earedclay allay extraay editcray orfay \"{{name}}\"",
+      "increased_extra_credit": "Increasedday extraay editcray orfay \"{{team}}\" onay \"{{question}}\" otay {{value}}",
+      "decreased_extra_credit": "Ecreasedday extraay editcray orfay \"{{team}}\" onay \"{{question}}\" otay {{value}}",
+      "set_question_points": "Etsay axmay ointspay orfay \"{{name}}\" omfray {{old}} otay {{new}}",
+      "changed_block": "Angedchay \"{{question}}\" omfray \"{{old}}\" otay \"{{new}}\"",
+      "score_changed": "\"{{team}}\" onay \"{{question}}\" omfray {{old}} otay {{new}}"
+    }
   },
   "advanced": {
     "title": "Advanceday",
@@ -101,7 +149,7 @@
     "danger_zone": "Angerday Onezay",
     "delete": "Eleteday",
     "delete_session": "Eleteday isthay Essionsay (Oundray/Amegay)",
-    "no_import_support": "Ouryay Owserbray oesday otnay upportsay importingay."
+    "no_import_support": "Ouryay Rowserbay oesday otnay upportsay importingay."
   },
   "footer": {
     "feedback": "Avehay anay ideaay otay akemay isthay etterbay?",
@@ -113,5 +161,17 @@
     "block_scores": "Ockblay/Oupgray Orescay Ogay Erehay",
     "team_block_scores": "Eamtay & Ockblay/Oupgray Orescay Ogay Erehay",
     "question_log": "Estionquay Oglay Oesgay Erehay"
+  },
+  "defaults": {
+    "session_name": "Essionsay {{date}}",
+    "team_name": "Eamtay {{number}}",
+    "block_name": "Ockblay/Oupgray {{number}}",
+    "no_block": "Onay Ockblay/Oupgray",
+    "question_name": "Estionquay {{number}}",
+    "extra_credit": "Extraay Editcray"
+  },
+  "confirm": {
+    "delete_team": "Oday ouyay eallyray antway otay eleteday {{name}}?",
+    "delete_extra_credit": "Areay ouyay uresay ouyay antway otay irreversiblyay eleteday isthay estionquay's extraay editcray?"
   }
 }

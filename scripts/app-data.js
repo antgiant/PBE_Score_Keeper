@@ -28,7 +28,7 @@ function update_data_element(updated_id, new_value) {
     if (sessionDoc) {
       sessionDoc.transact(() => {
         session.set('name', new_value);
-        add_history_entry('Rename Session', 'Renamed "' + oldName + '" to "' + new_value + '"');
+        add_history_entry(t('history.actions.rename_session'), t('history.details_templates.renamed', { old: oldName, new: new_value }));
       }, 'local');
       
       // Update session name cache in global doc
@@ -78,7 +78,8 @@ function update_data_element(updated_id, new_value) {
       sessionDoc.transact(() => {
         // Add new team
         const newTeam = new Y.Map();
-        newTeam.set('name', 'Team ' + new_team_num);
+        const newTeamName = t('defaults.team_name', { number: new_team_num });
+        newTeam.set('name', newTeamName);
         teams.push([newTeam]);
 
         // Add placeholder scores for all existing questions
@@ -91,7 +92,7 @@ function update_data_element(updated_id, new_value) {
           questionTeams.push([teamScore]);
         }
 
-        add_history_entry('Add Team', 'Added "Team ' + new_team_num + '"');
+        add_history_entry(t('history.actions.add_team'), t('history.details_templates.added', { name: newTeamName }));
       }, 'local');
     }
   }
@@ -102,7 +103,7 @@ function update_data_element(updated_id, new_value) {
     if (teams.length > 2) {
       const lastTeam = teams.get(teams.length - 1);
       const teamName = lastTeam.get('name');
-      if (window.confirm("Do you really want Delete " + teamName + "?")) {
+      if (window.confirm(t('confirm.delete_team', { name: teamName }))) {
         const sessionDoc = getActiveSessionDoc();
         if (sessionDoc) {
           sessionDoc.transact(() => {
@@ -116,7 +117,7 @@ function update_data_element(updated_id, new_value) {
               questionTeams.delete(questionTeams.length - 1, 1);
             }
 
-            add_history_entry('Delete Team', 'Deleted "' + teamName + '"');
+            add_history_entry(t('history.actions.delete_team'), t('history.details_templates.deleted', { name: teamName }));
           }, 'local');
         }
       }
@@ -131,7 +132,7 @@ function update_data_element(updated_id, new_value) {
     if (sessionDoc) {
       sessionDoc.transact(() => {
         teams.get(updated_team_number).set('name', new_value);
-        add_history_entry('Rename Team', 'Renamed "' + oldName + '" to "' + new_value + '"');
+        add_history_entry(t('history.actions.rename_team'), t('history.details_templates.renamed', { old: oldName, new: new_value }));
       }, 'local');
     }
   }
@@ -143,9 +144,10 @@ function update_data_element(updated_id, new_value) {
     if (sessionDoc) {
       sessionDoc.transact(() => {
         const newBlock = new Y.Map();
-        newBlock.set('name', 'Block/Group ' + blockNum);
+        const newBlockName = t('defaults.block_name', { number: blockNum });
+        newBlock.set('name', newBlockName);
         blocks.push([newBlock]);
-        add_history_entry('Add Block/Group', 'Added "Block/Group ' + blockNum + '"');
+        add_history_entry(t('history.actions.add_block'), t('history.details_templates.added', { name: newBlockName }));
       }, 'local');
     }
   }
@@ -170,7 +172,7 @@ function update_data_element(updated_id, new_value) {
       if (sessionDoc) {
         sessionDoc.transact(() => {
           blocks.delete(blocks.length - 1, 1);
-          add_history_entry('Delete Block/Group', 'Deleted "' + blockName + '"');
+          add_history_entry(t('history.actions.delete_block'), t('history.details_templates.deleted', { name: blockName }));
         }, 'local');
       }
     }
@@ -184,7 +186,7 @@ function update_data_element(updated_id, new_value) {
     if (sessionDoc) {
       sessionDoc.transact(() => {
         blocks.get(updated_block_number).set('name', new_value);
-        add_history_entry('Rename Block/Group', 'Renamed "' + oldName + '" to "' + new_value + '"');
+        add_history_entry(t('history.actions.rename_block'), t('history.details_templates.renamed', { old: oldName, new: new_value }));
       }, 'local');
     }
   }
@@ -196,7 +198,7 @@ function update_data_element(updated_id, new_value) {
     if (sessionDoc) {
       sessionDoc.transact(() => {
         config.set('maxPointsPerQuestion', oldValue + 1);
-        add_history_entry('Change Max Points', 'Increased max points from ' + oldValue + ' to ' + (oldValue + 1));
+        add_history_entry(t('history.actions.change_max_points'), t('history.details_templates.increased_max_points', { old: oldValue, new: oldValue + 1 }));
       }, 'local');
     }
   }
@@ -220,7 +222,7 @@ function update_data_element(updated_id, new_value) {
       if (sessionDoc) {
         sessionDoc.transact(() => {
           config.set('maxPointsPerQuestion', max_points - 1);
-          add_history_entry('Change Max Points', 'Decreased max points from ' + max_points + ' to ' + (max_points - 1));
+          add_history_entry(t('history.actions.change_max_points'), t('history.details_templates.decreased_max_points', { old: max_points, new: max_points - 1 }));
         }, 'local');
       }
     }
@@ -234,7 +236,7 @@ function update_data_element(updated_id, new_value) {
     if (sessionDoc) {
       sessionDoc.transact(() => {
         questions.get(current_question).set('name', new_value);
-        add_history_entry('Rename Question', 'Renamed "' + oldName + '" to "' + new_value + '"');
+        add_history_entry(t('history.actions.rename_question'), t('history.details_templates.renamed', { old: oldName, new: new_value }));
       }, 'local');
     }
     $("#question_quick_nav").focus();
@@ -245,7 +247,7 @@ function update_data_element(updated_id, new_value) {
     if (sessionDoc) {
       sessionDoc.transact(() => {
         session.get('config').set('rounding', true);
-        add_history_entry('Change Rounding', 'Enabled rounding to best team\'s total');
+        add_history_entry(t('history.actions.change_rounding'), t('history.details_templates.enabled_rounding'));
       }, 'local');
     }
   }
@@ -255,7 +257,7 @@ function update_data_element(updated_id, new_value) {
     if (sessionDoc) {
       sessionDoc.transact(() => {
         session.get('config').set('rounding', false);
-        add_history_entry('Change Rounding', 'Disabled rounding');
+        add_history_entry(t('history.actions.change_rounding'), t('history.details_templates.disabled_rounding'));
       }, 'local');
     }
   }
@@ -269,9 +271,9 @@ function update_data_element(updated_id, new_value) {
       sessionDoc.transact(() => {
         questions.get(current_question).set('ignore', temp);
         if (temp) {
-          add_history_entry('Ignore Question', 'Set "' + questionName + '" to be ignored');
+          add_history_entry(t('history.actions.ignore_question'), t('history.details_templates.set_ignored', { name: questionName }));
         } else {
-          add_history_entry('Include Question', 'Set "' + questionName + '" to be included');
+          add_history_entry(t('history.actions.include_question'), t('history.details_templates.set_included', { name: questionName }));
         }
       }, 'local');
     }
@@ -287,7 +289,7 @@ function update_data_element(updated_id, new_value) {
       const sessionDoc = getActiveSessionDoc();
       if (sessionDoc) {
         sessionDoc.transact(() => {
-          add_history_entry('Enable Extra Credit', 'Enabled extra credit for "' + questionName + '"');
+          add_history_entry(t('history.actions.enable_extra_credit'), t('history.details_templates.enabled_extra_credit', { name: questionName }));
         }, 'local');
       }
     } else {
@@ -303,14 +305,14 @@ function update_data_element(updated_id, new_value) {
         temp_extra_credit += temp;
       }
       //Only display warning if there actually is extra credit to delete
-      if (temp_extra_credit > 0 && window.confirm("Are you sure you want to irreversably delete this question's extra credit?")) {
+      if (temp_extra_credit > 0 && window.confirm(t('confirm.delete_extra_credit'))) {
         const sessionDoc = getActiveSessionDoc();
         if (sessionDoc) {
           sessionDoc.transact(() => {
             for (let i = 1; i <= team_count; i++) {
               questionTeams.get(i).set('extraCredit', 0);
             }
-            add_history_entry('Clear Extra Credit', 'Cleared all extra credit for "' + questionName + '"');
+            add_history_entry(t('history.actions.clear_extra_credit'), t('history.details_templates.cleared_extra_credit', { name: questionName }));
           }, 'local');
         }
       } else {
@@ -318,7 +320,7 @@ function update_data_element(updated_id, new_value) {
         const sessionDoc = getActiveSessionDoc();
         if (sessionDoc) {
           sessionDoc.transact(() => {
-            add_history_entry('Disable Extra Credit', 'Disabled extra credit for "' + questionName + '"');
+            add_history_entry(t('history.actions.disable_extra_credit'), t('history.details_templates.disabled_extra_credit', { name: questionName }));
           }, 'local');
         }
       }
@@ -337,7 +339,7 @@ function update_data_element(updated_id, new_value) {
       sessionDoc.transact(() => {
         let team_extra_credit = questionTeams.get(team_number).get('extraCredit');
         questionTeams.get(team_number).set('extraCredit', team_extra_credit + 1);
-        add_history_entry('Extra Credit', 'Increased extra credit for "' + teamName + '" on "' + questionName + '" to ' + (team_extra_credit + 1));
+        add_history_entry(t('history.actions.extra_credit'), t('history.details_templates.increased_extra_credit', { team: teamName, question: questionName, value: team_extra_credit + 1 }));
       }, 'local');
     }
   }
@@ -355,7 +357,7 @@ function update_data_element(updated_id, new_value) {
       if (sessionDoc) {
         sessionDoc.transact(() => {
           questionTeams.get(team_number).set('extraCredit', team_extra_credit - 1);
-          add_history_entry('Extra Credit', 'Decreased extra credit for "' + teamName + '" on "' + questionName + '" to ' + (team_extra_credit - 1));
+          add_history_entry(t('history.actions.extra_credit'), t('history.details_templates.decreased_extra_credit', { team: teamName, question: questionName, value: team_extra_credit - 1 }));
         }, 'local');
       }
     }
@@ -380,7 +382,7 @@ function update_data_element(updated_id, new_value) {
       if (sessionDoc) {
         sessionDoc.transact(() => {
           questions.get(current_question).set('score', Number(new_value));
-          add_history_entry('Set Question Points', 'Set max points for "' + questionName + '" from ' + oldScore + ' to ' + new_value);
+          add_history_entry(t('history.actions.set_question_points'), t('history.details_templates.set_question_points', { name: questionName, old: oldScore, new: new_value }));
         }, 'local');
       }
     }
@@ -397,7 +399,7 @@ function update_data_element(updated_id, new_value) {
     if (sessionDoc) {
       sessionDoc.transact(() => {
         questions.get(current_question).set('block', Number(new_value));
-        add_history_entry('Change Question Block', 'Changed "' + questionName + '" from "' + oldBlockName + '" to "' + newBlockName + '"');
+        add_history_entry(t('history.actions.change_question_block'), t('history.details_templates.changed_block', { question: questionName, old: oldBlockName, new: newBlockName }));
       }, 'local');
     }
   }
@@ -413,7 +415,7 @@ function update_data_element(updated_id, new_value) {
     if (sessionDoc) {
       sessionDoc.transact(() => {
         questions.get(current_question).get('teams').get(team_number).set('score', Number(new_value));
-        add_history_entry('Score Change', '"' + teamName + '" on "' + questionName + '" from ' + oldScore + ' to ' + new_value);
+        add_history_entry(t('history.actions.score_change'), t('history.details_templates.score_changed', { team: teamName, question: questionName, old: oldScore, new: new_value }));
       }, 'local');
     }
   }
@@ -437,7 +439,7 @@ function update_data_element(updated_id, new_value) {
 
             //Create new question
             const newQuestion = new Y.Map();
-            newQuestion.set('name', 'Question ' + (current_question + 1));
+            newQuestion.set('name', t('defaults.question_name', { number: current_question + 1 }));
             newQuestion.set('score', 0);
             newQuestion.set('block', 0);
             newQuestion.set('ignore', false);

@@ -202,7 +202,7 @@ function sync_data_to_display() {
       let teamName = team_names[i] || ('Team ' + i);
       $("#team_names").append('<div class="reorder-item" data-index="'+i+'"><button type="button" class="drag-handle" draggable="true" aria-label="'+t('teams.name_label', {number: i}).replace(':', '')+'">&equiv; &#8597;</button><label><span class="reorder-label">'+t('teams.name_label', {number: i})+'</span> <input type = "text" name = "team_'+i+'_name" id = "team_'+i+'_name" onchange="local_data_update(this)" value = "'+teamName.replace('"', "&quote")+'"></label></div>');
       $("#question_teams").append('<fieldset><legend id=team_'+i+'_points_label>Team '+HTMLescape(teamName)+' Score</legend><div id="team_'+i+'_score"></div>'+
-                                   '<legend id=team_'+i+'_extra_credit_label style="display:none">Extra Credit<div><button id="team_'+i+'_extra_credit_decrease" onclick="local_data_update(this)" >-</button><span id="team_'+i+'_extra_credit" class="extra_credit_amount">0</span><button id ="team_'+i+'_extra_credit_increase" onclick="local_data_update(this)" >+</button></div></legend></fieldset>');
+                                   '<legend id=team_'+i+'_extra_credit_label style="display:none">'+t('defaults.extra_credit')+'<div><button id="team_'+i+'_extra_credit_decrease" onclick="local_data_update(this)" >-</button><span id="team_'+i+'_extra_credit" class="extra_credit_amount">0</span><button id ="team_'+i+'_extra_credit_increase" onclick="local_data_update(this)" >+</button></div></legend></fieldset>');
       $("#team_"+i+"_score").append('<label><input type="radio" id="team_'+i+'_score_0" name="team_'+i+'_score" value=0 onchange="local_data_update(this)">0</label>');
       $( "#team_"+i+"_score" ).controlgroup();
     }

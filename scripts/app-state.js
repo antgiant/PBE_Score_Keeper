@@ -390,8 +390,8 @@ async function createNewSession(name) {
   // Generate new session ID
   const sessionId = generateSessionId();
   var d = new Date();
-  var date = d.toLocaleString();
-  const sessionName = name || 'Session ' + date;
+  var formattedDate = (typeof format_date === 'function') ? format_date(d) : d.toLocaleString();
+  const sessionName = name || t('defaults.session_name', { date: formattedDate });
 
   // Create new session doc
   const sessionDoc = await initSessionDoc(sessionId);
@@ -433,7 +433,7 @@ async function createNewSession(name) {
     newQuestions.push([null]); // Placeholder at index 0
 
     const question1 = new Y.Map();
-    question1.set('name', 'Question 1');
+    question1.set('name', t('defaults.question_name', { number: 1 }));
     question1.set('score', 0);
     question1.set('block', 0);
     question1.set('ignore', false);

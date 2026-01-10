@@ -22,7 +22,7 @@ var i18n_default_language = 'en';
  */
 var i18n_available_languages = {
   'en': 'English',
-  'pig': 'Pig Latin'
+  'pig': 'Secret Code'
 };
 
 /**
@@ -431,6 +431,59 @@ function load_all_translations(callback) {
         if (callback) callback(errors.length > 0 ? errors : null);
       }
     });
+  });
+}
+
+/**
+ * Format a date according to the current language's locale
+ * @param {Date|number} date - Date object or timestamp
+ * @param {object} options - Intl.DateTimeFormat options (optional)
+ * @returns {string} Formatted date string
+ */
+function format_date(date, options) {
+  if (typeof date === 'number') {
+    date = new Date(date);
+  }
+  if (!(date instanceof Date) || isNaN(date)) {
+    return t('history.unknown_time');
+  }
+  
+  // Map internal language codes to locale codes
+  var locale = i18n_current_language;
+  if (locale === 'pig') {
+    locale = 'en'; // Pig Latin uses English locale for dates
+  }
+  
+  // Default options for date+time
+  var defaultOptions = {
+    year: 'numeric',
+    month: 'numeric', 
+    day: 'numeric',
+    hour: 'numeric',
+    minute: 'numeric',
+    second: 'numeric'
+  };
+  
+  options = options || defaultOptions;
+  
+  try {
+    return new Intl.DateTimeFormat(locale, options).format(date);
+  } catch (e) {
+    // Fallback to toLocaleString
+    return date.toLocaleString(locale);
+  }
+}
+
+/**
+ * Format a time according to the current language's locale
+ * @param {Date|number} date - Date object or timestamp
+ * @returns {string} Formatted time string
+ */
+function format_time(date) {
+  return format_date(date, {
+    hour: 'numeric',
+    minute: 'numeric',
+    second: 'numeric'
   });
 }
 

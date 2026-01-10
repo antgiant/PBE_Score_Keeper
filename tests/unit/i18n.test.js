@@ -128,9 +128,9 @@ test('i18n module', async (t) => {
     const ctx = createI18nContext();
     const langs = ctx.get_available_languages();
     assert.ok(langs['en'], 'English should be available');
-    assert.ok(langs['pig'], 'Pig Latin should be available');
+    assert.ok(langs['pig'], 'Secret Code should be available');
     assert.strictEqual(langs['en'], 'English');
-    assert.strictEqual(langs['pig'], 'Pig Latin');
+    assert.strictEqual(langs['pig'], 'Secret Code');
   });
   
   await t.test('switching language changes t() output', () => {

@@ -115,16 +115,19 @@ function refresh_history_display() {
 
   for (const entry of allEntries) {
     const row = document.createElement('tr');
-    const timeStr = entry.timestamp ? new Date(entry.timestamp).toLocaleTimeString() : 'Unknown';
+    const timeStr = entry.timestamp ? ((typeof format_time === 'function') ? format_time(entry.timestamp) : new Date(entry.timestamp).toLocaleTimeString()) : t('history.unknown_time');
 
     // Style global entries differently
     if (entry.isGlobal) {
       row.style.backgroundColor = 'var(--history-global-bg, #f0f0f0)';
     }
 
+    // Use translated "Global" for global entries
+    const sessionDisplay = entry.isGlobal ? t('history.global') : entry.session;
+
     row.innerHTML =
       '<td>' + timeStr + '</td>' +
-      '<td>' + HTMLescape(entry.session) + '</td>' +
+      '<td>' + HTMLescape(sessionDisplay) + '</td>' +
       '<td>' + HTMLescape(entry.action) + '</td>' +
       '<td>' + HTMLescape(entry.details) + '</td>';
 

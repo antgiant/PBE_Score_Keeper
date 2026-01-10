@@ -48,18 +48,18 @@ function get_team_score_summary(temp_question_count = -1) {
     team_score_summary[i][7] = ((team_score_summary[i][4]/team_score_summary[i][6])*100).toFixed(2)+"%";
     team_score_summary[i][8] = team_score_summary[i][4]+"/"+team_score_summary[i][6];
     if (team_score_summary[i][4]/team_score_summary[i][5] >= 0.9) {
-      team_score_summary[i][3] = "First Place";
+      team_score_summary[i][3] = t('placements.first');
     } else if (team_score_summary[i][4]/team_score_summary[i][5] >= 0.8) {
-      team_score_summary[i][3] = "Second Place";
+      team_score_summary[i][3] = t('placements.second');
     } else {
-      team_score_summary[i][3] = "Third Place";
+      team_score_summary[i][3] = t('placements.third');
     }
     if (team_score_summary[i][4]/highest_team_score >= 0.9) {
-      team_score_summary[i][9] = "First Place";
+      team_score_summary[i][9] = t('placements.first');
     } else if (team_score_summary[i][4]/highest_team_score >= 0.8) {
-      team_score_summary[i][9] = "Second Place";
+      team_score_summary[i][9] = t('placements.second');
     } else {
-      team_score_summary[i][9] = "Third Place";
+      team_score_summary[i][9] = t('placements.third');
     }
   }
   return team_score_summary;

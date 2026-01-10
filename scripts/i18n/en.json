@@ -76,14 +76,62 @@
     "question": "Question",
     "possible_points": "Possible Points"
   },
+  "placements": {
+    "first": "First Place",
+    "second": "Second Place",
+    "third": "Third Place"
+  },
   "history": {
     "title": "History",
     "change_log": "Change Log",
     "time": "Time",
     "session": "Session",
     "action": "Action",
-    "details": "Details",
-    "no_changes": "No changes recorded yet. Make some changes to see them here!"
+    "details_header": "Details",
+    "no_changes": "No changes recorded yet. Make some changes to see them here!",
+    "global": "Global",
+    "current_session": "Current Session",
+    "unknown_time": "Unknown",
+    "actions": {
+      "rename_session": "Rename Session",
+      "add_team": "Add Team",
+      "delete_team": "Delete Team",
+      "rename_team": "Rename Team",
+      "add_block": "Add Block/Group",
+      "delete_block": "Delete Block/Group",
+      "rename_block": "Rename Block/Group",
+      "change_max_points": "Change Max Points",
+      "rename_question": "Rename Question",
+      "change_rounding": "Change Rounding",
+      "ignore_question": "Ignore Question",
+      "include_question": "Include Question",
+      "enable_extra_credit": "Enable Extra Credit",
+      "disable_extra_credit": "Disable Extra Credit",
+      "clear_extra_credit": "Clear Extra Credit",
+      "extra_credit": "Extra Credit",
+      "set_question_points": "Set Question Points",
+      "change_question_block": "Change Question Block",
+      "score_change": "Score Change"
+    },
+    "details_templates": {
+      "renamed": "Renamed \"{{old}}\" to \"{{new}}\"",
+      "added": "Added \"{{name}}\"",
+      "deleted": "Deleted \"{{name}}\"",
+      "increased_max_points": "Increased max points from {{old}} to {{new}}",
+      "decreased_max_points": "Decreased max points from {{old}} to {{new}}",
+      "enabled_rounding": "Enabled rounding to best team's total",
+      "disabled_rounding": "Disabled rounding",
+      "set_ignored": "Set \"{{name}}\" to be ignored",
+      "set_included": "Set \"{{name}}\" to be included",
+      "enabled_extra_credit": "Enabled extra credit for \"{{name}}\"",
+      "disabled_extra_credit": "Disabled extra credit for \"{{name}}\"",
+      "cleared_extra_credit": "Cleared all extra credit for \"{{name}}\"",
+      "increased_extra_credit": "Increased extra credit for \"{{team}}\" on \"{{question}}\" to {{value}}",
+      "decreased_extra_credit": "Decreased extra credit for \"{{team}}\" on \"{{question}}\" to {{value}}",
+      "set_question_points": "Set max points for \"{{name}}\" from {{old}} to {{new}}",
+      "changed_block": "Changed \"{{question}}\" from \"{{old}}\" to \"{{new}}\"",
+      "score_changed": "\"{{team}}\" on \"{{question}}\" from {{old}} to {{new}}"
+    }
   },
   "advanced": {
     "title": "Advanced",
@@ -113,5 +161,17 @@
     "block_scores": "Block/Group Scores Go Here",
     "team_block_scores": "Team & Block/Group Scores Go Here",
     "question_log": "Question Log Goes Here"
+  },
+  "defaults": {
+    "session_name": "Session {{date}}",
+    "team_name": "Team {{number}}",
+    "block_name": "Block/Group {{number}}",
+    "no_block": "No Block/Group",
+    "question_name": "Question {{number}}",
+    "extra_credit": "Extra Credit"
+  },
+  "confirm": {
+    "delete_team": "Do you really want to delete {{name}}?",
+    "delete_extra_credit": "Are you sure you want to irreversibly delete this question's extra credit?"
   }
 }

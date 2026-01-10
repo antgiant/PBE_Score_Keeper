@@ -403,7 +403,8 @@ async function initialize_new_yjs_state() {
 
   const sessionId = generateSessionId();
   var d = new Date();
-  var date = d.toLocaleString();
+  var formattedDate = (typeof format_date === 'function') ? format_date(d) : d.toLocaleString();
+  var sessionName = (typeof t === 'function') ? t('defaults.session_name', { date: formattedDate }) : 'Session ' + formattedDate;
 
   // Initialize global doc structure
   getGlobalDoc().transact(function() {
@@ -414,7 +415,7 @@ async function initialize_new_yjs_state() {
     
     // Session name cache for instant UI updates
     const sessionNames = new Y.Map();
-    sessionNames.set(sessionId, 'Session ' + date);
+    sessionNames.set(sessionId, sessionName);
     meta.set('sessionNames', sessionNames);
 
     // Global history for session-level events
@@ -428,7 +429,7 @@ async function initialize_new_yjs_state() {
   sessionDoc.transact(function() {
     const session = sessionDoc.getMap('session');
     session.set('id', sessionId);
-    session.set('name', 'Session ' + date);
+    session.set('name', sessionName);
     session.set('createdAt', Date.now());
     session.set('lastModified', Date.now());
 
@@ -442,17 +443,17 @@ async function initialize_new_yjs_state() {
     const teams = new Y.Array();
     teams.push([null]); // Placeholder at index 0
     const team1 = new Y.Map();
-    team1.set('name', 'Team 1');
+    team1.set('name', (typeof t === 'function') ? t('defaults.team_name', { number: 1 }) : 'Team 1');
     teams.push([team1]);
     session.set('teams', teams);
 
     // Blocks
     const blocks = new Y.Array();
     const block0 = new Y.Map();
-    block0.set('name', 'No Block/Group');
+    block0.set('name', (typeof t === 'function') ? t('defaults.no_block') : 'No Block/Group');
     blocks.push([block0]);
     const block1 = new Y.Map();
-    block1.set('name', 'Block/Group 1');
+    block1.set('name', (typeof t === 'function') ? t('defaults.block_name', { number: 1 }) : 'Block/Group 1');
     blocks.push([block1]);
     session.set('blocks', blocks);
 
@@ -461,7 +462,7 @@ async function initialize_new_yjs_state() {
     questions.push([null]); // Placeholder at index 0
 
     const question1 = new Y.Map();
-    question1.set('name', 'Question 1');
+    question1.set('name', (typeof t === 'function') ? t('defaults.question_name', { number: 1 }) : 'Question 1');
     question1.set('score', 0);
     question1.set('block', 0);
     question1.set('ignore', false);
