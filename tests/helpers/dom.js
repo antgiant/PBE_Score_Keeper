@@ -358,6 +358,14 @@ function loadApp(seed = {}) {
           
           meta.set('sessionOrder', sessionOrder);
           
+          // Create sessionNames cache for instant UI updates
+          const sessionNamesMap = new Y.Map();
+          _seedConfig.sessions.forEach((sessionConfig, index) => {
+            const sessionId = 'test-session-' + (index + 1);
+            sessionNamesMap.set(sessionId, sessionConfig.name || 'Test Session');
+          });
+          meta.set('sessionNames', sessionNamesMap);
+          
           // Set current session to first one
           const currentSessionId = sessionOrder[_seedConfig.currentSession - 1] || sessionOrder[0];
           meta.set('currentSession', currentSessionId);

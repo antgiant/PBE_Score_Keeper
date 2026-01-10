@@ -978,6 +978,55 @@ function get_session_names() {
 }
 
 /**
+ * Repair missing or incomplete sessionNames cache
+ * Rebuilds cache from individual session docs
+ * @returns {Promise<boolean>} True if repair was performed, false if cache was already complete
+ */
+async function repairSessionNamesCache() {
+  const meta = getGlobalDoc().getMap('meta');
+  const sessionOrder = meta.get('sessionOrder');
+  
+  if (!sessionOrder || sessionOrder.length === 0) {
+    return false; // No sessions to repair
+  }
+  
+  // Check if cache exists and is complete
+  let sessionNames = meta.get('sessionNames');
+  const needsRepair = !sessionNames || sessionNames.size !== sessionOrder.length;
+  
+  if (!needsRepair) {
+    return false; // Cache is complete
+  }
+  
+  console.log('Repairing sessionNames cache...');
+  
+  // Rebuild cache from session docs
+  const repairedNames = new Map();
+  
+  for (const sessionId of sessionOrder) {
+    // Load the session doc from IndexedDB if not already in memory
+    const sessionDoc = await initSessionDoc(sessionId);
+    if (sessionDoc) {
+      const session = sessionDoc.getMap('session');
+      const name = session.get('name') || 'Unnamed Session';
+      repairedNames.set(sessionId, name);
+    }
+  }
+  
+  // Update global doc with repaired cache
+  getGlobalDoc().transact(() => {
+    const newSessionNames = new Y.Map();
+    for (const [sessionId, name] of repairedNames) {
+      newSessionNames.set(sessionId, name);
+    }
+    meta.set('sessionNames', newSessionNames);
+  }, 'repair');
+  
+  console.log(`Repaired sessionNames cache with ${repairedNames.size} entries`);
+  return true; // Repair was performed
+}
+
+/**
  * Get team names for current session
  * @returns {Array<string>} Array of team names (index 0 is empty string)
  */

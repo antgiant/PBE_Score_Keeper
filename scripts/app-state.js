@@ -17,6 +17,27 @@ async function initialize_state() {
     if (has_yjs_data()) {
       // Load from Yjs (will migrate v2.0 to v3.0 if needed)
       await load_from_yjs();
+      
+      // Repair sessionNames cache if needed (for users who migrated before fix)
+      if (is_multi_doc()) {
+        const wasRepaired = await repairSessionNamesCache();
+        
+        // If cache was repaired, update session name display immediately
+        if (wasRepaired) {
+          // Wait for DOM to be ready and update the session name
+          const updateSessionName = function() {
+            if (typeof $ === 'undefined' || typeof get_session_names !== 'function') {
+              setTimeout(updateSessionName, 50);
+              return;
+            }
+            const session_names = get_session_names();
+            const currentSessionIndex = get_current_session_index();
+            $("#session_name").text(session_names[currentSessionIndex]);
+          };
+          updateSessionName();
+        }
+      }
+      
       window.stateInitialized = true;
       return;
     }
@@ -228,6 +249,14 @@ async function migrate_localStorage_to_v3(oldVersion) {
       meta.set('dataVersion', 3.0);
       meta.set('currentSession', newCurrentSession);
       meta.set('sessionOrder', sessionOrder);
+      
+      // Populate session names cache
+      const sessionNamesMap = new Y.Map();
+      for (let s = 1; s < sessionNames.length; s++) {
+        const sessionId = indexToUuid.get(s);
+        sessionNamesMap.set(sessionId, sessionNames[s]);
+      }
+      meta.set('sessionNames', sessionNamesMap);
     }, 'migration');
 
     // Clear old localStorage (keep backup)
