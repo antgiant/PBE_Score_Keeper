@@ -932,19 +932,19 @@ function add_global_history_entry(action, details) {
   const meta = getGlobalDoc().getMap('meta');
   let globalHistory = meta.get('globalHistory');
   
-  if (!globalHistory) {
-    // Array doesn't exist yet, create it
-    getGlobalDoc().transact(() => {
+  getGlobalDoc().transact(() => {
+    if (!globalHistory) {
+      // Array doesn't exist yet, create it
       globalHistory = new Y.Array();
       meta.set('globalHistory', globalHistory);
-    }, 'history');
-  }
+    }
 
-  const entry = new Y.Map();
-  entry.set('timestamp', Date.now());
-  entry.set('action', action);
-  entry.set('details', details);
-  globalHistory.push([entry]);
+    const entry = new Y.Map();
+    entry.set('timestamp', Date.now());
+    entry.set('action', action);
+    entry.set('details', details);
+    globalHistory.push([entry]);
+  }, 'history');
 }
 
 /**
