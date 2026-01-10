@@ -7,10 +7,8 @@
 var DocManager = {
   globalDoc: null,
   globalProvider: null,
-  globalUndoManager: null,
   sessionDocs: new Map(),        // Map<sessionId, Y.Doc>
   sessionProviders: new Map(),   // Map<sessionId, IndexeddbPersistence>
-  sessionUndoManagers: new Map(), // Map<sessionId, Y.UndoManager>
   activeSessionId: null,
   yjsReady: false,
   pendingSessionLoads: new Map(), // Map<sessionId, Promise> for deduplication
@@ -32,22 +30,7 @@ var DocManager = {
     return this.globalDoc;
   },
 
-  /**
-   * Get undo manager for current session
-   * @returns {Y.UndoManager} Current session undo manager or null
-   */
-  getActiveSessionUndoManager: function() {
-    if (!this.activeSessionId) return null;
-    return this.sessionUndoManagers.get(this.activeSessionId) || null;
-  },
 
-  /**
-   * Get global undo manager
-   * @returns {Y.UndoManager} Global undo manager
-   */
-  getGlobalUndoManager: function() {
-    return this.globalUndoManager;
-  },
 
   /**
    * Set the active session by ID
@@ -61,7 +44,7 @@ var DocManager = {
 // Legacy global variables - kept for compatibility during transition
 var ydoc;
 var yProvider;
-var yUndoManager;
+
 var yjsReady = false;
 
 // Setter functions to sync legacy variables with DocManager
@@ -75,10 +58,6 @@ function setYProvider(provider) {
   DocManager.globalProvider = provider;
 }
 
-function setYUndoManager(manager) {
-  yUndoManager = manager;
-  DocManager.globalUndoManager = manager;
-}
 
 function setYjsReady(ready) {
   yjsReady = ready;
@@ -94,21 +73,6 @@ function getGlobalDoc() {
   return DocManager.getGlobalDoc();
 }
 
-/**
- * Get the global undo manager
- * @returns {Y.UndoManager} Global undo manager
- */
-function getGlobalUndoManager() {
-  return DocManager.getGlobalUndoManager();
-}
-
-/**
- * Get undo manager for the active session
- * @returns {Y.UndoManager} Active session undo manager
- */
-function getActiveSessionUndoManager() {
-  return DocManager.getActiveSessionUndoManager();
-}
 
 /**
  * Initialize a session-specific Y.Doc with IndexedDB persistence
@@ -197,12 +161,6 @@ async function destroySessionDoc(sessionId, clearStorage) {
 
   const doc = DocManager.sessionDocs.get(sessionId);
   const provider = DocManager.sessionProviders.get(sessionId);
-  const undoMgr = DocManager.sessionUndoManagers.get(sessionId);
-
-  if (undoMgr) {
-    undoMgr.destroy();
-    DocManager.sessionUndoManagers.delete(sessionId);
-  }
 
   if (provider) {
     if (clearStorage) {
@@ -235,50 +193,7 @@ async function destroyAllDocs() {
   }
 }
 
-/**
- * Get or create an undo manager for a specific session
- * @param {string} sessionId - UUID of the session
- * @returns {Y.UndoManager} UndoManager for the session
- */
-function getOrCreateSessionUndoManager(sessionId) {
-  if (!sessionId) return null;
 
-  if (DocManager.sessionUndoManagers.has(sessionId)) {
-    return DocManager.sessionUndoManagers.get(sessionId);
-  }
-
-  const sessionDoc = getSessionDoc(sessionId);
-  if (!sessionDoc) return null;
-
-  // Track session data changes
-  const undoMgr = new Y.UndoManager([
-    sessionDoc.getMap('session')
-  ], {
-    trackedOrigins: new Set(['local']),
-    captureTimeout: 500
-  });
-
-  // Update buttons when stack changes
-  undoMgr.on('stack-item-added', update_undo_redo_buttons);
-  undoMgr.on('stack-item-popped', update_undo_redo_buttons);
-  undoMgr.on('stack-cleared', update_undo_redo_buttons);
-
-  DocManager.sessionUndoManagers.set(sessionId, undoMgr);
-  return undoMgr;
-}
-
-/**
- * Destroy an undo manager for a session
- * @param {string} sessionId - UUID of the session
- */
-function destroySessionUndoManager(sessionId) {
-  if (!sessionId) return;
-  const undoMgr = DocManager.sessionUndoManagers.get(sessionId);
-  if (undoMgr) {
-    undoMgr.destroy();
-    DocManager.sessionUndoManagers.delete(sessionId);
-  }
-}
 
 /**
  * Check if old v2.0 single-doc database exists in IndexedDB
@@ -361,21 +276,22 @@ function initialize_yjs() {
       setYjsReady(true);
     }
 
-    // Setup global undo manager - only tracks global metadata changes
-    setYUndoManager(new Y.UndoManager([
-      getGlobalDoc().getMap('meta')
-    ], {
-      trackedOrigins: new Set(['local']),
-      captureTimeout: 500
-    }));
+    // Track previous session for change detection
+    var previousSessionId = null;
 
-    // Listen for undo/redo stack changes
-    yUndoManager.on('stack-item-added', update_undo_redo_buttons);
-    yUndoManager.on('stack-item-popped', update_undo_redo_buttons);
-    yUndoManager.on('stack-cleared', update_undo_redo_buttons);
-
-    // Listen for remote changes on global doc
+    // Listen for changes on global doc
     getGlobalDoc().on('update', function(updateData, origin) {
+      const meta = getGlobalDoc().getMap('meta');
+      const currentSessionId = meta.get('currentSession');
+
+      // Detect session switch
+      if (previousSessionId !== null && currentSessionId !== previousSessionId) {
+        console.log('Session changed from', previousSessionId, 'to', currentSessionId);
+        handleSessionChangeFromGlobalUpdate(currentSessionId);
+      }
+      
+      previousSessionId = currentSessionId;
+
       if (origin !== 'local' && origin !== 'migration' && origin !== 'import' && origin !== 'history') {
         console.log('Remote update on global doc, refreshing');
         // Only sync if we have an active session to prevent errors during initialization
@@ -507,9 +423,6 @@ async function initialize_new_yjs_state() {
 
   // Set active session
   DocManager.setActiveSession(sessionId);
-
-  // Create undo manager for this session
-  getOrCreateSessionUndoManager(sessionId);
 
   // Log creation in global history
   add_global_history_entry('Create Session', 'Created "Session ' + date + '"');
@@ -663,7 +576,6 @@ async function migrate_v2_to_v3() {
 
   // Set active session
   DocManager.setActiveSession(newCurrentSession);
-  getOrCreateSessionUndoManager(newCurrentSession);
 
   console.log('Migration to v3.0 complete. Sessions:', sessionOrder.length);
 }
@@ -734,10 +646,6 @@ async function load_from_yjs() {
   // Ensure session doc is loaded
   await initSessionDoc(currentSessionId);
   DocManager.setActiveSession(currentSessionId);
-  
-  // Create undo manager for session
-  getOrCreateSessionUndoManager(currentSessionId);
-
   console.log('Loaded from Yjs v3.0, current session:', currentSessionId);
 }
 
@@ -806,92 +714,21 @@ async function switch_to_new_database_key() {
 }
 
 /**
- * Perform undo operation - uses session or global undo manager as appropriate
+ * Handle session change from global doc update
+ * @param {string} sessionId - New session UUID
  */
-function perform_undo() {
-  // Try session undo manager first
-  const sessionUndoMgr = getActiveSessionUndoManager();
-  if (sessionUndoMgr && sessionUndoMgr.canUndo()) {
-    const actionDescription = get_last_action_description();
-    sessionUndoMgr.undo();
-    
-    // Log to session history
-    const sessionDoc = getActiveSessionDoc();
-    if (sessionDoc) {
-      sessionDoc.transact(() => {
-        add_history_entry('Undo', 'Undid: ' + actionDescription);
-      }, 'history');
-    }
-    
-    sync_data_to_display();
-    refresh_history_display();
-    return;
-  }
+async function handleSessionChangeFromGlobalUpdate(sessionId) {
+  if (!sessionId) return;
 
-  // Fall back to global undo manager
-  if (yUndoManager && yUndoManager.canUndo()) {
-    yUndoManager.undo();
-    
-    getGlobalDoc().transact(() => {
-      add_global_history_entry('Undo', 'Undid global action');
-    }, 'history');
-    
-    sync_data_to_display();
-    refresh_history_display();
-  }
-}
+  // Load session doc if not already loaded
+  await initSessionDoc(sessionId);
 
-/**
- * Perform redo operation
- */
-function perform_redo() {
-  // Try session redo first
-  const sessionUndoMgr = getActiveSessionUndoManager();
-  if (sessionUndoMgr && sessionUndoMgr.canRedo()) {
-    sessionUndoMgr.redo();
-    
-    const sessionDoc = getActiveSessionDoc();
-    if (sessionDoc) {
-      sessionDoc.transact(() => {
-        add_history_entry('Redo', 'Redid the previously undone action');
-      }, 'history');
-    }
-    
-    sync_data_to_display();
-    refresh_history_display();
-    return;
-  }
+  // Set active session
+  DocManager.setActiveSession(sessionId);
 
-  // Fall back to global redo
-  if (yUndoManager && yUndoManager.canRedo()) {
-    yUndoManager.redo();
-    
-    getGlobalDoc().transact(() => {
-      add_global_history_entry('Redo', 'Redid global action');
-    }, 'history');
-    
-    sync_data_to_display();
-    refresh_history_display();
-  }
-}
-
-/**
- * Update undo/redo button states
- */
-function update_undo_redo_buttons() {
-  const undoButton = document.getElementById('undo_button');
-  const redoButton = document.getElementById('redo_button');
-
-  const sessionUndoMgr = getActiveSessionUndoManager();
-  const canUndo = (sessionUndoMgr && sessionUndoMgr.canUndo()) || (yUndoManager && yUndoManager.canUndo());
-  const canRedo = (sessionUndoMgr && sessionUndoMgr.canRedo()) || (yUndoManager && yUndoManager.canRedo());
-
-  if (undoButton) {
-    undoButton.disabled = !canUndo;
-  }
-  if (redoButton) {
-    redoButton.disabled = !canRedo;
-  }
+  // Refresh display
+  sync_data_to_display();
+  refresh_history_display();
 }
 
 /**

@@ -74,7 +74,8 @@ function refresh_history_display() {
             session: 'Global',
             action: entry.get('action') || 'Change',
             details: entry.get('details') || '',
-            isGlobal: true
+            isGlobal: true,
+            globalIndex: i
           });
         }
       }
@@ -95,7 +96,8 @@ function refresh_history_display() {
           session: sessionName,
           action: entry.get('action') || 'Change',
           details: entry.get('details') || '',
-          isGlobal: false
+          isGlobal: false,
+          sessionIndex: i
         });
       }
     }
@@ -129,13 +131,14 @@ function refresh_history_display() {
   }
 }
 
+
+
 /**
  * Add a history entry to the current session's history log
  * @param {string} action - The action performed (e.g., "Rename Team")
  * @param {string} details - Details about the action
- * @param {boolean} isUndone - Whether this entry has been undone (default: false)
  */
-function add_history_entry(action, details, isUndone) {
+function add_history_entry(action, details) {
   const sessionDoc = getActiveSessionDoc();
   if (!sessionDoc) return;
 
@@ -155,37 +158,12 @@ function add_history_entry(action, details, isUndone) {
   entry.set('session', session.get('name') || 'Session');
   entry.set('action', action);
   entry.set('details', details);
-  entry.set('undone', isUndone || false);
 
   // Add to history log
   historyLog.push([entry]);
 
   // Update session last modified
   updateSessionLastModified();
-}
-
-/**
- * Get description of what was undone for logging
- * @returns {string} Description of the most recent non-undo/redo action
- */
-function get_last_action_description() {
-  const session = get_current_session();
-  if (!session) return 'an action';
-
-  const historyLog = session.get('historyLog');
-  if (!historyLog) return 'an action';
-
-  // Find the most recent entry that isn't an undo or redo
-  for (let i = historyLog.length - 1; i >= 0; i--) {
-    const entry = historyLog.get(i);
-    const action = entry.get('action');
-    if (action !== 'Undo' && action !== 'Redo') {
-      const details = entry.get('details') || '';
-      return action + (details ? ': ' + details : '');
-    }
-  }
-
-  return 'an action';
 }
 
 /**

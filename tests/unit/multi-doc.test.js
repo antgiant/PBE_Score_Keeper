@@ -96,52 +96,6 @@ test('Session Isolation - Each session has independent team data', (t) => {
   assert.strictEqual(teams1.length, teams2.length, 'But should have same number of teams');
 });
 
-test('Undo/Redo - Session changes can be undone', (t) => {
-  const { context } = loadApp(buildBasicSeed());
-  
-  const undoManager = context.getGlobalUndoManager();
-  if (!undoManager) {
-    t.skip('UndoManager not available');
-    return;
-  }
-  
-  const meta = context.getGlobalDoc().getMap('meta');
-  const initialSession = meta.get('currentSession');
-  
-  // Make a change
-  context.switchSession(1);
-  
-  // Undo should be possible - check both method and property
-  const canUndo = typeof undoManager.canUndo === 'function' ? undoManager.canUndo() : undoManager.canUndo;
-  assert.ok(canUndo, 'Should be able to undo');
-});
-
-test('Undo/Redo - Session undo reverts to previous state', (t) => {
-  const { context } = loadApp(buildMultiSessionSeed(2));
-  
-  const undoManager = context.getGlobalUndoManager();
-  if (!undoManager || typeof undoManager.undo !== 'function') {
-    t.skip('UndoManager.undo() not available');
-    return;
-  }
-  
-  const meta = context.getGlobalDoc().getMap('meta');
-  
-  // Record initial state
-  const initialSession = meta.get('currentSession');
-  
-  // Make a change
-  context.switchSession(2);
-  
-  const currentSession = meta.get('currentSession');
-  // currentSession is now a UUID not a number
-  assert.notStrictEqual(currentSession, initialSession, 'Should have switched session');
-  
-  // Undo the change
-  undoManager.undo();
-  assert.strictEqual(meta.get('currentSession'), initialSession, 'Undo should revert to initial session');
-});
-
 test('Format Detection - Identifies JSON v2.0/v3.0 format', (t) => {
   const { context } = loadApp(buildBasicSeed());
   

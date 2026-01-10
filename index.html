@@ -54,7 +54,11 @@
         <p>This is a score keeper for the Pathfinder Bible Experience (aka the Bible Bowl). Please enter your number of teams as well as blocks/groups below so that the scoring grid can be created</p>
         <h5>Data Storage Note</h5>
         <p>Data is stored only on your device, and is not shared in any way with any server. This also means that if you change devices your data will not appear on the new device.</p>
-        <h4><span id="session_name" contenteditable="plaintext-only" onblur="local_data_update(this)"></span> (<span id="session_display_count"></span>) <button id="new_session" onclick='local_data_update(this)'>New Session</button></h4>
+        <h4>
+          <span id="session_name" contenteditable="plaintext-only" onblur="local_data_update(this)"></span>
+          (<span id="session_display_count"></span>)
+          <button id="new_session" onclick='local_data_update(this)'>New Session</button>
+        </h4>
         <fieldset>
           <legend>Set up your Teams</legend>
           <span id="total_teams"></span> <span id="total_teams_text">teams</span> <button id="total_teams_decrease" onclick='local_data_update(this)'>-</button> <button id="total_teams_increase" onclick='local_data_update(this)'>+</button><br>
@@ -89,10 +93,6 @@
           <div>
             <button id="previous_question" onclick='local_data_update(this)'>Previous Question</button>
             <button id="next_question" onclick='local_data_update(this)'>Next Question</button>
-            <span style="margin-left: 20px;">
-              <button id="undo_button" onclick='perform_undo()' disabled>↶ Undo</button>
-              <button id="redo_button" onclick='perform_redo()' disabled>↷ Redo</button>
-            </span>
             <br><br>
             <label><span id="ignore_question_warning" style="font-size: xx-large;display:none">🚫</span><input type="checkbox" id="ignore_question" onchange="local_data_update(this)">Ignore this Question in Score Calculations</label></div>
         <div id="ignored_question">

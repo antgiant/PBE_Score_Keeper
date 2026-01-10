@@ -268,7 +268,6 @@ function loadApp(seed = {}) {
         DocManager.globalDoc = ydoc;
         DocManager.sessionDocs = new Map();
         DocManager.sessionProviders = new Map();
-        DocManager.sessionUndoManagers = new Map();
         
         ydoc.transact(() => {
           const meta = ydoc.getMap('meta');

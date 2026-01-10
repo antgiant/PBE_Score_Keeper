@@ -372,11 +372,6 @@ async function import_yjs_from_json(data, mode) {
     }
   }, 'import');
 
-  // Create undo managers for imported sessions
-  for (const sessionId of importedSessionIds) {
-    getOrCreateSessionUndoManager(sessionId);
-  }
-
   // Add import history entry
   add_global_history_entry('Import', 'Imported ' + importedSessionIds.length + ' session(s)');
 }
@@ -945,10 +940,6 @@ async function importSessionData(data) {
             DocManager.setActiveSession(importedSessionIds[0]);
           }, 'import');
           
-          // Create undo managers for imported sessions
-          for (const sessionId of importedSessionIds) {
-            getOrCreateSessionUndoManager(sessionId);
-          }
         }
       }
     } 
@@ -1009,9 +1000,6 @@ async function importSessionData(data) {
           meta.set('currentSession', sessionId);
           DocManager.setActiveSession(sessionId);
         }, 'import');
-        
-        // Create undo manager for imported session
-        getOrCreateSessionUndoManager(sessionId);
         
         result.importedCount = 1;
       } catch (error) {

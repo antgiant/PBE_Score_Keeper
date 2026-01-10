@@ -478,7 +478,6 @@ async function createNewSession(name) {
 
   // Switch to new session
   DocManager.setActiveSession(sessionId);
-  getOrCreateSessionUndoManager(sessionId);
 
   // Log in global history
   add_global_history_entry('Create Session', 'Created "' + sessionName + '"');
@@ -524,7 +523,6 @@ async function switchSession(sessionIdOrIndex) {
 
   // Set active session
   DocManager.setActiveSession(sessionId);
-  getOrCreateSessionUndoManager(sessionId);
 
   // Log in global history
   const session = get_current_session();
@@ -624,7 +622,6 @@ async function deleteSession(sessionIdOrIndex) {
   if (currentSessionId === sessionId) {
     await initSessionDoc(newCurrentId);
     DocManager.setActiveSession(newCurrentId);
-    getOrCreateSessionUndoManager(newCurrentId);
   }
 
   // Log in global history

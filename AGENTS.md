@@ -98,8 +98,6 @@ All Y.Doc access goes through the `DocManager` object in `app-yjs.js`:
 - `getActiveSessionDoc()` - Returns current session's doc
 - `getSessionDoc(sessionId)` - Returns specific session doc by ID
 - `get_current_session_index()` - Returns 1-based session index (replaces legacy `current_session` global)
-- `getGlobalUndoManager()` - Undo/redo for global changes
-- `getActiveSessionUndoManager()` - Undo/redo for session data
 
 ### Session Management Functions
 
@@ -148,10 +146,9 @@ Available in `app-display.js`:
 
 1. **Session IDs**: Generated as UUIDs via `generateSessionId()`
 2. **Session List Ordering**: New sessions inserted at end of array
-3. **Undo/Redo**: Per-session isolation, global changes tracked separately
-4. **Export Format**: Binary by default (compact), JSON supported on import
-5. **Import Behavior**: Always creates new sessions (no merge ambiguity)
-6. **Error Handling**: Skip-and-continue for batch operations with user feedback
+3. **Export Format**: Binary by default (compact), JSON supported on import
+4. **Import Behavior**: Always creates new sessions (no merge ambiguity)
+5. **Error Handling**: Skip-and-continue for batch operations with user feedback
 
 ### Multi-Doc Architecture
 
@@ -164,10 +161,10 @@ IndexedDB persistence uses separate keys for each Y.Doc (`pbe-score-keeper-globa
 
 ### Testing
 
-- **Total Tests**: 56
-- **Passing**: 54
+- **Total Tests**: 58
+- **Passing**: 58
 - **Failed**: 0
-- **Skipped**: 2 (Undo/Redo tests - UndoManager not yet available)
+- **Skipped**: 0
 - **Test Files**:
   - UI tests: blocks, exports, extra-credit, ignore-question, max-points, reorder, rounding, score-summaries, sessions, teams
   - Unit tests: core, multi-doc

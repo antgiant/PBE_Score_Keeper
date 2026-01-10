@@ -28,16 +28,3 @@ if (window.yjsModulesLoaded) {
   window.addEventListener('yjsModulesLoaded', initializeApp, { once: true });
 }
 
-// Add keyboard shortcuts for undo/redo
-document.addEventListener('keydown', function(e) {
-  // Ctrl+Z / Cmd+Z for undo
-  if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
-    e.preventDefault();
-    perform_undo();
-  }
-  // Ctrl+Shift+Z / Cmd+Shift+Z or Ctrl+Y / Cmd+Y for redo
-  if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
-    e.preventDefault();
-    perform_redo();
-  }
-});
