@@ -440,7 +440,8 @@ function setup_file_import() {
     }, false);
   }
   else {
-    $("#import_group").html("<p>Your Browser does not support importing.</p>");
+    var noSupportText = (typeof t === 'function') ? t('advanced.no_import_support') : 'Your Browser does not support importing.';
+    $("#import_group").html("<p>"+noSupportText+"</p>");
   }
 }
 

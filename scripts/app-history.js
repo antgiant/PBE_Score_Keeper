@@ -108,7 +108,8 @@ function refresh_history_display() {
 
   // Display entries
   if (allEntries.length === 0) {
-    historyList.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 20px; color: #666;">No changes recorded yet. Make some changes to see them here!</td></tr>';
+    var noChangesText = (typeof t === 'function') ? t('history.no_changes') : 'No changes recorded yet. Make some changes to see them here!';
+    historyList.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 20px; color: #666;">'+noChangesText+'</td></tr>';
     return;
   }
 

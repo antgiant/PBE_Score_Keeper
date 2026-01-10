@@ -11,6 +11,7 @@ $(document).ready(function() {
   }, 50);
 });
 
+initialize_language_preference();
 initialize_theme_preference();
 initialize_storage_persistence();
 

@@ -28,6 +28,7 @@ function initialize_display() {
     } 
   });
   
+  initialize_language_controls();
   initialize_theme_controls();
   sync_data_to_display();
   initialize_reorder_controls();
@@ -98,7 +99,7 @@ function sync_data_to_display() {
   let team_score_summary = get_team_score_summary();
   
   //Fill in Team Placement and create output table
-  let temp_output = "<table><thead><tr><th>Team Name</th><th>Percent</th><th>Score</th><th>Placement</th></tr></thead><tbody>";
+  let temp_output = "<table><thead><tr><th>"+t('table.team_name')+"</th><th>"+t('table.percent')+"</th><th>"+t('table.score')+"</th><th>"+t('table.placement')+"</th></tr></thead><tbody>";
   for (let i=1; i <= team_count; i++) {
     temp_output = temp_output+"<tr><td>"+HTMLescape(team_score_summary[i][0])+"</td>";
     temp_output = temp_output+"<td>"+team_score_summary[i][1]+"</td>";
@@ -112,7 +113,7 @@ function sync_data_to_display() {
 
   //Update Rounded Team Scores  
   //Fill in Team Placement and create output table
-  temp_output = "<table><thead><tr><th>Team Name</th><th>Percent</th><th>Score</th><th>Placement</th></tr></thead><tbody>";
+  temp_output = "<table><thead><tr><th>"+t('table.team_name')+"</th><th>"+t('table.percent')+"</th><th>"+t('table.score')+"</th><th>"+t('table.placement')+"</th></tr></thead><tbody>";
   for (let i=1; i <= team_count; i++) {
     temp_output = temp_output+"<tr><td>"+HTMLescape(team_score_summary[i][0])+"</td>";
     temp_output = temp_output+"<td>"+team_score_summary[i][7]+"</td>";
@@ -128,7 +129,7 @@ function sync_data_to_display() {
   let block_score_summary = get_block_score_summary();
 
   //Fill in Block/Group Placement and create output table
-  temp_output = "<table><thead><tr><th>Block/Group Name</th><th>Percent</th><th>Score</th></tr></thead><tbody>";
+  temp_output = "<table><thead><tr><th>"+t('table.block_name')+"</th><th>"+t('table.percent')+"</th><th>"+t('table.score')+"</th></tr></thead><tbody>";
   for (let i=1; i < block_score_summary.length; i++) {
     temp_output = temp_output+"<tr><td>"+HTMLescape(block_score_summary[i][0])+"</td>";
     temp_output = temp_output+"<td>"+block_score_summary[i][1]+"</td>";
@@ -144,7 +145,7 @@ function sync_data_to_display() {
   let team_and_block_score_summary = get_team_and_block_score_summary();
 
   //Fill in Team and Block/Group scores and create output table
-  temp_output = "<table><thead><tr><th>Team Name</th><th>Block/Group Name</th><th>Percent</th><th>Score</th></tr></thead><tbody>";
+  temp_output = "<table><thead><tr><th>"+t('table.team_name')+"</th><th>"+t('table.block_name')+"</th><th>"+t('table.percent')+"</th><th>"+t('table.score')+"</th></tr></thead><tbody>";
   for (let i=1; i < team_and_block_score_summary.length; i++) {
     temp_output = temp_output+"<tr><td>"+HTMLescape(team_and_block_score_summary[i][0])+"</td>";
     temp_output = temp_output+"<td>"+HTMLescape(team_and_block_score_summary[i][1])+"</td>";
@@ -161,9 +162,9 @@ function sync_data_to_display() {
   let question_log_summary = get_question_log();
   
   //Fill in Team and Block/Group scores and create output table
-  temp_output = "<table><thead><tr><th>Question</th><th>Block/Group</th><th>Possible Points</th>";
+  temp_output = "<table><thead><tr><th>"+t('table.question')+"</th><th>"+t('table.block_name')+"</th><th>"+t('table.possible_points')+"</th>";
   for (let i=1; i <= team_count; i++) {
-    temp_output = temp_output + "<th>"+HTMLescape(team_names[i])+" Score</th>";
+    temp_output = temp_output + "<th>"+HTMLescape(team_names[i])+" "+t('table.score')+"</th>";
   }
   temp_output = temp_output + "</tr></thead><tbody>";
   for (var i=1; i < question_log_summary.length; i++) {
@@ -186,10 +187,10 @@ function sync_data_to_display() {
   //Show Team Count
   $("#total_teams").text(team_count);
   if (team_count == 1) {
-    $("#total_teams_text").text("team");
+    $("#total_teams_text").text(t('teams.team'));
     $("#total_teams_decrease").prop("disabled", true);
   } else {
-    $("#total_teams_text").text("teams");
+    $("#total_teams_text").text(t('teams.teams'));
     $("#total_teams_decrease").prop("disabled", false);
   }
 
@@ -199,7 +200,7 @@ function sync_data_to_display() {
     for (let i=displayed_teams_count + 1;i<=team_count;i++) {
       //Add new
       let teamName = team_names[i] || ('Team ' + i);
-      $("#team_names").append('<div class="reorder-item" data-index="'+i+'"><button type="button" class="drag-handle" draggable="true" aria-label="Drag to reorder Team '+i+'">&equiv; &#8597;</button><label><span class="reorder-label">Team '+i+' Name:</span> <input type = "text" name = "team_'+i+'_name" id = "team_'+i+'_name" onchange="local_data_update(this)" value = "'+teamName.replace('"', "&quote")+'"></label></div>');
+      $("#team_names").append('<div class="reorder-item" data-index="'+i+'"><button type="button" class="drag-handle" draggable="true" aria-label="'+t('teams.name_label', {number: i}).replace(':', '')+'">&equiv; &#8597;</button><label><span class="reorder-label">'+t('teams.name_label', {number: i})+'</span> <input type = "text" name = "team_'+i+'_name" id = "team_'+i+'_name" onchange="local_data_update(this)" value = "'+teamName.replace('"', "&quote")+'"></label></div>');
       $("#question_teams").append('<fieldset><legend id=team_'+i+'_points_label>Team '+HTMLescape(teamName)+' Score</legend><div id="team_'+i+'_score"></div>'+
                                    '<legend id=team_'+i+'_extra_credit_label style="display:none">Extra Credit<div><button id="team_'+i+'_extra_credit_decrease" onclick="local_data_update(this)" >-</button><span id="team_'+i+'_extra_credit" class="extra_credit_amount">0</span><button id ="team_'+i+'_extra_credit_increase" onclick="local_data_update(this)" >+</button></div></legend></fieldset>');
       $("#team_"+i+"_score").append('<label><input type="radio" id="team_'+i+'_score_0" name="team_'+i+'_score" value=0 onchange="local_data_update(this)">0</label>');
@@ -222,8 +223,8 @@ function sync_data_to_display() {
       let team_item = team_input.closest(".reorder-item");
       if (team_item.length) {
         team_item.attr("data-index", i);
-        team_item.find(".reorder-label").text("Team "+i+" Name:");
-        team_item.find(".drag-handle").attr("aria-label", "Drag to reorder Team "+i);
+        team_item.find(".reorder-label").text(t('teams.name_label', {number: i}));
+        team_item.find(".drag-handle").attr("aria-label", t('teams.name_label', {number: i}).replace(':', ''));
         $("#team_names").append(team_item);
       }
     }
@@ -265,9 +266,9 @@ function sync_data_to_display() {
                     temp_team_and_block_score_summary[team_and_block_row][2]+")";
     }
     if (currentTeamName.slice(-1).toLowerCase() === "s") {
-      $("#team_"+i+"_points_label").text(currentTeamName+"' score"+temp_team_score);
+      $("#team_"+i+"_points_label").text(t('teams.score_label_s', {name: currentTeamName})+temp_team_score);
     } else {
-      $("#team_"+i+"_points_label").text(currentTeamName+"'s score"+temp_team_score);
+      $("#team_"+i+"_points_label").text(t('teams.score_label', {name: currentTeamName})+temp_team_score);
     }
     $("#team_"+i+"_name").val(currentTeamName);
   }
@@ -287,10 +288,10 @@ function sync_data_to_display() {
   //Show block/group count
   $("#total_blocks").text(block_count);
   if (block_count == 1) {
-    $("#total_blocks_text").text("block/group");
+    $("#total_blocks_text").text(t('blocks.block'));
     $("#total_blocks_decrease").prop("disabled", true);
   } else {
-    $("#total_blocks_text").text("blocks/groups");
+    $("#total_blocks_text").text(t('blocks.blocks'));
     $("#total_blocks_decrease").prop("disabled", false);
   }
 
@@ -300,7 +301,7 @@ function sync_data_to_display() {
     for (let i=displayed_block_count + 1;i<=block_count;i++) {
       //Add new
       let blockName = block_names[i] || ('Block/Group ' + i);
-      $("#block_names").append('<div class="reorder-item" data-index="'+i+'"><button type="button" class="drag-handle" draggable="true" aria-label="Drag to reorder Block/Group '+i+'">&equiv; &#8597;</button><label><span class="reorder-label">Block/Group '+i+' Name:</span> <input type = "text" name = "block_'+i+'_name" id = "block_'+i+'_name" onchange="local_data_update(this)" value = "'+blockName.replace('"', "&quote")+'"></label></div>');
+      $("#block_names").append('<div class="reorder-item" data-index="'+i+'"><button type="button" class="drag-handle" draggable="true" aria-label="'+t('blocks.name_label', {number: i}).replace(':', '')+'">&equiv; &#8597;</button><label><span class="reorder-label">'+t('blocks.name_label', {number: i})+'</span> <input type = "text" name = "block_'+i+'_name" id = "block_'+i+'_name" onchange="local_data_update(this)" value = "'+blockName.replace('"', "&quote")+'"></label></div>');
       $("#question_block").append('<label><input type="radio" id="question_block_'+i+'" name="question_block" value="'+i+'" onchange="local_data_update(this)"><span id="block_'+i+'_label">'+HTMLescape(blockName)+'</span></label>');
     }
   }
@@ -326,8 +327,8 @@ function sync_data_to_display() {
       let block_item = block_input.closest(".reorder-item");
       if (block_item.length) {
         block_item.attr("data-index", i);
-        block_item.find(".reorder-label").text("Block/Group "+i+" Name:");
-        block_item.find(".drag-handle").attr("aria-label", "Drag to reorder Block/Group "+i);
+        block_item.find(".reorder-label").text(t('blocks.name_label', {number: i}));
+        block_item.find(".drag-handle").attr("aria-label", t('blocks.name_label', {number: i}).replace(':', ''));
         $("#block_names").append(block_item);
       }
     }
@@ -370,10 +371,10 @@ function sync_data_to_display() {
   //Show block/group count
   $("#max_points").text(max_points);
   if (max_points == 1) {
-    $("#max_points_text").text("point");
+    $("#max_points_text").text(t('points.point'));
     $("#max_points_decrease").prop("disabled", true);
   } else {
-    $("#max_points_text").text("points");
+    $("#max_points_text").text(t('points.points'));
     $("#max_points_decrease").prop("disabled", false);
   }
 
@@ -518,11 +519,11 @@ function sync_data_to_display() {
 
   //Change Next Question to New Question if that is reality
   if (current_question >= question_count) {
-    $("#next_question").text("New Question");
-    $("#next_question_2").text("New Question");
+    $("#next_question").text(t('score_entry.new'));
+    $("#next_question_2").text(t('score_entry.new'));
   } else {
-    $("#next_question").text("Next Question");
-    $("#next_question_2").text("Next Question");
+    $("#next_question").text(t('score_entry.next'));
+    $("#next_question_2").text(t('score_entry.next'));
   }
 
   //Disable Next Question Button if max possible points is not set

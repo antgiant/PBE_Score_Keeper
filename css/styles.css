@@ -55,7 +55,16 @@ fieldset {
   gap: 0.5rem;
   font-size: 0.9rem;
 }
+.language-picker {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+}
 #theme_preference {
+  font-size: 0.9rem;
+}
+#language_preference {
   font-size: 0.9rem;
 }
 button {

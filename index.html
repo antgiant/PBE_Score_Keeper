@@ -16,6 +16,7 @@
   <script src="scripts/yjs-bundle.min.js"></script>
   <script src="scripts/app-globals.js"></script>
   <script src="scripts/app-yjs.js"></script>
+  <script src="scripts/app-i18n.js"></script>
   <script src="scripts/app-theme.js"></script>
   <script src="scripts/app-state.js"></script>
   <script src="scripts/app-data.js"></script>
@@ -36,129 +37,137 @@
   <div data-role="page" id="main">
     <div data-role="header" class="jqm-header">
       <div class="header-row">
-        <h1>PBE Score Keeper</h1>
+        <h1 data-i18n="app.title">PBE Score Keeper</h1>
+        <label class="language-picker" for="language_preference">
+          <span data-i18n="app.language">Language</span>
+          <select id="language_preference">
+            <option value="auto" data-i18n="app.auto">Auto</option>
+            <option value="en">English</option>
+            <option value="pig">Pig Latin</option>
+          </select>
+        </label>
         <label class="theme-picker" for="theme_preference">
-          Theme
+          <span data-i18n="app.theme">Theme</span>
           <select id="theme_preference">
-            <option value="system">System</option>
-            <option value="light">Light</option>
-            <option value="dark">Dark</option>
+            <option value="system" data-i18n="theme.system">System</option>
+            <option value="light" data-i18n="theme.light">Light</option>
+            <option value="dark" data-i18n="theme.dark">Dark</option>
           </select>
         </label>
       </div>
     </div>
     <div id="accordion">
-      <h3>Configuration (Session/Round/Game)</h3>
+      <h3 data-i18n="config.title">Configuration (Session/Round/Game)</h3>
       <div data-role="session_configuration" id="session_configuration">
-        <h4>Instructions</h4>
-        <p>This is a score keeper for the Pathfinder Bible Experience (aka the Bible Bowl). Please enter your number of teams as well as blocks/groups below so that the scoring grid can be created</p>
-        <h5>Data Storage Note</h5>
-        <p>Data is stored only on your device, and is not shared in any way with any server. This also means that if you change devices your data will not appear on the new device.</p>
+        <h4 data-i18n="config.instructions_title">Instructions</h4>
+        <p data-i18n="config.instructions">This is a score keeper for the Pathfinder Bible Experience (aka the Bible Bowl). Please enter your number of teams as well as blocks/groups below so that the scoring grid can be created</p>
+        <h5 data-i18n="config.storage_title">Data Storage Note</h5>
+        <p data-i18n="config.storage_note">Data is stored only on your device, and is not shared in any way with any server. This also means that if you change devices your data will not appear on the new device.</p>
         <h4>
           <span id="session_name" contenteditable="plaintext-only" onblur="local_data_update(this)"></span>
           (<span id="session_display_count"></span>)
-          <button id="new_session" onclick='local_data_update(this)'>New Session</button>
+          <button id="new_session" onclick='local_data_update(this)' data-i18n="config.new_session">New Session</button>
         </h4>
         <fieldset>
-          <legend>Set up your Teams</legend>
-          <span id="total_teams"></span> <span id="total_teams_text">teams</span> <button id="total_teams_decrease" onclick='local_data_update(this)'>-</button> <button id="total_teams_increase" onclick='local_data_update(this)'>+</button><br>
+          <legend data-i18n="teams.title">Set up your Teams</legend>
+          <span id="total_teams"></span> <span id="total_teams_text" data-i18n="teams.teams">teams</span> <button id="total_teams_decrease" onclick='local_data_update(this)'>-</button> <button id="total_teams_increase" onclick='local_data_update(this)'>+</button><br>
           <br>
           <div id="team_names"></div>
         </fieldset>
         <fieldset>
-          <legend>Set up your Blocks/Groups</legend>
-          <span id="total_blocks"></span> <span id="total_blocks_text">blocks/groups</span> <button id="total_blocks_decrease" onclick='local_data_update(this)'>-</button> <button id="total_blocks_increase" onclick='local_data_update(this)'>+</button><br>
+          <legend data-i18n="blocks.title">Set up your Blocks/Groups</legend>
+          <span id="total_blocks"></span> <span id="total_blocks_text" data-i18n="blocks.blocks">blocks/groups</span> <button id="total_blocks_decrease" onclick='local_data_update(this)'>-</button> <button id="total_blocks_increase" onclick='local_data_update(this)'>+</button><br>
           <br>
           <div id="block_names"></div>
         </fieldset>
         <br>
         <fieldset>
-          <legend>Maximum Points per Question</legend>
-          <span id="max_points"></span> <span id="max_points_text">points</span> <button id="max_points_decrease" onclick='local_data_update(this)'>-</button> <button id="max_points_increase" onclick='local_data_update(this)'>+</button><br>
+          <legend data-i18n="points.title">Maximum Points per Question</legend>
+          <span id="max_points"></span> <span id="max_points_text" data-i18n="points.points">points</span> <button id="max_points_decrease" onclick='local_data_update(this)'>-</button> <button id="max_points_increase" onclick='local_data_update(this)'>+</button><br>
         </fieldset>
         <fieldset>
-          <legend>Rounding Live Team score to best team's total?</legend>
+          <legend data-i18n="rounding.title">Rounding Live Team score to best team's total?</legend>
           <div id="rounding">
-            <label><input type="radio" id="rounding_yes" name="rounding" value="true" onchange="local_data_update(this)"><span>Yes</span></label>
-            <label><input type="radio" id="rounding_no" name="rounding" value="false" onchange="local_data_update(this)"><span>No</span></label>
+            <label><input type="radio" id="rounding_yes" name="rounding" value="true" onchange="local_data_update(this)"><span data-i18n="rounding.yes">Yes</span></label>
+            <label><input type="radio" id="rounding_no" name="rounding" value="false" onchange="local_data_update(this)"><span data-i18n="rounding.no">No</span></label>
           </div>
         </fieldset>
         <br>
         <br>
-        <button onclick="local_data_update(this);$( '#accordion' ).accordion({active: 1});">Enter Scores</button>
+        <button onclick="local_data_update(this);$( '#accordion' ).accordion({active: 1});" data-i18n="config.enter_scores">Enter Scores</button>
       </div>
-      <h3>Score Entry</h3>
+      <h3 data-i18n="score_entry.title">Score Entry</h3>
       <div>
         <div data-role="score_entry">
           <div>
-            <button id="previous_question" onclick='local_data_update(this)'>Previous Question</button>
-            <button id="next_question" onclick='local_data_update(this)'>Next Question</button>
+            <button id="previous_question" onclick='local_data_update(this)' data-i18n="score_entry.previous">Previous Question</button>
+            <button id="next_question" onclick='local_data_update(this)' data-i18n="score_entry.next">Next Question</button>
             <br><br>
-            <label><span id="ignore_question_warning" style="font-size: xx-large;display:none">🚫</span><input type="checkbox" id="ignore_question" onchange="local_data_update(this)">Ignore this Question in Score Calculations</label></div>
+            <label><span id="ignore_question_warning" style="font-size: xx-large;display:none">🚫</span><input type="checkbox" id="ignore_question" onchange="local_data_update(this)"><span data-i18n="score_entry.ignore">Ignore this Question in Score Calculations</span></label></div>
         <div id="ignored_question">
-          <label><input type="checkbox" id="extra_credit" onchange="local_data_update(this)">Allow Extra Credit</label>
+          <label><input type="checkbox" id="extra_credit" onchange="local_data_update(this)"><span data-i18n="score_entry.extra_credit">Allow Extra Credit</span></label>
           <h4><span id="current_question_title" contenteditable="plaintext-only" onblur="local_data_update(this)">Question</span> (<span id="current_question_title_count" ></span>)</h4>
             <fieldset>
-              <legend id = "points_legend">Possible Points for Question</legend>
+              <legend id = "points_legend" data-i18n="points.possible">Possible Points for Question</legend>
               <div id="question_score">
               </div>
             </fieldset>
             <fieldset>
-              <legend>Block/Group</legend>
+              <legend data-i18n="score_entry.block_group">Block/Group</legend>
               <div id="question_block"></div>
             </fieldset>
             <div id = "question_teams"></div>
           </div><br>
-          <button id="previous_question_2" onclick='local_data_update(this)'>Previous Question</button>
-          <button id="next_question_2" onclick='local_data_update(this)'>Next Question</button>
+          <button id="previous_question_2" onclick='local_data_update(this)' data-i18n="score_entry.previous">Previous Question</button>
+          <button id="next_question_2" onclick='local_data_update(this)' data-i18n="score_entry.next">Next Question</button>
         </div>
       </div>
-      <h3>Score by Team (Exact)</h3>
+      <h3 data-i18n="scores.team_exact">Score by Team (Exact)</h3>
       <div>
-        <div data-role="team_scores" id="team_scores">
+        <div data-role="team_scores" id="team_scores" data-i18n="placeholders.team_scores">
           Team Scores Go Here
         </div>
       </div>
-      <h3>Score by Team (Rounded)</h3>
+      <h3 data-i18n="scores.team_rounded">Score by Team (Rounded)</h3>
       <div>
-        <div data-role="rounded_team_scores" id="rounded_team_scores">
+        <div data-role="rounded_team_scores" id="rounded_team_scores" data-i18n="placeholders.rounded_scores">
           Rounded Team Scores Go Here
         </div>
       </div>
-      <h3>Score by Block/Group</h3>
+      <h3 data-i18n="scores.by_block">Score by Block/Group</h3>
       <div>
-        <div data-role="block_scores" id="block_scores">
+        <div data-role="block_scores" id="block_scores" data-i18n="placeholders.block_scores">
           Block/Group Scores Go Here
         </div>
       </div>
-      <h3>Score by Team & Block/Group</h3>
+      <h3 data-i18n="scores.team_and_block">Score by Team & Block/Group</h3>
       <div>
-        <div data-role="team_and_block_scores" id="team_and_block_scores">
+        <div data-role="team_and_block_scores" id="team_and_block_scores" data-i18n="placeholders.team_block_scores">
           Team &amp; Block/Group Scores Go Here
         </div>
       </div>
-      <h3>Question Log</h3>
+      <h3 data-i18n="scores.question_log">Question Log</h3>
       <div>
-        <div data-role="scores" id="scores">
+        <div data-role="scores" id="scores" data-i18n="placeholders.question_log">
           Question Log Goes Here
         </div>
       </div>
-      <h3>History</h3>
+      <h3 data-i18n="history.title">History</h3>
       <div>
         <div data-role="history" id="history_viewer">
-          <h4>Change Log</h4>
+          <h4 data-i18n="history.change_log">Change Log</h4>
           <table id="history_table">
             <thead>
               <tr>
-                <th>Time</th>
-                <th>Session</th>
-                <th>Action</th>
-                <th>Details</th>
+                <th data-i18n="history.time">Time</th>
+                <th data-i18n="history.session">Session</th>
+                <th data-i18n="history.action">Action</th>
+                <th data-i18n="history.details">Details</th>
               </tr>
             </thead>
             <tbody id="history_list">
               <tr>
-                <td colspan="4" style="text-align: center; padding: 20px; color: #666;">
+                <td colspan="4" style="text-align: center; padding: 20px; color: #666;" data-i18n="history.no_changes">
                   No changes recorded yet. Make some changes to see them here!
                 </td>
               </tr>
@@ -166,40 +175,40 @@
           </table>
         </div>
       </div>
-      <h3>Advanced</h3>
+      <h3 data-i18n="advanced.title">Advanced</h3>
       <div>
         <div data-role="Advanced" id="Advanced">
           <fieldset>
-            <legend id = "export_csv_label">Export CSV</legend>
-            <button id= "export_team" onclick='local_data_update(this)'>Export Score by Team</button><br>
-            <button id= "export_block" onclick='local_data_update(this)'>Export Score by Block/Group</button><br>
-            <button id= "export_team_and_block" onclick='local_data_update(this)'>Export Score by Team & Block/Group</button><br>
-            <button id= "export_question_log" onclick='local_data_update(this)'>Export Question Log</button><br>
+            <legend id = "export_csv_label" data-i18n="advanced.export_csv">Export CSV</legend>
+            <button id= "export_team" onclick='local_data_update(this)' data-i18n="advanced.export_team">Export Score by Team</button><br>
+            <button id= "export_block" onclick='local_data_update(this)' data-i18n="advanced.export_block">Export Score by Block/Group</button><br>
+            <button id= "export_team_and_block" onclick='local_data_update(this)' data-i18n="advanced.export_team_and_block">Export Score by Team & Block/Group</button><br>
+            <button id= "export_question_log" onclick='local_data_update(this)' data-i18n="advanced.export_question_log">Export Question Log</button><br>
           </fieldset>
           <fieldset>
-            <legend id = "export_json_label">Export for Importing</legend>
-            <button id= "export_session_json" onclick='local_data_update(this)'>Export Session (Round/Game)</button><br>
-            <button id= "export_all_json" onclick='local_data_update(this)'>Export All</button>
+            <legend id = "export_json_label" data-i18n="advanced.export_json">Export for Importing</legend>
+            <button id= "export_session_json" onclick='local_data_update(this)' data-i18n="advanced.export_session">Export Session (Round/Game)</button><br>
+            <button id= "export_all_json" onclick='local_data_update(this)' data-i18n="advanced.export_all">Export All</button>
           </fieldset>
           <fieldset>
-            <legend id = "import_json_label">Import</legend>
-            <p>Warning: Importing bad files can corrupt your data. It is strongly recommended that you run an "Export for Importing" before importing.</p>
+            <legend id = "import_json_label" data-i18n="advanced.import">Import</legend>
+            <p data-i18n="advanced.import_warning">Warning: Importing bad files can corrupt your data. It is strongly recommended that you run an "Export for Importing" before importing.</p>
             <div id = "import_group">
-              Please Select file to import: 
+              <span data-i18n="advanced.select_file">Please Select file to import:</span>
               <input type="file" id="import_file" />
             </div>
           </fieldset>
           <fieldset>
-            <legend id = "danger_label">Danger Zone</legend>
+            <legend id = "danger_label" data-i18n="advanced.danger_zone">Danger Zone</legend>
             <fieldset>
-              <legend id = "delete_label">Delete</legend>
-              <button id="session_delete" onclick='local_data_update(this)'>Delete this Session (Round/Game)</button>
+              <legend id = "delete_label" data-i18n="advanced.delete">Delete</legend>
+              <button id="session_delete" onclick='local_data_update(this)' data-i18n="advanced.delete_session">Delete this Session (Round/Game)</button>
             </fieldset>
          </fieldset>
         </div>
       </div>
     </div>
-    <footer><p>Have an idea to make this better? <a target="_blank" href="https://github.com/antgiant/PBE_Score_Keeper/issues">Let me know</a>.</p>
+    <footer><p><span data-i18n="footer.feedback">Have an idea to make this better?</span> <a target="_blank" href="https://github.com/antgiant/PBE_Score_Keeper/issues" data-i18n="footer.let_me_know">Let me know</a>.</p>
     <p><center>v 2.0.0</center></p></footer>
 </body>
 
