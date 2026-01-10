@@ -274,7 +274,7 @@ async function migrate_localStorage_to_v3(oldVersion) {
     console.log('Migration to v3.0 completed successfully');
   } catch (error) {
     console.error('Migration failed:', error);
-    alert('Data migration failed. Your data is safe in localStorage. Please export a backup and report this issue.');
+    alert(t('alerts.migration_failed'));
     throw error;
   }
 }
@@ -480,7 +480,7 @@ async function createNewSession(name) {
   DocManager.setActiveSession(sessionId);
 
   // Log in global history
-  add_global_history_entry('Create Session', 'Created "' + sessionName + '"');
+  add_global_history_entry(t('history_global.actions.create_session'), t('history_global.details_templates.created_session', { name: sessionName }));
 
   return sessionId;
 }
@@ -527,7 +527,7 @@ async function switchSession(sessionIdOrIndex) {
   // Log in global history
   const session = get_current_session();
   const sessionName = session ? session.get('name') : 'Unknown';
-  add_global_history_entry('Switch Session', 'Switched to "' + sessionName + '"');
+  add_global_history_entry(t('history_global.actions.switch_session'), t('history_global.details_templates.switched_session', { name: sessionName }));
 
   sync_data_to_display();
   
@@ -556,7 +556,7 @@ async function deleteSession(sessionIdOrIndex) {
 
   // Must have at least 2 sessions to delete one
   if (sessionOrder.length <= 1) {
-    alert("You may not delete the only Session");
+    alert(t('alerts.cannot_delete_only_session'));
     return false;
   }
 
@@ -583,7 +583,7 @@ async function deleteSession(sessionIdOrIndex) {
   const sessionDoc = getSessionDoc(sessionId);
   const sessionName = sessionDoc ? sessionDoc.getMap('session').get('name') : 'Unknown';
 
-  if (!window.confirm("Are you sure you want to irreversibly delete \"" + sessionName + "\"?")) {
+  if (!window.confirm(t('confirm.delete_session', { name: sessionName }))) {
     return false;
   }
 
@@ -625,9 +625,9 @@ async function deleteSession(sessionIdOrIndex) {
   }
 
   // Log in global history
-  add_global_history_entry('Delete Session', 'Deleted "' + sessionName + '"');
+  add_global_history_entry(t('history_global.actions.delete_session'), t('history_global.details_templates.deleted_session', { name: sessionName }));
 
-  alert("Deleted");
+  alert(t('alerts.deleted'));
   sync_data_to_display();
   return true;
 }

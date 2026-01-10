@@ -172,6 +172,34 @@
   },
   "confirm": {
     "delete_team": "Do you really want to delete {{name}}?",
-    "delete_extra_credit": "Are you sure you want to irreversibly delete this question's extra credit?"
+    "delete_extra_credit": "Are you sure you want to irreversibly delete this question's extra credit?",
+    "delete_session": "Are you sure you want to irreversibly delete \"{{name}}\"?"
+  },
+  "alerts": {
+    "migration_failed": "Data migration failed. Your data is safe in localStorage. Please export a backup and report this issue.",
+    "cannot_delete_only_session": "You may not delete the only Session",
+    "deleted": "Deleted",
+    "import_success": "Import successful: {{count}} session(s) imported",
+    "import_failed": "Import failed: {{error}}",
+    "import_json_failed": "Failed to import JSON file: {{error}}",
+    "import_binary_failed": "Failed to import binary file: {{error}}",
+    "select_valid_file": "Please select json or yjs file for import",
+    "loading": "Loading..."
+  },
+  "history_global": {
+    "actions": {
+      "create_session": "Create Session",
+      "switch_session": "Switch Session",
+      "delete_session": "Delete Session",
+      "import": "Import"
+    },
+    "details_templates": {
+      "created_session": "Created \"{{name}}\"",
+      "switched_session": "Switched to \"{{name}}\"",
+      "deleted_session": "Deleted \"{{name}}\"",
+      "imported_sessions": "Imported {{count}} session(s)",
+      "imported_from_json": "Imported {{count}} session(s) from JSON file",
+      "imported_from_yjs": "Imported {{count}} session(s) from .yjs file"
+    }
   }
 }

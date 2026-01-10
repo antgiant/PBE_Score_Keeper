@@ -539,8 +539,9 @@ function sync_data_to_display() {
  * Show loading indicator
  * @param {string} message - Loading message to display
  */
-function showLoading(message = 'Loading...') {
-  console.log('Loading: ' + message);
+function showLoading(message) {
+  const loadingMessage = message || t('alerts.loading');
+  console.log('Loading: ' + loadingMessage);
 }
 
 /**

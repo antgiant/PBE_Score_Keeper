@@ -172,6 +172,34 @@
   },
   "confirm": {
     "delete_team": "Oday ouyay eallyray antway otay eleteday {{name}}?",
-    "delete_extra_credit": "Areay ouyay uresay ouyay antway otay irreversiblyay eleteday isthay estionquay's extraay editcray?"
+    "delete_extra_credit": "Areay ouyay uresay ouyay antway otay irreversiblyay eleteday isthay estionquay's extraay editcray?",
+    "delete_session": "Areay ouyay uresay ouyay antway otay irreversiblyay eleteday \"{{name}}\"?"
+  },
+  "alerts": {
+    "migration_failed": "Ataday igrationmay ailedfay. Ouryay ataday isay afesay inay ocalStoragelay. Easeplay exportay aay ackupbay anday eportray isthay issueway.",
+    "cannot_delete_only_session": "Ouyay aymay otnay eleteday ethay onlyay Essionsay",
+    "deleted": "Eletedday",
+    "import_success": "Importay uccessfulsay: {{count}} essionsay(say) importeday",
+    "import_failed": "Importay ailedfay: {{error}}",
+    "import_json_failed": "Ailedfay otay importay SONJay ilefay: {{error}}",
+    "import_binary_failed": "Ailedfay otay importay inarybay ilefay: {{error}}",
+    "select_valid_file": "Easeplay electsay sonjay oray sjyay ilefay orfay importay",
+    "loading": "Oadinglay..."
+  },
+  "history_global": {
+    "actions": {
+      "create_session": "Eatecray Essionsay",
+      "switch_session": "Itchsway Essionsay",
+      "delete_session": "Eleteday Essionsay",
+      "import": "Importay"
+    },
+    "details_templates": {
+      "created_session": "Eatedcray \"{{name}}\"",
+      "switched_session": "Itchedsway otay \"{{name}}\"",
+      "deleted_session": "Eletedday \"{{name}}\"",
+      "imported_sessions": "Importeday {{count}} essionsay(say)",
+      "imported_from_json": "Importeday {{count}} essionsay(say) omfray SONJay ilefay",
+      "imported_from_yjs": "Importeday {{count}} essionsay(say) omfray .sjyay ilefay"
+    }
   }
 }

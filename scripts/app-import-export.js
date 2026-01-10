@@ -373,7 +373,7 @@ async function import_yjs_from_json(data, mode) {
   }, 'import');
 
   // Add import history entry
-  add_global_history_entry('Import', 'Imported ' + importedSessionIds.length + ' session(s)');
+  add_global_history_entry(t('history_global.actions.import'), t('history_global.details_templates.imported_sessions', { count: importedSessionIds.length }));
 }
 
 function setup_file_import() {
@@ -396,16 +396,16 @@ function setup_file_import() {
             const result = await importSessionData(temp_import_data);
             if (result.success) {
               sync_data_to_display();
-              add_global_history_entry('Import', 'Imported ' + result.importedCount + ' session(s) from JSON file');
-              alert('Import successful: ' + result.importedCount + ' session(s) imported');
+              add_global_history_entry(t('history_global.actions.import'), t('history_global.details_templates.imported_from_json', { count: result.importedCount }));
+              alert(t('alerts.import_success', { count: result.importedCount }));
               $( '#accordion' ).accordion({active: 0});
             } else {
               const errorMsg = result.errors.length > 0 ? result.errors[0] : 'Unknown import error';
-              alert('Import failed: ' + errorMsg);
+              alert(t('alerts.import_failed', { error: errorMsg }));
             }
           } catch (error) {
             console.error('JSON import error:', error);
-            alert('Failed to import JSON file: ' + error.message);
+            alert(t('alerts.import_json_failed', { error: error.message }));
           }
         }
         fileReader.readAsText(fileTobeRead);
@@ -418,21 +418,21 @@ function setup_file_import() {
             const result = await importSessionData(binaryData);
             if (result.success) {
               sync_data_to_display();
-              add_global_history_entry('Import', 'Imported ' + result.importedCount + ' session(s) from .yjs file');
-              alert('Import successful: ' + result.importedCount + ' session(s) imported');
+              add_global_history_entry(t('history_global.actions.import'), t('history_global.details_templates.imported_from_yjs', { count: result.importedCount }));
+              alert(t('alerts.import_success', { count: result.importedCount }));
               $( '#accordion' ).accordion({active: 0});
             } else {
               const errorMsg = result.errors.length > 0 ? result.errors[0] : 'Unknown import error';
-              alert('Import failed: ' + errorMsg);
+              alert(t('alerts.import_failed', { error: errorMsg }));
             }
           } catch (error) {
             console.error('Binary import error:', error);
-            alert('Failed to import binary file: ' + error.message);
+            alert(t('alerts.import_binary_failed', { error: error.message }));
           }
         }
         fileReader.readAsArrayBuffer(fileTobeRead);
       } else {
-        alert("Please select json or yjs file for import");
+        alert(t('alerts.select_valid_file'));
       }
       //Unselect file
       fileSelected.value = "";
