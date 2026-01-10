@@ -421,6 +421,11 @@ async function initialize_new_yjs_state() {
     meta.set('dataVersion', 3.0);
     meta.set('currentSession', sessionId);
     meta.set('sessionOrder', [sessionId]);
+    
+    // Session name cache for instant UI updates
+    const sessionNames = new Y.Map();
+    sessionNames.set(sessionId, 'Session ' + date);
+    meta.set('sessionNames', sessionNames);
 
     // Global history for session-level events
     const globalHistory = getGlobalDoc().getArray('globalHistory');
@@ -926,24 +931,34 @@ function get_session_names() {
   const sessionOrder = get_session_order();
   const names = [''];  // Index 0 is empty for 1-based indexing
 
+  // Get cached session names from global doc
+  const meta = getGlobalDoc().getMap('meta');
+  const sessionNames = meta.get('sessionNames');
+
   for (const sessionId of sessionOrder) {
-    let sessionDoc = getSessionDoc(sessionId);
-    
-    // If not loaded, try to load it synchronously from IndexedDB cache
-    if (!sessionDoc && typeof IndexeddbPersistence !== 'undefined') {
-      // Session not loaded yet - load it in background
-      initSessionDoc(sessionId).then(() => {
-        // Refresh display after loading
-        if (typeof sync_data_to_display === 'function') {
-          sync_data_to_display();
-        }
-      });
-      names.push('Loading...');
-    } else if (sessionDoc) {
-      const session = sessionDoc.getMap('session');
-      names.push(session.get('name') || 'Unnamed Session');
+    // Use cached name if available
+    if (sessionNames && sessionNames.has(sessionId)) {
+      names.push(sessionNames.get(sessionId));
     } else {
-      names.push('Loading...');
+      // Fallback: load from session doc
+      let sessionDoc = getSessionDoc(sessionId);
+      if (sessionDoc) {
+        const session = sessionDoc.getMap('session');
+        const name = session.get('name') || 'Unnamed Session';
+        names.push(name);
+        
+        // Update cache for next time
+        getGlobalDoc().transact(() => {
+          let sessionNamesMap = meta.get('sessionNames');
+          if (!sessionNamesMap) {
+            sessionNamesMap = new Y.Map();
+            meta.set('sessionNames', sessionNamesMap);
+          }
+          sessionNamesMap.set(sessionId, name);
+        }, 'local');
+      } else {
+        names.push('Unnamed Session');
+      }
     }
   }
 

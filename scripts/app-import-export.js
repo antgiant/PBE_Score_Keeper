@@ -222,6 +222,8 @@ async function import_yjs_from_json(data, mode) {
       meta.set('dataVersion', 3.0);
       meta.set('sessionOrder', []);
       meta.set('currentSession', null);
+      // Clear session name cache
+      meta.set('sessionNames', new Y.Map());
     }, 'import');
   }
 
@@ -333,6 +335,22 @@ async function import_yjs_from_json(data, mode) {
     const existingOrder = meta.get('sessionOrder') || [];
     const newOrder = mode === 'replace' ? importedSessionIds : [...existingOrder, ...importedSessionIds];
     meta.set('sessionOrder', newOrder);
+    
+    // Update session name cache
+    let sessionNames = meta.get('sessionNames');
+    if (!sessionNames) {
+      sessionNames = new Y.Map();
+      meta.set('sessionNames', sessionNames);
+    }
+    
+    for (const sessionId of importedSessionIds) {
+      const sessionDoc = getSessionDoc(sessionId);
+      if (sessionDoc) {
+        const session = sessionDoc.getMap('session');
+        const name = session.get('name') || 'Unnamed Session';
+        sessionNames.set(sessionId, name);
+      }
+    }
     
     // Set current session
     const targetSessionId = mode === 'replace' 
@@ -887,6 +905,22 @@ async function importSessionData(data) {
             const newSessions = importedSessionIds.filter(id => !existingOrder.includes(id));
             const newOrder = [...existingOrder, ...newSessions];
             meta.set('sessionOrder', newOrder);
+            
+            // Update session name cache
+            let sessionNames = meta.get('sessionNames');
+            if (!sessionNames) {
+              sessionNames = new Y.Map();
+              meta.set('sessionNames', sessionNames);
+            }
+            
+            for (const sessionId of importedSessionIds) {
+              const sessionDoc = getSessionDoc(sessionId);
+              if (sessionDoc) {
+                const session = sessionDoc.getMap('session');
+                const name = session.get('name') || 'Unnamed Session';
+                sessionNames.set(sessionId, name);
+              }
+            }
             
             // Set current session to first imported
             meta.set('currentSession', importedSessionIds[0]);

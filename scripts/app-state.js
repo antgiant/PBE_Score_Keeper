@@ -437,6 +437,14 @@ async function createNewSession(name) {
     newOrder.push(sessionId);
     meta.set('sessionOrder', newOrder);
     meta.set('currentSession', sessionId);
+    
+    // Update session name cache
+    let sessionNames = meta.get('sessionNames');
+    if (!sessionNames) {
+      sessionNames = new Y.Map();
+      meta.set('sessionNames', sessionNames);
+    }
+    sessionNames.set(sessionId, sessionName);
   }, 'local');
 
   // Switch to new session
@@ -560,6 +568,12 @@ async function deleteSession(sessionIdOrIndex) {
     const newOrder = sessionOrder.filter(id => id !== sessionId);
     meta.set('sessionOrder', newOrder);
     meta.set('currentSession', newCurrentId);
+    
+    // Remove from session name cache
+    const sessionNames = meta.get('sessionNames');
+    if (sessionNames && sessionNames.has(sessionId)) {
+      sessionNames.delete(sessionId);
+    }
   }, 'local');
 
   // Destroy session doc and clear storage
@@ -587,23 +601,35 @@ async function deleteSession(sessionIdOrIndex) {
 function getAllSessions() {
   const sessionOrder = get_session_order();
   const result = [];
+  
+  // Get cached session names from global doc
+  const meta = getGlobalDoc().getMap('meta');
+  const sessionNames = meta.get('sessionNames');
 
   for (let i = 0; i < sessionOrder.length; i++) {
     const sessionId = sessionOrder[i];
-    let sessionDoc = getSessionDoc(sessionId);
     
-    let name = 'Loading...';
-    if (!sessionDoc && typeof IndexeddbPersistence !== 'undefined') {
-      // Session not loaded yet - load it in background
-      initSessionDoc(sessionId).then(() => {
-        // Refresh display after loading
-        if (typeof sync_data_to_display === 'function') {
-          sync_data_to_display();
-        }
-      });
-    } else if (sessionDoc) {
-      const session = sessionDoc.getMap('session');
-      name = session.get('name') || 'Unnamed Session';
+    // Use cached name if available
+    let name = 'Unnamed Session';
+    if (sessionNames && sessionNames.has(sessionId)) {
+      name = sessionNames.get(sessionId);
+    } else {
+      // Fallback: load from session doc
+      let sessionDoc = getSessionDoc(sessionId);
+      if (sessionDoc) {
+        const session = sessionDoc.getMap('session');
+        name = session.get('name') || 'Unnamed Session';
+        
+        // Update cache for next time
+        getGlobalDoc().transact(() => {
+          let sessionNamesMap = meta.get('sessionNames');
+          if (!sessionNamesMap) {
+            sessionNamesMap = new Y.Map();
+            meta.set('sessionNames', sessionNamesMap);
+          }
+          sessionNamesMap.set(sessionId, name);
+        }, 'local');
+      }
     }
 
     result.push({

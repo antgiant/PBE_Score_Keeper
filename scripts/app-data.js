@@ -30,6 +30,18 @@ function update_data_element(updated_id, new_value) {
         session.set('name', new_value);
         add_history_entry('Rename Session', 'Renamed "' + oldName + '" to "' + new_value + '"');
       }, 'local');
+      
+      // Update session name cache in global doc
+      const sessionId = session.get('id');
+      getGlobalDoc().transact(() => {
+        const meta = getGlobalDoc().getMap('meta');
+        let sessionNames = meta.get('sessionNames');
+        if (!sessionNames) {
+          sessionNames = new Y.Map();
+          meta.set('sessionNames', sessionNames);
+        }
+        sessionNames.set(sessionId, new_value);
+      }, 'local');
     }
     $("#session_quick_nav").focus();
   }
