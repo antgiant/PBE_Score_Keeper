@@ -7,8 +7,10 @@
 var DocManager = {
   globalDoc: null,
   globalProvider: null,
+  globalBroadcast: null,          // BroadcastChannel for global doc
   sessionDocs: new Map(),        // Map<sessionId, Y.Doc>
   sessionProviders: new Map(),   // Map<sessionId, IndexeddbPersistence>
+  sessionBroadcasts: new Map(),  // Map<sessionId, BroadcastChannel>
   activeSessionId: null,
   yjsReady: false,
   pendingSessionLoads: new Map(), // Map<sessionId, Promise> for deduplication
@@ -129,6 +131,13 @@ async function initSessionDoc(sessionId) {
         
         resolve(sessionDoc);
       }
+      
+      // Set up BroadcastChannel for cross-tab sync
+      if (typeof BroadcastChannel !== 'undefined') {
+        setupBroadcastChannelSync(sessionDoc, 'pbe-session-' + sessionId, function(channel) {
+          DocManager.sessionBroadcasts.set(sessionId, channel);
+        });
+      }
     } catch (error) {
       console.error('Failed to init session doc:', sessionId, error);
       DocManager.pendingSessionLoads.delete(sessionId);
@@ -161,6 +170,7 @@ async function destroySessionDoc(sessionId, clearStorage) {
 
   const doc = DocManager.sessionDocs.get(sessionId);
   const provider = DocManager.sessionProviders.get(sessionId);
+  const broadcast = DocManager.sessionBroadcasts.get(sessionId);
 
   if (provider) {
     if (clearStorage) {
@@ -168,6 +178,11 @@ async function destroySessionDoc(sessionId, clearStorage) {
     }
     provider.destroy();
     DocManager.sessionProviders.delete(sessionId);
+  }
+  
+  if (broadcast) {
+    broadcast.close();
+    DocManager.sessionBroadcasts.delete(sessionId);
   }
 
   if (doc) {
@@ -194,6 +209,46 @@ async function destroyAllDocs() {
 }
 
 
+
+/**
+ * Set up BroadcastChannel for cross-tab synchronization
+ * @param {Y.Doc} doc - The Y.Doc to sync
+ * @param {string} channelName - Name of the BroadcastChannel
+ * @param {Function} callback - Called with the channel after setup
+ */
+function setupBroadcastChannelSync(doc, channelName, callback) {
+  if (typeof BroadcastChannel === 'undefined') {
+    console.warn('BroadcastChannel not supported');
+    return;
+  }
+
+  const channel = new BroadcastChannel(channelName);
+  
+  // Listen for updates from other tabs
+  channel.onmessage = function(event) {
+    if (event.data && event.data.type === 'yjs-update') {
+      const update = new Uint8Array(event.data.update);
+      Y.applyUpdate(doc, update, 'broadcast-remote');
+    }
+  };
+
+  // Broadcast updates to other tabs
+  doc.on('update', function(update, origin) {
+    // Don't broadcast updates that came from another tab
+    if (origin !== 'broadcast-remote') {
+      channel.postMessage({
+        type: 'yjs-update',
+        update: Array.from(update)
+      });
+    }
+  });
+
+  if (callback) {
+    callback(channel);
+  }
+
+  console.log('BroadcastChannel sync enabled for:', channelName);
+}
 
 /**
  * Check if old v2.0 single-doc database exists in IndexedDB
@@ -268,6 +323,13 @@ function initialize_yjs() {
             if (version === 2.0) {
               console.log('Migration from v2.0 to v3.0 needed');
             }
+          }
+          
+          // Set up BroadcastChannel for cross-tab sync of global doc
+          if (typeof BroadcastChannel !== 'undefined') {
+            setupBroadcastChannelSync(getGlobalDoc(), 'pbe-global', function(channel) {
+              DocManager.globalBroadcast = channel;
+            });
           }
         });
       });
