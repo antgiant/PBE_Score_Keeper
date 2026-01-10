@@ -92,14 +92,21 @@ function session_to_json(sessionId) {
 
 /**
  * Convert all sessions to plain JSON object (multi-doc architecture)
- * @returns {Object} Plain object representation of all Yjs data
+ * @returns {Promise<Object>} Plain object representation of all Yjs data
  */
-function yjs_to_json() {
+async function yjs_to_json() {
   if (!getGlobalDoc()) return null;
 
   const meta = getGlobalDoc().getMap('meta');
   const sessionOrder = meta.get('sessionOrder') || [];
   const currentSessionId = meta.get('currentSession');
+
+  // Load all sessions from IndexedDB before exporting
+  for (const sessionId of sessionOrder) {
+    if (!getSessionDoc(sessionId)) {
+      await initSessionDoc(sessionId);
+    }
+  }
 
   const result = {
     dataVersion: meta.get('dataVersion') || 3.0,
@@ -146,9 +153,11 @@ function export_current_session_json() {
 
 /**
  * Export all sessions as JSON
+ * @returns {Promise<string>} JSON string of all sessions
  */
-function export_all_sessions_json() {
-  return JSON.stringify(yjs_to_json(), null, 2);
+async function export_all_sessions_json() {
+  const data = await yjs_to_json();
+  return JSON.stringify(data, null, 2);
 }
 
 function filter_to_current_session(key, value) {
@@ -649,9 +658,9 @@ function exportSession(sessionNumOrId) {
  * Encodes the global Y.Doc and individual session docs for export.
  * Returns a serialized container that can be saved as a single .yjs file.
  * The exported file can be imported using Y.applyUpdate() to merge into existing docs.
- * @returns {Uint8Array} Serialized container with global and all session binary updates
+ * @returns {Promise<Uint8Array>} Serialized container with global and all session binary updates
  */
-function exportAllSessions() {
+async function exportAllSessions() {
   if (!getGlobalDoc()) {
     console.error('Yjs not initialized');
     return null;
@@ -665,6 +674,13 @@ function exportAllSessions() {
     // Get session order from meta
     const meta = getGlobalDoc().getMap('meta');
     const sessionOrder = meta.get('sessionOrder') || [];
+
+    // Load all sessions from IndexedDB before exporting
+    for (const sessionId of sessionOrder) {
+      if (!getSessionDoc(sessionId)) {
+        await initSessionDoc(sessionId);
+      }
+    }
 
     // Export each session doc
     const sessions = {};

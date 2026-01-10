@@ -528,22 +528,31 @@ function update_data_element(updated_id, new_value) {
   }
   //Export all to JSON and binary formats
   else if (updated_id == "export_all_json") {
-    // Export as binary container with all sessions
-    try {
-      const exportData = exportAllSessions();
-      if (exportData && exportData.length > 0) {
-        downloadBinaryExport(exportData, 'pbe_all_sessions_' + (new Date().toJSON().slice(0,10)) + '.yjs');
-        add_history_entry('Export All Sessions', 'Exported all sessions as .yjs file');
-      } else {
-        // Fallback to JSON if binary export fails
-        downloadBlob(export_all_sessions_json(), 'all_pbe_score_data_' + (new Date().toJSON().slice(0,10)) + '.json', 'application/json; charset=utf-8;');
-        add_history_entry('Export All Sessions', 'Exported all sessions as JSON file');
+    // Export as binary container with all sessions (async - loads all sessions from IndexedDB)
+    (async function() {
+      try {
+        const exportData = await exportAllSessions();
+        if (exportData && exportData.length > 0) {
+          downloadBinaryExport(exportData, 'pbe_all_sessions_' + (new Date().toJSON().slice(0,10)) + '.yjs');
+          add_history_entry('Export All Sessions', 'Exported all sessions as .yjs file');
+        } else {
+          // Fallback to JSON if binary export fails
+          const jsonData = await export_all_sessions_json();
+          downloadBlob(jsonData, 'all_pbe_score_data_' + (new Date().toJSON().slice(0,10)) + '.json', 'application/json; charset=utf-8;');
+          add_history_entry('Export All Sessions', 'Exported all sessions as JSON file');
+        }
+      } catch (error) {
+        console.warn('Binary export failed, falling back to JSON:', error);
+        try {
+          const jsonData = await export_all_sessions_json();
+          downloadBlob(jsonData, 'all_pbe_score_data_' + (new Date().toJSON().slice(0,10)) + '.json', 'application/json; charset=utf-8;');
+          add_history_entry('Export All Sessions', 'Exported all sessions as JSON file (fallback)');
+        } catch (jsonError) {
+          console.error('JSON export also failed:', jsonError);
+        }
       }
-    } catch (error) {
-      console.warn('Binary export failed, falling back to JSON:', error);
-      downloadBlob(export_all_sessions_json(), 'all_pbe_score_data_' + (new Date().toJSON().slice(0,10)) + '.json', 'application/json; charset=utf-8;');
-      add_history_entry('Export All Sessions', 'Exported all sessions as JSON file (fallback)');
-    }
+    })();
+    return; // Prevent sync_data_to_display from running before export completes
   }
   //Delete current session
   else if (updated_id == "session_delete") {
