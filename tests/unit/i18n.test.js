@@ -129,4 +129,71 @@ test('i18n module', async (t) => {
     assert.strictEqual(ctx.t('app.title'), 'BEPay Orescay Eeperkay');
   });
   
+  await t.test('Pig Latin has all English translation keys', () => {
+    const ctx = createI18nContext();
+    
+    function getKeys(obj, prefix) {
+      prefix = prefix || '';
+      let keys = [];
+      for (const key in obj) {
+        const fullKey = prefix ? prefix + '.' + key : key;
+        if (typeof obj[key] === 'object' && obj[key] !== null) {
+          keys = keys.concat(getKeys(obj[key], fullKey));
+        } else {
+          keys.push(fullKey);
+        }
+      }
+      return keys;
+    }
+    
+    const enKeys = getKeys(ctx.i18n_translations['en']).sort();
+    const pigKeys = getKeys(ctx.i18n_translations['pig']).sort();
+    
+    // Check counts match
+    assert.strictEqual(enKeys.length, pigKeys.length, 
+      'Pig Latin should have same number of keys as English');
+    
+    // Check all English keys exist in Pig Latin
+    const missingInPig = enKeys.filter(k => pigKeys.indexOf(k) === -1);
+    assert.strictEqual(missingInPig.length, 0, 
+      'All English keys should exist in Pig Latin. Missing: ' + missingInPig.join(', '));
+  });
+  
+  await t.test('Pig Latin translations are different from English', () => {
+    const ctx = createI18nContext();
+    
+    // Verify key translations are actually different (not just copies)
+    assert.notStrictEqual(
+      ctx.i18n_translations['en'].app.title,
+      ctx.i18n_translations['pig'].app.title,
+      'Pig Latin title should differ from English'
+    );
+    assert.notStrictEqual(
+      ctx.i18n_translations['en'].config.instructions,
+      ctx.i18n_translations['pig'].config.instructions,
+      'Pig Latin instructions should differ from English'
+    );
+    assert.notStrictEqual(
+      ctx.i18n_translations['en'].advanced.import_warning,
+      ctx.i18n_translations['pig'].advanced.import_warning,
+      'Pig Latin import warning should differ from English'
+    );
+  });
+  
+  await t.test('Pig Latin interpolation works correctly', () => {
+    const ctx = createI18nContext();
+    ctx.i18n_current_language = 'pig';
+    
+    // Test interpolation with team name label
+    const result = ctx.t('teams.name_label', { number: 3 });
+    assert.strictEqual(result, 'Eamtay 3 Amenay:');
+    
+    // Test pluralization
+    const singular = ctx.t('teams.count', { count: 1 });
+    assert.strictEqual(singular, '1 eamtay');
+    
+    const plural = ctx.t('teams.count', { count: 5 });
+    assert.strictEqual(plural, '5 eamstay');
+  });
+  
 });
