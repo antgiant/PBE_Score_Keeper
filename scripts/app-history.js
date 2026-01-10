@@ -53,17 +53,20 @@ function refresh_history_display() {
 
   // Get global history
   if (getGlobalDoc()) {
-    const globalHistory = getGlobalDoc().getArray('globalHistory');
-    if (globalHistory) {
+    const meta = getGlobalDoc().getMap('meta');
+    const globalHistory = meta.get('globalHistory');
+    if (globalHistory && globalHistory.length > 0) {
       for (let i = 0; i < globalHistory.length; i++) {
         const entry = globalHistory.get(i);
-        allEntries.push({
-          timestamp: entry.get('timestamp') || 0,
-          session: 'Global',
-          action: entry.get('action') || 'Change',
-          details: entry.get('details') || '',
-          isGlobal: true
-        });
+        if (entry) {
+          allEntries.push({
+            timestamp: entry.get('timestamp') || 0,
+            session: 'Global',
+            action: entry.get('action') || 'Change',
+            details: entry.get('details') || '',
+            isGlobal: true
+          });
+        }
       }
     }
   }
@@ -207,7 +210,8 @@ function clearSessionHistory(sessionId) {
 function clearGlobalHistory() {
   if (!getGlobalDoc()) return;
 
-  const globalHistory = getGlobalDoc().getArray('globalHistory');
+  const meta = getGlobalDoc().getMap('meta');
+  const globalHistory = meta.get('globalHistory');
   
   if (globalHistory && globalHistory.length > 0) {
     getGlobalDoc().transact(function() {
@@ -230,15 +234,18 @@ function exportHistory() {
 
   // Export global history
   if (getGlobalDoc()) {
-    const globalHistory = getGlobalDoc().getArray('globalHistory');
-    if (globalHistory) {
+    const meta = getGlobalDoc().getMap('meta');
+    const globalHistory = meta.get('globalHistory');
+    if (globalHistory && globalHistory.length > 0) {
       for (let i = 0; i < globalHistory.length; i++) {
         const entry = globalHistory.get(i);
-        result.global.push({
-          timestamp: entry.get('timestamp'),
-          action: entry.get('action'),
-          details: entry.get('details')
-        });
+        if (entry) {
+          result.global.push({
+            timestamp: entry.get('timestamp'),
+            action: entry.get('action'),
+            details: entry.get('details')
+          });
+        }
       }
     }
   }

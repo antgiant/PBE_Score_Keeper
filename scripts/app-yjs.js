@@ -927,8 +927,19 @@ function get_session_names() {
   const names = [''];  // Index 0 is empty for 1-based indexing
 
   for (const sessionId of sessionOrder) {
-    const sessionDoc = getSessionDoc(sessionId);
-    if (sessionDoc) {
+    let sessionDoc = getSessionDoc(sessionId);
+    
+    // If not loaded, try to load it synchronously from IndexedDB cache
+    if (!sessionDoc && typeof IndexeddbPersistence !== 'undefined') {
+      // Session not loaded yet - load it in background
+      initSessionDoc(sessionId).then(() => {
+        // Refresh display after loading
+        if (typeof sync_data_to_display === 'function') {
+          sync_data_to_display();
+        }
+      });
+      names.push('Loading...');
+    } else if (sessionDoc) {
       const session = sessionDoc.getMap('session');
       names.push(session.get('name') || 'Unnamed Session');
     } else {
@@ -1004,7 +1015,18 @@ function get_question_names() {
 function add_global_history_entry(action, details) {
   if (!getGlobalDoc()) return;
 
-  const globalHistory = getGlobalDoc().getArray('globalHistory');
+  // Get or create the global history array from meta map
+  const meta = getGlobalDoc().getMap('meta');
+  let globalHistory = meta.get('globalHistory');
+  
+  if (!globalHistory) {
+    // Array doesn't exist yet, create it
+    getGlobalDoc().transact(() => {
+      globalHistory = new Y.Array();
+      meta.set('globalHistory', globalHistory);
+    }, 'history');
+  }
+
   const entry = new Y.Map();
   entry.set('timestamp', Date.now());
   entry.set('action', action);

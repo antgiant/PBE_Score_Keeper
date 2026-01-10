@@ -590,10 +590,18 @@ function getAllSessions() {
 
   for (let i = 0; i < sessionOrder.length; i++) {
     const sessionId = sessionOrder[i];
-    const sessionDoc = getSessionDoc(sessionId);
+    let sessionDoc = getSessionDoc(sessionId);
     
     let name = 'Loading...';
-    if (sessionDoc) {
+    if (!sessionDoc && typeof IndexeddbPersistence !== 'undefined') {
+      // Session not loaded yet - load it in background
+      initSessionDoc(sessionId).then(() => {
+        // Refresh display after loading
+        if (typeof sync_data_to_display === 'function') {
+          sync_data_to_display();
+        }
+      });
+    } else if (sessionDoc) {
       const session = sessionDoc.getMap('session');
       name = session.get('name') || 'Unnamed Session';
     }
