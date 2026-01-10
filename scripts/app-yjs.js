@@ -146,11 +146,23 @@ async function initSessionDoc(sessionId) {
         provider.on('synced', function() {
           console.log('Session doc synced:', sessionId);
           DocManager.pendingSessionLoads.delete(sessionId);
+          
+          // Set up history listener for this session
+          if (typeof setupSessionHistoryListener === 'function') {
+            setupSessionHistoryListener(sessionId);
+          }
+          
           resolve(sessionDoc);
         });
       } else {
         // No IndexedDB, resolve immediately
         DocManager.pendingSessionLoads.delete(sessionId);
+        
+        // Set up history listener for this session
+        if (typeof setupSessionHistoryListener === 'function') {
+          setupSessionHistoryListener(sessionId);
+        }
+        
         resolve(sessionDoc);
       }
     } catch (error) {

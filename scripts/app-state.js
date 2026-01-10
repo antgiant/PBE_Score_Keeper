@@ -503,6 +503,12 @@ async function switchSession(sessionIdOrIndex) {
   add_global_history_entry('Switch Session', 'Switched to "' + sessionName + '"');
 
   sync_data_to_display();
+  
+  // Refresh history display to show current session's history
+  if (typeof refresh_history_display === 'function') {
+    refresh_history_display();
+  }
+  
   return true;
 }
 

@@ -30,6 +30,11 @@ function setupSessionHistoryListener(sessionId) {
   const sessionDoc = getSessionDoc(sessionId);
   if (!sessionDoc) return;
 
+  // Skip if history display element doesn't exist (e.g., in tests)
+  if (typeof document === 'undefined' || !document.getElementById || !document.getElementById('history_list')) {
+    return;
+  }
+
   sessionDoc.on('update', function(_update, origin) {
     if (origin === 'local' || origin === 'history') {
       refresh_history_display();
@@ -42,6 +47,11 @@ function setupSessionHistoryListener(sessionId) {
  * Shows combined global and session history, sorted by timestamp
  */
 function refresh_history_display() {
+  // Skip if document or getElementById is not available (e.g., in tests)
+  if (typeof document === 'undefined' || !document.getElementById) {
+    return;
+  }
+  
   const historyList = document.getElementById('history_list');
   if (!historyList) return;
 

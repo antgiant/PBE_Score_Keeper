@@ -9,6 +9,7 @@
   --row-alt: #ededed;
   --header-bg: #ededed;
   --link-color: #0b57d0;
+  --history-global-bg: #f0f0f0;
 }
 [data-theme="dark"] {
   color-scheme: dark;
@@ -21,6 +22,7 @@
   --row-alt: #1e2229;
   --header-bg: #161a20;
   --link-color: #8ab4f8;
+  --history-global-bg: #252a33;
 }
 body {
   background-color: var(--page-bg);
