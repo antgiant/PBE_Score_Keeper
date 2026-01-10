@@ -514,13 +514,16 @@ function update_data_element(updated_id, new_value) {
       const binary = exportSession(get_current_session_index());
       if (binary && binary.length > 0) {
         downloadBinaryExport(binary, 'pbe_session_' + (new Date().toJSON().slice(0,10)) + '.yjs');
+        add_history_entry('Export Session', 'Exported session as .yjs file');
       } else {
         // Fallback to JSON if binary export fails
         downloadBlob(export_current_session_json(), 'pbe_session_data_' + (new Date().toJSON().slice(0,10)) + '.json', 'application/json; charset=utf-8;');
+        add_history_entry('Export Session', 'Exported session as JSON file');
       }
     } catch (error) {
       console.warn('Binary export failed, falling back to JSON:', error);
       downloadBlob(export_current_session_json(), 'pbe_session_data_' + (new Date().toJSON().slice(0,10)) + '.json', 'application/json; charset=utf-8;');
+      add_history_entry('Export Session', 'Exported session as JSON file (fallback)');
     }
   }
   //Export all to JSON and binary formats
@@ -530,13 +533,16 @@ function update_data_element(updated_id, new_value) {
       const exportData = exportAllSessions();
       if (exportData && exportData.length > 0) {
         downloadBinaryExport(exportData, 'pbe_all_sessions_' + (new Date().toJSON().slice(0,10)) + '.yjs');
+        add_history_entry('Export All Sessions', 'Exported all sessions as .yjs file');
       } else {
         // Fallback to JSON if binary export fails
         downloadBlob(export_all_sessions_json(), 'all_pbe_score_data_' + (new Date().toJSON().slice(0,10)) + '.json', 'application/json; charset=utf-8;');
+        add_history_entry('Export All Sessions', 'Exported all sessions as JSON file');
       }
     } catch (error) {
       console.warn('Binary export failed, falling back to JSON:', error);
       downloadBlob(export_all_sessions_json(), 'all_pbe_score_data_' + (new Date().toJSON().slice(0,10)) + '.json', 'application/json; charset=utf-8;');
+      add_history_entry('Export All Sessions', 'Exported all sessions as JSON file (fallback)');
     }
   }
   //Delete current session

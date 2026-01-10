@@ -392,6 +392,7 @@ function setup_file_import() {
             const result = await importSessionData(temp_import_data);
             if (result.success) {
               sync_data_to_display();
+              add_history_entry('Import Sessions', 'Imported ' + result.importedCount + ' session(s) from JSON file');
               alert('Import successful: ' + result.importedCount + ' session(s) imported');
               $( '#accordion' ).accordion({active: 0});
             } else {
@@ -413,6 +414,7 @@ function setup_file_import() {
             const result = await importSessionData(binaryData);
             if (result.success) {
               sync_data_to_display();
+              add_history_entry('Import Sessions', 'Imported ' + result.importedCount + ' session(s) from .yjs file');
               alert('Import successful: ' + result.importedCount + ' session(s) imported');
               $( '#accordion' ).accordion({active: 0});
             } else {
