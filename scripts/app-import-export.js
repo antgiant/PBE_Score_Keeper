@@ -421,9 +421,17 @@ function setup_file_import() {
 }
 
 /**
- * Convert localStorage v1.5 format to v2.0 Yjs format
+ * Convert localStorage format to v2.0 Yjs format
+ * Handles automatic upgrade from any v1.x version to v1.5 before conversion
  */
 function convert_localStorage_to_v2(localStorageData) {
+  // Check if data needs upgrading to v1.5 first
+  let dataVersion = localStorageData['data_version'] ? Number(JSON.parse(localStorageData['data_version'])) : 1.0;
+  if (dataVersion < 1.5) {
+    // Upgrade data to v1.5
+    localStorageData = data_upgrades(dataVersion, localStorageData);
+  }
+  
   const sessionNames = JSON.parse(localStorageData['session_names']);
   const result = {
     dataVersion: 2.0,
@@ -746,8 +754,13 @@ function detectImportFormat(data) {
     if (data.dataVersion === 3.0 || (data.dataVersion === 2.0 && data.sessions)) {
       return 'json-v3';
     }
-    // Check for legacy JSON format
+    // Check for legacy JSON format with camelCase dataVersion
     if (data.dataVersion && typeof data.dataVersion === 'number') {
+      return 'json-legacy';
+    }
+    // Flat localStorage format (v1.x) - uses underscore data_version or has session keys
+    // These files have keys like "session_1_question_1_score", "session_names", "data_version", etc.
+    if ('data_version' in data || 'session_names' in data || Object.keys(data).some(k => k.startsWith('session_'))) {
       return 'json-legacy';
     }
   }
@@ -781,7 +794,7 @@ async function importSessionData(data) {
   const format = detectImportFormat(data);
   
   if (format === 'invalid') {
-    return { success: false, importedCount: 0, errors: ['Invalid import format'] };
+    return { success: false, importedCount: 0, errors: ['Invalid import format. Expected JSON or binary (.yjs) file.'] };
   }
 
   const result = { success: true, importedCount: 0, errors: [] };
@@ -956,8 +969,21 @@ async function importSessionData(data) {
     } 
     else if (format === 'json-v3' || format === 'json-legacy') {
       // Import JSON format (legacy save files)
-      await import_yjs_from_json(data, 'append');
-      result.importedCount = data.sessions ? Math.max(0, data.sessions.length - 1) : 0;
+      // Check if this is flat localStorage format (needs conversion)
+      let importData = data;
+      if (!data.sessions && ('session_names' in data || Object.keys(data).some(k => k.startsWith('session_')))) {
+        // Convert flat localStorage format to structured v2.0 format
+        try {
+          importData = convert_localStorage_to_v2(data);
+        } catch (conversionError) {
+          result.success = false;
+          result.errors.push('Failed to convert localStorage format: ' + conversionError.message);
+          return result;
+        }
+      }
+      
+      await import_yjs_from_json(importData, 'append');
+      result.importedCount = importData.sessions ? Math.max(0, importData.sessions.length - 1) : 0;
     }
   } catch (error) {
     result.success = false;

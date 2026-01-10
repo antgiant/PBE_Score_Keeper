@@ -625,41 +625,4 @@ function updateSessionLastModified(sessionId) {
   }
 }
 
-/**
- * Detect import format
- * @param {any} data - Data to check
- * @returns {string} Format type
- */
-function detectImportFormat(data) {
-  // Check if binary (Uint8Array)
-  if (data instanceof Uint8Array) {
-    return 'binary-single';
-  }
 
-  // Check if JSON object
-  if (typeof data === 'object' && data !== null) {
-    // Multi-doc export
-    if (data.global instanceof Uint8Array) {
-      return 'binary-full';
-    }
-    // v3.0 JSON
-    if (data.dataVersion === 3.0) {
-      return 'json-v3';
-    }
-    // v2.0 JSON
-    if (data.dataVersion === 2.0 && data.sessions) {
-      return 'json-v2';
-    }
-    // Legacy JSON with dataVersion
-    if (data.dataVersion && typeof data.dataVersion === 'number') {
-      return 'json-legacy';
-    }
-    // Flat localStorage format (v1.x) - no dataVersion field
-    // These files have keys like "session_1_question_1_score", "session_names", etc.
-    if ('session_names' in data || Object.keys(data).some(k => k.startsWith('session_'))) {
-      return 'json-legacy';
-    }
-  }
-
-  return 'invalid';
-}
