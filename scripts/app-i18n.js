@@ -381,294 +381,85 @@ function get_available_languages() {
   return i18n_available_languages;
 }
 
-// English translations
-i18n_translations['en'] = {
-  // App title and header
-  app: {
-    title: 'PBE Score Keeper',
-    theme: 'Theme',
-    language: 'Language',
-    auto: 'Auto'
-  },
-  
-  // Theme options
-  theme: {
-    system: 'System',
-    light: 'Light',
-    dark: 'Dark'
-  },
-  
-  // Configuration section
-  config: {
-    title: 'Configuration (Session/Round/Game)',
-    instructions_title: 'Instructions',
-    instructions: 'This is a score keeper for the Pathfinder Bible Experience (aka the Bible Bowl). Please enter your number of teams as well as blocks/groups below so that the scoring grid can be created',
-    storage_title: 'Data Storage Note',
-    storage_note: 'Data is stored only on your device, and is not shared in any way with any server. This also means that if you change devices your data will not appear on the new device.',
-    new_session: 'New Session',
-    enter_scores: 'Enter Scores'
-  },
-  
-  // Teams section
-  teams: {
-    title: 'Set up your Teams',
-    count_one: '{{count}} team',
-    count_other: '{{count}} teams',
-    team: 'team',
-    teams: 'teams',
-    name_label: 'Team {{number}} Name:',
-    score_label: "{{name}}'s score",
-    score_label_s: "{{name}}' score"
-  },
-  
-  // Blocks section
-  blocks: {
-    title: 'Set up your Blocks/Groups',
-    count_one: '{{count}} block/group',
-    count_other: '{{count}} blocks/groups',
-    block: 'block/group',
-    blocks: 'blocks/groups',
-    name_label: 'Block/Group {{number}} Name:'
-  },
-  
-  // Points section
-  points: {
-    title: 'Maximum Points per Question',
-    count_one: '{{count}} point',
-    count_other: '{{count}} points',
-    point: 'point',
-    points: 'points',
-    possible: 'Possible Points for Question'
-  },
-  
-  // Rounding section
-  rounding: {
-    title: "Rounding Live Team score to best team's total?",
-    yes: 'Yes',
-    no: 'No'
-  },
-  
-  // Score entry section
-  score_entry: {
-    title: 'Score Entry',
-    previous: 'Previous Question',
-    next: 'Next Question',
-    new: 'New Question',
-    ignore: 'Ignore this Question in Score Calculations',
-    extra_credit: 'Allow Extra Credit',
-    question: 'Question',
-    block_group: 'Block/Group'
-  },
-  
-  // Score display sections
-  scores: {
-    team_exact: 'Score by Team (Exact)',
-    team_rounded: 'Score by Team (Rounded)',
-    by_block: 'Score by Block/Group',
-    team_and_block: 'Score by Team & Block/Group',
-    question_log: 'Question Log'
-  },
-  
-  // Table headers
-  table: {
-    team_name: 'Team Name',
-    percent: 'Percent',
-    score: 'Score',
-    placement: 'Placement',
-    block_name: 'Block/Group Name',
-    question: 'Question',
-    possible_points: 'Possible Points'
-  },
-  
-  // History section
-  history: {
-    title: 'History',
-    change_log: 'Change Log',
-    time: 'Time',
-    session: 'Session',
-    action: 'Action',
-    details: 'Details',
-    no_changes: 'No changes recorded yet. Make some changes to see them here!'
-  },
-  
-  // Advanced section
-  advanced: {
-    title: 'Advanced',
-    export_csv: 'Export CSV',
-    export_team: 'Export Score by Team',
-    export_block: 'Export Score by Block/Group',
-    export_team_and_block: 'Export Score by Team & Block/Group',
-    export_question_log: 'Export Question Log',
-    export_json: 'Export for Importing',
-    export_session: 'Export Session (Round/Game)',
-    export_all: 'Export All',
-    import: 'Import',
-    import_warning: 'Warning: Importing bad files can corrupt your data. It is strongly recommended that you run an "Export for Importing" before importing.',
-    select_file: 'Please Select file to import:',
-    danger_zone: 'Danger Zone',
-    delete: 'Delete',
-    delete_session: 'Delete this Session (Round/Game)',
-    no_import_support: 'Your Browser does not support importing.'
-  },
-  
-  // Footer
-  footer: {
-    feedback: 'Have an idea to make this better?',
-    let_me_know: 'Let me know'
-  },
-  
-  // Placeholders for dynamic content
-  placeholders: {
-    team_scores: 'Team Scores Go Here',
-    rounded_scores: 'Rounded Team Scores Go Here',
-    block_scores: 'Block/Group Scores Go Here',
-    team_block_scores: 'Team & Block/Group Scores Go Here',
-    question_log: 'Question Log Goes Here'
+/**
+ * Load translations from external JSON files
+ * @param {string} langCode - Language code to load
+ * @param {function} callback - Optional callback when loaded
+ */
+function load_translations(langCode, callback) {
+  if (i18n_translations[langCode]) {
+    // Already loaded
+    if (callback) callback();
+    return;
   }
-};
+  
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', 'scripts/i18n/' + langCode + '.json', true);
+  xhr.onreadystatechange = function() {
+    if (xhr.readyState === 4) {
+      if (xhr.status === 200) {
+        try {
+          i18n_translations[langCode] = JSON.parse(xhr.responseText);
+          if (callback) callback();
+        } catch (e) {
+          console.error('Failed to parse translations for ' + langCode + ':', e);
+          if (callback) callback(e);
+        }
+      } else {
+        console.error('Failed to load translations for ' + langCode + ': HTTP ' + xhr.status);
+        if (callback) callback(new Error('HTTP ' + xhr.status));
+      }
+    }
+  };
+  xhr.send();
+}
 
-// Pig Latin translations (placeholder/test language)
-i18n_translations['pig'] = {
-  // App title and header
-  app: {
-    title: 'BEPay Orescay Eeperkay',
-    theme: 'Emethay',
-    language: 'Anguagelay',
-    auto: 'Autoay'
-  },
+/**
+ * Load all available translations
+ * @param {function} callback - Called when all translations are loaded
+ */
+function load_all_translations(callback) {
+  var langs = Object.keys(i18n_available_languages);
+  var loaded = 0;
+  var errors = [];
   
-  // Theme options
-  theme: {
-    system: 'Ystemsay',
-    light: 'Ightlay',
-    dark: 'Arkday'
-  },
-  
-  // Configuration section
-  config: {
-    title: 'Onfigurationcay (Essionsay/Oundray/Amegay)',
-    instructions_title: 'Instructionsay',
-    instructions: 'Isthay isay aay orescay eeperkay orfay ethay Athfinderpay Iblebay Experienceay (akaway ethay Iblebay Owlbay). Easeplay enteray ouryay umbernay ofay eamstay asay ellway asay ocksblay/oupsgray elowbay osay atthay ethay oringscay idgray ancay ebay eatedcray',
-    storage_title: 'Ataday Oragesay Otenay',
-    storage_note: 'Ataday isay oredstay onlyay onay ouryay eviceday, anday isay otnay aredshay inay anyay ayway ithway anyay erversay. Isthay alsoay eansmay atthay ifay ouyay angechay evicesay ouryay ataday illway otnay appearay onay ethay ewnay eviceday.',
-    new_session: 'Ewnay Essionsay',
-    enter_scores: 'Enteray Orescay'
-  },
-  
-  // Teams section
-  teams: {
-    title: 'Etsay upay ouryay Eamstay',
-    count_one: '{{count}} eamtay',
-    count_other: '{{count}} eamstay',
-    team: 'eamtay',
-    teams: 'eamstay',
-    name_label: 'Eamtay {{number}} Amenay:',
-    score_label: "{{name}}'say orescay",
-    score_label_s: "{{name}}' orescay"
-  },
-  
-  // Blocks section
-  blocks: {
-    title: 'Etsay upay ouryay Ocksblay/Oupsgray',
-    count_one: '{{count}} ockblay/oupgray',
-    count_other: '{{count}} ocksblay/oupsgray',
-    block: 'ockblay/oupgray',
-    blocks: 'ocksblay/oupsgray',
-    name_label: 'Ockblay/Oupgray {{number}} Amenay:'
-  },
-  
-  // Points section
-  points: {
-    title: 'Aximummay Ointspay erpay Estionquay',
-    count_one: '{{count}} ointpay',
-    count_other: '{{count}} ointspay',
-    point: 'ointpay',
-    points: 'ointspay',
-    possible: 'Ossiblepay Ointspay orfay Estionquay'
-  },
-  
-  // Rounding section
-  rounding: {
-    title: "Oundingray Ivelay Eamtay orescay otay estbay eamtay's otaltay?",
-    yes: 'Esyay',
-    no: 'Onay'
-  },
-  
-  // Score entry section
-  score_entry: {
-    title: 'Orescay Entryay',
-    previous: 'Eviouspray Estionquay',
-    next: 'Extnay Estionquay',
-    new: 'Ewnay Estionquay',
-    ignore: 'Ignoreay isthay Estionquay inay Orescay Alculationscay',
-    extra_credit: 'Alloway Extraay Editcray',
-    question: 'Estionquay',
-    block_group: 'Ockblay/Oupgray'
-  },
-  
-  // Score display sections
-  scores: {
-    team_exact: 'Orescay ybay Eamtay (Exactay)',
-    team_rounded: 'Orescay ybay Eamtay (Oundedray)',
-    by_block: 'Orescay ybay Ockblay/Oupgray',
-    team_and_block: 'Orescay ybay Eamtay & Ockblay/Oupgray',
-    question_log: 'Estionquay Oglay'
-  },
-  
-  // Table headers
-  table: {
-    team_name: 'Eamtay Amenay',
-    percent: 'Ercentpay',
-    score: 'Orescay',
-    placement: 'Acementplay',
-    block_name: 'Ockblay/Oupgray Amenay',
-    question: 'Estionquay',
-    possible_points: 'Ossiblepay Ointspay'
-  },
-  
-  // History section
-  history: {
-    title: 'Istoryhay',
-    change_log: 'Angechay Oglay',
-    time: 'Imetay',
-    session: 'Essionsay',
-    action: 'Actionay',
-    details: 'Etailsday',
-    no_changes: 'Onay angeschay ecordedray etyay. Akemay omesay angeschay otay eesay emthay erehay!'
-  },
-  
-  // Advanced section
-  advanced: {
-    title: 'Advanceday',
-    export_csv: 'Exportay SVCay',
-    export_team: 'Exportay Orescay ybay Eamtay',
-    export_block: 'Exportay Orescay ybay Ockblay/Oupgray',
-    export_team_and_block: 'Exportay Orescay ybay Eamtay & Ockblay/Oupgray',
-    export_question_log: 'Exportay Estionquay Oglay',
-    export_json: 'Exportay orfay Importingay',
-    export_session: 'Exportay Essionsay (Oundray/Amegay)',
-    export_all: 'Exportay Allay',
-    import: 'Importay',
-    import_warning: 'Arningway: Importingay adbay ilesfay ancay orruptcay ouryay ataday. Itay isay onglystray ecommendedray atthay ouyay unray anay "Exportay orfay Importingay" eforebay importingay.',
-    select_file: 'Easeplay Electsay ilefay otay importay:',
-    danger_zone: 'Angerday Onezay',
-    delete: 'Eleteday',
-    delete_session: 'Eleteday isthay Essionsay (Oundray/Amegay)',
-    no_import_support: 'Ouryay Owserbray oesday otnay upportsay importingay.'
-  },
-  
-  // Footer
-  footer: {
-    feedback: 'Avehay anay ideaay otay akemay isthay etterbay?',
-    let_me_know: 'Etlay emay owknay'
-  },
-  
-  // Placeholders for dynamic content
-  placeholders: {
-    team_scores: 'Eamtay Orescay Ogay Erehay',
-    rounded_scores: 'Oundedray Eamtay Orescay Ogay Erehay',
-    block_scores: 'Ockblay/Oupgray Orescay Ogay Erehay',
-    team_block_scores: 'Eamtay & Ockblay/Oupgray Orescay Ogay Erehay',
-    question_log: 'Estionquay Oglay Oesgay Erehay'
+  langs.forEach(function(lang) {
+    load_translations(lang, function(err) {
+      if (err) errors.push({ lang: lang, error: err });
+      loaded++;
+      if (loaded === langs.length) {
+        if (callback) callback(errors.length > 0 ? errors : null);
+      }
+    });
+  });
+}
+
+/**
+ * Initialize translations synchronously for initial page load
+ * Falls back to embedded defaults if JSON loading fails
+ */
+function init_default_translations() {
+  // Embedded fallback for English (minimal set for initial render)
+  if (!i18n_translations['en']) {
+    i18n_translations['en'] = {
+      app: { title: 'PBE Score Keeper', theme: 'Theme', language: 'Language', auto: 'Auto' },
+      theme: { system: 'System', light: 'Light', dark: 'Dark' }
+    };
   }
-};
+}
+
+// Initialize default translations immediately
+init_default_translations();
+
+// Load full translations asynchronously
+if (typeof XMLHttpRequest !== 'undefined') {
+  load_all_translations(function(errors) {
+    if (errors) {
+      console.warn('Some translations failed to load:', errors);
+    }
+    // Re-translate page if already initialized
+    if (typeof translate_page === 'function' && typeof $ !== 'undefined' && $('[data-i18n]').length > 0) {
+      translate_page();
+    }
+  });
+}

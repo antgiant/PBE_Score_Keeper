@@ -1,0 +1,117 @@
+{
+  "app": {
+    "title": "BEPay Orescay Eeperkay",
+    "theme": "Emethay",
+    "language": "Anguagelay",
+    "auto": "Autoay"
+  },
+  "theme": {
+    "system": "Ystemsay",
+    "light": "Ightlay",
+    "dark": "Arkday"
+  },
+  "config": {
+    "title": "Onfigurationcay (Essionsay/Oundray/Amegay)",
+    "instructions_title": "Instructionsay",
+    "instructions": "Isthay isay aay orescay eeperkay orfay ethay Athfinderpay Iblebay Experienceay (akaway ethay Iblebay Owlbay). Easeplay enteray ouryay umbernay ofay eamstay asay ellway asay ocksblay/oupsgray elowbay osay atthay ethay oringscay idgray ancay ebay eatedcray",
+    "storage_title": "Ataday Oragesay Otenay",
+    "storage_note": "Ataday isay oredstay onlyay onay ouryay eviceday, anday isay otnay aredshay inay anyay ayway ithway anyay erversay. Isthay alsoay eansmay atthay ifay ouyay angechay evicesay ouryay ataday illway otnay appearay onay ethay ewnay eviceday.",
+    "new_session": "Ewnay Essionsay",
+    "enter_scores": "Enteray Orescay"
+  },
+  "teams": {
+    "title": "Etsay upay ouryay Eamstay",
+    "count_one": "{{count}} eamtay",
+    "count_other": "{{count}} eamstay",
+    "team": "eamtay",
+    "teams": "eamstay",
+    "name_label": "Eamtay {{number}} Amenay:",
+    "score_label": "{{name}}'say orescay",
+    "score_label_s": "{{name}}' orescay"
+  },
+  "blocks": {
+    "title": "Etsay upay ouryay Ocksblay/Oupsgray",
+    "count_one": "{{count}} ockblay/oupgray",
+    "count_other": "{{count}} ocksblay/oupsgray",
+    "block": "ockblay/oupgray",
+    "blocks": "ocksblay/oupsgray",
+    "name_label": "Ockblay/Oupgray {{number}} Amenay:"
+  },
+  "points": {
+    "title": "Aximummay Ointspay erpay Estionquay",
+    "count_one": "{{count}} ointpay",
+    "count_other": "{{count}} ointspay",
+    "point": "ointpay",
+    "points": "ointspay",
+    "possible": "Ossiblepay Ointspay orfay Estionquay"
+  },
+  "rounding": {
+    "title": "Oundingray Ivelay Eamtay orescay otay estbay eamtay's otaltay?",
+    "yes": "Esyay",
+    "no": "Onay"
+  },
+  "score_entry": {
+    "title": "Orescay Entryay",
+    "previous": "Eviouspray Estionquay",
+    "next": "Extnay Estionquay",
+    "new": "Ewnay Estionquay",
+    "ignore": "Ignoreay isthay Estionquay inay Orescay Alculationscay",
+    "extra_credit": "Alloway Extraay Editcray",
+    "question": "Estionquay",
+    "block_group": "Ockblay/Oupgray"
+  },
+  "scores": {
+    "team_exact": "Orescay ybay Eamtay (Exactay)",
+    "team_rounded": "Orescay ybay Eamtay (Oundedray)",
+    "by_block": "Orescay ybay Ockblay/Oupgray",
+    "team_and_block": "Orescay ybay Eamtay & Ockblay/Oupgray",
+    "question_log": "Estionquay Oglay"
+  },
+  "table": {
+    "team_name": "Eamtay Amenay",
+    "percent": "Ercentpay",
+    "score": "Orescay",
+    "placement": "Acementplay",
+    "block_name": "Ockblay/Oupgray Amenay",
+    "question": "Estionquay",
+    "possible_points": "Ossiblepay Ointspay"
+  },
+  "history": {
+    "title": "Istoryhay",
+    "change_log": "Angechay Oglay",
+    "time": "Imetay",
+    "session": "Essionsay",
+    "action": "Actionay",
+    "details": "Etailsday",
+    "no_changes": "Onay angeschay ecordedray etyay. Akemay omesay angeschay otay eesay emthay erehay!"
+  },
+  "advanced": {
+    "title": "Advanceday",
+    "export_csv": "Exportay SVCay",
+    "export_team": "Exportay Orescay ybay Eamtay",
+    "export_block": "Exportay Orescay ybay Ockblay/Oupgray",
+    "export_team_and_block": "Exportay Orescay ybay Eamtay & Ockblay/Oupgray",
+    "export_question_log": "Exportay Estionquay Oglay",
+    "export_json": "Exportay orfay Importingay",
+    "export_session": "Exportay Essionsay (Oundray/Amegay)",
+    "export_all": "Exportay Allay",
+    "import": "Importay",
+    "import_warning": "Arningway: Importingay adbay ilesfay ancay orruptcay ouryay ataday. Itay isay onglystray ecommendedray atthay ouyay unray anay \"Exportay orfay Importingay\" eforebay importingay.",
+    "select_file": "Easeplay Electsay ilefay otay importay:",
+    "danger_zone": "Angerday Onezay",
+    "delete": "Eleteday",
+    "delete_session": "Eleteday isthay Essionsay (Oundray/Amegay)",
+    "no_import_support": "Ouryay Owserbray oesday otnay upportsay importingay."
+  },
+  "footer": {
+    "feedback": "Avehay anay ideaay otay akemay isthay etterbay?",
+    "let_me_know": "Etlay emay owknay"
+  },
+  "placeholders": {
+    "team_scores": "Eamtay Orescay Ogay Erehay",
+    "rounded_scores": "Oundedray Eamtay Orescay Ogay Erehay",
+    "block_scores": "Ockblay/Oupgray Orescay Ogay Erehay",
+    "team_block_scores": "Eamtay & Ockblay/Oupgray Orescay Ogay Erehay",
+    "question_log": "Estionquay Oglay Oesgay Erehay"
+  }
+}

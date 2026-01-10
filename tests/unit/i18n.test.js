@@ -4,9 +4,20 @@ const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
 
+// Load translation JSON files
+function loadTranslations() {
+  const enJson = fs.readFileSync(path.join(__dirname, '../../scripts/i18n/en.json'), 'utf8');
+  const pigJson = fs.readFileSync(path.join(__dirname, '../../scripts/i18n/pig.json'), 'utf8');
+  return {
+    en: JSON.parse(enJson),
+    pig: JSON.parse(pigJson)
+  };
+}
+
 // Load app-i18n.js in a sandboxed context
 function createI18nContext() {
   const i18nCode = fs.readFileSync(path.join(__dirname, '../../scripts/app-i18n.js'), 'utf8');
+  const translations = loadTranslations();
   
   const context = {
     localStorage: {
@@ -35,11 +46,16 @@ function createI18nContext() {
     },
     getGlobalDoc: function() { return null; },
     get_root_element: function() { return null; },
-    console: console
+    console: console,
+    XMLHttpRequest: undefined // Disable async loading in tests
   };
   
   vm.createContext(context);
   vm.runInContext(i18nCode, context);
+  
+  // Load translations directly (since XMLHttpRequest is not available in Node)
+  context.i18n_translations['en'] = translations.en;
+  context.i18n_translations['pig'] = translations.pig;
   
   return context;
 }

@@ -4,6 +4,37 @@ const vm = require('node:vm');
 const crypto = require('node:crypto');
 const { createStorage } = require('./storage');
 
+/**
+ * Load i18n translations from JSON files for test context
+ * @returns {object} Object with language codes as keys and translation objects as values
+ */
+function loadI18nTranslations() {
+  const translations = {};
+  const i18nDir = path.join(__dirname, '..', '..', 'scripts', 'i18n');
+  
+  // Load English translations
+  try {
+    const enPath = path.join(i18nDir, 'en.json');
+    if (fs.existsSync(enPath)) {
+      translations['en'] = JSON.parse(fs.readFileSync(enPath, 'utf8'));
+    }
+  } catch (e) {
+    console.warn('Failed to load en.json:', e.message);
+  }
+  
+  // Load Pig Latin translations
+  try {
+    const pigPath = path.join(i18nDir, 'pig.json');
+    if (fs.existsSync(pigPath)) {
+      translations['pig'] = JSON.parse(fs.readFileSync(pigPath, 'utf8'));
+    }
+  } catch (e) {
+    console.warn('Failed to load pig.json:', e.message);
+  }
+  
+  return translations;
+}
+
 function extractScripts(html) {
   const matches = [...html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/g)];
   return matches.map((match) => {
@@ -221,6 +252,10 @@ function loadApp(seed = {}) {
     const { context, localStorage } = buildContext({});
     vm.createContext(context);
 
+    // Pre-load i18n translations into the context
+    const i18nTranslations = loadI18nTranslations();
+    context._preloadedI18nTranslations = i18nTranslations;
+
     const scripts = extractScripts(html);
     if (!scripts.length) {
       throw new Error('Inline script or script source not found in index.html');
@@ -246,6 +281,14 @@ function loadApp(seed = {}) {
         // and all app-*.js files but not app.js (which auto-initializes)
         if (script.src.includes('app-globals') || script.src.includes('app-')) {
           vm.runInContext(content, context);
+          // After loading app-i18n.js, inject the pre-loaded translations
+          if (script.src.includes('app-i18n')) {
+            vm.runInContext(`
+              if (_preloadedI18nTranslations) {
+                i18n_translations = _preloadedI18nTranslations;
+              }
+            `, context);
+          }
         }
         return;
       }
@@ -389,6 +432,10 @@ function loadApp(seed = {}) {
     const { context, localStorage } = buildContext(seed);
     vm.createContext(context);
 
+    // Pre-load i18n translations into the context
+    const i18nTranslations = loadI18nTranslations();
+    context._preloadedI18nTranslations = i18nTranslations;
+
     const scripts = extractScripts(html);
     if (!scripts.length) {
       throw new Error('Inline script or script source not found in index.html');
@@ -412,6 +459,14 @@ function loadApp(seed = {}) {
         // Load all app-*.js files but not app.js (which auto-initializes)
         if (script.src.includes('app-') || !script.src.includes('app.js')) {
           vm.runInContext(content, context);
+          // After loading app-i18n.js, inject the pre-loaded translations
+          if (script.src.includes('app-i18n')) {
+            vm.runInContext(`
+              if (_preloadedI18nTranslations) {
+                i18n_translations = _preloadedI18nTranslations;
+              }
+            `, context);
+          }
         }
         return;
       }

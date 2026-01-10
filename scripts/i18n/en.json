@@ -1,0 +1,117 @@
+{
+  "app": {
+    "title": "PBE Score Keeper",
+    "theme": "Theme",
+    "language": "Language",
+    "auto": "Auto"
+  },
+  "theme": {
+    "system": "System",
+    "light": "Light",
+    "dark": "Dark"
+  },
+  "config": {
+    "title": "Configuration (Session/Round/Game)",
+    "instructions_title": "Instructions",
+    "instructions": "This is a score keeper for the Pathfinder Bible Experience (aka the Bible Bowl). Please enter your number of teams as well as blocks/groups below so that the scoring grid can be created",
+    "storage_title": "Data Storage Note",
+    "storage_note": "Data is stored only on your device, and is not shared in any way with any server. This also means that if you change devices your data will not appear on the new device.",
+    "new_session": "New Session",
+    "enter_scores": "Enter Scores"
+  },
+  "teams": {
+    "title": "Set up your Teams",
+    "count_one": "{{count}} team",
+    "count_other": "{{count}} teams",
+    "team": "team",
+    "teams": "teams",
+    "name_label": "Team {{number}} Name:",
+    "score_label": "{{name}}'s score",
+    "score_label_s": "{{name}}' score"
+  },
+  "blocks": {
+    "title": "Set up your Blocks/Groups",
+    "count_one": "{{count}} block/group",
+    "count_other": "{{count}} blocks/groups",
+    "block": "block/group",
+    "blocks": "blocks/groups",
+    "name_label": "Block/Group {{number}} Name:"
+  },
+  "points": {
+    "title": "Maximum Points per Question",
+    "count_one": "{{count}} point",
+    "count_other": "{{count}} points",
+    "point": "point",
+    "points": "points",
+    "possible": "Possible Points for Question"
+  },
+  "rounding": {
+    "title": "Rounding Live Team score to best team's total?",
+    "yes": "Yes",
+    "no": "No"
+  },
+  "score_entry": {
+    "title": "Score Entry",
+    "previous": "Previous Question",
+    "next": "Next Question",
+    "new": "New Question",
+    "ignore": "Ignore this Question in Score Calculations",
+    "extra_credit": "Allow Extra Credit",
+    "question": "Question",
+    "block_group": "Block/Group"
+  },
+  "scores": {
+    "team_exact": "Score by Team (Exact)",
+    "team_rounded": "Score by Team (Rounded)",
+    "by_block": "Score by Block/Group",
+    "team_and_block": "Score by Team & Block/Group",
+    "question_log": "Question Log"
+  },
+  "table": {
+    "team_name": "Team Name",
+    "percent": "Percent",
+    "score": "Score",
+    "placement": "Placement",
+    "block_name": "Block/Group Name",
+    "question": "Question",
+    "possible_points": "Possible Points"
+  },
+  "history": {
+    "title": "History",
+    "change_log": "Change Log",
+    "time": "Time",
+    "session": "Session",
+    "action": "Action",
+    "details": "Details",
+    "no_changes": "No changes recorded yet. Make some changes to see them here!"
+  },
+  "advanced": {
+    "title": "Advanced",
+    "export_csv": "Export CSV",
+    "export_team": "Export Score by Team",
+    "export_block": "Export Score by Block/Group",
+    "export_team_and_block": "Export Score by Team & Block/Group",
+    "export_question_log": "Export Question Log",
+    "export_json": "Export for Importing",
+    "export_session": "Export Session (Round/Game)",
+    "export_all": "Export All",
+    "import": "Import",
+    "import_warning": "Warning: Importing bad files can corrupt your data. It is strongly recommended that you run an \"Export for Importing\" before importing.",
+    "select_file": "Please Select file to import:",
+    "danger_zone": "Danger Zone",
+    "delete": "Delete",
+    "delete_session": "Delete this Session (Round/Game)",
+    "no_import_support": "Your Browser does not support importing."
+  },
+  "footer": {
+    "feedback": "Have an idea to make this better?",
+    "let_me_know": "Let me know"
+  },
+  "placeholders": {
+    "team_scores": "Team Scores Go Here",
+    "rounded_scores": "Rounded Team Scores Go Here",
+    "block_scores": "Block/Group Scores Go Here",
+    "team_block_scores": "Team & Block/Group Scores Go Here",
+    "question_log": "Question Log Goes Here"
+  }
+}
