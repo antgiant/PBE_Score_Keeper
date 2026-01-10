@@ -42,6 +42,11 @@ function update_data_element(updated_id, new_value) {
         }
         sessionNames.set(sessionId, new_value);
       }, 'local');
+      
+      // Refresh history display to show the rename entry
+      if (typeof refresh_history_display === 'function') {
+        refresh_history_display();
+      }
     }
     $("#session_quick_nav").focus();
   }
