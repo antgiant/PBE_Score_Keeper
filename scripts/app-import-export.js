@@ -820,14 +820,14 @@ function detectImportFormat(data) {
 async function importSessionData(data) {
   if (!getGlobalDoc()) {
     console.error('Yjs not initialized');
-    return { success: false, importedCount: 0, errors: ['Yjs not initialized'] };
+    return { success: false, importedCount: 0, errors: [t('alerts.yjs_not_initialized')] };
   }
 
   // Detect format
   const format = detectImportFormat(data);
   
   if (format === 'invalid') {
-    return { success: false, importedCount: 0, errors: ['Invalid import format. Expected JSON or binary (.yjs) file.'] };
+    return { success: false, importedCount: 0, errors: [t('alerts.invalid_import_format')] };
   }
 
   const result = { success: true, importedCount: 0, errors: [] };
@@ -845,7 +845,7 @@ async function importSessionData(data) {
           const jsonString = new TextDecoder().decode(data);
           container = JSON.parse(jsonString);
         } catch (e) {
-          return { success: false, importedCount: 0, errors: ['Failed to parse multi-doc container'] };
+          return { success: false, importedCount: 0, errors: [t('alerts.failed_parse_container')] };
         }
       }
       
@@ -855,7 +855,7 @@ async function importSessionData(data) {
           const globalData = base64ToUint8Array(container.global);
           Y.applyUpdate(getGlobalDoc(), globalData, 'import');
         } catch (error) {
-          result.errors.push('Failed to merge global state: ' + error.message);
+          result.errors.push(t('alerts.failed_merge_global', { error: error.message }));
         }
       }
       
@@ -908,7 +908,7 @@ async function importSessionData(data) {
             importedSessionIds.push(sessionId);
             result.importedCount++;
           } catch (error) {
-            result.errors.push(`Failed to import session ${originalSessionId}: ${error.message}`);
+            result.errors.push(t('alerts.failed_import_session_id', { id: originalSessionId, error: error.message }));
           }
         }
         
@@ -1007,7 +1007,7 @@ async function importSessionData(data) {
         result.importedCount = 1;
       } catch (error) {
         result.success = false;
-        result.errors.push(`Failed to import session: ${error.message}`);
+        result.errors.push(t('alerts.failed_import_session', { error: error.message }));
       }
     } 
     else if (format === 'json-v3' || format === 'json-legacy') {
@@ -1020,7 +1020,7 @@ async function importSessionData(data) {
           importData = convert_localStorage_to_v2(data);
         } catch (conversionError) {
           result.success = false;
-          result.errors.push('Failed to convert localStorage format: ' + conversionError.message);
+          result.errors.push(t('alerts.failed_convert_localstorage', { error: conversionError.message }));
           return result;
         }
       }

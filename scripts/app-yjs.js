@@ -937,11 +937,12 @@ async function repairSessionNamesCache() {
  * @returns {Array<string>} Array of team names (index 0 is empty string)
  */
 function get_team_names() {
+  const team1Text = (typeof t === 'function') ? t('defaults.team_name', {number: 1}) : 'Team 1';
   const session = get_current_session();
-  if (!session) return ['', 'Team 1'];
+  if (!session) return ['', team1Text];
   
   const teams = session.get('teams');
-  if (!teams) return ['', 'Team 1'];
+  if (!teams) return ['', team1Text];
   
   const names = [];
   for (let i = 0; i < teams.length; i++) {
@@ -956,11 +957,13 @@ function get_team_names() {
  * @returns {Array<string>} Array of block names
  */
 function get_block_names() {
+  const noBlockText = (typeof t === 'function') ? t('defaults.no_block') : 'No Block/Group';
+  const block1Text = (typeof t === 'function') ? t('defaults.block_name', {number: 1}) : 'Block/Group 1';
   const session = get_current_session();
-  if (!session) return ['No Block/Group', 'Block/Group 1'];
+  if (!session) return [noBlockText, block1Text];
   
   const blocks = session.get('blocks');
-  if (!blocks) return ['No Block/Group', 'Block/Group 1'];
+  if (!blocks) return [noBlockText, block1Text];
   
   const names = [];
   for (let i = 0; i < blocks.length; i++) {
@@ -975,11 +978,12 @@ function get_block_names() {
  * @returns {Array<string>} Array of question names (index 0 is empty string)
  */
 function get_question_names() {
+  const question1Text = (typeof t === 'function') ? t('defaults.question_name', {number: 1}) : 'Question 1';
   const session = get_current_session();
-  if (!session) return ['', 'Question 1'];
+  if (!session) return ['', question1Text];
   
   const questions = session.get('questions');
-  if (!questions) return ['', 'Question 1'];
+  if (!questions) return ['', question1Text];
   
   const names = [];
   for (let i = 0; i < questions.length; i++) {

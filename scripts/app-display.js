@@ -199,9 +199,10 @@ function sync_data_to_display() {
   if (displayed_teams_count < team_count) {
     for (let i=displayed_teams_count + 1;i<=team_count;i++) {
       //Add new
-      let teamName = team_names[i] || ('Team ' + i);
+      let teamName = team_names[i] || t('defaults.team_name', {number: i});
       $("#team_names").append('<div class="reorder-item" data-index="'+i+'"><button type="button" class="drag-handle" draggable="true" aria-label="'+t('teams.name_label', {number: i}).replace(':', '')+'">&equiv; &#8597;</button><label><span class="reorder-label">'+t('teams.name_label', {number: i})+'</span> <input type = "text" name = "team_'+i+'_name" id = "team_'+i+'_name" onchange="local_data_update(this)" value = "'+teamName.replace('"', "&quote")+'"></label></div>');
-      $("#question_teams").append('<fieldset><legend id=team_'+i+'_points_label>Team '+HTMLescape(teamName)+' Score</legend><div id="team_'+i+'_score"></div>'+
+      let initialScoreLabel = teamName.slice(-1).toLowerCase() === 's' ? t('teams.score_label_s', {name: teamName}) : t('teams.score_label', {name: teamName});
+      $("#question_teams").append('<fieldset><legend id=team_'+i+'_points_label>'+HTMLescape(initialScoreLabel)+'</legend><div id="team_'+i+'_score"></div>'+
                                    '<legend id=team_'+i+'_extra_credit_label style="display:none">'+t('defaults.extra_credit')+'<div><button id="team_'+i+'_extra_credit_decrease" onclick="local_data_update(this)" >-</button><span id="team_'+i+'_extra_credit" class="extra_credit_amount">0</span><button id ="team_'+i+'_extra_credit_increase" onclick="local_data_update(this)" >+</button></div></legend></fieldset>');
       $("#team_"+i+"_score").append('<label><input type="radio" id="team_'+i+'_score_0" name="team_'+i+'_score" value=0 onchange="local_data_update(this)">0</label>');
       $( "#team_"+i+"_score" ).controlgroup();
@@ -243,7 +244,7 @@ function sync_data_to_display() {
     
     // Find the row for this team and block combination (now that filtered data doesn't have predictable indices)
     let team_and_block_row = -1;
-    let currentTeamName = team_names[i] || ('Team ' + i);
+    let currentTeamName = team_names[i] || t('defaults.team_name', {number: i});
     for (let j = 1; j < temp_team_and_block_score_summary.length; j++) {
       if (temp_team_and_block_score_summary[j][0] === currentTeamName && 
           temp_team_and_block_score_summary[j][1] === block_names[current_selected_block]) {
@@ -300,7 +301,7 @@ function sync_data_to_display() {
   if (displayed_block_count < block_count) {
     for (let i=displayed_block_count + 1;i<=block_count;i++) {
       //Add new
-      let blockName = block_names[i] || ('Block/Group ' + i);
+      let blockName = block_names[i] || t('defaults.block_name', {number: i});
       $("#block_names").append('<div class="reorder-item" data-index="'+i+'"><button type="button" class="drag-handle" draggable="true" aria-label="'+t('blocks.name_label', {number: i}).replace(':', '')+'">&equiv; &#8597;</button><label><span class="reorder-label">'+t('blocks.name_label', {number: i})+'</span> <input type = "text" name = "block_'+i+'_name" id = "block_'+i+'_name" onchange="local_data_update(this)" value = "'+blockName.replace('"', "&quote")+'"></label></div>');
       $("#question_block").append('<label><input type="radio" id="question_block_'+i+'" name="question_block" value="'+i+'" onchange="local_data_update(this)"><span id="block_'+i+'_label">'+HTMLescape(blockName)+'</span></label>');
     }
@@ -332,7 +333,7 @@ function sync_data_to_display() {
         $("#block_names").append(block_item);
       }
     }
-    let currentBlockName = block_names[i] || ('Block/Group ' + i);
+    let currentBlockName = block_names[i] || t('defaults.block_name', {number: i});
     $("#block_"+i+"_label").text(currentBlockName);
     let question_block = $("#question_block_"+i);
     if (typeof question_block.closest === "function") {

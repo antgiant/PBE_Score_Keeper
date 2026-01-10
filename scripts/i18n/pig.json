@@ -100,6 +100,7 @@
     "current_session": "Urrentcay Essionsay",
     "unknown_time": "Unknownay",
     "actions": {
+      "change": "Angechay",
       "rename_session": "Enameray Essionsay",
       "add_team": "Adday Eamtay",
       "delete_team": "Eleteday Eamtay",
@@ -204,7 +205,14 @@
     "import_binary_failed": "Ailedfay otay importay inarybay ilefay: {{error}}",
     "select_valid_file": "Easeplay electsay sonjay oray sjyay ilefay orfay importay",
     "loading": "Oadinglay...",
-    "unknown_import_error": "Unknownay importay erroray"
+    "unknown_import_error": "Unknownay importay erroray",
+    "yjs_not_initialized": "Sjyay otnay initializeday",
+    "invalid_import_format": "Invaliday importay ormatfay. Expecteday SONJay oray inarybay (.sjyay) ilefay.",
+    "failed_parse_container": "Ailedfay otay arsepay ultimay-ocday ontainercay",
+    "failed_merge_global": "Ailedfay otay ergemay obalglay atestay: {{error}}",
+    "failed_import_session_id": "Ailedfay otay importay essionsay {{id}}: {{error}}",
+    "failed_import_session": "Ailedfay otay importay essionsay: {{error}}",
+    "failed_convert_localstorage": "Ailedfay otay onvertcay ocalStoragelay ormatfay: {{error}}"
   },
   "history_global": {
     "actions": {

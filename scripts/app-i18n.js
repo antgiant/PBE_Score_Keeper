@@ -334,6 +334,11 @@ function translate_page() {
     return;
   }
   
+  // Update document title
+  if (typeof document !== 'undefined') {
+    document.title = t('app.title');
+  }
+  
   $('[data-i18n]').each(function() {
     var $el = $(this);
     var key = $el.attr('data-i18n');

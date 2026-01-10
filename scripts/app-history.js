@@ -71,8 +71,8 @@ function refresh_history_display() {
         if (entry) {
           allEntries.push({
             timestamp: entry.get('timestamp') || 0,
-            session: 'Global',
-            action: entry.get('action') || 'Change',
+            session: t('history.global'),
+            action: entry.get('action') || t('history.actions.change'),
             details: entry.get('details') || '',
             isGlobal: true,
             globalIndex: i
@@ -94,7 +94,7 @@ function refresh_history_display() {
         allEntries.push({
           timestamp: entry.get('timestamp') || 0,
           session: sessionName,
-          action: entry.get('action') || 'Change',
+          action: entry.get('action') || t('history.actions.change'),
           details: entry.get('details') || '',
           isGlobal: false,
           sessionIndex: i
@@ -159,7 +159,7 @@ function add_history_entry(action, details) {
   // Create a new history entry
   const entry = new Y.Map();
   entry.set('timestamp', Date.now());
-  entry.set('session', session.get('name') || 'Session');
+  entry.set('session', session.get('name') || t('history.session'));
   entry.set('action', action);
   entry.set('details', details);
 

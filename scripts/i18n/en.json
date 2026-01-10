@@ -100,6 +100,7 @@
     "current_session": "Current Session",
     "unknown_time": "Unknown",
     "actions": {
+      "change": "Change",
       "rename_session": "Rename Session",
       "add_team": "Add Team",
       "delete_team": "Delete Team",
@@ -204,7 +205,14 @@
     "import_binary_failed": "Failed to import binary file: {{error}}",
     "select_valid_file": "Please select json or yjs file for import",
     "loading": "Loading...",
-    "unknown_import_error": "Unknown import error"
+    "unknown_import_error": "Unknown import error",
+    "yjs_not_initialized": "Yjs not initialized",
+    "invalid_import_format": "Invalid import format. Expected JSON or binary (.yjs) file.",
+    "failed_parse_container": "Failed to parse multi-doc container",
+    "failed_merge_global": "Failed to merge global state: {{error}}",
+    "failed_import_session_id": "Failed to import session {{id}}: {{error}}",
+    "failed_import_session": "Failed to import session: {{error}}",
+    "failed_convert_localstorage": "Failed to convert localStorage format: {{error}}"
   },
   "history_global": {
     "actions": {
