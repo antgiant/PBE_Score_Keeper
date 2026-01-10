@@ -516,16 +516,16 @@ function update_data_element(updated_id, new_value) {
       const binary = exportSession(get_current_session_index());
       if (binary && binary.length > 0) {
         downloadBinaryExport(binary, 'pbe_session_' + (new Date().toJSON().slice(0,10)) + '.yjs');
-        add_history_entry('Export Session', 'Exported session as .yjs file');
+        add_history_entry(t('history.actions.export_session'), t('history.details_templates.exported_session_yjs'));
       } else {
         // Fallback to JSON if binary export fails
         downloadBlob(export_current_session_json(), 'pbe_session_data_' + (new Date().toJSON().slice(0,10)) + '.json', 'application/json; charset=utf-8;');
-        add_history_entry('Export Session', 'Exported session as JSON file');
+        add_history_entry(t('history.actions.export_session'), t('history.details_templates.exported_session_json'));
       }
     } catch (error) {
       console.warn('Binary export failed, falling back to JSON:', error);
       downloadBlob(export_current_session_json(), 'pbe_session_data_' + (new Date().toJSON().slice(0,10)) + '.json', 'application/json; charset=utf-8;');
-      add_history_entry('Export Session', 'Exported session as JSON file (fallback)');
+      add_history_entry(t('history.actions.export_session'), t('history.details_templates.exported_session_json_fallback'));
     }
   }
   //Export all to JSON and binary formats
@@ -536,19 +536,19 @@ function update_data_element(updated_id, new_value) {
         const exportData = await exportAllSessions();
         if (exportData && exportData.length > 0) {
           downloadBinaryExport(exportData, 'pbe_all_sessions_' + (new Date().toJSON().slice(0,10)) + '.yjs');
-          add_history_entry('Export All Sessions', 'Exported all sessions as .yjs file');
+          add_history_entry(t('history.actions.export_all_sessions'), t('history.details_templates.exported_all_yjs'));
         } else {
           // Fallback to JSON if binary export fails
           const jsonData = await export_all_sessions_json();
           downloadBlob(jsonData, 'all_pbe_score_data_' + (new Date().toJSON().slice(0,10)) + '.json', 'application/json; charset=utf-8;');
-          add_history_entry('Export All Sessions', 'Exported all sessions as JSON file');
+          add_history_entry(t('history.actions.export_all_sessions'), t('history.details_templates.exported_all_json'));
         }
       } catch (error) {
         console.warn('Binary export failed, falling back to JSON:', error);
         try {
           const jsonData = await export_all_sessions_json();
           downloadBlob(jsonData, 'all_pbe_score_data_' + (new Date().toJSON().slice(0,10)) + '.json', 'application/json; charset=utf-8;');
-          add_history_entry('Export All Sessions', 'Exported all sessions as JSON file (fallback)');
+          add_history_entry(t('history.actions.export_all_sessions'), t('history.details_templates.exported_all_json_fallback'));
         } catch (jsonError) {
           console.error('JSON export also failed:', jsonError);
         }
@@ -645,7 +645,7 @@ function reorder_teams(order) {
       }
 
       // Add history entry
-      add_history_entry('Reorder Teams', 'New order: ' + newOrder.join(', '));
+      add_history_entry(t('history.actions.reorder_teams'), t('history.details_templates.new_order', { order: newOrder.join(', ') }));
     }, 'local');
   }
 }
@@ -708,7 +708,7 @@ function reorder_blocks(order) {
       }
 
       // Add history entry
-      add_history_entry('Reorder Blocks/Groups', 'New order: ' + newOrder.join(', '));
+      add_history_entry(t('history.actions.reorder_blocks'), t('history.details_templates.new_order', { order: newOrder.join(', ') }));
     }, 'local');
   }
 }

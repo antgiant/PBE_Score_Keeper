@@ -74,7 +74,14 @@
     "placement": "Acementplay",
     "block_name": "Ockblay/Oupgray Amenay",
     "question": "Estionquay",
-    "possible_points": "Ossiblepay Ointspay"
+    "possible_points": "Ossiblepay Ointspay",
+    "earned_points": "Earneday Ointspay",
+    "total_points": "Otaltay Ointspay",
+    "total_points_rounded": "Otaltay Ointspay (Oundedray)",
+    "percent_rounded": "Ercentpay (Oundedray)",
+    "score_rounded": "Orescay (Oundedray)",
+    "placement_rounded": "Acementplay (Oundedray)",
+    "ignore_question": "Ignoreay Estionquay"
   },
   "placements": {
     "first": "Irstfay Aceplay",
@@ -111,7 +118,11 @@
       "extra_credit": "Extraay Editcray",
       "set_question_points": "Etsay Estionquay Ointspay",
       "change_question_block": "Angechay Estionquay Ockblay",
-      "score_change": "Orescay Angechay"
+      "score_change": "Orescay Angechay",
+      "export_session": "Exportay Essionsay",
+      "export_all_sessions": "Exportay Allay Essionssay",
+      "reorder_teams": "Eorderray Eamstay",
+      "reorder_blocks": "Eorderray Ocksblay/Oupsgray"
     },
     "details_templates": {
       "renamed": "Enameray \"{{old}}\" otay \"{{new}}\"",
@@ -130,7 +141,14 @@
       "decreased_extra_credit": "Ecreasedday extraay editcray orfay \"{{team}}\" onay \"{{question}}\" otay {{value}}",
       "set_question_points": "Etsay axmay ointspay orfay \"{{name}}\" omfray {{old}} otay {{new}}",
       "changed_block": "Angedchay \"{{question}}\" omfray \"{{old}}\" otay \"{{new}}\"",
-      "score_changed": "\"{{team}}\" onay \"{{question}}\" omfray {{old}} otay {{new}}"
+      "score_changed": "\"{{team}}\" onay \"{{question}}\" omfray {{old}} otay {{new}}",
+      "exported_session_yjs": "Exporteday essionsay asay .sjyay ilefay",
+      "exported_session_json": "Exporteday essionsay asay SONJay ilefay",
+      "exported_session_json_fallback": "Exporteday essionsay asay SONJay ilefay (allbackfay)",
+      "exported_all_yjs": "Exporteday allay essionssay asay .sjyay ilefay",
+      "exported_all_json": "Exporteday allay essionssay asay SONJay ilefay",
+      "exported_all_json_fallback": "Exporteday allay essionssay asay SONJay ilefay (allbackfay)",
+      "new_order": "Ewnay orderay: {{order}}"
     }
   },
   "advanced": {
@@ -168,7 +186,8 @@
     "block_name": "Ockblay/Oupgray {{number}}",
     "no_block": "Onay Ockblay/Oupgray",
     "question_name": "Estionquay {{number}}",
-    "extra_credit": "Extraay Editcray"
+    "extra_credit": "Extraay Editcray",
+    "unnamed_session": "Unnameday Essionsay"
   },
   "confirm": {
     "delete_team": "Oday ouyay eallyray antway otay eleteday {{name}}?",
@@ -184,7 +203,8 @@
     "import_json_failed": "Ailedfay otay importay SONJay ilefay: {{error}}",
     "import_binary_failed": "Ailedfay otay importay inarybay ilefay: {{error}}",
     "select_valid_file": "Easeplay electsay sonjay oray sjyay ilefay orfay importay",
-    "loading": "Oadinglay..."
+    "loading": "Oadinglay...",
+    "unknown_import_error": "Unknownay importay erroray"
   },
   "history_global": {
     "actions": {

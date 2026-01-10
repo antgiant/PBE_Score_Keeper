@@ -643,12 +643,13 @@ function getAllSessions() {
   // Get cached session names from global doc
   const meta = getGlobalDoc().getMap('meta');
   const sessionNames = meta.get('sessionNames');
+  const unnamedSessionText = (typeof t === 'function') ? t('defaults.unnamed_session') : 'Unnamed Session';
 
   for (let i = 0; i < sessionOrder.length; i++) {
     const sessionId = sessionOrder[i];
     
     // Use cached name if available
-    let name = 'Unnamed Session';
+    let name = unnamedSessionText;
     if (sessionNames && sessionNames.has(sessionId)) {
       name = sessionNames.get(sessionId);
     } else {
@@ -656,7 +657,7 @@ function getAllSessions() {
       let sessionDoc = getSessionDoc(sessionId);
       if (sessionDoc) {
         const session = sessionDoc.getMap('session');
-        name = session.get('name') || 'Unnamed Session';
+        name = session.get('name') || unnamedSessionText;
         
         // Update cache for next time
         getGlobalDoc().transact(() => {

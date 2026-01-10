@@ -1,6 +1,6 @@
 function get_team_score_summary(temp_question_count = -1) {
   const session = get_current_session();
-  if (!session) return [["Team Name","Percent","Score","Placement","Earned Points","Total Points", "Total Points (Rounded)", "Percent (Rounded)", "Score (Rounded)", "Placement (Rounded)"]];
+  if (!session) return [[t('table.team_name'),t('table.percent'),t('table.score'),t('table.placement'),t('table.earned_points'),t('table.total_points'), t('table.total_points_rounded'), t('table.percent_rounded'), t('table.score_rounded'), t('table.placement_rounded')]];
 
   const questions = session.get('questions');
   if (temp_question_count == -1) {
@@ -14,7 +14,7 @@ function get_team_score_summary(temp_question_count = -1) {
 
   //Create empty summary array
   let team_score_summary = new Array();
-  team_score_summary.push(["Team Name","Percent","Score","Placement","Earned Points","Total Points", "Total Points (Rounded)", "Percent (Rounded)", "Score (Rounded)", "Placement (Rounded)"]);
+  team_score_summary.push([t('table.team_name'),t('table.percent'),t('table.score'),t('table.placement'),t('table.earned_points'),t('table.total_points'), t('table.total_points_rounded'), t('table.percent_rounded'), t('table.score_rounded'), t('table.placement_rounded')]);
   for (var i=0; i < team_count; i++) {
     team_score_summary.push([team_names[i + 1],,,,,,,,,]);
   }
@@ -66,7 +66,7 @@ function get_team_score_summary(temp_question_count = -1) {
 }
 function get_block_score_summary(temp_question_count = -1) {
   const session = get_current_session();
-  if (!session) return [["Block/Group Name","Percent","Score","Earned Points","Total Points"]];
+  if (!session) return [[t('table.block_name'),t('table.percent'),t('table.score'),t('table.earned_points'),t('table.total_points')]];
 
   const questions = session.get('questions');
   if (temp_question_count == -1) {
@@ -80,7 +80,7 @@ function get_block_score_summary(temp_question_count = -1) {
 
   //Create empty summary array
   let block_score_summary = new Array();
-  block_score_summary.push(["Block/Group Name","Percent","Score","Earned Points","Total Points"]);
+  block_score_summary.push([t('table.block_name'),t('table.percent'),t('table.score'),t('table.earned_points'),t('table.total_points')]);
   for (let i=0; i <= block_count; i++) {
     block_score_summary.push([block_names[i],,,,]);
   }
@@ -113,7 +113,7 @@ function get_block_score_summary(temp_question_count = -1) {
 }
 function get_team_and_block_score_summary(temp_question_count = -1) {
   const session = get_current_session();
-  if (!session) return [["Team Name","Block/Group Name","Percent","Score","Earned Points","Total Points"]];
+  if (!session) return [[t('table.team_name'),t('table.block_name'),t('table.percent'),t('table.score'),t('table.earned_points'),t('table.total_points')]];
 
   const questions = session.get('questions');
   if (temp_question_count == -1) {
@@ -128,7 +128,7 @@ function get_team_and_block_score_summary(temp_question_count = -1) {
 
   //Create empty summary array
   let team_and_block_score_summary = new Array();
-  team_and_block_score_summary.push(["Team Name","Block/Group Name","Percent","Score","Earned Points","Total Points"]);
+  team_and_block_score_summary.push([t('table.team_name'),t('table.block_name'),t('table.percent'),t('table.score'),t('table.earned_points'),t('table.total_points')]);
   for (let i=1; i <= team_count; i++) {
     for (let j=0; j <= block_count; j++) {
       team_and_block_score_summary.push([team_names[i],block_names[j],,,0,0]);
@@ -160,7 +160,7 @@ function get_team_and_block_score_summary(temp_question_count = -1) {
 }
 function get_question_log(temp_question_count = -1) {
   const session = get_current_session();
-  if (!session) return [["Question", "Block/Group", "Possible Points", "Ignore Question"]];
+  if (!session) return [[t('table.question'), t('score_entry.block_group'), t('table.possible_points'), t('table.ignore_question')]];
 
   var question_names = get_question_names();
   const questions = session.get('questions');
@@ -179,10 +179,10 @@ function get_question_log(temp_question_count = -1) {
 
   //Create empty summary array
   let temp_row = new Array();
-  temp_row.push("Question");
-  temp_row.push("Block/Group");
-  temp_row.push("Possible Points");
-  temp_row.push("Ignore Question");
+  temp_row.push(t('table.question'));
+  temp_row.push(t('score_entry.block_group'));
+  temp_row.push(t('table.possible_points'));
+  temp_row.push(t('table.ignore_question'));
   for (let i=1; i <= team_count; i++) {
     temp_row.push(team_names[i]);
   }

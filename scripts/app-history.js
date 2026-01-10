@@ -85,7 +85,7 @@ function refresh_history_display() {
   // Get session history
   const currentSession = get_current_session();
   if (currentSession) {
-    const sessionName = currentSession.get('name') || 'Current Session';
+    const sessionName = currentSession.get('name') || t('history.current_session');
     const historyLog = currentSession.get('historyLog');
     
     if (historyLog) {

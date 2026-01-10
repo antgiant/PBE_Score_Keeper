@@ -74,7 +74,14 @@
     "placement": "Placement",
     "block_name": "Block/Group Name",
     "question": "Question",
-    "possible_points": "Possible Points"
+    "possible_points": "Possible Points",
+    "earned_points": "Earned Points",
+    "total_points": "Total Points",
+    "total_points_rounded": "Total Points (Rounded)",
+    "percent_rounded": "Percent (Rounded)",
+    "score_rounded": "Score (Rounded)",
+    "placement_rounded": "Placement (Rounded)",
+    "ignore_question": "Ignore Question"
   },
   "placements": {
     "first": "First Place",
@@ -111,7 +118,11 @@
       "extra_credit": "Extra Credit",
       "set_question_points": "Set Question Points",
       "change_question_block": "Change Question Block",
-      "score_change": "Score Change"
+      "score_change": "Score Change",
+      "export_session": "Export Session",
+      "export_all_sessions": "Export All Sessions",
+      "reorder_teams": "Reorder Teams",
+      "reorder_blocks": "Reorder Blocks/Groups"
     },
     "details_templates": {
       "renamed": "Renamed \"{{old}}\" to \"{{new}}\"",
@@ -130,7 +141,14 @@
       "decreased_extra_credit": "Decreased extra credit for \"{{team}}\" on \"{{question}}\" to {{value}}",
       "set_question_points": "Set max points for \"{{name}}\" from {{old}} to {{new}}",
       "changed_block": "Changed \"{{question}}\" from \"{{old}}\" to \"{{new}}\"",
-      "score_changed": "\"{{team}}\" on \"{{question}}\" from {{old}} to {{new}}"
+      "score_changed": "\"{{team}}\" on \"{{question}}\" from {{old}} to {{new}}",
+      "exported_session_yjs": "Exported session as .yjs file",
+      "exported_session_json": "Exported session as JSON file",
+      "exported_session_json_fallback": "Exported session as JSON file (fallback)",
+      "exported_all_yjs": "Exported all sessions as .yjs file",
+      "exported_all_json": "Exported all sessions as JSON file",
+      "exported_all_json_fallback": "Exported all sessions as JSON file (fallback)",
+      "new_order": "New order: {{order}}"
     }
   },
   "advanced": {
@@ -168,7 +186,8 @@
     "block_name": "Block/Group {{number}}",
     "no_block": "No Block/Group",
     "question_name": "Question {{number}}",
-    "extra_credit": "Extra Credit"
+    "extra_credit": "Extra Credit",
+    "unnamed_session": "Unnamed Session"
   },
   "confirm": {
     "delete_team": "Do you really want to delete {{name}}?",
@@ -184,7 +203,8 @@
     "import_json_failed": "Failed to import JSON file: {{error}}",
     "import_binary_failed": "Failed to import binary file: {{error}}",
     "select_valid_file": "Please select json or yjs file for import",
-    "loading": "Loading..."
+    "loading": "Loading...",
+    "unknown_import_error": "Unknown import error"
   },
   "history_global": {
     "actions": {

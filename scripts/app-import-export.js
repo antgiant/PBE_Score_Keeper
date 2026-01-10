@@ -352,11 +352,12 @@ async function import_yjs_from_json(data, mode) {
       meta.set('sessionNames', sessionNames);
     }
     
+    const unnamedSessionText = (typeof t === 'function') ? t('defaults.unnamed_session') : 'Unnamed Session';
     for (const sessionId of importedSessionIds) {
       const sessionDoc = getSessionDoc(sessionId);
       if (sessionDoc) {
         const session = sessionDoc.getMap('session');
-        const name = session.get('name') || 'Unnamed Session';
+        const name = session.get('name') || unnamedSessionText;
         sessionNames.set(sessionId, name);
       }
     }
@@ -400,7 +401,7 @@ function setup_file_import() {
               alert(t('alerts.import_success', { count: result.importedCount }));
               $( '#accordion' ).accordion({active: 0});
             } else {
-              const errorMsg = result.errors.length > 0 ? result.errors[0] : 'Unknown import error';
+              const errorMsg = result.errors.length > 0 ? result.errors[0] : t('alerts.unknown_import_error');
               alert(t('alerts.import_failed', { error: errorMsg }));
             }
           } catch (error) {
@@ -422,7 +423,7 @@ function setup_file_import() {
               alert(t('alerts.import_success', { count: result.importedCount }));
               $( '#accordion' ).accordion({active: 0});
             } else {
-              const errorMsg = result.errors.length > 0 ? result.errors[0] : 'Unknown import error';
+              const errorMsg = result.errors.length > 0 ? result.errors[0] : t('alerts.unknown_import_error');
               alert(t('alerts.import_failed', { error: errorMsg }));
             }
           } catch (error) {
@@ -927,11 +928,12 @@ async function importSessionData(data) {
               meta.set('sessionNames', sessionNames);
             }
             
+            const unnamedSessionText = (typeof t === 'function') ? t('defaults.unnamed_session') : 'Unnamed Session';
             for (const sessionId of importedSessionIds) {
               const sessionDoc = getSessionDoc(sessionId);
               if (sessionDoc) {
                 const session = sessionDoc.getMap('session');
-                const name = session.get('name') || 'Unnamed Session';
+                const name = session.get('name') || unnamedSessionText;
                 sessionNames.set(sessionId, name);
               }
             }

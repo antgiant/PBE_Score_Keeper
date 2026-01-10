@@ -488,7 +488,11 @@ async function initialize_new_yjs_state() {
   DocManager.setActiveSession(sessionId);
 
   // Log creation in global history
-  add_global_history_entry('Create Session', 'Created "Session ' + date + '"');
+  const initSessionName = (typeof t === 'function') ? t('defaults.session_name', { date: date }) : 'Session ' + date;
+  add_global_history_entry(
+    (typeof t === 'function') ? t('history_global.actions.create_session') : 'Create Session',
+    (typeof t === 'function') ? t('history_global.details_templates.created_session', { name: initSessionName }) : 'Created "Session ' + date + '"'
+  );
 
   console.log('Initialized new multi-doc Yjs state with session:', sessionId);
 }
@@ -846,6 +850,7 @@ function get_session_names() {
   // Get cached session names from global doc
   const meta = getGlobalDoc().getMap('meta');
   const sessionNames = meta.get('sessionNames');
+  const unnamedSessionText = (typeof t === 'function') ? t('defaults.unnamed_session') : 'Unnamed Session';
 
   for (const sessionId of sessionOrder) {
     // Use cached name if available
@@ -856,7 +861,7 @@ function get_session_names() {
       let sessionDoc = getSessionDoc(sessionId);
       if (sessionDoc) {
         const session = sessionDoc.getMap('session');
-        const name = session.get('name') || 'Unnamed Session';
+        const name = session.get('name') || unnamedSessionText;
         names.push(name);
         
         // Update cache for next time
@@ -869,7 +874,7 @@ function get_session_names() {
           sessionNamesMap.set(sessionId, name);
         }, 'local');
       } else {
-        names.push('Unnamed Session');
+        names.push(unnamedSessionText);
       }
     }
   }
@@ -902,13 +907,14 @@ async function repairSessionNamesCache() {
   
   // Rebuild cache from session docs
   const repairedNames = new Map();
+  const unnamedSessionText = (typeof t === 'function') ? t('defaults.unnamed_session') : 'Unnamed Session';
   
   for (const sessionId of sessionOrder) {
-    // Load the session doc from IndexedDB if not already in memory
+    // Load the session doc from IndexedDB if not already loaded
     const sessionDoc = await initSessionDoc(sessionId);
     if (sessionDoc) {
       const session = sessionDoc.getMap('session');
-      const name = session.get('name') || 'Unnamed Session';
+      const name = session.get('name') || unnamedSessionText;
       repairedNames.set(sessionId, name);
     }
   }
