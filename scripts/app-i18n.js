@@ -1,11 +1,26 @@
 // Internationalization (i18n) for PBE Score Keeper
 // Follows the app-theme.js pattern for preference management
+// 
+// To add a new language:
+// 1. Create a new file: scripts/i18n/{code}.js that calls register_i18n_language()
+// 2. Add a <script> tag for it in index.html (before app-i18n.js)
+// 
+// All languages are loaded upfront for simplicity and instant language switching.
 
 /**
- * Available translations
- * Each language file is loaded into this object
+ * Language metadata registry
+ * Populated by language files calling register_i18n_language()
+ * Maps language code to { name, locale, rtl }
  */
-var i18n_translations = {};
+var i18n_language_registry = {};
+
+/**
+ * Translations storage
+ * Populated by language files calling register_i18n_language()
+ */
+if (typeof i18n_translations === 'undefined') {
+  var i18n_translations = {};
+}
 
 /**
  * Currently active language code
@@ -18,12 +33,64 @@ var i18n_current_language = 'en';
 var i18n_default_language = 'en';
 
 /**
- * Available languages with display names
+ * Register a language with its metadata and translations
+ * Called by each language file (scripts/i18n/*.js)
+ * 
+ * @param {string} code - Language code (e.g., 'en', 'es', 'pig')
+ * @param {object} config - Language configuration
+ * @param {string} config.name - Display name (e.g., 'English', 'Español')
+ * @param {string} [config.locale] - Locale for date formatting (defaults to code)
+ * @param {boolean} [config.rtl] - Right-to-left language (default: false)
+ * @param {object} config.translations - Translation strings object
  */
-var i18n_available_languages = {
-  'en': 'English',
-  'pig': 'Secret Code'
-};
+function register_i18n_language(code, config) {
+  if (!code || !config || !config.name || !config.translations) {
+    console.error('register_i18n_language: Invalid language config for', code);
+    return;
+  }
+  
+  // Store metadata
+  i18n_language_registry[code] = {
+    name: config.name,
+    locale: config.locale || code,
+    rtl: config.rtl || false
+  };
+  
+  // Store translations
+  i18n_translations[code] = config.translations;
+}
+
+/**
+ * Get available languages with display names
+ * @returns {object} Map of language codes to display names
+ */
+function get_available_languages() {
+  var result = {};
+  for (var code in i18n_language_registry) {
+    if (i18n_language_registry.hasOwnProperty(code)) {
+      result[code] = i18n_language_registry[code].name;
+    }
+  }
+  return result;
+}
+
+/**
+ * Check if a language is registered (loaded)
+ * @param {string} code - Language code
+ * @returns {boolean} True if language is loaded
+ */
+function is_language_loaded(code) {
+  return !!(i18n_language_registry[code] && i18n_translations[code]);
+}
+
+/**
+ * Check if a language code is available
+ * @param {string} code - Language code
+ * @returns {boolean} True if language is registered
+ */
+function is_language_available(code) {
+  return is_language_loaded(code);
+}
 
 /**
  * Initialize language preference on page load
@@ -63,7 +130,7 @@ function get_global_language_preference() {
   }
   var meta = doc.getMap('meta');
   var saved_language = meta.get('languagePreference');
-  if (saved_language && i18n_available_languages[saved_language]) {
+  if (saved_language && is_language_available(saved_language)) {
     return saved_language;
   }
   return null;
@@ -82,7 +149,7 @@ function set_global_language_preference(language) {
   if (!doc) {
     return false;
   }
-  if (!i18n_available_languages[language] && language !== 'auto') {
+  if (!is_language_available(language) && language !== 'auto') {
     return false;
   }
   var meta = doc.getMap('meta');
@@ -100,7 +167,7 @@ function set_global_language_preference(language) {
  */
 function resolve_language(saved_language) {
   // If explicit language selected, use it
-  if (saved_language && saved_language !== 'auto' && i18n_available_languages[saved_language]) {
+  if (saved_language && saved_language !== 'auto' && is_language_available(saved_language)) {
     return saved_language;
   }
   
@@ -125,13 +192,13 @@ function detect_browser_language() {
     if (!lang) continue;
     
     // Try exact match first (e.g., 'en-US')
-    if (i18n_available_languages[lang]) {
+    if (is_language_available(lang)) {
       return lang;
     }
     
     // Try base language (e.g., 'en' from 'en-US')
     var baseLang = lang.split('-')[0];
-    if (i18n_available_languages[baseLang]) {
+    if (is_language_available(baseLang)) {
       return baseLang;
     }
   }
@@ -154,7 +221,7 @@ function initialize_language_controls() {
   // Set up language selector change handler
   $('#language_preference').on('change', function() {
     var selected = $(this).val();
-    if (!i18n_available_languages[selected] && selected !== 'auto') {
+    if (!is_language_available(selected) && selected !== 'auto') {
       return;
     }
     localStorage.setItem('language_preference', selected);
@@ -175,7 +242,7 @@ function sync_language_preference_from_global() {
     return;
   }
   var local_language = localStorage.getItem('language_preference');
-  if (local_language && (i18n_available_languages[local_language] || local_language === 'auto')) {
+  if (local_language && (is_language_available(local_language) || local_language === 'auto')) {
     set_global_language_preference(local_language);
   } else {
     set_global_language_preference('auto');
@@ -229,13 +296,23 @@ function update_html_lang(language) {
   if (!root) {
     return;
   }
-  // Map pig latin to 'en' for accessibility, but keep internal tracking
-  var htmlLang = (language === 'pig') ? 'en' : language;
+  
+  // Get locale from registry, or use code
+  var meta = i18n_language_registry[language];
+  var htmlLang = meta ? meta.locale : language;
+  
   root.setAttribute('lang', htmlLang);
+  
+  // Handle RTL languages
+  if (meta && meta.rtl) {
+    root.setAttribute('dir', 'rtl');
+  } else {
+    root.removeAttribute('dir');
+  }
 }
 
 /**
- * Update the language selector dropdown
+ * Update the language selector dropdown value
  * @param {string} saved_language - Saved preference
  */
 function update_language_selector(saved_language) {
@@ -243,7 +320,7 @@ function update_language_selector(saved_language) {
   if (!selector.length) {
     return;
   }
-  if (i18n_available_languages[saved_language] || saved_language === 'auto') {
+  if (is_language_available(saved_language) || saved_language === 'auto') {
     selector.val(saved_language);
   } else {
     selector.val('auto');
@@ -379,64 +456,29 @@ function get_current_language() {
 }
 
 /**
- * Get available languages
- * @returns {object} Map of language codes to display names
+ * Get language metadata
+ * @param {string} code - Language code
+ * @returns {object|null} Language metadata or null
  */
-function get_available_languages() {
-  return i18n_available_languages;
+function get_language_metadata(code) {
+  return i18n_language_registry[code] || null;
 }
 
 /**
- * Load translations from external JSON files
- * @param {string} langCode - Language code to load
- * @param {function} callback - Optional callback when loaded
+ * Check if translations are loaded for a language
+ * @param {string} langCode - Language code to check
+ * @returns {boolean} True if translations are loaded
  */
-function load_translations(langCode, callback) {
-  if (i18n_translations[langCode]) {
-    // Already loaded
-    if (callback) callback();
-    return;
-  }
-  
-  var xhr = new XMLHttpRequest();
-  xhr.open('GET', 'scripts/i18n/' + langCode + '.json', true);
-  xhr.onreadystatechange = function() {
-    if (xhr.readyState === 4) {
-      if (xhr.status === 200) {
-        try {
-          i18n_translations[langCode] = JSON.parse(xhr.responseText);
-          if (callback) callback();
-        } catch (e) {
-          console.error('Failed to parse translations for ' + langCode + ':', e);
-          if (callback) callback(e);
-        }
-      } else {
-        console.error('Failed to load translations for ' + langCode + ': HTTP ' + xhr.status);
-        if (callback) callback(new Error('HTTP ' + xhr.status));
-      }
-    }
-  };
-  xhr.send();
+function is_translation_loaded(langCode) {
+  return is_language_loaded(langCode);
 }
 
 /**
- * Load all available translations
- * @param {function} callback - Called when all translations are loaded
+ * Check if all registered translations are loaded
+ * @returns {boolean} True if all translations are loaded
  */
-function load_all_translations(callback) {
-  var langs = Object.keys(i18n_available_languages);
-  var loaded = 0;
-  var errors = [];
-  
-  langs.forEach(function(lang) {
-    load_translations(lang, function(err) {
-      if (err) errors.push({ lang: lang, error: err });
-      loaded++;
-      if (loaded === langs.length) {
-        if (callback) callback(errors.length > 0 ? errors : null);
-      }
-    });
-  });
+function are_all_translations_loaded() {
+  return Object.keys(i18n_language_registry).length > 0;
 }
 
 /**
@@ -453,11 +495,9 @@ function format_date(date, options) {
     return t('history.unknown_time');
   }
   
-  // Map internal language codes to locale codes
-  var locale = i18n_current_language;
-  if (locale === 'pig') {
-    locale = 'en'; // Pig Latin uses English locale for dates
-  }
+  // Get locale from language registry
+  var meta = i18n_language_registry[i18n_current_language];
+  var locale = meta ? meta.locale : i18n_current_language;
   
   // Default options for date+time
   var defaultOptions = {
@@ -493,31 +533,20 @@ function format_time(date) {
 }
 
 /**
- * Initialize translations synchronously for initial page load
- * Falls back to embedded defaults if JSON loading fails
+ * Initialize - verify at least one language is loaded
  */
-function init_default_translations() {
-  // Embedded fallback for English (minimal set for initial render)
-  if (!i18n_translations['en']) {
-    i18n_translations['en'] = {
-      app: { title: 'PBE Score Keeper', theme: 'Theme', language: 'Language', auto: 'Auto' },
-      theme: { system: 'System', light: 'Light', dark: 'Dark' }
-    };
+function init_i18n() {
+  if (Object.keys(i18n_language_registry).length === 0) {
+    console.warn('No languages registered. Ensure language files are included before app-i18n.js');
+  }
+  if (!is_language_loaded(i18n_default_language)) {
+    console.warn('Default language (' + i18n_default_language + ') not loaded.');
   }
 }
 
-// Initialize default translations immediately
-init_default_translations();
-
-// Load full translations asynchronously
-if (typeof XMLHttpRequest !== 'undefined') {
-  load_all_translations(function(errors) {
-    if (errors) {
-      console.warn('Some translations failed to load:', errors);
-    }
-    // Re-translate page if already initialized
-    if (typeof translate_page === 'function' && typeof $ !== 'undefined' && $('[data-i18n]').length > 0) {
-      translate_page();
-    }
-  });
+// Initialize on load
+if (typeof document !== 'undefined' && document.readyState === 'complete') {
+  init_i18n();
+} else if (typeof window !== 'undefined') {
+  window.addEventListener('load', init_i18n);
 }
