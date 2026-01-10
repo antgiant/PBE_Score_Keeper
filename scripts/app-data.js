@@ -547,21 +547,15 @@ function update_data_element(updated_id, new_value) {
   }
   //Delete current session
   else if (updated_id == "session_delete") {
-    const globalDoc = getGlobalDoc();
-    const sessionOrder = globalDoc.getArray('sessionOrder');
-    const meta = globalDoc.getMap('meta');
+    const meta = getGlobalDoc().getMap('meta');
     const currentSessionId = meta.get('currentSession');
 
-    //Only Delete if more than one session exists
-    if (sessionOrder.length > 1) {
-      if (window.confirm("Are you sure you want to irreversably delete this Session (Round/Game)?")) {
-        deleteSession(currentSessionId);
-        alert("Deleted");
-      }
-    }
-    else {
-      alert("You may not delete the only Session (Round/Game)");
-    }
+    // Delegate validation and confirmations to deleteSession (multi-doc aware)
+    // Note: deleteSession is async and handles its own sync_data_to_display
+    deleteSession(currentSessionId).catch(function(err) {
+      console.error('Delete session failed:', err);
+    });
+    return; // Prevent sync_data_to_display from running before delete completes
   }
 }
 

@@ -550,6 +550,12 @@ async function deleteSession(sessionIdOrIndex) {
   const meta = getGlobalDoc().getMap('meta');
   const sessionOrder = meta.get('sessionOrder') || [];
 
+  // Validate input - must have a valid session to delete
+  if (!sessionIdOrIndex) {
+    console.error('deleteSession: No session specified');
+    return false;
+  }
+
   // Must have at least 2 sessions to delete one
   if (sessionOrder.length <= 1) {
     alert("You may not delete the only Session");

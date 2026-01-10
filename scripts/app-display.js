@@ -45,6 +45,10 @@ function sync_data_to_display() {
     return;
   }
   const config = session.get('config');
+  if (!config) {
+    console.error('No config found in current session');
+    return;
+  }
   var max_points = config.get('maxPointsPerQuestion');
   var rounding = config.get('rounding');
   var team_names = get_team_names();
