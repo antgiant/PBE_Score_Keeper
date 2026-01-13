@@ -68,6 +68,7 @@ To add a new language (e.g., Spanish `es`):
 |------|------|------|--------|
 | `en` | English | `scripts/i18n/en.js` | `README.md` |
 | `es` | Español (Spanish) | `scripts/i18n/es.js` | `README.es.md` |
+| `fr` | Français (French) | `scripts/i18n/fr.js` | `README.fr.md` |
 | `pig` | Secret Code (Pig Latin) | `scripts/i18n/pig.js` | `README.pig.md` |
 
 ### i18n Functions Reference

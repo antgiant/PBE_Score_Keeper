@@ -1,4 +1,4 @@
-🌐 [English](README.md) | [Español](README.es.md) | [Secret Code](README.pig.md)
+🌐 [English](README.md) | [Español](README.es.md) | [Français](README.fr.md) | [Secret Code](README.pig.md)
 
 # PBE Marcador
 Una herramienta para ayudar a llevar el registro de las puntuaciones de la Experiencia Bíblica Pathfinder (PBE) (también conocida como Bible Bowl) por bloque/grupo y equipo.

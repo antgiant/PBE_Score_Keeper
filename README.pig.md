@@ -1,4 +1,4 @@
-🌐 [English](README.md) | [Español](README.es.md) | [Secret Code](README.pig.md)
+🌐 [English](README.md) | [Español](README.es.md) | [Français](README.fr.md) | [Secret Code](README.pig.md)
 
 # BPE-ay Ore-Scay Eeper-Kay
 A-ay ool-tay o-tay elp-hay eep-kay ack-tray of-ay Athfinder-Pay Ible-Bay Experience-ay (BPE-ay) (aka-ay Ible-Bay Owl-Bay) Ores-Scay y-bay ock/group-blay and-ay eam-tay.
