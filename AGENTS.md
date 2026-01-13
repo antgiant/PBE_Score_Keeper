@@ -8,6 +8,77 @@ These instructions apply to any AI assistant working in this repository.
 - If tests cannot be run, state why and provide the closest possible validation.
 - Use the summary reporter when you want a compact output (`node --test --test-reporter ./tests/helpers/table-reporter.js`).
 
+## Internationalization (i18n)
+
+### Translation-Friendly Content Guidelines
+
+**NEVER hardcode user-facing strings in JavaScript or HTML.** All text must go through the i18n system.
+
+When writing code:
+- Use `t('key.path')` for all user-visible strings
+- Use `t_plural('key.path', count)` for pluralized strings
+- Use `t('key.path', { var: value })` for strings with variables
+- Add new translation keys to `scripts/i18n/en.js` first, then all other language files
+
+When adding UI elements:
+- Add `data-i18n="key.path"` attribute for static text content
+- Add `data-i18n-placeholder="key.path"` for input placeholders
+- Add `data-i18n-title="key.path"` for title/tooltip attributes
+- The system auto-translates elements with these attributes on language change
+
+String formatting guidelines:
+- Use `{{variable}}` placeholders for dynamic content (e.g., `"Hello, {{name}}"`)
+- Avoid concatenating translated strings; use placeholders instead
+- Keep sentences whole; don't split them across multiple keys
+- Provide `_one` and `_other` variants for pluralized strings
+
+### Adding a New Language
+
+To add a new language (e.g., Spanish `es`):
+
+1. **Create the language file** `scripts/i18n/es.js`:
+   ```javascript
+   register_i18n_language('es', {
+     name: 'Español',           // Language name in that language
+     locale: 'es',              // Locale for number/date formatting
+     rtl: false,                // Set true for right-to-left languages
+     translations: {
+       // Copy structure from en.js and translate all values
+     }
+   });
+   ```
+
+2. **Add script tag in `index.html`** (after `app-i18n.js`, before `app.js`):
+   ```html
+   <script src="scripts/i18n/es.js"></script>
+   ```
+
+3. **Create README translation** `README.es.md`:
+   - Translate the README content
+   - Include the language selector at the top
+
+4. **Update language selectors** in all README files:
+   ```markdown
+   🌐 [English](README.md) | [Español](README.es.md) | [Secret Code](README.pig.md)
+   ```
+
+### Current Languages
+
+| Code | Name | File | README |
+|------|------|------|--------|
+| `en` | English | `scripts/i18n/en.js` | `README.md` |
+| `pig` | Secret Code (Pig Latin) | `scripts/i18n/pig.js` | `README.pig.md` |
+
+### i18n Functions Reference
+
+Available in `app-i18n.js`:
+- `t(key, params)` - Get translated string with optional interpolation
+- `t_plural(key, count, params)` - Get pluralized string
+- `get_current_language()` - Get active language code
+- `set_language(code)` - Change language and update UI
+- `get_available_languages()` - Get map of code → display name
+- `is_language_available(code)` - Check if language is loaded
+
 ## Export Requirements
 **ALL EXPORTS MUST BE NATIVE YJS BINARY FORMAT**
 - Exports MUST use `Y.encodeStateAsUpdate()` to create native Yjs binary format
