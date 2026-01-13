@@ -214,6 +214,9 @@ function initialize_language_controls() {
     return;
   }
   
+  // Populate language selector dynamically from registered languages
+  populate_language_selector();
+  
   sync_language_preference_from_global();
   var saved_language = get_saved_language_preference() || 'auto';
   apply_language_preference(saved_language);
@@ -230,6 +233,43 @@ function initialize_language_controls() {
   });
   
   setup_language_preference_observer();
+}
+
+/**
+ * Populate the language selector dropdown from registered languages
+ * This ensures all loaded languages appear in the dropdown automatically
+ */
+function populate_language_selector() {
+  var selector = $('#language_preference');
+  if (!selector.length) {
+    return;
+  }
+  
+  // Clear existing options except 'auto'
+  selector.empty();
+  
+  // Add 'Auto' option first
+  var autoOption = $('<option></option>')
+    .attr('value', 'auto')
+    .attr('data-i18n', 'app.auto')
+    .text(t('app.auto'));
+  selector.append(autoOption);
+  
+  // Get all registered languages and sort by name
+  var languages = get_available_languages();
+  var sortedCodes = Object.keys(languages).sort(function(a, b) {
+    return languages[a].localeCompare(languages[b]);
+  });
+  
+  // Add an option for each registered language
+  for (var i = 0; i < sortedCodes.length; i++) {
+    var code = sortedCodes[i];
+    var name = languages[code];
+    var option = $('<option></option>')
+      .attr('value', code)
+      .text(name);
+    selector.append(option);
+  }
 }
 
 /**

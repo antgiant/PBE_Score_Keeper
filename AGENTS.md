@@ -34,13 +34,13 @@ String formatting guidelines:
 
 ### Adding a New Language
 
-To add a new language (e.g., Spanish `es`):
+To add a new language (e.g., German `de`):
 
-1. **Create the language file** `scripts/i18n/es.js`:
+1. **Create the language file** `scripts/i18n/de.js`:
    ```javascript
-   register_i18n_language('es', {
-     name: 'Español',           // Language name in that language
-     locale: 'es',              // Locale for number/date formatting
+   register_i18n_language('de', {
+     name: 'Deutsch',           // Language name in that language
+     locale: 'de',              // Locale for number/date formatting
      rtl: false,                // Set true for right-to-left languages
      translations: {
        // Copy structure from en.js and translate all values
@@ -50,16 +50,23 @@ To add a new language (e.g., Spanish `es`):
 
 2. **Add script tag in `index.html`** (after `app-i18n.js`, before `app.js`):
    ```html
-   <script src="scripts/i18n/es.js"></script>
+   <script src="scripts/i18n/de.js"></script>
    ```
+   
+   **Note:** The language dropdown is dynamically populated from registered languages, so no HTML changes are needed for the selector.
 
-3. **Create README translation** `README.es.md`:
+3. **Create README translation** `README.de.md`:
    - Translate the README content
    - Include the language selector at the top
 
 4. **Update language selectors** in all README files:
    ```markdown
-   🌐 [English](README.md) | [Español](README.es.md) | [Secret Code](README.pig.md)
+   🌐 [English](README.md) | [Deutsch](README.de.md) | [Español](README.es.md) | ...
+   ```
+
+5. **Run tests** to verify all translation keys are present:
+   ```bash
+   node --test tests/unit/i18n.test.js
    ```
 
 ### Current Languages
