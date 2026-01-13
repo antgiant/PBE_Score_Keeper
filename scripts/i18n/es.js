@@ -1,0 +1,251 @@
+/**
+ * Spanish Language Pack for PBE Score Keeper
+ * Paquete de Idioma Español para PBE Score Keeper
+ * 
+ * To add a new language, copy this file and:
+ * 1. Rename to {language-code}.js (e.g., fr.js for French)
+ * 2. Update the register_i18n_language() call with your language code
+ * 3. Update the 'name' to your language's name in that language
+ * 4. Update 'locale' to the appropriate locale code for date formatting
+ * 5. Set 'rtl' to true if your language is right-to-left
+ * 6. Translate all strings in the translations object
+ * 7. Add a <script> tag for it in index.html (after app-i18n.js)
+ */
+register_i18n_language('es', {
+  name: 'Español',
+  locale: 'es',
+  rtl: false,
+  translations: {
+    "app": {
+      "title": "PBE Marcador",
+      "theme": "Tema",
+      "language": "Idioma",
+      "auto": "Auto"
+    },
+    "theme": {
+      "system": "Sistema",
+      "light": "Claro",
+      "dark": "Oscuro"
+    },
+    "config": {
+      "title": "Configuración (Sesión/Ronda/Juego)",
+      "instructions_title": "Instrucciones",
+      "instructions": "Este es un marcador para la Experiencia Bíblica Pathfinder (también conocido como Bible Bowl). Por favor ingrese su número de equipos así como bloques/grupos a continuación para que se pueda crear la cuadrícula de puntuación",
+      "storage_title": "Nota sobre Almacenamiento de Datos",
+      "storage_note": "Los datos se almacenan solo en su dispositivo y no se comparten de ninguna manera con ningún servidor. Esto también significa que si cambia de dispositivo, sus datos no aparecerán en el nuevo dispositivo.",
+      "new_session": "Nueva Sesión",
+      "enter_scores": "Ingresar Puntuaciones"
+    },
+    "teams": {
+      "title": "Configure sus Equipos",
+      "count_one": "{{count}} equipo",
+      "count_other": "{{count}} equipos",
+      "team": "equipo",
+      "teams": "equipos",
+      "name_label": "Nombre del Equipo {{number}}:",
+      "score_label": "Puntuación de {{name}}",
+      "score_label_s": "Puntuación de {{name}}"
+    },
+    "blocks": {
+      "title": "Configure sus Bloques/Grupos",
+      "count_one": "{{count}} bloque/grupo",
+      "count_other": "{{count}} bloques/grupos",
+      "block": "bloque/grupo",
+      "blocks": "bloques/grupos",
+      "name_label": "Nombre del Bloque/Grupo {{number}}:"
+    },
+    "points": {
+      "title": "Puntos Máximos por Pregunta",
+      "count_one": "{{count}} punto",
+      "count_other": "{{count}} puntos",
+      "point": "punto",
+      "points": "puntos",
+      "possible": "Puntos Posibles para la Pregunta"
+    },
+    "rounding": {
+      "title": "¿Redondear la puntuación del equipo en vivo al total del mejor equipo?",
+      "yes": "Sí",
+      "no": "No"
+    },
+    "score_entry": {
+      "title": "Entrada de Puntuación",
+      "previous": "Pregunta Anterior",
+      "next": "Siguiente Pregunta",
+      "new": "Nueva Pregunta",
+      "ignore": "Ignorar esta Pregunta en los Cálculos de Puntuación",
+      "extra_credit": "Permitir Crédito Extra",
+      "question": "Pregunta",
+      "block_group": "Bloque/Grupo"
+    },
+    "scores": {
+      "team_exact": "Puntuación por Equipo (Exacta)",
+      "team_rounded": "Puntuación por Equipo (Redondeada)",
+      "by_block": "Puntuación por Bloque/Grupo",
+      "team_and_block": "Puntuación por Equipo y Bloque/Grupo",
+      "question_log": "Registro de Preguntas"
+    },
+    "table": {
+      "team_name": "Nombre del Equipo",
+      "percent": "Porcentaje",
+      "score": "Puntuación",
+      "placement": "Clasificación",
+      "block_name": "Nombre del Bloque/Grupo",
+      "question": "Pregunta",
+      "possible_points": "Puntos Posibles",
+      "earned_points": "Puntos Ganados",
+      "total_points": "Puntos Totales",
+      "total_points_rounded": "Puntos Totales (Redondeados)",
+      "percent_rounded": "Porcentaje (Redondeado)",
+      "score_rounded": "Puntuación (Redondeada)",
+      "placement_rounded": "Clasificación (Redondeada)",
+      "ignore_question": "Ignorar Pregunta"
+    },
+    "placements": {
+      "first": "Primer Lugar",
+      "second": "Segundo Lugar",
+      "third": "Tercer Lugar"
+    },
+    "history": {
+      "title": "Historial",
+      "change_log": "Registro de Cambios",
+      "time": "Hora",
+      "session": "Sesión",
+      "action": "Acción",
+      "details_header": "Detalles",
+      "no_changes": "Aún no hay cambios registrados. ¡Haga algunos cambios para verlos aquí!",
+      "global": "Global",
+      "current_session": "Sesión Actual",
+      "unknown_time": "Desconocido",
+      "actions": {
+        "change": "Cambio",
+        "rename_session": "Renombrar Sesión",
+        "add_team": "Agregar Equipo",
+        "delete_team": "Eliminar Equipo",
+        "rename_team": "Renombrar Equipo",
+        "add_block": "Agregar Bloque/Grupo",
+        "delete_block": "Eliminar Bloque/Grupo",
+        "rename_block": "Renombrar Bloque/Grupo",
+        "change_max_points": "Cambiar Puntos Máximos",
+        "rename_question": "Renombrar Pregunta",
+        "change_rounding": "Cambiar Redondeo",
+        "ignore_question": "Ignorar Pregunta",
+        "include_question": "Incluir Pregunta",
+        "enable_extra_credit": "Habilitar Crédito Extra",
+        "disable_extra_credit": "Deshabilitar Crédito Extra",
+        "clear_extra_credit": "Borrar Crédito Extra",
+        "extra_credit": "Crédito Extra",
+        "set_question_points": "Establecer Puntos de Pregunta",
+        "change_question_block": "Cambiar Bloque de Pregunta",
+        "score_change": "Cambio de Puntuación",
+        "export_session": "Exportar Sesión",
+        "export_all_sessions": "Exportar Todas las Sesiones",
+        "reorder_teams": "Reordenar Equipos",
+        "reorder_blocks": "Reordenar Bloques/Grupos"
+      },
+      "details_templates": {
+        "renamed": "Renombrado \"{{old}}\" a \"{{new}}\"",
+        "added": "Agregado \"{{name}}\"",
+        "deleted": "Eliminado \"{{name}}\"",
+        "increased_max_points": "Aumentados los puntos máximos de {{old}} a {{new}}",
+        "decreased_max_points": "Reducidos los puntos máximos de {{old}} a {{new}}",
+        "enabled_rounding": "Habilitado redondeo al total del mejor equipo",
+        "disabled_rounding": "Deshabilitado redondeo",
+        "set_ignored": "Establecido \"{{name}}\" para ser ignorado",
+        "set_included": "Establecido \"{{name}}\" para ser incluido",
+        "enabled_extra_credit": "Habilitado crédito extra para \"{{name}}\"",
+        "disabled_extra_credit": "Deshabilitado crédito extra para \"{{name}}\"",
+        "cleared_extra_credit": "Borrado todo el crédito extra para \"{{name}}\"",
+        "increased_extra_credit": "Aumentado crédito extra para \"{{team}}\" en \"{{question}}\" a {{value}}",
+        "decreased_extra_credit": "Reducido crédito extra para \"{{team}}\" en \"{{question}}\" a {{value}}",
+        "set_question_points": "Establecidos puntos máximos para \"{{name}}\" de {{old}} a {{new}}",
+        "changed_block": "Cambiado \"{{question}}\" de \"{{old}}\" a \"{{new}}\"",
+        "score_changed": "\"{{team}}\" en \"{{question}}\" de {{old}} a {{new}}",
+        "exported_session_yjs": "Sesión exportada como archivo .yjs",
+        "exported_session_json": "Sesión exportada como archivo JSON",
+        "exported_session_json_fallback": "Sesión exportada como archivo JSON (respaldo)",
+        "exported_all_yjs": "Todas las sesiones exportadas como archivo .yjs",
+        "exported_all_json": "Todas las sesiones exportadas como archivo JSON",
+        "exported_all_json_fallback": "Todas las sesiones exportadas como archivo JSON (respaldo)",
+        "new_order": "Nuevo orden: {{order}}"
+      }
+    },
+    "advanced": {
+      "title": "Avanzado",
+      "export_csv": "Exportar CSV",
+      "export_team": "Exportar Puntuación por Equipo",
+      "export_block": "Exportar Puntuación por Bloque/Grupo",
+      "export_team_and_block": "Exportar Puntuación por Equipo y Bloque/Grupo",
+      "export_question_log": "Exportar Registro de Preguntas",
+      "export_json": "Exportar para Importar",
+      "export_session": "Exportar Sesión (Ronda/Juego)",
+      "export_all": "Exportar Todo",
+      "import": "Importar",
+      "import_warning": "Advertencia: Importar archivos incorrectos puede corromper sus datos. Se recomienda encarecidamente que ejecute una \"Exportar para Importar\" antes de importar.",
+      "select_file": "Por favor seleccione el archivo a importar:",
+      "danger_zone": "Zona de Peligro",
+      "delete": "Eliminar",
+      "delete_session": "Eliminar esta Sesión (Ronda/Juego)",
+      "no_import_support": "Su navegador no soporta la importación."
+    },
+    "footer": {
+      "feedback": "¿Tiene una idea para mejorar esto?",
+      "let_me_know": "Házmelo saber"
+    },
+    "placeholders": {
+      "team_scores": "Las Puntuaciones del Equipo Van Aquí",
+      "rounded_scores": "Las Puntuaciones Redondeadas del Equipo Van Aquí",
+      "block_scores": "Las Puntuaciones del Bloque/Grupo Van Aquí",
+      "team_block_scores": "Las Puntuaciones del Equipo y Bloque/Grupo Van Aquí",
+      "question_log": "El Registro de Preguntas Va Aquí"
+    },
+    "defaults": {
+      "session_name": "Sesión {{date}}",
+      "team_name": "Equipo {{number}}",
+      "block_name": "Bloque/Grupo {{number}}",
+      "no_block": "Sin Bloque/Grupo",
+      "question_name": "Pregunta {{number}}",
+      "extra_credit": "Crédito Extra",
+      "unnamed_session": "Sesión Sin Nombre"
+    },
+    "confirm": {
+      "delete_team": "¿Realmente desea eliminar {{name}}?",
+      "delete_extra_credit": "¿Está seguro de que desea eliminar irreversiblemente el crédito extra de esta pregunta?",
+      "delete_session": "¿Está seguro de que desea eliminar irreversiblemente \"{{name}}\"?"
+    },
+    "alerts": {
+      "migration_failed": "La migración de datos falló. Sus datos están seguros en localStorage. Por favor exporte una copia de seguridad y reporte este problema.",
+      "cannot_delete_only_session": "No puede eliminar la única Sesión",
+      "deleted": "Eliminado",
+      "import_success": "Importación exitosa: {{count}} sesión(es) importada(s)",
+      "import_failed": "Importación fallida: {{error}}",
+      "import_json_failed": "Error al importar archivo JSON: {{error}}",
+      "import_binary_failed": "Error al importar archivo binario: {{error}}",
+      "select_valid_file": "Por favor seleccione un archivo json o yjs para importar",
+      "loading": "Cargando...",
+      "unknown_import_error": "Error de importación desconocido",
+      "yjs_not_initialized": "Yjs no inicializado",
+      "invalid_import_format": "Formato de importación inválido. Se esperaba un archivo JSON o binario (.yjs).",
+      "failed_parse_container": "Error al analizar el contenedor multi-documento",
+      "failed_merge_global": "Error al fusionar estado global: {{error}}",
+      "failed_import_session_id": "Error al importar sesión {{id}}: {{error}}",
+      "failed_import_session": "Error al importar sesión: {{error}}",
+      "failed_convert_localstorage": "Error al convertir formato de localStorage: {{error}}"
+    },
+    "history_global": {
+      "actions": {
+        "create_session": "Crear Sesión",
+        "switch_session": "Cambiar Sesión",
+        "delete_session": "Eliminar Sesión",
+        "import": "Importar"
+      },
+      "details_templates": {
+        "created_session": "Creada \"{{name}}\"",
+        "switched_session": "Cambiado a \"{{name}}\"",
+        "deleted_session": "Eliminada \"{{name}}\"",
+        "imported_sessions": "Importadas {{count}} sesión(es)",
+        "imported_from_json": "Importadas {{count}} sesión(es) desde archivo JSON",
+        "imported_from_yjs": "Importadas {{count}} sesión(es) desde archivo .yjs"
+      }
+    }
+  }
+});

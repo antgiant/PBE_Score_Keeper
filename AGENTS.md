@@ -67,6 +67,7 @@ To add a new language (e.g., Spanish `es`):
 | Code | Name | File | README |
 |------|------|------|--------|
 | `en` | English | `scripts/i18n/en.js` | `README.md` |
+| `es` | Español (Spanish) | `scripts/i18n/es.js` | `README.es.md` |
 | `pig` | Secret Code (Pig Latin) | `scripts/i18n/pig.js` | `README.pig.md` |
 
 ### i18n Functions Reference
