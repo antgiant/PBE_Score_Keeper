@@ -285,6 +285,14 @@ function apply_language_preference(preference) {
   update_html_lang(resolved);
   update_language_selector(preference);
   translate_page();
+  
+  // Refresh dynamically generated content
+  if (typeof refresh_history_display === 'function') {
+    refresh_history_display();
+  }
+  if (typeof sync_data_to_display === 'function') {
+    sync_data_to_display();
+  }
 }
 
 /**

@@ -480,7 +480,7 @@ async function createNewSession(name) {
   DocManager.setActiveSession(sessionId);
 
   // Log in global history
-  add_global_history_entry(t('history_global.actions.create_session'), t('history_global.details_templates.created_session', { name: sessionName }));
+  add_global_history_entry('history_global.actions.create_session', 'history_global.details_templates.created_session', { name: sessionName });
 
   return sessionId;
 }
@@ -527,7 +527,7 @@ async function switchSession(sessionIdOrIndex) {
   // Log in global history
   const session = get_current_session();
   const sessionName = session ? session.get('name') : 'Unknown';
-  add_global_history_entry(t('history_global.actions.switch_session'), t('history_global.details_templates.switched_session', { name: sessionName }));
+  add_global_history_entry('history_global.actions.switch_session', 'history_global.details_templates.switched_session', { name: sessionName });
 
   sync_data_to_display();
   
@@ -625,7 +625,7 @@ async function deleteSession(sessionIdOrIndex) {
   }
 
   // Log in global history
-  add_global_history_entry(t('history_global.actions.delete_session'), t('history_global.details_templates.deleted_session', { name: sessionName }));
+  add_global_history_entry('history_global.actions.delete_session', 'history_global.details_templates.deleted_session', { name: sessionName });
 
   alert(t('alerts.deleted'));
   sync_data_to_display();

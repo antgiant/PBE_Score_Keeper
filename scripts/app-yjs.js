@@ -490,8 +490,9 @@ async function initialize_new_yjs_state() {
   // Log creation in global history
   const initSessionName = (typeof t === 'function') ? t('defaults.session_name', { date: date }) : 'Session ' + date;
   add_global_history_entry(
-    (typeof t === 'function') ? t('history_global.actions.create_session') : 'Create Session',
-    (typeof t === 'function') ? t('history_global.details_templates.created_session', { name: initSessionName }) : 'Created "Session ' + date + '"'
+    'history_global.actions.create_session',
+    'history_global.details_templates.created_session',
+    { name: initSessionName }
   );
 
   console.log('Initialized new multi-doc Yjs state with session:', sessionId);
@@ -995,10 +996,12 @@ function get_question_names() {
 
 /**
  * Add entry to global history (for session-level events)
- * @param {string} action - Action name
- * @param {string} details - Action details
+ * Stores translation keys and params for language-independent history
+ * @param {string} actionKey - Translation key for the action
+ * @param {string} detailsKey - Translation key for details
+ * @param {object} detailsParams - Parameters for details interpolation
  */
-function add_global_history_entry(action, details) {
+function add_global_history_entry(actionKey, detailsKey, detailsParams) {
   if (!getGlobalDoc()) return;
 
   // Get or create the global history array from meta map
@@ -1014,8 +1017,9 @@ function add_global_history_entry(action, details) {
 
     const entry = new Y.Map();
     entry.set('timestamp', Date.now());
-    entry.set('action', action);
-    entry.set('details', details);
+    entry.set('actionKey', actionKey);
+    entry.set('detailsKey', detailsKey || '');
+    entry.set('detailsParams', detailsParams ? JSON.stringify(detailsParams) : '');
     globalHistory.push([entry]);
   }, 'history');
 }

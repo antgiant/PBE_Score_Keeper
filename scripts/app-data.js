@@ -28,7 +28,7 @@ function update_data_element(updated_id, new_value) {
     if (sessionDoc) {
       sessionDoc.transact(() => {
         session.set('name', new_value);
-        add_history_entry(t('history.actions.rename_session'), t('history.details_templates.renamed', { old: oldName, new: new_value }));
+        add_history_entry('history.actions.rename_session', 'history.details_templates.renamed', { old: oldName, new: new_value });
       }, 'local');
       
       // Update session name cache in global doc
@@ -92,7 +92,7 @@ function update_data_element(updated_id, new_value) {
           questionTeams.push([teamScore]);
         }
 
-        add_history_entry(t('history.actions.add_team'), t('history.details_templates.added', { name: newTeamName }));
+        add_history_entry('history.actions.add_team', 'history.details_templates.added', { name: newTeamName });
       }, 'local');
     }
   }
@@ -117,7 +117,7 @@ function update_data_element(updated_id, new_value) {
               questionTeams.delete(questionTeams.length - 1, 1);
             }
 
-            add_history_entry(t('history.actions.delete_team'), t('history.details_templates.deleted', { name: teamName }));
+            add_history_entry('history.actions.delete_team', 'history.details_templates.deleted', { name: teamName });
           }, 'local');
         }
       }
@@ -132,7 +132,7 @@ function update_data_element(updated_id, new_value) {
     if (sessionDoc) {
       sessionDoc.transact(() => {
         teams.get(updated_team_number).set('name', new_value);
-        add_history_entry(t('history.actions.rename_team'), t('history.details_templates.renamed', { old: oldName, new: new_value }));
+        add_history_entry('history.actions.rename_team', 'history.details_templates.renamed', { old: oldName, new: new_value });
       }, 'local');
     }
   }
@@ -147,7 +147,7 @@ function update_data_element(updated_id, new_value) {
         const newBlockName = t('defaults.block_name', { number: blockNum });
         newBlock.set('name', newBlockName);
         blocks.push([newBlock]);
-        add_history_entry(t('history.actions.add_block'), t('history.details_templates.added', { name: newBlockName }));
+        add_history_entry('history.actions.add_block', 'history.details_templates.added', { name: newBlockName });
       }, 'local');
     }
   }
@@ -172,7 +172,7 @@ function update_data_element(updated_id, new_value) {
       if (sessionDoc) {
         sessionDoc.transact(() => {
           blocks.delete(blocks.length - 1, 1);
-          add_history_entry(t('history.actions.delete_block'), t('history.details_templates.deleted', { name: blockName }));
+          add_history_entry('history.actions.delete_block', 'history.details_templates.deleted', { name: blockName });
         }, 'local');
       }
     }
@@ -186,7 +186,7 @@ function update_data_element(updated_id, new_value) {
     if (sessionDoc) {
       sessionDoc.transact(() => {
         blocks.get(updated_block_number).set('name', new_value);
-        add_history_entry(t('history.actions.rename_block'), t('history.details_templates.renamed', { old: oldName, new: new_value }));
+        add_history_entry('history.actions.rename_block', 'history.details_templates.renamed', { old: oldName, new: new_value });
       }, 'local');
     }
   }
@@ -198,7 +198,7 @@ function update_data_element(updated_id, new_value) {
     if (sessionDoc) {
       sessionDoc.transact(() => {
         config.set('maxPointsPerQuestion', oldValue + 1);
-        add_history_entry(t('history.actions.change_max_points'), t('history.details_templates.increased_max_points', { old: oldValue, new: oldValue + 1 }));
+        add_history_entry('history.actions.change_max_points', 'history.details_templates.increased_max_points', { old: oldValue, new: oldValue + 1 });
       }, 'local');
     }
   }
@@ -222,7 +222,7 @@ function update_data_element(updated_id, new_value) {
       if (sessionDoc) {
         sessionDoc.transact(() => {
           config.set('maxPointsPerQuestion', max_points - 1);
-          add_history_entry(t('history.actions.change_max_points'), t('history.details_templates.decreased_max_points', { old: max_points, new: max_points - 1 }));
+          add_history_entry('history.actions.change_max_points', 'history.details_templates.decreased_max_points', { old: max_points, new: max_points - 1 });
         }, 'local');
       }
     }
@@ -236,7 +236,7 @@ function update_data_element(updated_id, new_value) {
     if (sessionDoc) {
       sessionDoc.transact(() => {
         questions.get(current_question).set('name', new_value);
-        add_history_entry(t('history.actions.rename_question'), t('history.details_templates.renamed', { old: oldName, new: new_value }));
+        add_history_entry('history.actions.rename_question', 'history.details_templates.renamed', { old: oldName, new: new_value });
       }, 'local');
     }
     $("#question_quick_nav").focus();
@@ -247,7 +247,7 @@ function update_data_element(updated_id, new_value) {
     if (sessionDoc) {
       sessionDoc.transact(() => {
         session.get('config').set('rounding', true);
-        add_history_entry(t('history.actions.change_rounding'), t('history.details_templates.enabled_rounding'));
+        add_history_entry('history.actions.change_rounding', 'history.details_templates.enabled_rounding', {});
       }, 'local');
     }
   }
@@ -257,7 +257,7 @@ function update_data_element(updated_id, new_value) {
     if (sessionDoc) {
       sessionDoc.transact(() => {
         session.get('config').set('rounding', false);
-        add_history_entry(t('history.actions.change_rounding'), t('history.details_templates.disabled_rounding'));
+        add_history_entry('history.actions.change_rounding', 'history.details_templates.disabled_rounding', {});
       }, 'local');
     }
   }
@@ -271,9 +271,9 @@ function update_data_element(updated_id, new_value) {
       sessionDoc.transact(() => {
         questions.get(current_question).set('ignore', temp);
         if (temp) {
-          add_history_entry(t('history.actions.ignore_question'), t('history.details_templates.set_ignored', { name: questionName }));
+          add_history_entry('history.actions.ignore_question', 'history.details_templates.set_ignored', { name: questionName });
         } else {
-          add_history_entry(t('history.actions.include_question'), t('history.details_templates.set_included', { name: questionName }));
+          add_history_entry('history.actions.include_question', 'history.details_templates.set_included', { name: questionName });
         }
       }, 'local');
     }
@@ -289,7 +289,7 @@ function update_data_element(updated_id, new_value) {
       const sessionDoc = getActiveSessionDoc();
       if (sessionDoc) {
         sessionDoc.transact(() => {
-          add_history_entry(t('history.actions.enable_extra_credit'), t('history.details_templates.enabled_extra_credit', { name: questionName }));
+          add_history_entry('history.actions.enable_extra_credit', 'history.details_templates.enabled_extra_credit', { name: questionName });
         }, 'local');
       }
     } else {
@@ -312,7 +312,7 @@ function update_data_element(updated_id, new_value) {
             for (let i = 1; i <= team_count; i++) {
               questionTeams.get(i).set('extraCredit', 0);
             }
-            add_history_entry(t('history.actions.clear_extra_credit'), t('history.details_templates.cleared_extra_credit', { name: questionName }));
+            add_history_entry('history.actions.clear_extra_credit', 'history.details_templates.cleared_extra_credit', { name: questionName });
           }, 'local');
         }
       } else {
@@ -320,7 +320,7 @@ function update_data_element(updated_id, new_value) {
         const sessionDoc = getActiveSessionDoc();
         if (sessionDoc) {
           sessionDoc.transact(() => {
-            add_history_entry(t('history.actions.disable_extra_credit'), t('history.details_templates.disabled_extra_credit', { name: questionName }));
+            add_history_entry('history.actions.disable_extra_credit', 'history.details_templates.disabled_extra_credit', { name: questionName });
           }, 'local');
         }
       }
@@ -339,7 +339,7 @@ function update_data_element(updated_id, new_value) {
       sessionDoc.transact(() => {
         let team_extra_credit = questionTeams.get(team_number).get('extraCredit');
         questionTeams.get(team_number).set('extraCredit', team_extra_credit + 1);
-        add_history_entry(t('history.actions.extra_credit'), t('history.details_templates.increased_extra_credit', { team: teamName, question: questionName, value: team_extra_credit + 1 }));
+        add_history_entry('history.actions.extra_credit', 'history.details_templates.increased_extra_credit', { team: teamName, question: questionName, value: team_extra_credit + 1 });
       }, 'local');
     }
   }
@@ -357,7 +357,7 @@ function update_data_element(updated_id, new_value) {
       if (sessionDoc) {
         sessionDoc.transact(() => {
           questionTeams.get(team_number).set('extraCredit', team_extra_credit - 1);
-          add_history_entry(t('history.actions.extra_credit'), t('history.details_templates.decreased_extra_credit', { team: teamName, question: questionName, value: team_extra_credit - 1 }));
+          add_history_entry('history.actions.extra_credit', 'history.details_templates.decreased_extra_credit', { team: teamName, question: questionName, value: team_extra_credit - 1 });
         }, 'local');
       }
     }
@@ -382,7 +382,7 @@ function update_data_element(updated_id, new_value) {
       if (sessionDoc) {
         sessionDoc.transact(() => {
           questions.get(current_question).set('score', Number(new_value));
-          add_history_entry(t('history.actions.set_question_points'), t('history.details_templates.set_question_points', { name: questionName, old: oldScore, new: new_value }));
+          add_history_entry('history.actions.set_question_points', 'history.details_templates.set_question_points', { name: questionName, old: oldScore, new: new_value });
         }, 'local');
       }
     }
@@ -399,7 +399,7 @@ function update_data_element(updated_id, new_value) {
     if (sessionDoc) {
       sessionDoc.transact(() => {
         questions.get(current_question).set('block', Number(new_value));
-        add_history_entry(t('history.actions.change_question_block'), t('history.details_templates.changed_block', { question: questionName, old: oldBlockName, new: newBlockName }));
+        add_history_entry('history.actions.change_question_block', 'history.details_templates.changed_block', { question: questionName, old: oldBlockName, new: newBlockName });
       }, 'local');
     }
   }
@@ -415,7 +415,7 @@ function update_data_element(updated_id, new_value) {
     if (sessionDoc) {
       sessionDoc.transact(() => {
         questions.get(current_question).get('teams').get(team_number).set('score', Number(new_value));
-        add_history_entry(t('history.actions.score_change'), t('history.details_templates.score_changed', { team: teamName, question: questionName, old: oldScore, new: new_value }));
+        add_history_entry('history.actions.score_change', 'history.details_templates.score_changed', { team: teamName, question: questionName, old: oldScore, new: new_value });
       }, 'local');
     }
   }
@@ -516,16 +516,16 @@ function update_data_element(updated_id, new_value) {
       const binary = exportSession(get_current_session_index());
       if (binary && binary.length > 0) {
         downloadBinaryExport(binary, 'pbe_session_' + (new Date().toJSON().slice(0,10)) + '.yjs');
-        add_history_entry(t('history.actions.export_session'), t('history.details_templates.exported_session_yjs'));
+        add_history_entry('history.actions.export_session', 'history.details_templates.exported_session_yjs', {});
       } else {
         // Fallback to JSON if binary export fails
         downloadBlob(export_current_session_json(), 'pbe_session_data_' + (new Date().toJSON().slice(0,10)) + '.json', 'application/json; charset=utf-8;');
-        add_history_entry(t('history.actions.export_session'), t('history.details_templates.exported_session_json'));
+        add_history_entry('history.actions.export_session', 'history.details_templates.exported_session_json', {});
       }
     } catch (error) {
       console.warn('Binary export failed, falling back to JSON:', error);
       downloadBlob(export_current_session_json(), 'pbe_session_data_' + (new Date().toJSON().slice(0,10)) + '.json', 'application/json; charset=utf-8;');
-      add_history_entry(t('history.actions.export_session'), t('history.details_templates.exported_session_json_fallback'));
+      add_history_entry('history.actions.export_session', 'history.details_templates.exported_session_json_fallback', {});
     }
   }
   //Export all to JSON and binary formats
@@ -536,19 +536,19 @@ function update_data_element(updated_id, new_value) {
         const exportData = await exportAllSessions();
         if (exportData && exportData.length > 0) {
           downloadBinaryExport(exportData, 'pbe_all_sessions_' + (new Date().toJSON().slice(0,10)) + '.yjs');
-          add_history_entry(t('history.actions.export_all_sessions'), t('history.details_templates.exported_all_yjs'));
+          add_history_entry('history.actions.export_all_sessions', 'history.details_templates.exported_all_yjs', {});
         } else {
           // Fallback to JSON if binary export fails
           const jsonData = await export_all_sessions_json();
           downloadBlob(jsonData, 'all_pbe_score_data_' + (new Date().toJSON().slice(0,10)) + '.json', 'application/json; charset=utf-8;');
-          add_history_entry(t('history.actions.export_all_sessions'), t('history.details_templates.exported_all_json'));
+          add_history_entry('history.actions.export_all_sessions', 'history.details_templates.exported_all_json', {});
         }
       } catch (error) {
         console.warn('Binary export failed, falling back to JSON:', error);
         try {
           const jsonData = await export_all_sessions_json();
           downloadBlob(jsonData, 'all_pbe_score_data_' + (new Date().toJSON().slice(0,10)) + '.json', 'application/json; charset=utf-8;');
-          add_history_entry(t('history.actions.export_all_sessions'), t('history.details_templates.exported_all_json_fallback'));
+          add_history_entry('history.actions.export_all_sessions', 'history.details_templates.exported_all_json_fallback', {});
         } catch (jsonError) {
           console.error('JSON export also failed:', jsonError);
         }
@@ -645,7 +645,7 @@ function reorder_teams(order) {
       }
 
       // Add history entry
-      add_history_entry(t('history.actions.reorder_teams'), t('history.details_templates.new_order', { order: newOrder.join(', ') }));
+      add_history_entry('history.actions.reorder_teams', 'history.details_templates.new_order', { order: newOrder.join(', ') });
     }, 'local');
   }
 }
@@ -708,7 +708,7 @@ function reorder_blocks(order) {
       }
 
       // Add history entry
-      add_history_entry(t('history.actions.reorder_blocks'), t('history.details_templates.new_order', { order: newOrder.join(', ') }));
+      add_history_entry('history.actions.reorder_blocks', 'history.details_templates.new_order', { order: newOrder.join(', ') });
     }, 'local');
   }
 }

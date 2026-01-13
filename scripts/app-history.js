@@ -61,6 +61,29 @@ function refresh_history_display() {
   // Collect all history entries
   const allEntries = [];
 
+  // Helper to translate history entry action/details
+  // Supports both new format (keys + params) and legacy format (pre-translated strings)
+  function translateEntry(entry) {
+    let action, details;
+    
+    // Check for new format with translation keys
+    const actionKey = entry.get('actionKey');
+    const detailsKey = entry.get('detailsKey');
+    
+    if (actionKey) {
+      // New format: translate using keys
+      action = t(actionKey);
+      const detailsParams = entry.get('detailsParams');
+      details = detailsKey ? t(detailsKey, detailsParams ? JSON.parse(detailsParams) : {}) : '';
+    } else {
+      // Legacy format: use pre-translated strings
+      action = entry.get('action') || t('history.actions.change');
+      details = entry.get('details') || '';
+    }
+    
+    return { action, details };
+  }
+
   // Get global history
   if (getGlobalDoc()) {
     const meta = getGlobalDoc().getMap('meta');
@@ -69,11 +92,12 @@ function refresh_history_display() {
       for (let i = 0; i < globalHistory.length; i++) {
         const entry = globalHistory.get(i);
         if (entry) {
+          const translated = translateEntry(entry);
           allEntries.push({
             timestamp: entry.get('timestamp') || 0,
             session: t('history.global'),
-            action: entry.get('action') || t('history.actions.change'),
-            details: entry.get('details') || '',
+            action: translated.action,
+            details: translated.details,
             isGlobal: true,
             globalIndex: i
           });
@@ -91,11 +115,12 @@ function refresh_history_display() {
     if (historyLog) {
       for (let i = 0; i < historyLog.length; i++) {
         const entry = historyLog.get(i);
+        const translated = translateEntry(entry);
         allEntries.push({
           timestamp: entry.get('timestamp') || 0,
           session: sessionName,
-          action: entry.get('action') || t('history.actions.change'),
-          details: entry.get('details') || '',
+          action: translated.action,
+          details: translated.details,
           isGlobal: false,
           sessionIndex: i
         });
@@ -139,10 +164,12 @@ function refresh_history_display() {
 
 /**
  * Add a history entry to the current session's history log
- * @param {string} action - The action performed (e.g., "Rename Team")
- * @param {string} details - Details about the action
+ * Stores translation keys and params for language-independent history
+ * @param {string} actionKey - Translation key for the action (e.g., "history.actions.rename_team")
+ * @param {string} detailsKey - Translation key for details (e.g., "history.details_templates.renamed")
+ * @param {object} detailsParams - Parameters for details interpolation (e.g., { old: "Team 1", new: "Team 2" })
  */
-function add_history_entry(action, details) {
+function add_history_entry(actionKey, detailsKey, detailsParams) {
   const sessionDoc = getActiveSessionDoc();
   if (!sessionDoc) return;
 
@@ -156,12 +183,12 @@ function add_history_entry(action, details) {
     session.set('historyLog', historyLog);
   }
 
-  // Create a new history entry
+  // Create a new history entry with translation keys
   const entry = new Y.Map();
   entry.set('timestamp', Date.now());
-  entry.set('session', session.get('name') || t('history.session'));
-  entry.set('action', action);
-  entry.set('details', details);
+  entry.set('actionKey', actionKey);
+  entry.set('detailsKey', detailsKey || '');
+  entry.set('detailsParams', detailsParams ? JSON.stringify(detailsParams) : '');
 
   // Add to history log
   historyLog.push([entry]);
