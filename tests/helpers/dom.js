@@ -5,31 +5,51 @@ const crypto = require('node:crypto');
 const { createStorage } = require('./storage');
 
 /**
- * Load i18n translations from JSON files for test context
+ * Load i18n translations from language JS files for test context.
+ * Extracts the translations object from the register_i18n_language() call.
  * @returns {object} Object with language codes as keys and translation objects as values
  */
 function loadI18nTranslations() {
   const translations = {};
   const i18nDir = path.join(__dirname, '..', '..', 'scripts', 'i18n');
   
-  // Load English translations
-  try {
-    const enPath = path.join(i18nDir, 'en.json');
-    if (fs.existsSync(enPath)) {
-      translations['en'] = JSON.parse(fs.readFileSync(enPath, 'utf8'));
+  // Helper to extract translations from JS file content
+  function extractTranslations(content) {
+    // Match register_i18n_language('code', { ... translations: { ... } })
+    // The translations object is deeply nested, so we use a simple regex to find the translations key
+    const match = content.match(/register_i18n_language\s*\(\s*['"]([^'"]+)['"]\s*,\s*(\{[\s\S]*\})\s*\)/);
+    if (match) {
+      try {
+        // Create a sandbox context to safely evaluate the config object
+        const evalContext = { result: null };
+        vm.createContext(evalContext);
+        vm.runInContext(`result = ${match[2]}`, evalContext);
+        if (evalContext.result && evalContext.result.translations) {
+          return { code: match[1], translations: evalContext.result.translations };
+        }
+      } catch (e) {
+        console.warn('Failed to parse translations:', e.message);
+      }
     }
-  } catch (e) {
-    console.warn('Failed to load en.json:', e.message);
+    return null;
   }
   
-  // Load Pig Latin translations
+  // Load all .js files in the i18n directory
   try {
-    const pigPath = path.join(i18nDir, 'pig.json');
-    if (fs.existsSync(pigPath)) {
-      translations['pig'] = JSON.parse(fs.readFileSync(pigPath, 'utf8'));
-    }
+    const files = fs.readdirSync(i18nDir).filter(f => f.endsWith('.js'));
+    files.forEach(file => {
+      try {
+        const content = fs.readFileSync(path.join(i18nDir, file), 'utf8');
+        const result = extractTranslations(content);
+        if (result) {
+          translations[result.code] = result.translations;
+        }
+      } catch (e) {
+        console.warn(`Failed to load ${file}:`, e.message);
+      }
+    });
   } catch (e) {
-    console.warn('Failed to load pig.json:', e.message);
+    console.warn('Failed to read i18n directory:', e.message);
   }
   
   return translations;
@@ -262,7 +282,31 @@ function loadApp(seed = {}) {
     }
 
     // Load all scripts (skip auto-init)
+    // First pass: collect scripts and reorder so app-i18n.js loads before i18n/*.js files
+    const orderedScripts = [];
+    const i18nLanguageScripts = [];
+    
     scripts.forEach((script) => {
+      if (script.src) {
+        if (script.src.includes('i18n/') && !script.src.includes('app-i18n')) {
+          // Language files - defer until after app-i18n.js
+          i18nLanguageScripts.push(script);
+        } else {
+          orderedScripts.push(script);
+        }
+      }
+    });
+    
+    // Insert language scripts right after app-i18n.js
+    const appI18nIndex = orderedScripts.findIndex(s => s.src && s.src.includes('app-i18n'));
+    if (appI18nIndex >= 0) {
+      orderedScripts.splice(appI18nIndex + 1, 0, ...i18nLanguageScripts);
+    } else {
+      // If no app-i18n.js found, add at end
+      orderedScripts.push(...i18nLanguageScripts);
+    }
+    
+    orderedScripts.forEach((script) => {
       if (script.src) {
         if (script.src.includes('jquery')) {
           return;
@@ -277,15 +321,19 @@ function loadApp(seed = {}) {
           return;
         }
 
-        // Always load app-globals.js (contains global variable declarations)
-        // and all app-*.js files but not app.js (which auto-initializes)
-        if (script.src.includes('app-globals') || script.src.includes('app-')) {
+        // Load app-*.js files, i18n language files, but not app.js (which auto-initializes)
+        if (script.src.includes('app-globals') || script.src.includes('app-') || script.src.includes('i18n/')) {
           vm.runInContext(content, context);
-          // After loading app-i18n.js, inject the pre-loaded translations
-          if (script.src.includes('app-i18n')) {
+          // After loading app-i18n.js, inject the pre-loaded translations as backup
+          if (script.src.includes('app-i18n') && !script.src.includes('i18n/')) {
             vm.runInContext(`
               if (_preloadedI18nTranslations) {
-                i18n_translations = _preloadedI18nTranslations;
+                // Merge preloaded translations with any registered ones
+                for (var lang in _preloadedI18nTranslations) {
+                  if (!i18n_translations[lang]) {
+                    i18n_translations[lang] = _preloadedI18nTranslations[lang];
+                  }
+                }
               }
             `, context);
           }
@@ -441,7 +489,30 @@ function loadApp(seed = {}) {
       throw new Error('Inline script or script source not found in index.html');
     }
 
+    // Reorder scripts so app-i18n.js loads before i18n/*.js files
+    const orderedScripts = [];
+    const i18nLanguageScripts = [];
+    
     scripts.forEach((script) => {
+      if (script.src) {
+        if (script.src.includes('i18n/') && !script.src.includes('app-i18n')) {
+          // Language files - defer until after app-i18n.js
+          i18nLanguageScripts.push(script);
+        } else {
+          orderedScripts.push(script);
+        }
+      }
+    });
+    
+    // Insert language scripts right after app-i18n.js
+    const appI18nIndex = orderedScripts.findIndex(s => s.src && s.src.includes('app-i18n'));
+    if (appI18nIndex >= 0) {
+      orderedScripts.splice(appI18nIndex + 1, 0, ...i18nLanguageScripts);
+    } else {
+      orderedScripts.push(...i18nLanguageScripts);
+    }
+
+    orderedScripts.forEach((script) => {
       if (script.src) {
         if (script.src.includes('jquery')) {
           return;
@@ -456,14 +527,18 @@ function loadApp(seed = {}) {
           return;
         }
 
-        // Load all app-*.js files but not app.js (which auto-initializes)
-        if (script.src.includes('app-') || !script.src.includes('app.js')) {
+        // Load app-*.js files, i18n language files, but not app.js (which auto-initializes)
+        if (script.src.includes('app-') || script.src.includes('i18n/') || !script.src.includes('app.js')) {
           vm.runInContext(content, context);
-          // After loading app-i18n.js, inject the pre-loaded translations
-          if (script.src.includes('app-i18n')) {
+          // After loading app-i18n.js, inject the pre-loaded translations as backup
+          if (script.src.includes('app-i18n') && !script.src.includes('i18n/')) {
             vm.runInContext(`
               if (_preloadedI18nTranslations) {
-                i18n_translations = _preloadedI18nTranslations;
+                for (var lang in _preloadedI18nTranslations) {
+                  if (!i18n_translations[lang]) {
+                    i18n_translations[lang] = _preloadedI18nTranslations[lang];
+                  }
+                }
               }
             `, context);
           }
