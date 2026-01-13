@@ -185,7 +185,7 @@ function sync_data_to_display() {
   //Set up Teams
 
   //Show Team Count
-  $("#total_teams").text(team_count);
+  $("#total_teams").text(format_number(team_count));
   if (team_count == 1) {
     $("#total_teams_text").text(t('teams.team'));
     $("#total_teams_decrease").prop("disabled", true);
@@ -287,7 +287,7 @@ function sync_data_to_display() {
   //Set up Blocks/Groups
   
   //Show block/group count
-  $("#total_blocks").text(block_count);
+  $("#total_blocks").text(format_number(block_count));
   if (block_count == 1) {
     $("#total_blocks_text").text(t('blocks.block'));
     $("#total_blocks_decrease").prop("disabled", true);
@@ -369,8 +369,8 @@ function sync_data_to_display() {
 
   //Set up Max Points per Question
 
-  //Show block/group count
-  $("#max_points").text(max_points);
+  //Show max points count
+  $("#max_points").text(format_number(max_points));
   if (max_points == 1) {
     $("#max_points_text").text(t('points.point'));
     $("#max_points_decrease").prop("disabled", true);
@@ -484,7 +484,7 @@ function sync_data_to_display() {
     if (temp == undefined) {
       temp = 0;
     }
-    $('#team_'+i+'_extra_credit').text(temp);
+    $('#team_'+i+'_extra_credit').text(format_number(temp));
     temp_extra_credit += temp;
   }
 

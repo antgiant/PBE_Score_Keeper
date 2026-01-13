@@ -3,10 +3,13 @@
  * 
  * This is a fun/test language that demonstrates the i18n system.
  * It uses Pig Latin transformations of English text.
+ * 
+ * NOTE: Temporarily using French locale (fr-FR) for number formatting testing.
+ * This will show numbers with comma decimal separator (e.g., 85,50%)
  */
 register_i18n_language('pig', {
   name: 'Secret Code',
-  locale: 'en',  // Use English locale for date formatting
+  locale: 'fr-FR',  // TEMP: Using French locale for number formatting testing
   rtl: false,
   translations: {
     "app": {

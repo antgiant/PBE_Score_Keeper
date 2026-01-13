@@ -37,16 +37,16 @@ function get_team_score_summary(temp_question_count = -1) {
     }
     team_score_summary[i][4] = team_earned;
     team_score_summary[i][5] = team_possible;
-    team_score_summary[i][1] = ((team_score_summary[i][4]/team_score_summary[i][5])*100).toFixed(2)+"%";
-    team_score_summary[i][2] = team_score_summary[i][4]+"/"+team_score_summary[i][5];
+    team_score_summary[i][1] = format_percent(team_score_summary[i][4]/team_score_summary[i][5], 2);
+    team_score_summary[i][2] = format_score(team_score_summary[i][4], team_score_summary[i][5]);
     if (team_earned_without_extra_credit > highest_team_score) {
       highest_team_score = team_earned_without_extra_credit;
     }
   }
   for (let i=1; i <= team_count; i++) {
     team_score_summary[i][6] = highest_team_score;
-    team_score_summary[i][7] = ((team_score_summary[i][4]/team_score_summary[i][6])*100).toFixed(2)+"%";
-    team_score_summary[i][8] = team_score_summary[i][4]+"/"+team_score_summary[i][6];
+    team_score_summary[i][7] = format_percent(team_score_summary[i][4]/team_score_summary[i][6], 2);
+    team_score_summary[i][8] = format_score(team_score_summary[i][4], team_score_summary[i][6]);
     if (team_score_summary[i][4]/team_score_summary[i][5] >= 0.9) {
       team_score_summary[i][3] = t('placements.first');
     } else if (team_score_summary[i][4]/team_score_summary[i][5] >= 0.8) {
@@ -102,8 +102,8 @@ function get_block_score_summary(temp_question_count = -1) {
     }
     block_score_summary[i + 1][3] = block_earned;
     block_score_summary[i + 1][4] = block_possible;
-    block_score_summary[i + 1][1] = ((block_earned/block_possible)*100).toFixed(2)+"%";
-    block_score_summary[i + 1][2] = block_earned+"/"+block_possible;
+    block_score_summary[i + 1][1] = format_percent(block_earned/block_possible, 2);
+    block_score_summary[i + 1][2] = format_score(block_earned, block_possible);
   }
   
   //Remove blocks with no questions (where total points = 0)
@@ -147,8 +147,8 @@ function get_team_and_block_score_summary(temp_question_count = -1) {
         team_and_block_score_summary[temp_row_number][4] += questionTeams.get(i).get('score');
         team_and_block_score_summary[temp_row_number][4] += questionTeams.get(i).get('extraCredit');
         team_and_block_score_summary[temp_row_number][5] += question.get('score');
-        team_and_block_score_summary[temp_row_number][2] = ((team_and_block_score_summary[temp_row_number][4]/team_and_block_score_summary[temp_row_number][5])*100).toFixed(2)+"%";;
-        team_and_block_score_summary[temp_row_number][3] = team_and_block_score_summary[temp_row_number][4]+"/"+team_and_block_score_summary[temp_row_number][5];
+        team_and_block_score_summary[temp_row_number][2] = format_percent(team_and_block_score_summary[temp_row_number][4]/team_and_block_score_summary[temp_row_number][5], 2);
+        team_and_block_score_summary[temp_row_number][3] = format_score(team_and_block_score_summary[temp_row_number][4], team_and_block_score_summary[temp_row_number][5]);
       }
     }
   }

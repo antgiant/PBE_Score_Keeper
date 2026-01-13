@@ -541,6 +541,71 @@ function format_time(date) {
 }
 
 /**
+ * Format a number according to the current language's locale
+ * @param {number} num - Number to format
+ * @param {object} options - Intl.NumberFormat options (optional)
+ * @returns {string} Formatted number string
+ */
+function format_number(num, options) {
+  if (typeof num !== 'number' || isNaN(num)) {
+    return String(num);
+  }
+  
+  // Get locale from language registry
+  var meta = i18n_language_registry[i18n_current_language];
+  var locale = meta ? meta.locale : i18n_current_language;
+  
+  try {
+    return new Intl.NumberFormat(locale, options || {}).format(num);
+  } catch (e) {
+    // Fallback to basic toString
+    return num.toString();
+  }
+}
+
+/**
+ * Format a percentage according to the current language's locale
+ * @param {number} num - Number to format as percentage (e.g., 0.85 for 85%)
+ * @param {number} decimalPlaces - Number of decimal places (default: 2)
+ * @returns {string} Formatted percentage string
+ */
+function format_percent(num, decimalPlaces) {
+  if (typeof num !== 'number' || isNaN(num)) {
+    return String(num);
+  }
+  
+  if (typeof decimalPlaces !== 'number') {
+    decimalPlaces = 2;
+  }
+  
+  // Get locale from language registry
+  var meta = i18n_language_registry[i18n_current_language];
+  var locale = meta ? meta.locale : i18n_current_language;
+  
+  try {
+    return new Intl.NumberFormat(locale, {
+      style: 'percent',
+      minimumFractionDigits: decimalPlaces,
+      maximumFractionDigits: decimalPlaces
+    }).format(num);
+  } catch (e) {
+    // Fallback to basic formatting
+    return (num * 100).toFixed(decimalPlaces) + '%';
+  }
+}
+
+/**
+ * Format a score ratio (e.g., "45/50") according to the current language's locale
+ * Uses locale-aware number formatting for both parts
+ * @param {number} earned - Points earned
+ * @param {number} possible - Points possible
+ * @returns {string} Formatted score string (e.g., "45/50" or "45 / 50")
+ */
+function format_score(earned, possible) {
+  return format_number(earned) + '/' + format_number(possible);
+}
+
+/**
  * Initialize - verify at least one language is loaded
  */
 function init_i18n() {
