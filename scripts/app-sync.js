@@ -2,6 +2,20 @@
 // Provides peer-to-peer real-time synchronization using y-webrtc
 
 /**
+ * Error types for sync operations
+ */
+var SyncError = {
+  CONNECTION_FAILED: 'connection_failed',
+  TIMEOUT: 'timeout',
+  INVALID_ROOM: 'invalid_room',
+  SESSION_NOT_FOUND: 'session_not_found',
+  NETWORK_ERROR: 'network_error',
+  PASSWORD_REQUIRED: 'password_required',
+  PASSWORD_INCORRECT: 'password_incorrect',
+  SERVER_DOWN: 'server_down'
+};
+
+/**
  * SyncManager - Central controller for WebRTC synchronization
  * 
  * States: 'offline' | 'connecting' | 'connected' | 'error'
@@ -24,6 +38,10 @@ var SyncManager = {
   onStateChange: null,
   onPeersChange: null,
   onError: null,
+  
+  // Retry state
+  retryAttempt: 0,
+  retryTimeout: null,
   
   // Configuration
   config: {
@@ -361,7 +379,9 @@ function setupNetworkHandlers() {
   window.addEventListener('online', function() {
     console.log('Network online');
     if (SyncManager.roomCode && SyncManager.state !== 'connected') {
-      autoReconnect();
+      // Clear any pending retry and attempt reconnect
+      clearRetryTimeout();
+      retryConnection(0);
     }
   });
   
@@ -369,7 +389,110 @@ function setupNetworkHandlers() {
     console.log('Network offline');
     // Provider will handle disconnection
     // Keep state so we can reconnect when online
+    if (SyncManager.state === 'connected') {
+      SyncManager.state = 'error';
+      updateSyncUI();
+      showToast(t('sync.error_network'));
+      announceToScreenReader(t('sync.error_network'), 'assertive');
+    }
   });
+}
+
+/**
+ * Handle sync errors gracefully
+ * @param {Error} error - Error object
+ * @param {string} context - Where the error occurred
+ */
+function handleSyncError(error, context) {
+  console.error('Sync error in ' + context + ':', error);
+  
+  SyncManager.state = 'error';
+  updateSyncUI();
+  
+  // Determine error type and show appropriate message
+  var message = t('sync.connection_failed');
+  var errorType = SyncError.CONNECTION_FAILED;
+  
+  if (error.message.includes('timeout')) {
+    message = t('sync.error_timeout');
+    errorType = SyncError.TIMEOUT;
+  } else if (error.message.includes('network') || !navigator.onLine) {
+    message = t('sync.error_network');
+    errorType = SyncError.NETWORK_ERROR;
+  } else if (error.message.includes('password')) {
+    message = t('sync.password_required');
+    errorType = SyncError.PASSWORD_REQUIRED;
+  } else if (error.message.includes('signaling') || error.message.includes('server')) {
+    message = t('sync.error_server_down');
+    errorType = SyncError.SERVER_DOWN;
+  }
+  
+  // Show error to user
+  showToast(message);
+  announceToScreenReader(message, 'assertive');
+  
+  // Call error callback if set
+  if (SyncManager.onError) {
+    SyncManager.onError(error, context, errorType);
+  }
+  
+  return errorType;
+}
+
+/**
+ * Clear any pending retry timeout
+ */
+function clearRetryTimeout() {
+  if (SyncManager.retryTimeout) {
+    clearTimeout(SyncManager.retryTimeout);
+    SyncManager.retryTimeout = null;
+  }
+}
+
+/**
+ * Retry connection with exponential backoff
+ * @param {number} attempt - Current attempt number
+ */
+async function retryConnection(attempt) {
+  var maxAttempts = SyncManager.config.maxReconnectAttempts;
+  
+  if (attempt >= maxAttempts) {
+    console.log('Max reconnection attempts reached');
+    SyncManager.state = 'error';
+    SyncManager.retryAttempt = 0;
+    updateSyncUI();
+    showToast(t('sync.reconnect_failed'));
+    announceToScreenReader(t('sync.reconnect_failed'), 'assertive');
+    return;
+  }
+  
+  // Calculate delay with exponential backoff (max 30 seconds)
+  var delay = Math.min(1000 * Math.pow(2, attempt), 30000);
+  console.log('Retry attempt ' + (attempt + 1) + ' in ' + delay + 'ms');
+  
+  SyncManager.retryAttempt = attempt;
+  
+  // Show reconnecting status
+  if (attempt > 0) {
+    showToast(t('sync.reconnecting'));
+    announceToScreenReader(t('sync.reconnecting'));
+  }
+  
+  SyncManager.retryTimeout = setTimeout(async function() {
+    try {
+      // Check if we're still offline
+      if (!navigator.onLine) {
+        retryConnection(attempt + 1);
+        return;
+      }
+      
+      await startSync(SyncManager.displayName, SyncManager.roomCode, SyncManager.password);
+      SyncManager.retryAttempt = 0;
+    } catch (error) {
+      console.warn('Retry attempt ' + (attempt + 1) + ' failed:', error);
+      retryConnection(attempt + 1);
+    }
+  }, delay);
 }
 
 /**
@@ -1088,6 +1211,30 @@ function handleSessionSwitch(newSessionId) {
 }
 
 /**
+ * Handle deletion of the synced session
+ * Called when a session is deleted - checks if it was the synced session
+ * @param {string} deletedSessionId - ID of the deleted session
+ */
+function handleSyncedSessionDeleted(deletedSessionId) {
+  if (SyncManager.state !== 'connected') {
+    return; // Not synced, nothing to do
+  }
+  
+  if (SyncManager.syncedSessionId !== deletedSessionId) {
+    return; // Different session was deleted
+  }
+  
+  console.log('Synced session was deleted, disconnecting...');
+  
+  // Notify user
+  showToast(t('sync.error_session_deleted'));
+  announceToScreenReader(t('sync.error_session_deleted'), 'assertive');
+  
+  // Disconnect from current room
+  stopSync();
+}
+
+/**
  * Check if we should sync the current session
  * @returns {boolean} True if sync should be active
  */
@@ -1482,6 +1629,7 @@ function applyMappings(mappings, sessionDoc) {
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
     SyncManager: SyncManager,
+    SyncError: SyncError,
     initSyncManager: initSyncManager,
     generateRoomCode: generateRoomCode,
     isValidRoomCode: isValidRoomCode,
@@ -1498,6 +1646,10 @@ if (typeof module !== 'undefined' && module.exports) {
     generateUserColor: generateUserColor,
     getUniqueDisplayName: getUniqueDisplayName,
     handleSessionSwitch: handleSessionSwitch,
+    handleSyncedSessionDeleted: handleSyncedSessionDeleted,
+    handleSyncError: handleSyncError,
+    retryConnection: retryConnection,
+    clearRetryTimeout: clearRetryTimeout,
     getSyncedSessionId: getSyncedSessionId,
     getSyncSessionName: getSyncSessionName,
     compareArrays: compareArrays,

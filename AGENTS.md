@@ -239,6 +239,89 @@ The application operates in multi-doc mode with:
 
 IndexedDB persistence uses separate keys for each Y.Doc (`pbe-score-keeper-global`, `pbe-score-keeper-session-{id}`).
 
+## WebRTC Sync Architecture
+
+### Overview
+
+Real-time peer-to-peer synchronization using WebRTC and Yjs awareness protocol. Located in `scripts/app-sync.js`.
+
+### Components
+
+- `SyncManager` - Central sync controller with state, peers, and configuration
+- `WebrtcProvider` from y-webrtc - WebRTC connection management  
+- Awareness protocol - Presence and display name tracking
+- `SyncError` - Error type constants for handling failures
+
+### Room System
+
+- 6-character room codes (e.g., "ABC123")
+- Characters: A-Z, 2-9 (no ambiguous: 0,O,1,I)
+- One room = one session (always)
+- Room names: `pbe-sync-{code}`
+- Switching sessions disconnects from sync
+- Optional password protection (unchecked by default)
+
+### Signaling Servers
+
+Minimum 3 servers configured for redundancy:
+- Primary: `wss://y-webrtc-pbe.fly.dev`
+- Backup 1: `wss://signaling.yjs.dev`
+- Backup 2: `wss://y-webrtc-signaling-us.herokuapp.com`
+
+### Join Behavior
+
+When joining an existing room:
+1. User chooses: Create new session (default) or Merge into current
+2. If merging, name matching dialog appears if differences detected
+3. Auto-match by exact name (case-insensitive)
+4. Manual resolution for unmatched items
+
+### Username Collision Handling
+
+- Duplicate display names get auto-suffixed: "Alice" → "Alice (2)"
+- User notified via toast when name is changed
+- Checked both on join and when peers change
+
+### History Attribution
+
+All history entries include `user` field:
+- Connected users: display name
+- Local/offline: null (shown as "(local)")
+
+### Error Handling
+
+- `handleSyncError(error, context)` - Graceful error handling with i18n messages
+- `retryConnection(attempt)` - Exponential backoff (max 30s, 10 attempts)
+- Network offline/online events trigger automatic reconnection
+- Session deletion while synced triggers disconnect with notification
+
+### Accessibility
+
+- All dialogs keyboard accessible with focus trap
+- Escape key closes dialogs
+- Screen reader announcements for state changes
+- ARIA live regions for peer join/leave
+- Visible focus indicators
+
+### Key Functions
+
+- `initSyncManager()` - Initialize on app startup
+- `startSync(displayName, roomCode, password, joinChoice)` - Connect to room
+- `stopSync()` - Disconnect from current room
+- `showSyncDialog()` - Show connect/disconnect dialog
+- `showNameMatchingDialog(comparison)` - Show name matching UI
+- `handleSessionSwitch(newSessionId)` - Handle session switch while synced
+- `handleSyncedSessionDeleted(sessionId)` - Handle synced session deletion
+- `compareSessionData(local, remote)` - Compare for name matching
+- `applyMappings(mappings, sessionDoc)` - Apply user-confirmed mappings
+
+### Testing
+
+- Unit tests: `tests/unit/sync-*.test.js`
+- UI tests: `tests/ui/sync-*.test.js`
+- Manual testing required for actual WebRTC functionality
+- Accessibility testing with screen readers recommended
+
 ### Testing
 
 - **Total Tests**: 58

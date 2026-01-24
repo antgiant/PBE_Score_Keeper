@@ -624,6 +624,11 @@ async function deleteSession(sessionIdOrIndex) {
   // Destroy session doc and clear storage
   await destroySessionDoc(sessionId, true);
 
+  // Disconnect from sync if we deleted the synced session
+  if (typeof handleSyncedSessionDeleted === 'function') {
+    handleSyncedSessionDeleted(sessionId);
+  }
+
   // Switch to new current if needed
   if (currentSessionId === sessionId) {
     await initSessionDoc(newCurrentId);
