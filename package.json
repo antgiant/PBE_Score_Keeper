@@ -1,5 +1,11 @@
 {
   "dependencies": {
     "yjs": "^13.6.29"
+  },
+  "devDependencies": {
+    "esbuild": "^0.27.2",
+    "y-indexeddb": "^9.0.12",
+    "y-protocols": "^1.0.7",
+    "y-webrtc": "^10.3.0"
   }
 }
