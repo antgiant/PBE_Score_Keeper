@@ -42,7 +42,7 @@ test('validate_data accepts well-formed exports and rejects invalid data', () =>
     current_session: JSON.stringify(1),
     session_1_max_points_per_question: JSON.stringify(4),
     session_1_rounding: JSON.stringify('false'),
-    session_1_block_names: JSON.stringify(['No Block/Group', 'Block A']),
+    session_1_block_names: JSON.stringify(['No Block', 'Block A']),
     session_1_team_names: JSON.stringify(['', 'Alpha']),
     session_1_question_names: JSON.stringify(['', 'Q1']),
     session_1_current_question: JSON.stringify(1),
@@ -70,7 +70,7 @@ test('data_upgrades adds missing extra credit fields for legacy data', () => {
     current_session: JSON.stringify(1),
     session_1_max_points_per_question: JSON.stringify(3),
     session_1_rounding: JSON.stringify('false'),
-    session_1_block_names: JSON.stringify(['No Block/Group']),
+    session_1_block_names: JSON.stringify(['No Block']),
     session_1_team_names: JSON.stringify(['', 'Alpha']),
     session_1_question_names: JSON.stringify(['', 'Q1']),
     session_1_current_question: JSON.stringify(1),
@@ -109,7 +109,7 @@ test('get_block_score_summary rolls up blocks correctly', () => {
   const { context } = loadApp(buildSessionSeed());
   const summary = context.get_block_score_summary();
 
-  assert.equal(summary[1][0], 'No Block/Group');
+  assert.equal(summary[1][0], 'No Block');
   assert.equal(summary[1][1], '83.33%');
   assert.equal(summary[1][2], '10/12');
 
@@ -123,7 +123,7 @@ test('get_team_and_block_score_summary splits results by team and block', () => 
   const summary = context.get_team_and_block_score_summary();
 
   assert.equal(summary[1][0], 'Alpha');
-  assert.equal(summary[1][1], 'No Block/Group');
+  assert.equal(summary[1][1], 'No Block');
   assert.equal(summary[1][2], '66.67%');
   assert.equal(summary[1][3], '4/6');
 

@@ -23,7 +23,7 @@ function buildSessionSeed(questionScores) {
       maxPointsPerQuestion: 6,
       rounding: false,
       teams: ['Team 1'],
-      blocks: ['No Block/Group', 'Block A'],
+      blocks: ['No Block', 'Block A'],
       questions: questions,
       currentQuestion: questionScores.length
     }]
@@ -38,7 +38,7 @@ function buildBasicSessionSeed() {
       maxPointsPerQuestion: 6,
       rounding: false,
       teams: ['Team 1'],
-      blocks: ['No Block/Group', 'Block A'],
+      blocks: ['No Block', 'Block A'],
       questions: [{
         name: 'Q1',
         score: 4,

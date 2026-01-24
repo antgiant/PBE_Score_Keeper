@@ -27,9 +27,9 @@ register_i18n_language('en', {
       "dark": "Dark"
     },
     "config": {
-      "title": "Configuration (Session/Round/Game)",
+      "title": "Configuration (Session)",
       "instructions_title": "Instructions",
-      "instructions": "This is a score keeper for the Pathfinder Bible Experience (aka the Bible Bowl). Please enter your number of teams as well as blocks/groups below so that the scoring grid can be created",
+      "instructions": "This is a score keeper for the Pathfinder Bible Experience (aka the Bible Bowl). Please enter your number of teams as well as blocks below so that the scoring grid can be created",
       "storage_title": "Data Storage Note",
       "storage_note": "Data is stored only on your device, and is not shared in any way with any server. This also means that if you change devices your data will not appear on the new device.",
       "new_session": "New Session",
@@ -50,17 +50,17 @@ register_i18n_language('en', {
       "minimum_notice": "At least 1 team is required"
     },
     "blocks": {
-      "title": "Set up your Blocks/Groups",
-      "count_one": "{{count}} block/group",
-      "count_other": "{{count}} blocks/groups",
-      "block": "block/group",
-      "blocks": "blocks/groups",
-      "name_label": "Block/Group {{number}} Name:",
-      "add_block": "Add Block/Group",
-      "delete_block": "Delete Block/Group",
+      "title": "Set up your Blocks",
+      "count_one": "{{count}} block",
+      "count_other": "{{count}} blocks",
+      "block": "block",
+      "blocks": "blocks",
+      "name_label": "Block {{number}} Name:",
+      "add_block": "Add Block",
+      "delete_block": "Delete Block",
       "delete_aria": "Delete {{name}}",
-      "minimum_notice": "At least 1 block/group is required",
-      "in_use_notice": "Cannot delete: block/group is assigned to questions"
+      "minimum_notice": "At least 1 block is required",
+      "in_use_notice": "Cannot delete: {{name}} is assigned to questions"
     },
     "points": {
       "title": "Maximum Points per Question",
@@ -83,13 +83,13 @@ register_i18n_language('en', {
       "ignore": "Ignore this Question in Score Calculations",
       "extra_credit": "Allow Extra Credit",
       "question": "Question",
-      "block_group": "Block/Group"
+      "block_group": "Block"
     },
     "scores": {
       "team_exact": "Score by Team (Exact)",
       "team_rounded": "Score by Team (Rounded)",
-      "by_block": "Score by Block/Group",
-      "team_and_block": "Score by Team & Block/Group",
+      "by_block": "Score by Block",
+      "team_and_block": "Score by Team & Block",
       "question_log": "Question Log"
     },
     "table": {
@@ -97,7 +97,7 @@ register_i18n_language('en', {
       "percent": "Percent",
       "score": "Score",
       "placement": "Placement",
-      "block_name": "Block/Group Name",
+      "block_name": "Block Name",
       "question": "Question",
       "possible_points": "Possible Points",
       "earned_points": "Earned Points",
@@ -130,9 +130,9 @@ register_i18n_language('en', {
         "add_team": "Add Team",
         "delete_team": "Delete Team",
         "rename_team": "Rename Team",
-        "add_block": "Add Block/Group",
-        "delete_block": "Delete Block/Group",
-        "rename_block": "Rename Block/Group",
+        "add_block": "Add Block",
+        "delete_block": "Delete Block",
+        "rename_block": "Rename Block",
         "change_max_points": "Change Max Points",
         "rename_question": "Rename Question",
         "change_rounding": "Change Rounding",
@@ -148,7 +148,7 @@ register_i18n_language('en', {
         "export_session": "Export Session",
         "export_all_sessions": "Export All Sessions",
         "reorder_teams": "Reorder Teams",
-        "reorder_blocks": "Reorder Blocks/Groups"
+        "reorder_blocks": "Reorder Blocks"
       },
       "details_templates": {
         "renamed": "Renamed \"{{old}}\" to \"{{new}}\"",
@@ -181,18 +181,18 @@ register_i18n_language('en', {
       "title": "Advanced",
       "export_csv": "Export CSV",
       "export_team": "Export Score by Team",
-      "export_block": "Export Score by Block/Group",
-      "export_team_and_block": "Export Score by Team & Block/Group",
+      "export_block": "Export Score by Block",
+      "export_team_and_block": "Export Score by Team & Block",
       "export_question_log": "Export Question Log",
       "export_json": "Export for Importing",
-      "export_session": "Export Session (Round/Game)",
+      "export_session": "Export Session",
       "export_all": "Export All",
       "import": "Import",
       "import_warning": "Warning: Importing bad files can corrupt your data. It is strongly recommended that you run an \"Export for Importing\" before importing.",
       "select_file": "Please Select file to import:",
       "danger_zone": "Danger Zone",
       "delete": "Delete",
-      "delete_session": "Delete this Session (Round/Game)",
+      "delete_session": "Delete this Session",
       "no_import_support": "Your Browser does not support importing."
     },
     "footer": {
@@ -202,15 +202,15 @@ register_i18n_language('en', {
     "placeholders": {
       "team_scores": "Team Scores Go Here",
       "rounded_scores": "Rounded Team Scores Go Here",
-      "block_scores": "Block/Group Scores Go Here",
-      "team_block_scores": "Team & Block/Group Scores Go Here",
+      "block_scores": "Block Scores Go Here",
+      "team_block_scores": "Team & Block Scores Go Here",
       "question_log": "Question Log Goes Here"
     },
     "defaults": {
       "session_name": "Session {{date}}",
       "team_name": "Team {{number}}",
-      "block_name": "Block/Group {{number}}",
-      "no_block": "No Block/Group",
+      "block_name": "Block {{number}}",
+      "no_block": "No Block",
       "question_name": "Question {{number}}",
       "extra_credit": "Extra Credit",
       "unnamed_session": "Unnamed Session"

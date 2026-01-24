@@ -10,7 +10,7 @@ function buildScoreSummarySeed() {
       maxPointsPerQuestion: 10,
       rounding: false,
       teams: ['Alpha', 'Beta', 'Gamma'],
-      blocks: ['No Block/Group', 'Block A'],
+      blocks: ['No Block', 'Block A'],
       questions: [
         {
           name: 'Q1',
@@ -49,7 +49,7 @@ function buildDeleteSessionSeed() {
         maxPointsPerQuestion: 5,
         rounding: false,
         teams: ['Alpha'],
-        blocks: ['No Block/Group'],
+        blocks: ['No Block'],
         questions: [{
           name: 'Q1',
           score: 5,
@@ -64,7 +64,7 @@ function buildDeleteSessionSeed() {
         maxPointsPerQuestion: 10,
         rounding: false,
         teams: ['Beta'],
-        blocks: ['No Block/Group'],
+        blocks: ['No Block'],
         questions: [{
           name: 'Q1',
           score: 10,

@@ -27,7 +27,7 @@
  *     maxPointsPerQuestion: 12,
  *     rounding: false,
  *     teams: ['Team A', 'Team B'],
- *     blocks: ['No Block/Group', 'Block 1'],
+ *     blocks: ['No Block', 'Block 1'],
  *     questions: [{
  *       name: 'Q1',
  *       score: 4,
@@ -57,7 +57,7 @@ function createYjsDoc(config) {
  * @param {number} config.maxPointsPerQuestion - Max points per question (default: 12)
  * @param {boolean} config.rounding - Enable rounding (default: false)
  * @param {Array<string>} config.teams - Team names (default: ['Team 1'])
- * @param {Array<string>} config.blocks - Block names (default: ['No Block/Group'])
+ * @param {Array<string>} config.blocks - Block names (default: ['No Block'])
  * @param {Array<Object>} config.questions - Question configurations (default: [])
  * @param {number} config.currentQuestion - Current question number (default: 1)
  * @param {Object} Y - Yjs library instance
@@ -86,7 +86,7 @@ function buildSession(config, Y) {
 
   // Build blocks array (0-indexed, NO null placeholder)
   const blocks = new Y.Array();
-  const blockNames = config.blocks || ['No Block/Group'];
+  const blockNames = config.blocks || ['No Block'];
   blockNames.forEach(blockName => {
     const block = new Y.Map();
     block.set('name', blockName);
@@ -156,7 +156,7 @@ function buildBasicSeed() {
       maxPointsPerQuestion: 12,
       rounding: false,
       teams: ['Team 1', 'Team 2'],
-      blocks: ['No Block/Group'],
+      blocks: ['No Block'],
       questions: [
         {
           name: 'Q1',
@@ -198,7 +198,7 @@ function buildMultiQuestionSeed(questionScores) {
       maxPointsPerQuestion: Math.max(...questionScores),
       rounding: false,
       teams: ['Team 1', 'Team 2'],
-      blocks: ['No Block/Group'],
+      blocks: ['No Block'],
       questions: questions,
       currentQuestion: questions.length
     }]
@@ -218,7 +218,7 @@ function buildMultiSessionSeed(sessionCount) {
       maxPointsPerQuestion: 12,
       rounding: false,
       teams: ['Team 1', 'Team 2'],
-      blocks: ['No Block/Group'],
+      blocks: ['No Block'],
       questions: [
         {
           name: 'Q1',

@@ -28,9 +28,9 @@ register_i18n_language('fr', {
       "dark": "Sombre"
     },
     "config": {
-      "title": "Configuration (Session/Manche/Jeu)",
+      "title": "Configuration (Session)",
       "instructions_title": "Instructions",
-      "instructions": "Ceci est un marqueur pour l'Expérience Biblique Pathfinder (aussi connu sous le nom de Bible Bowl). Veuillez entrer votre nombre d'équipes ainsi que les blocs/groupes ci-dessous afin que la grille de pointage puisse être créée",
+      "instructions": "Ceci est un marqueur pour l'Expérience Biblique Pathfinder (aussi connu sous le nom de Bible Bowl). Veuillez entrer votre nombre d'équipes ainsi que les blocs ci-dessous afin que la grille de pointage puisse être créée",
       "storage_title": "Note sur le Stockage des Données",
       "storage_note": "Les données sont stockées uniquement sur votre appareil et ne sont partagées d'aucune manière avec aucun serveur. Cela signifie également que si vous changez d'appareil, vos données n'apparaîtront pas sur le nouvel appareil.",
       "new_session": "Nouvelle Session",
@@ -51,17 +51,17 @@ register_i18n_language('fr', {
       "minimum_notice": "Au moins 1 équipe est requise"
     },
     "blocks": {
-      "title": "Configurez vos Blocs/Groupes",
-      "count_one": "{{count}} bloc/groupe",
-      "count_other": "{{count}} blocs/groupes",
-      "block": "bloc/groupe",
-      "blocks": "blocs/groupes",
-      "name_label": "Nom du Bloc/Groupe {{number}} :",
-      "add_block": "Ajouter un Bloc/Groupe",
-      "delete_block": "Supprimer le Bloc/Groupe",
+      "title": "Configurez vos Blocs",
+      "count_one": "{{count}} bloc",
+      "count_other": "{{count}} blocs",
+      "block": "bloc",
+      "blocks": "blocs",
+      "name_label": "Nom du Bloc {{number}} :",
+      "add_block": "Ajouter un Bloc",
+      "delete_block": "Supprimer le Bloc",
       "delete_aria": "Supprimer {{name}}",
-      "minimum_notice": "Au moins 1 bloc/groupe est requis",
-      "in_use_notice": "Impossible de supprimer : bloc/groupe assigné à des questions"
+      "minimum_notice": "Au moins 1 bloc est requis",
+      "in_use_notice": "Impossible de supprimer : {{name}} est assigné à des questions"
     },
     "points": {
       "title": "Points Maximum par Question",
@@ -84,13 +84,13 @@ register_i18n_language('fr', {
       "ignore": "Ignorer cette Question dans les Calculs de Score",
       "extra_credit": "Autoriser le Crédit Supplémentaire",
       "question": "Question",
-      "block_group": "Bloc/Groupe"
+      "block_group": "Bloc"
     },
     "scores": {
       "team_exact": "Score par Équipe (Exact)",
       "team_rounded": "Score par Équipe (Arrondi)",
-      "by_block": "Score par Bloc/Groupe",
-      "team_and_block": "Score par Équipe et Bloc/Groupe",
+      "by_block": "Score par Bloc",
+      "team_and_block": "Score par Équipe et Bloc",
       "question_log": "Journal des Questions"
     },
     "table": {
@@ -98,7 +98,7 @@ register_i18n_language('fr', {
       "percent": "Pourcentage",
       "score": "Score",
       "placement": "Classement",
-      "block_name": "Nom du Bloc/Groupe",
+      "block_name": "Nom du Bloc",
       "question": "Question",
       "possible_points": "Points Possibles",
       "earned_points": "Points Gagnés",
@@ -131,9 +131,9 @@ register_i18n_language('fr', {
         "add_team": "Ajouter une Équipe",
         "delete_team": "Supprimer l'Équipe",
         "rename_team": "Renommer l'Équipe",
-        "add_block": "Ajouter un Bloc/Groupe",
-        "delete_block": "Supprimer le Bloc/Groupe",
-        "rename_block": "Renommer le Bloc/Groupe",
+        "add_block": "Ajouter un Bloc",
+        "delete_block": "Supprimer le Bloc",
+        "rename_block": "Renommer le Bloc",
         "change_max_points": "Modifier les Points Maximum",
         "rename_question": "Renommer la Question",
         "change_rounding": "Modifier l'Arrondi",
@@ -149,7 +149,7 @@ register_i18n_language('fr', {
         "export_session": "Exporter la Session",
         "export_all_sessions": "Exporter Toutes les Sessions",
         "reorder_teams": "Réorganiser les Équipes",
-        "reorder_blocks": "Réorganiser les Blocs/Groupes"
+        "reorder_blocks": "Réorganiser les Blocs"
       },
       "details_templates": {
         "renamed": "Renommé \"{{old}}\" en \"{{new}}\"",
@@ -182,18 +182,18 @@ register_i18n_language('fr', {
       "title": "Avancé",
       "export_csv": "Exporter CSV",
       "export_team": "Exporter le Score par Équipe",
-      "export_block": "Exporter le Score par Bloc/Groupe",
-      "export_team_and_block": "Exporter le Score par Équipe et Bloc/Groupe",
+      "export_block": "Exporter le Score par Bloc",
+      "export_team_and_block": "Exporter le Score par Équipe et Bloc",
       "export_question_log": "Exporter le Journal des Questions",
       "export_json": "Exporter pour Importation",
-      "export_session": "Exporter la Session (Manche/Jeu)",
+      "export_session": "Exporter la Session",
       "export_all": "Tout Exporter",
       "import": "Importer",
       "import_warning": "Attention : L'importation de fichiers incorrects peut corrompre vos données. Il est fortement recommandé d'effectuer une \"Exportation pour Importation\" avant d'importer.",
       "select_file": "Veuillez sélectionner le fichier à importer :",
       "danger_zone": "Zone de Danger",
       "delete": "Supprimer",
-      "delete_session": "Supprimer cette Session (Manche/Jeu)",
+      "delete_session": "Supprimer cette Session",
       "no_import_support": "Votre navigateur ne prend pas en charge l'importation."
     },
     "footer": {
@@ -203,15 +203,15 @@ register_i18n_language('fr', {
     "placeholders": {
       "team_scores": "Les Scores des Équipes Vont Ici",
       "rounded_scores": "Les Scores Arrondis des Équipes Vont Ici",
-      "block_scores": "Les Scores des Blocs/Groupes Vont Ici",
-      "team_block_scores": "Les Scores des Équipes et Blocs/Groupes Vont Ici",
+      "block_scores": "Les Scores des Blocs Vont Ici",
+      "team_block_scores": "Les Scores des Équipes et Blocs Vont Ici",
       "question_log": "Le Journal des Questions Va Ici"
     },
     "defaults": {
       "session_name": "Session {{date}}",
       "team_name": "Équipe {{number}}",
-      "block_name": "Bloc/Groupe {{number}}",
-      "no_block": "Aucun Bloc/Groupe",
+      "block_name": "Bloc {{number}}",
+      "no_block": "Aucun Bloc",
       "question_name": "Question {{number}}",
       "extra_credit": "Crédit Supplémentaire",
       "unnamed_session": "Session Sans Nom"

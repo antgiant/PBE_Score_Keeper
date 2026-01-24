@@ -35,6 +35,23 @@ function initialize_display() {
   initialize_history_viewer();
 
   setup_file_import();
+  
+  // Set up hover/click handlers for disabled block delete buttons to show in-use notice
+  $("#block_names").on("mouseenter", ".item-delete-btn:disabled[data-block-name]", function() {
+    var blockName = $(this).attr("data-block-name");
+    $("#block_in_use_notice").text(t('blocks.in_use_notice', {name: blockName})).show();
+  });
+  $("#block_names").on("mouseleave", ".item-delete-btn:disabled[data-block-name]", function() {
+    $("#block_in_use_notice").hide();
+  });
+  $("#block_names").on("click", ".item-delete-btn:disabled[data-block-name]", function() {
+    var blockName = $(this).attr("data-block-name");
+    $("#block_in_use_notice").text(t('blocks.in_use_notice', {name: blockName})).show();
+    // Auto-hide after a few seconds
+    setTimeout(function() {
+      $("#block_in_use_notice").hide();
+    }, 3000);
+  });
 }
 function sync_data_to_display() {
   //Load "Universal" DB data into variables from Yjs
@@ -295,7 +312,8 @@ function sync_data_to_display() {
   //Set up Blocks/Groups
   
   // Calculate which blocks are in use (can't be deleted)
-  let smallest_valid_number_of_blocks = 1;
+  // This tracks the highest block index that has questions assigned
+  let smallest_valid_number_of_blocks = 0;
   for (let i = 1; i <= question_count; i++) {
     let temp_max_blocks = questions.get(i).get('block');
     if (smallest_valid_number_of_blocks < temp_max_blocks) {
@@ -313,12 +331,8 @@ function sync_data_to_display() {
     $("#block_minimum_notice").hide();
   }
   
-  // Show in-use notice if any blocks can't be deleted due to being assigned
-  if (smallest_valid_number_of_blocks >= block_count && block_count > 1) {
-    $("#block_in_use_notice").show();
-  } else {
-    $("#block_in_use_notice").hide();
-  }
+  // Hide the in-use notice by default (shown on hover/click of disabled buttons)
+  $("#block_in_use_notice").hide();
 
   //Set up Block/Group renaming
   let displayed_block_count = $("#block_names").children().length;
@@ -326,8 +340,10 @@ function sync_data_to_display() {
     for (let i=displayed_block_count + 1;i<=block_count;i++) {
       //Add new
       let blockName = block_names[i] || t('defaults.block_name', {number: i});
-      let deleteDisabled = (block_count <= 1 || i <= smallest_valid_number_of_blocks) ? ' disabled' : '';
-      $("#block_names").append('<div class="reorder-item" data-index="'+i+'"><button type="button" class="drag-handle" draggable="true" aria-label="'+t('blocks.name_label', {number: i}).replace(':', '')+'">&equiv; &#8597;</button><label><span class="reorder-label">'+t('blocks.name_label', {number: i})+'</span> <input type = "text" name = "block_'+i+'_name" id = "block_'+i+'_name" onchange="local_data_update(this)" value = "'+blockName.replace('"', "&quote")+'"></label><button type="button" class="item-delete-btn" id="delete_block_'+i+'" onclick="local_data_update(this)" aria-label="'+t('blocks.delete_aria', {name: blockName}).replace(/"/g, '&quot;')+'" title="'+t('blocks.delete_aria', {name: blockName}).replace(/"/g, '&quot;')+'"'+deleteDisabled+'>🗑</button></div>');
+      let isDisabled = (block_count <= 1 || i <= smallest_valid_number_of_blocks);
+      let deleteDisabled = isDisabled ? ' disabled' : '';
+      let dataBlockName = isDisabled ? ' data-block-name="'+HTMLescape(blockName)+'"' : '';
+      $("#block_names").append('<div class="reorder-item" data-index="'+i+'"><button type="button" class="drag-handle" draggable="true" aria-label="'+t('blocks.name_label', {number: i}).replace(':', '')+'">&equiv; &#8597;</button><label><span class="reorder-label">'+t('blocks.name_label', {number: i})+'</span> <input type = "text" name = "block_'+i+'_name" id = "block_'+i+'_name" onchange="local_data_update(this)" value = "'+blockName.replace('"', "&quote")+'"></label><button type="button" class="item-delete-btn" id="delete_block_'+i+'" onclick="local_data_update(this)" aria-label="'+t('blocks.delete_aria', {name: blockName}).replace(/"/g, '&quot;')+'" title="'+t('blocks.delete_aria', {name: blockName}).replace(/"/g, '&quot;')+'"'+deleteDisabled+dataBlockName+'>🗑</button></div>');
       $("#question_block").append('<label><input type="radio" id="question_block_'+i+'" name="question_block" value="'+i+'" onchange="local_data_update(this)"><span id="block_'+i+'_label">'+HTMLescape(blockName)+'</span></label>');
     }
   }
@@ -358,11 +374,18 @@ function sync_data_to_display() {
         // Update delete button state
         let deleteBtn = block_item.find(".item-delete-btn");
         let currentBlockName = block_names[i] || t('defaults.block_name', {number: i});
+        let isDisabled = block_count <= 1 || i <= smallest_valid_number_of_blocks;
         deleteBtn.attr("id", "delete_block_"+i);
         deleteBtn.attr("aria-label", t('blocks.delete_aria', {name: currentBlockName}));
         deleteBtn.attr("title", t('blocks.delete_aria', {name: currentBlockName}));
         // Disable if this is the only block or if block is in use by questions
-        deleteBtn.prop("disabled", block_count <= 1 || i <= smallest_valid_number_of_blocks);
+        deleteBtn.prop("disabled", isDisabled);
+        // Store block name for in-use notice on disabled buttons
+        if (isDisabled && block_count > 1) {
+          deleteBtn.attr("data-block-name", currentBlockName);
+        } else {
+          deleteBtn.removeAttr("data-block-name");
+        }
         $("#block_names").append(block_item);
       }
     }

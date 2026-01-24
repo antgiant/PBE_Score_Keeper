@@ -28,9 +28,9 @@ register_i18n_language('es', {
       "dark": "Oscuro"
     },
     "config": {
-      "title": "Configuración (Sesión/Ronda/Juego)",
+      "title": "Configuración (Sesión)",
       "instructions_title": "Instrucciones",
-      "instructions": "Este es un marcador para la Experiencia Bíblica Pathfinder (también conocido como Bible Bowl). Por favor ingrese su número de equipos así como bloques/grupos a continuación para que se pueda crear la cuadrícula de puntuación",
+      "instructions": "Este es un marcador para la Experiencia Bíblica Pathfinder (también conocido como Bible Bowl). Por favor ingrese su número de equipos así como bloques a continuación para que se pueda crear la cuadrícula de puntuación",
       "storage_title": "Nota sobre Almacenamiento de Datos",
       "storage_note": "Los datos se almacenan solo en su dispositivo y no se comparten de ninguna manera con ningún servidor. Esto también significa que si cambia de dispositivo, sus datos no aparecerán en el nuevo dispositivo.",
       "new_session": "Nueva Sesión",
@@ -51,17 +51,17 @@ register_i18n_language('es', {
       "minimum_notice": "Se requiere al menos 1 equipo"
     },
     "blocks": {
-      "title": "Configure sus Bloques/Grupos",
-      "count_one": "{{count}} bloque/grupo",
-      "count_other": "{{count}} bloques/grupos",
-      "block": "bloque/grupo",
-      "blocks": "bloques/grupos",
-      "name_label": "Nombre del Bloque/Grupo {{number}}:",
-      "add_block": "Agregar Bloque/Grupo",
-      "delete_block": "Eliminar Bloque/Grupo",
+      "title": "Configure sus Bloques",
+      "count_one": "{{count}} bloque",
+      "count_other": "{{count}} bloques",
+      "block": "bloque",
+      "blocks": "bloques",
+      "name_label": "Nombre del Bloque {{number}}:",
+      "add_block": "Agregar Bloque",
+      "delete_block": "Eliminar Bloque",
       "delete_aria": "Eliminar {{name}}",
-      "minimum_notice": "Se requiere al menos 1 bloque/grupo",
-      "in_use_notice": "No se puede eliminar: bloque/grupo asignado a preguntas"
+      "minimum_notice": "Se requiere al menos 1 bloque",
+      "in_use_notice": "No se puede eliminar: {{name}} está asignado a preguntas"
     },
     "points": {
       "title": "Puntos Máximos por Pregunta",
@@ -84,13 +84,13 @@ register_i18n_language('es', {
       "ignore": "Ignorar esta Pregunta en los Cálculos de Puntuación",
       "extra_credit": "Permitir Crédito Extra",
       "question": "Pregunta",
-      "block_group": "Bloque/Grupo"
+      "block_group": "Bloque"
     },
     "scores": {
       "team_exact": "Puntuación por Equipo (Exacta)",
       "team_rounded": "Puntuación por Equipo (Redondeada)",
-      "by_block": "Puntuación por Bloque/Grupo",
-      "team_and_block": "Puntuación por Equipo y Bloque/Grupo",
+      "by_block": "Puntuación por Bloque",
+      "team_and_block": "Puntuación por Equipo y Bloque",
       "question_log": "Registro de Preguntas"
     },
     "table": {
@@ -98,7 +98,7 @@ register_i18n_language('es', {
       "percent": "Porcentaje",
       "score": "Puntuación",
       "placement": "Clasificación",
-      "block_name": "Nombre del Bloque/Grupo",
+      "block_name": "Nombre del Bloque",
       "question": "Pregunta",
       "possible_points": "Puntos Posibles",
       "earned_points": "Puntos Ganados",
@@ -131,9 +131,9 @@ register_i18n_language('es', {
         "add_team": "Agregar Equipo",
         "delete_team": "Eliminar Equipo",
         "rename_team": "Renombrar Equipo",
-        "add_block": "Agregar Bloque/Grupo",
-        "delete_block": "Eliminar Bloque/Grupo",
-        "rename_block": "Renombrar Bloque/Grupo",
+        "add_block": "Agregar Bloque",
+        "delete_block": "Eliminar Bloque",
+        "rename_block": "Renombrar Bloque",
         "change_max_points": "Cambiar Puntos Máximos",
         "rename_question": "Renombrar Pregunta",
         "change_rounding": "Cambiar Redondeo",
@@ -149,7 +149,7 @@ register_i18n_language('es', {
         "export_session": "Exportar Sesión",
         "export_all_sessions": "Exportar Todas las Sesiones",
         "reorder_teams": "Reordenar Equipos",
-        "reorder_blocks": "Reordenar Bloques/Grupos"
+        "reorder_blocks": "Reordenar Bloques"
       },
       "details_templates": {
         "renamed": "Renombrado \"{{old}}\" a \"{{new}}\"",
@@ -182,18 +182,18 @@ register_i18n_language('es', {
       "title": "Avanzado",
       "export_csv": "Exportar CSV",
       "export_team": "Exportar Puntuación por Equipo",
-      "export_block": "Exportar Puntuación por Bloque/Grupo",
-      "export_team_and_block": "Exportar Puntuación por Equipo y Bloque/Grupo",
+      "export_block": "Exportar Puntuación por Bloque",
+      "export_team_and_block": "Exportar Puntuación por Equipo y Bloque",
       "export_question_log": "Exportar Registro de Preguntas",
       "export_json": "Exportar para Importar",
-      "export_session": "Exportar Sesión (Ronda/Juego)",
+      "export_session": "Exportar Sesión",
       "export_all": "Exportar Todo",
       "import": "Importar",
       "import_warning": "Advertencia: Importar archivos incorrectos puede corromper sus datos. Se recomienda encarecidamente que ejecute una \"Exportar para Importar\" antes de importar.",
       "select_file": "Por favor seleccione el archivo a importar:",
       "danger_zone": "Zona de Peligro",
       "delete": "Eliminar",
-      "delete_session": "Eliminar esta Sesión (Ronda/Juego)",
+      "delete_session": "Eliminar esta Sesión",
       "no_import_support": "Su navegador no soporta la importación."
     },
     "footer": {
@@ -203,15 +203,15 @@ register_i18n_language('es', {
     "placeholders": {
       "team_scores": "Las Puntuaciones del Equipo Van Aquí",
       "rounded_scores": "Las Puntuaciones Redondeadas del Equipo Van Aquí",
-      "block_scores": "Las Puntuaciones del Bloque/Grupo Van Aquí",
-      "team_block_scores": "Las Puntuaciones del Equipo y Bloque/Grupo Van Aquí",
+      "block_scores": "Las Puntuaciones del Bloque Van Aquí",
+      "team_block_scores": "Las Puntuaciones del Equipo y Bloque Van Aquí",
       "question_log": "El Registro de Preguntas Va Aquí"
     },
     "defaults": {
       "session_name": "Sesión {{date}}",
       "team_name": "Equipo {{number}}",
-      "block_name": "Bloque/Grupo {{number}}",
-      "no_block": "Sin Bloque/Grupo",
+      "block_name": "Bloque {{number}}",
+      "no_block": "Sin Bloque",
       "question_name": "Pregunta {{number}}",
       "extra_credit": "Crédito Extra",
       "unnamed_session": "Sesión Sin Nombre"

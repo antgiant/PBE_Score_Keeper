@@ -11,7 +11,7 @@ function buildExportSeed() {
       maxPointsPerQuestion: 10,
       rounding: false,
       teams: ['Alpha', 'Beta', 'Gamma'],
-      blocks: ['No Block/Group', 'Block A'],
+      blocks: ['No Block', 'Block A'],
       questions: [
         {
           name: 'Q1',
@@ -93,9 +93,9 @@ test('export score by block/group downloads the expected CSV', () => {
   assert.equal(filename, 'block_data.csv');
   assert.equal(contentType, 'text/csv;charset=utf-8;');
   assert.ok(
-    content.includes('"Block/Group Name","Percent","Score","Earned Points","Total Points"')
+    content.includes('"Block Name","Percent","Score","Earned Points","Total Points"')
   );
-  assert.ok(content.includes('"No Block/Group","90.00%","27/30","27","30"'));
+  assert.ok(content.includes('"No Block","90.00%","27/30","27","30"'));
   assert.ok(content.includes('"Block A","70.00%","21/30","21","30"'));
 });
 
@@ -107,7 +107,7 @@ test('export score by block/group excludes empty blocks', () => {
       maxPointsPerQuestion: 10,
       rounding: false,
       teams: ['Alpha', 'Beta'],
-      blocks: ['No Block/Group', 'Block A', 'Empty Block'],
+      blocks: ['No Block', 'Block A', 'Empty Block'],
       questions: [
         {
           name: 'Q1',
@@ -139,13 +139,13 @@ test('export score by block/group excludes empty blocks', () => {
 
   assert.equal(downloads.length, 1);
   const { content } = downloads[0];
-  // Should have header + 2 data rows (No Block/Group and Block A)
+  // Should have header + 2 data rows (No Block and Block A)
   const lines = content.trim().split('\n');
   assert.equal(lines.length, 3, 'Should have 1 header + 2 data rows (no empty blocks)');
   // Should NOT contain "Empty Block"
   assert.ok(!content.includes('Empty Block'), 'Export should not contain empty blocks');
   // Should contain the blocks with data
-  assert.ok(content.includes('"No Block/Group"'));
+  assert.ok(content.includes('"No Block"'));
   assert.ok(content.includes('"Block A"'));
 });
 
@@ -161,9 +161,9 @@ test('export score by team and block/group downloads the expected CSV', () => {
   assert.equal(filename, 'team_and_block_data.csv');
   assert.equal(contentType, 'text/csv;charset=utf-8;');
   assert.ok(
-    content.includes('"Team Name","Block/Group Name","Percent","Score","Earned Points","Total Points"')
+    content.includes('"Team Name","Block Name","Percent","Score","Earned Points","Total Points"')
   );
-  assert.ok(content.includes('"Alpha","No Block/Group","100.00%","10/10","10","10"'));
+  assert.ok(content.includes('"Alpha","No Block","100.00%","10/10","10","10"'));
   assert.ok(content.includes('"Alpha","Block A","60.00%","6/10","6","10"'));
   assert.ok(content.includes('"Beta","Block A","100.00%","10/10","10","10"'));
   assert.ok(content.includes('"Gamma","Block A","50.00%","5/10","5","10"'));
@@ -177,7 +177,7 @@ test('export score by team and block/group excludes empty blocks', () => {
       maxPointsPerQuestion: 10,
       rounding: false,
       teams: ['Alpha', 'Beta'],
-      blocks: ['No Block/Group', 'Block A', 'Empty Block'],
+      blocks: ['No Block', 'Block A', 'Empty Block'],
       questions: [
         {
           name: 'Q1',
@@ -215,7 +215,7 @@ test('export score by team and block/group excludes empty blocks', () => {
   // Should NOT contain "Empty Block"
   assert.ok(!content.includes('Empty Block'), 'Export should not contain empty blocks');
   // Should contain the blocks with data
-  assert.ok(content.includes('"No Block/Group"'));
+  assert.ok(content.includes('"No Block"'));
   assert.ok(content.includes('"Block A"'));
 });
 
@@ -230,10 +230,10 @@ test('export question log downloads the expected CSV', () => {
   assert.equal(filename, 'question_log_data.csv');
   assert.equal(contentType, 'text/csv;charset=utf-8;');
   assert.ok(
-    content.includes('"Question","Block/Group","Possible Points","Ignore Question","Alpha","Beta","Gamma"')
+    content.includes('"Question","Block","Possible Points","Ignore Question","Alpha","Beta","Gamma"')
   );
   assert.ok(
-    content.includes('"Q1","No Block/Group","10","false","9 + 1","10","7"')
+    content.includes('"Q1","No Block","10","false","9 + 1","10","7"')
   );
   assert.ok(content.includes('"Q2","Block A","10","false","6","8 + 2","5"'));
 });

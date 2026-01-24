@@ -11,7 +11,7 @@ function buildIgnoreSeed() {
       maxPointsPerQuestion: 5,
       rounding: false,
       teams: ['Alpha', 'Beta'],
-      blocks: ['No Block/Group'],
+      blocks: ['No Block'],
       questions: [
         {
           name: 'Q1',

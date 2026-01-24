@@ -11,7 +11,7 @@ function buildExtraCreditSeed() {
       maxPointsPerQuestion: 5,
       rounding: false,
       teams: ['Alpha', 'Beta'],
-      blocks: ['No Block/Group'],
+      blocks: ['No Block'],
       questions: [
         {
           name: 'Q1',
@@ -47,7 +47,7 @@ function buildExtraCreditUiSeed() {
       maxPointsPerQuestion: 5,
       rounding: false,
       teams: ['Alpha', 'Beta'],
-      blocks: ['No Block/Group'],
+      blocks: ['No Block'],
       questions: [{
         name: 'Q1',
         score: 5,
@@ -71,7 +71,7 @@ function buildExtraCreditRoundingSeed() {
       maxPointsPerQuestion: 5,
       rounding: true,
       teams: ['Alpha', 'Beta'],
-      blocks: ['No Block/Group'],
+      blocks: ['No Block'],
       questions: [
         {
           name: 'Q1',

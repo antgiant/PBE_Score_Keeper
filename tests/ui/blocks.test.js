@@ -11,7 +11,7 @@ function buildBlockSeed() {
       maxPointsPerQuestion: 6,
       rounding: false,
       teams: ['Team 1'],
-      blocks: ['No Block/Group', 'Block/Group 1'],
+      blocks: ['No Block', 'Block 1'],
       questions: [{
         name: 'Q1',
         score: 4,
@@ -39,8 +39,8 @@ test('adding a block updates score entry and summaries', () => {
   assert.equal(context.$('#block_names').children().length, initialBlockCount + 1);
   assert.equal(context.$('#question_block').children().length, initialScoreEntryCount + 1);
   assert.equal(Number(context.$('#total_blocks').text()), initialSetupBlockCount + 1);
-  assert.ok(context.$('#block_scores').html().includes('Block/Group 2'));
-  assert.ok(context.$('#team_and_block_scores').html().includes('Block/Group 2'));
+  assert.ok(context.$('#block_scores').html().includes('Block 2'));
+  assert.ok(context.$('#team_and_block_scores').html().includes('Block 2'));
 });
 
 test('removing a block updates score entry', () => {
