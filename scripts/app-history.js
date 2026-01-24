@@ -98,6 +98,7 @@ function refresh_history_display() {
             session: t('history.global'),
             action: translated.action,
             details: translated.details,
+            user: entry.get('user') || null,
             isGlobal: true,
             globalIndex: i
           });
@@ -121,6 +122,7 @@ function refresh_history_display() {
           session: sessionName,
           action: translated.action,
           details: translated.details,
+          user: entry.get('user') || null,
           isGlobal: false,
           sessionIndex: i
         });
@@ -134,13 +136,16 @@ function refresh_history_display() {
   // Display entries
   if (allEntries.length === 0) {
     var noChangesText = (typeof t === 'function') ? t('history.no_changes') : 'No changes recorded yet. Make some changes to see them here!';
-    historyList.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 20px; color: #666;">'+noChangesText+'</td></tr>';
+    historyList.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 20px; color: #666;">'+noChangesText+'</td></tr>';
     return;
   }
 
   for (const entry of allEntries) {
     const row = document.createElement('tr');
     const timeStr = entry.timestamp ? ((typeof format_time === 'function') ? format_time(entry.timestamp) : new Date(entry.timestamp).toLocaleTimeString()) : t('history.unknown_time');
+    
+    // User display: show display name or "(local)" for local changes
+    const userDisplay = entry.user || t('sync.history_local_user');
 
     // Style global entries differently
     if (entry.isGlobal) {
@@ -152,6 +157,7 @@ function refresh_history_display() {
 
     row.innerHTML =
       '<td>' + timeStr + '</td>' +
+      '<td>' + HTMLescape(userDisplay) + '</td>' +
       '<td>' + HTMLescape(sessionDisplay) + '</td>' +
       '<td>' + HTMLescape(entry.action) + '</td>' +
       '<td>' + HTMLescape(entry.details) + '</td>';
@@ -183,12 +189,18 @@ function add_history_entry(actionKey, detailsKey, detailsParams) {
     session.set('historyLog', historyLog);
   }
 
+  // Get user name from SyncManager if connected, otherwise null
+  const userName = (typeof SyncManager !== 'undefined' && SyncManager.state === 'connected') 
+    ? SyncManager.displayName 
+    : null;
+
   // Create a new history entry with translation keys
   const entry = new Y.Map();
   entry.set('timestamp', Date.now());
   entry.set('actionKey', actionKey);
   entry.set('detailsKey', detailsKey || '');
   entry.set('detailsParams', detailsParams ? JSON.stringify(detailsParams) : '');
+  entry.set('user', userName);
 
   // Add to history log
   historyLog.push([entry]);
