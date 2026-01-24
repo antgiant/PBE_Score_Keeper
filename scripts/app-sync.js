@@ -58,13 +58,33 @@ var SyncManager = {
 };
 
 /**
+ * Get saved display name from global Yjs doc
+ * @returns {string|null} Saved display name or null
+ */
+function getSavedDisplayName() {
+  var globalDoc = getGlobalDoc();
+  if (!globalDoc) return null;
+  return globalDoc.getMap('meta').get('syncDisplayName') || null;
+}
+
+/**
+ * Save display name to global Yjs doc
+ * @param {string} name - Display name to save
+ */
+function saveDisplayName(name) {
+  var globalDoc = getGlobalDoc();
+  if (!globalDoc) return;
+  globalDoc.getMap('meta').set('syncDisplayName', name);
+}
+
+/**
  * Initialize the sync manager
  * Call once on app startup
  */
 function initSyncManager() {
-  // Load persisted room info from localStorage
+  // Load persisted room info from localStorage and Yjs
   var savedRoom = localStorage.getItem('pbe-sync-room');
-  var savedName = localStorage.getItem('pbe-sync-displayName');
+  var savedName = getSavedDisplayName();
   
   if (savedRoom && savedName) {
     SyncManager.roomCode = savedRoom;
@@ -194,8 +214,8 @@ async function startSync(displayName, roomCode, password, joinChoice) {
   SyncManager.password = password || null;
   SyncManager.syncedSessionId = typeof getActiveSessionId === 'function' ? getActiveSessionId() : null;
   
-  // Persist to localStorage (NOT password - must re-enter)
-  localStorage.setItem('pbe-sync-displayName', displayName);
+  // Persist to global Yjs doc and localStorage (NOT password - must re-enter)
+  saveDisplayName(displayName);
   localStorage.setItem('pbe-sync-room', finalRoomCode);
   
   updateSyncUI();
@@ -339,7 +359,7 @@ function stopSync() {
  */
 async function autoReconnect() {
   var savedRoom = localStorage.getItem('pbe-sync-room');
-  var savedName = localStorage.getItem('pbe-sync-displayName');
+  var savedName = getSavedDisplayName();
   
   if (!savedRoom || !savedName) {
     return false;
@@ -569,7 +589,7 @@ function showSyncDialog() {
  * @returns {string} Dialog HTML
  */
 function createConnectDialogHTML() {
-  var savedName = localStorage.getItem('pbe-sync-displayName') || '';
+  var savedName = getSavedDisplayName() || '';
   
   return '<div class="sync-dialog" role="dialog" aria-labelledby="sync-dialog-title" aria-modal="true">' +
     '<h2 id="sync-dialog-title">' + t('sync.dialog_title') + '</h2>' +
@@ -1183,7 +1203,7 @@ function checkDisplayNameCollision() {
     });
     
     // Persist new name
-    localStorage.setItem('pbe-sync-displayName', uniqueName);
+    saveDisplayName(uniqueName);
     
     // Notify user
     showToast(t('sync.name_changed', { name: uniqueName }));

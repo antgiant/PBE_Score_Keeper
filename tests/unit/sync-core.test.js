@@ -10,6 +10,22 @@ global.localStorage = {
   clear() { this.store = {}; }
 };
 
+// Mock global Yjs doc for sync display name persistence
+var mockGlobalDocMeta = {};
+global.getGlobalDoc = function() {
+  return {
+    getMap: function(mapName) {
+      if (mapName === 'meta') {
+        return {
+          get: function(key) { return mockGlobalDocMeta[key] || null; },
+          set: function(key, value) { mockGlobalDocMeta[key] = value; }
+        };
+      }
+      return { get: function() { return null; }, set: function() {} };
+    }
+  };
+};
+
 global.document = {
   addEventListener: function() {},
   removeEventListener: function() {},
@@ -45,6 +61,7 @@ describe('Sync Core', () => {
   
   beforeEach(() => {
     global.localStorage.clear();
+    mockGlobalDocMeta = {}; // Reset mock global doc meta
     // Fresh require to reset module state
     delete require.cache[require.resolve('../../scripts/app-sync.js')];
     syncModule = require('../../scripts/app-sync.js');
@@ -178,7 +195,7 @@ describe('Sync Core', () => {
   describe('initSyncManager', () => {
     it('should load saved room from localStorage', () => {
       global.localStorage.setItem('pbe-sync-room', 'ABC123');
-      global.localStorage.setItem('pbe-sync-displayName', 'Test User');
+      mockGlobalDocMeta['syncDisplayName'] = 'Test User';
       
       syncModule.initSyncManager();
       
@@ -188,7 +205,7 @@ describe('Sync Core', () => {
 
     it('should not load room if display name missing', () => {
       global.localStorage.setItem('pbe-sync-room', 'ABC123');
-      // No display name set
+      // No display name set in global doc
       
       // Reset the module state first
       syncModule.SyncManager.roomCode = null;
