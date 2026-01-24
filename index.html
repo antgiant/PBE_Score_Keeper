@@ -71,17 +71,24 @@
           (<span id="session_display_count"></span>)
           <button id="new_session" onclick='local_data_update(this)' data-i18n="config.new_session">New Session</button>
         </h4>
-        <fieldset>
+        <fieldset class="config-fieldset">
           <legend data-i18n="teams.title">Set up your Teams</legend>
-          <span id="total_teams"></span> <span id="total_teams_text" data-i18n="teams.teams">teams</span> <button id="total_teams_decrease" onclick='local_data_update(this)'>-</button> <button id="total_teams_increase" onclick='local_data_update(this)'>+</button><br>
-          <br>
-          <div id="team_names"></div>
+          <div class="config-count-row">
+            <span id="total_teams"></span> <span id="total_teams_text" data-i18n="teams.teams">teams</span>
+          </div>
+          <div id="team_names" class="config-items-list"></div>
+          <div id="team_minimum_notice" class="config-minimum-notice" style="display:none;" data-i18n="teams.minimum_notice">At least 1 team is required</div>
+          <button id="total_teams_increase" class="config-add-btn" onclick='local_data_update(this)' data-i18n="teams.add_team">Add Team</button>
         </fieldset>
-        <fieldset>
+        <fieldset class="config-fieldset">
           <legend data-i18n="blocks.title">Set up your Blocks/Groups</legend>
-          <span id="total_blocks"></span> <span id="total_blocks_text" data-i18n="blocks.blocks">blocks/groups</span> <button id="total_blocks_decrease" onclick='local_data_update(this)'>-</button> <button id="total_blocks_increase" onclick='local_data_update(this)'>+</button><br>
-          <br>
-          <div id="block_names"></div>
+          <div class="config-count-row">
+            <span id="total_blocks"></span> <span id="total_blocks_text" data-i18n="blocks.blocks">blocks/groups</span>
+          </div>
+          <div id="block_names" class="config-items-list"></div>
+          <div id="block_minimum_notice" class="config-minimum-notice" style="display:none;" data-i18n="blocks.minimum_notice">At least 1 block/group is required</div>
+          <div id="block_in_use_notice" class="config-in-use-notice" style="display:none;" data-i18n="blocks.in_use_notice">Cannot delete: block/group is assigned to questions</div>
+          <button id="total_blocks_increase" class="config-add-btn" onclick='local_data_update(this)' data-i18n="blocks.add_block">Add Block/Group</button>
         </fieldset>
         <br>
         <fieldset>

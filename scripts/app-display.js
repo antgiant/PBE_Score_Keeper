@@ -188,10 +188,10 @@ function sync_data_to_display() {
   $("#total_teams").text(format_number(team_count));
   if (team_count == 1) {
     $("#total_teams_text").text(t('teams.team'));
-    $("#total_teams_decrease").prop("disabled", true);
+    $("#team_minimum_notice").show();
   } else {
     $("#total_teams_text").text(t('teams.teams'));
-    $("#total_teams_decrease").prop("disabled", false);
+    $("#team_minimum_notice").hide();
   }
 
   //Set up Team Name Editing
@@ -200,7 +200,8 @@ function sync_data_to_display() {
     for (let i=displayed_teams_count + 1;i<=team_count;i++) {
       //Add new
       let teamName = team_names[i] || t('defaults.team_name', {number: i});
-      $("#team_names").append('<div class="reorder-item" data-index="'+i+'"><button type="button" class="drag-handle" draggable="true" aria-label="'+t('teams.name_label', {number: i}).replace(':', '')+'">&equiv; &#8597;</button><label><span class="reorder-label">'+t('teams.name_label', {number: i})+'</span> <input type = "text" name = "team_'+i+'_name" id = "team_'+i+'_name" onchange="local_data_update(this)" value = "'+teamName.replace('"', "&quote")+'"></label></div>');
+      let deleteDisabled = team_count <= 1 ? ' disabled' : '';
+      $("#team_names").append('<div class="reorder-item" data-index="'+i+'"><button type="button" class="drag-handle" draggable="true" aria-label="'+t('teams.name_label', {number: i}).replace(':', '')+'">&equiv; &#8597;</button><label><span class="reorder-label">'+t('teams.name_label', {number: i})+'</span> <input type = "text" name = "team_'+i+'_name" id = "team_'+i+'_name" onchange="local_data_update(this)" value = "'+teamName.replace('"', "&quote")+'"></label><button type="button" class="item-delete-btn" id="delete_team_'+i+'" onclick="local_data_update(this)" aria-label="'+t('teams.delete_aria', {name: teamName}).replace(/"/g, '&quot;')+'" title="'+t('teams.delete_aria', {name: teamName}).replace(/"/g, '&quot;')+'"'+deleteDisabled+'>🗑</button></div>');
       let initialScoreLabel = teamName.slice(-1).toLowerCase() === 's' ? t('teams.score_label_s', {name: teamName}) : t('teams.score_label', {name: teamName});
       $("#question_teams").append('<fieldset><legend id=team_'+i+'_points_label>'+HTMLescape(initialScoreLabel)+'</legend><div id="team_'+i+'_score"></div>'+
                                    '<legend id=team_'+i+'_extra_credit_label style="display:none">'+t('defaults.extra_credit')+'<div><button id="team_'+i+'_extra_credit_decrease" onclick="local_data_update(this)" >-</button><span id="team_'+i+'_extra_credit" class="extra_credit_amount">0</span><button id ="team_'+i+'_extra_credit_increase" onclick="local_data_update(this)" >+</button></div></legend></fieldset>');
@@ -217,7 +218,7 @@ function sync_data_to_display() {
     //Already have the right number do nothing
   }
 
-  //Update Team Names (Yes this is ineffecient but the numbers are so small it doesn't really matter)
+  //Update Team Names and delete button states (Yes this is ineffecient but the numbers are so small it doesn't really matter)
   for (let i=1;i<=team_count;i++) {
     let team_input = $("#team_"+i+"_name");
     if (typeof team_input.closest === "function") {
@@ -226,6 +227,13 @@ function sync_data_to_display() {
         team_item.attr("data-index", i);
         team_item.find(".reorder-label").text(t('teams.name_label', {number: i}));
         team_item.find(".drag-handle").attr("aria-label", t('teams.name_label', {number: i}).replace(':', ''));
+        // Update delete button state
+        let deleteBtn = team_item.find(".item-delete-btn");
+        let currentTeamName = team_names[i] || t('defaults.team_name', {number: i});
+        deleteBtn.attr("id", "delete_team_"+i);
+        deleteBtn.attr("aria-label", t('teams.delete_aria', {name: currentTeamName}));
+        deleteBtn.attr("title", t('teams.delete_aria', {name: currentTeamName}));
+        deleteBtn.prop("disabled", team_count <= 1);
         $("#team_names").append(team_item);
       }
     }
@@ -286,14 +294,30 @@ function sync_data_to_display() {
 
   //Set up Blocks/Groups
   
+  // Calculate which blocks are in use (can't be deleted)
+  let smallest_valid_number_of_blocks = 1;
+  for (let i = 1; i <= question_count; i++) {
+    let temp_max_blocks = questions.get(i).get('block');
+    if (smallest_valid_number_of_blocks < temp_max_blocks) {
+      smallest_valid_number_of_blocks = temp_max_blocks;
+    }
+  }
+  
   //Show block/group count
   $("#total_blocks").text(format_number(block_count));
   if (block_count == 1) {
     $("#total_blocks_text").text(t('blocks.block'));
-    $("#total_blocks_decrease").prop("disabled", true);
+    $("#block_minimum_notice").show();
   } else {
     $("#total_blocks_text").text(t('blocks.blocks'));
-    $("#total_blocks_decrease").prop("disabled", false);
+    $("#block_minimum_notice").hide();
+  }
+  
+  // Show in-use notice if any blocks can't be deleted due to being assigned
+  if (smallest_valid_number_of_blocks >= block_count && block_count > 1) {
+    $("#block_in_use_notice").show();
+  } else {
+    $("#block_in_use_notice").hide();
   }
 
   //Set up Block/Group renaming
@@ -302,7 +326,8 @@ function sync_data_to_display() {
     for (let i=displayed_block_count + 1;i<=block_count;i++) {
       //Add new
       let blockName = block_names[i] || t('defaults.block_name', {number: i});
-      $("#block_names").append('<div class="reorder-item" data-index="'+i+'"><button type="button" class="drag-handle" draggable="true" aria-label="'+t('blocks.name_label', {number: i}).replace(':', '')+'">&equiv; &#8597;</button><label><span class="reorder-label">'+t('blocks.name_label', {number: i})+'</span> <input type = "text" name = "block_'+i+'_name" id = "block_'+i+'_name" onchange="local_data_update(this)" value = "'+blockName.replace('"', "&quote")+'"></label></div>');
+      let deleteDisabled = (block_count <= 1 || i <= smallest_valid_number_of_blocks) ? ' disabled' : '';
+      $("#block_names").append('<div class="reorder-item" data-index="'+i+'"><button type="button" class="drag-handle" draggable="true" aria-label="'+t('blocks.name_label', {number: i}).replace(':', '')+'">&equiv; &#8597;</button><label><span class="reorder-label">'+t('blocks.name_label', {number: i})+'</span> <input type = "text" name = "block_'+i+'_name" id = "block_'+i+'_name" onchange="local_data_update(this)" value = "'+blockName.replace('"', "&quote")+'"></label><button type="button" class="item-delete-btn" id="delete_block_'+i+'" onclick="local_data_update(this)" aria-label="'+t('blocks.delete_aria', {name: blockName}).replace(/"/g, '&quot;')+'" title="'+t('blocks.delete_aria', {name: blockName}).replace(/"/g, '&quot;')+'"'+deleteDisabled+'>🗑</button></div>');
       $("#question_block").append('<label><input type="radio" id="question_block_'+i+'" name="question_block" value="'+i+'" onchange="local_data_update(this)"><span id="block_'+i+'_label">'+HTMLescape(blockName)+'</span></label>');
     }
   }
@@ -316,7 +341,7 @@ function sync_data_to_display() {
     //Already have the right number do nothing
   }
 
-  //Update Block/Group Names (Yes this is ineffecient but the numbers are so small it doesn't really matter)
+  //Update Block/Group Names and delete button states (Yes this is ineffecient but the numbers are so small it doesn't really matter)
   try {
     $( "#question_block" ).controlgroup( "destroy" );
   } catch(e) {
@@ -330,6 +355,14 @@ function sync_data_to_display() {
         block_item.attr("data-index", i);
         block_item.find(".reorder-label").text(t('blocks.name_label', {number: i}));
         block_item.find(".drag-handle").attr("aria-label", t('blocks.name_label', {number: i}).replace(':', ''));
+        // Update delete button state
+        let deleteBtn = block_item.find(".item-delete-btn");
+        let currentBlockName = block_names[i] || t('defaults.block_name', {number: i});
+        deleteBtn.attr("id", "delete_block_"+i);
+        deleteBtn.attr("aria-label", t('blocks.delete_aria', {name: currentBlockName}));
+        deleteBtn.attr("title", t('blocks.delete_aria', {name: currentBlockName}));
+        // Disable if this is the only block or if block is in use by questions
+        deleteBtn.prop("disabled", block_count <= 1 || i <= smallest_valid_number_of_blocks);
         $("#block_names").append(block_item);
       }
     }

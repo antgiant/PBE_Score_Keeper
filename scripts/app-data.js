@@ -15,6 +15,8 @@ function update_data_element(updated_id, new_value) {
   const team_question_score_check = /team_([0-9]+)_score_([0-9]+)/;
   const decrease_team_extra_credit_check = /team_([0-9]+)_extra_credit_decrease/;
   const increase_team_extra_credit_check = /team_([0-9]+)_extra_credit_increase/;
+  const delete_team_check = /delete_team_([0-9]+)/;
+  const delete_block_check = /delete_block_([0-9]+)/;
 
   const session = get_current_session();
   if (!session) return;
@@ -136,6 +138,34 @@ function update_data_element(updated_id, new_value) {
       }, 'local');
     }
   }
+  //Delete specific team by index
+  else if (updated_id.search(delete_team_check) > -1) {
+    let team_to_delete = Number(updated_id.match(delete_team_check)[1]);
+    const teams = session.get('teams');
+    const questions = session.get('questions');
+    if (teams.length > 2) {
+      const teamToDelete = teams.get(team_to_delete);
+      const teamName = teamToDelete.get('name');
+      if (window.confirm(t('confirm.delete_team', { name: teamName }))) {
+        const sessionDoc = getActiveSessionDoc();
+        if (sessionDoc) {
+          sessionDoc.transact(() => {
+            // Remove team from teams array
+            teams.delete(team_to_delete, 1);
+
+            // Remove team scores from all questions
+            for (let i = 1; i < questions.length; i++) {
+              const question = questions.get(i);
+              const questionTeams = question.get('teams');
+              questionTeams.delete(team_to_delete, 1);
+            }
+
+            add_history_entry('history.actions.delete_team', 'history.details_templates.deleted', { name: teamName });
+          }, 'local');
+        }
+      }
+    }
+  }
   //Increase total Block/Group Count
   if (updated_id == "total_blocks_increase") {
     const blocks = session.get('blocks');
@@ -188,6 +218,36 @@ function update_data_element(updated_id, new_value) {
         blocks.get(updated_block_number).set('name', new_value);
         add_history_entry('history.actions.rename_block', 'history.details_templates.renamed', { old: oldName, new: new_value });
       }, 'local');
+    }
+  }
+  //Delete specific block by index
+  else if (updated_id.search(delete_block_check) > -1) {
+    let block_to_delete = Number(updated_id.match(delete_block_check)[1]);
+    const blocks = session.get('blocks');
+    const questions = session.get('questions');
+
+    //Don't allow deleting of blocks that are in use
+    let question_count = questions.length - 1;
+    let smallest_valid_number_of_blocks = 1;
+    for (let i = 1; i <= question_count; i++) {
+      let temp_max_blocks = questions.get(i).get('block');
+      if (smallest_valid_number_of_blocks < temp_max_blocks) {
+        smallest_valid_number_of_blocks = temp_max_blocks;
+      }
+    }
+    // Can only delete if block index is greater than the highest block in use
+    if (blocks.length > 2 && block_to_delete > smallest_valid_number_of_blocks) {
+      const blockToDelete = blocks.get(block_to_delete);
+      const blockName = blockToDelete.get('name');
+      if (window.confirm(t('confirm.delete_block', { name: blockName }))) {
+        const sessionDoc = getActiveSessionDoc();
+        if (sessionDoc) {
+          sessionDoc.transact(() => {
+            blocks.delete(block_to_delete, 1);
+            add_history_entry('history.actions.delete_block', 'history.details_templates.deleted', { name: blockName });
+          }, 'local');
+        }
+      }
     }
   }
   //Increase Max Points per Question

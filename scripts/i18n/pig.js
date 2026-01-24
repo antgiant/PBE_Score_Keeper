@@ -40,7 +40,11 @@ register_i18n_language('pig', {
       "teams": "eams-tay",
       "name_label": "Eam-Tay {{number}} Ame-Nay:",
       "score_label": "{{name}}'s-ay ore-scay",
-      "score_label_s": "{{name}}'-ay ore-scay"
+      "score_label_s": "{{name}}'-ay ore-scay",
+      "add_team": "Add-ay Eam-Tay",
+      "delete_team": "Elete-Day Eam-Tay",
+      "delete_aria": "Elete-Day {{name}}",
+      "minimum_notice": "At-ay east-lay 1 eam-tay is-ay equired-ray"
     },
     "blocks": {
       "title": "Et-Say up-ay our-yay Ocks/Groups-Blay",
@@ -48,7 +52,12 @@ register_i18n_language('pig', {
       "count_other": "{{count}} ocks/groups-blay",
       "block": "ock/group-blay",
       "blocks": "ocks/groups-blay",
-      "name_label": "Ock/Group-Blay {{number}} Ame-Nay:"
+      "name_label": "Ock/Group-Blay {{number}} Ame-Nay:",
+      "add_block": "Add-ay Ock/Group-Blay",
+      "delete_block": "Elete-Day Ock/Group-Blay",
+      "delete_aria": "Elete-Day {{name}}",
+      "minimum_notice": "At-ay east-lay 1 ock/group-blay is-ay equired-ray",
+      "in_use_notice": "Annot-cay elete-day: ock/group-blay is-ay assigned-ay o-tay uestions-qay"
     },
     "points": {
       "title": "Aximum-May Oints-Pay er-pay Uestion-Qay",
@@ -205,6 +214,7 @@ register_i18n_language('pig', {
     },
     "confirm": {
       "delete_team": "O-day ou-yay eally-ray ant-way o-tay elete-day {{name}}?",
+      "delete_block": "O-day ou-yay eally-ray ant-way o-tay elete-day {{name}}?",
       "delete_extra_credit": "Are-ay ou-yay ure-say ou-yay ant-way o-tay irreversibly-ay elete-day is-thay uestion's-qay extra-ay edit-cray?",
       "delete_session": "Are-ay ou-yay ure-say ou-yay ant-way o-tay irreversibly-ay elete-day \"{{name}}\"?"
     },

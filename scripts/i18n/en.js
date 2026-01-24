@@ -43,7 +43,11 @@ register_i18n_language('en', {
       "teams": "teams",
       "name_label": "Team {{number}} Name:",
       "score_label": "{{name}}'s score",
-      "score_label_s": "{{name}}' score"
+      "score_label_s": "{{name}}' score",
+      "add_team": "Add Team",
+      "delete_team": "Delete Team",
+      "delete_aria": "Delete {{name}}",
+      "minimum_notice": "At least 1 team is required"
     },
     "blocks": {
       "title": "Set up your Blocks/Groups",
@@ -51,7 +55,12 @@ register_i18n_language('en', {
       "count_other": "{{count}} blocks/groups",
       "block": "block/group",
       "blocks": "blocks/groups",
-      "name_label": "Block/Group {{number}} Name:"
+      "name_label": "Block/Group {{number}} Name:",
+      "add_block": "Add Block/Group",
+      "delete_block": "Delete Block/Group",
+      "delete_aria": "Delete {{name}}",
+      "minimum_notice": "At least 1 block/group is required",
+      "in_use_notice": "Cannot delete: block/group is assigned to questions"
     },
     "points": {
       "title": "Maximum Points per Question",
@@ -208,6 +217,7 @@ register_i18n_language('en', {
     },
     "confirm": {
       "delete_team": "Do you really want to delete {{name}}?",
+      "delete_block": "Do you really want to delete {{name}}?",
       "delete_extra_credit": "Are you sure you want to irreversibly delete this question's extra credit?",
       "delete_session": "Are you sure you want to irreversibly delete \"{{name}}\"?"
     },

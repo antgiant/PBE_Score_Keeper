@@ -44,7 +44,11 @@ register_i18n_language('es', {
       "teams": "equipos",
       "name_label": "Nombre del Equipo {{number}}:",
       "score_label": "Puntuación de {{name}}",
-      "score_label_s": "Puntuación de {{name}}"
+      "score_label_s": "Puntuación de {{name}}",
+      "add_team": "Agregar Equipo",
+      "delete_team": "Eliminar Equipo",
+      "delete_aria": "Eliminar {{name}}",
+      "minimum_notice": "Se requiere al menos 1 equipo"
     },
     "blocks": {
       "title": "Configure sus Bloques/Grupos",
@@ -52,7 +56,12 @@ register_i18n_language('es', {
       "count_other": "{{count}} bloques/grupos",
       "block": "bloque/grupo",
       "blocks": "bloques/grupos",
-      "name_label": "Nombre del Bloque/Grupo {{number}}:"
+      "name_label": "Nombre del Bloque/Grupo {{number}}:",
+      "add_block": "Agregar Bloque/Grupo",
+      "delete_block": "Eliminar Bloque/Grupo",
+      "delete_aria": "Eliminar {{name}}",
+      "minimum_notice": "Se requiere al menos 1 bloque/grupo",
+      "in_use_notice": "No se puede eliminar: bloque/grupo asignado a preguntas"
     },
     "points": {
       "title": "Puntos Máximos por Pregunta",
@@ -209,6 +218,7 @@ register_i18n_language('es', {
     },
     "confirm": {
       "delete_team": "¿Realmente desea eliminar {{name}}?",
+      "delete_block": "¿Realmente desea eliminar {{name}}?",
       "delete_extra_credit": "¿Está seguro de que desea eliminar irreversiblemente el crédito extra de esta pregunta?",
       "delete_session": "¿Está seguro de que desea eliminar irreversiblemente \"{{name}}\"?"
     },
