@@ -1,0 +1,1155 @@
+// WebRTC Sync Module for PBE Score Keeper
+// Provides peer-to-peer real-time synchronization using y-webrtc
+
+/**
+ * SyncManager - Central controller for WebRTC synchronization
+ * 
+ * States: 'offline' | 'connecting' | 'connected' | 'error'
+ */
+var SyncManager = {
+  // Connection state
+  state: 'offline',
+  roomCode: null,
+  displayName: null,
+  password: null,
+  syncedSessionId: null,
+  provider: null,
+  awareness: null,
+  previousFocus: null,
+  
+  // Peers tracking
+  peers: new Map(),  // peerId -> { displayName, color, lastSeen }
+  
+  // Callbacks
+  onStateChange: null,
+  onPeersChange: null,
+  onError: null,
+  
+  // Configuration
+  config: {
+    signalingServers: [
+      'wss://y-webrtc-pbe.fly.dev',           // Primary (dedicated)
+      'wss://signaling.yjs.dev',              // Backup 1 (Yjs community)
+      'wss://y-webrtc-signaling-us.herokuapp.com'  // Backup 2 (Heroku)
+    ],
+    minSignalingServers: 3,  // Minimum required for reliability
+    roomPrefix: 'pbe-sync-',
+    reconnectInterval: 5000,
+    maxReconnectAttempts: 10
+  }
+};
+
+/**
+ * Initialize the sync manager
+ * Call once on app startup
+ */
+function initSyncManager() {
+  // Load persisted room info from localStorage
+  var savedRoom = localStorage.getItem('pbe-sync-room');
+  var savedName = localStorage.getItem('pbe-sync-displayName');
+  
+  if (savedRoom && savedName) {
+    SyncManager.roomCode = savedRoom;
+    SyncManager.displayName = savedName;
+    // Will auto-reconnect in Phase 3
+  }
+  
+  // Set up event handlers
+  setupVisibilityHandler();
+  setupNetworkHandlers();
+  
+  // Attempt auto-reconnect after a short delay
+  // (let the rest of the app initialize first)
+  if (savedRoom && savedName) {
+    setTimeout(function() {
+      autoReconnect();
+    }, 1000);
+  }
+  
+  console.log('SyncManager initialized');
+}
+
+/**
+ * Generate a 6-character room code
+ * @returns {string} Room code (uppercase alphanumeric)
+ */
+function generateRoomCode() {
+  var chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // Removed ambiguous: 0,O,1,I
+  var code = '';
+  for (var i = 0; i < 6; i++) {
+    code += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return code;
+}
+
+/**
+ * Validate room code format
+ * @param {string} code - Room code to validate
+ * @returns {boolean} True if valid format
+ */
+function isValidRoomCode(code) {
+  if (typeof code !== 'string') return false;
+  return /^[A-Z0-9]{6}$/i.test(code.trim());
+}
+
+/**
+ * Get current sync state
+ * @returns {string} Current state: 'offline' | 'connecting' | 'connected' | 'error'
+ */
+function getSyncState() {
+  return SyncManager.state;
+}
+
+/**
+ * Get current room code
+ * @returns {string|null} Room code or null if not in a room
+ */
+function getSyncRoomCode() {
+  return SyncManager.roomCode;
+}
+
+/**
+ * Get current display name
+ * @returns {string|null} Display name or null if not set
+ */
+function getSyncDisplayName() {
+  return SyncManager.displayName;
+}
+
+/**
+ * Get list of connected peers
+ * @returns {Array} Array of { peerId, displayName, color }
+ */
+function getSyncPeers() {
+  return Array.from(SyncManager.peers.values());
+}
+
+/**
+ * Get count of connected peers (including self)
+ * @returns {number} Peer count
+ */
+function getSyncPeerCount() {
+  return SyncManager.peers.size + 1; // +1 for self
+}
+
+/**
+ * Start sync - connect to or create a room
+ * @param {string} displayName - User's display name
+ * @param {string} [roomCode] - Room to join, or null to create new
+ * @param {string} [password] - Optional room password for encryption
+ * @param {string} [joinChoice] - 'create' | 'new' | 'merge' (how to handle joining)
+ * @returns {Promise<string>} Room code on success
+ */
+async function startSync(displayName, roomCode, password, joinChoice) {
+  if (!displayName || displayName.trim().length === 0) {
+    throw new Error('Display name is required');
+  }
+  
+  // Validate room code if joining
+  if (roomCode && !isValidRoomCode(roomCode)) {
+    throw new Error('Invalid room code');
+  }
+  
+  // Generate room code if creating
+  var finalRoomCode = roomCode ? roomCode.toUpperCase() : generateRoomCode();
+  
+  // Handle join choice - create new session or merge into current
+  var sessionDoc;
+  if (joinChoice === 'new') {
+    // Create a new session for this sync
+    var roomSessionName = 'Synced: ' + finalRoomCode;
+    await createNewSession(roomSessionName);
+    sessionDoc = getActiveSessionDoc();
+  } else {
+    // Use current session (for 'create' or 'merge')
+    sessionDoc = getActiveSessionDoc();
+  }
+  
+  if (!sessionDoc) {
+    throw new Error('No active session');
+  }
+  
+  // Update state
+  SyncManager.state = 'connecting';
+  SyncManager.displayName = displayName;
+  SyncManager.roomCode = finalRoomCode;
+  SyncManager.password = password || null;
+  SyncManager.syncedSessionId = typeof getActiveSessionId === 'function' ? getActiveSessionId() : null;
+  
+  // Persist to localStorage (NOT password - must re-enter)
+  localStorage.setItem('pbe-sync-displayName', displayName);
+  localStorage.setItem('pbe-sync-room', finalRoomCode);
+  
+  updateSyncUI();
+  
+  try {
+    // Check if WebrtcProvider is available
+    if (typeof WebrtcProvider === 'undefined') {
+      throw new Error('WebrtcProvider not available - rebuild yjs-bundle.min.js with y-webrtc');
+    }
+    
+    // Create WebRTC provider
+    // Room name is just the code (1 room = 1 session)
+    var roomName = SyncManager.config.roomPrefix + finalRoomCode;
+    
+    SyncManager.provider = new WebrtcProvider(roomName, sessionDoc, {
+      signaling: SyncManager.config.signalingServers,
+      password: password || null,  // Used as encryption key if provided
+      maxConns: 20,
+      filterBcConns: true,
+      peerOpts: {}
+    });
+    
+    // Set up awareness
+    setupAwareness(SyncManager.provider.awareness);
+    
+    // Listen for connection events
+    SyncManager.provider.on('status', function(event) {
+      console.log('WebRTC status:', event.status);
+      
+      if (event.status === 'connected') {
+        SyncManager.state = 'connected';
+        updateSyncUI();
+        
+        if (SyncManager.onStateChange) {
+          SyncManager.onStateChange('connected');
+        }
+      }
+    });
+    
+    SyncManager.provider.on('synced', function(event) {
+      console.log('WebRTC synced:', event.synced);
+      
+      // This is where we'd trigger the name matching dialog
+      // if there are differences between local and remote data
+      if (event.synced && SyncManager.state === 'connecting') {
+        checkForNameMatching();
+      }
+    });
+    
+    SyncManager.provider.on('peers', function(event) {
+      console.log('WebRTC peers changed:', event.webrtcPeers);
+      updatePeersFromAwareness();
+      updateSyncUI();
+    });
+    
+    // Wait for initial connection (with timeout)
+    await waitForConnection(10000);
+    
+    SyncManager.state = 'connected';
+    updateSyncUI();
+    
+    if (SyncManager.onStateChange) {
+      SyncManager.onStateChange('connected');
+    }
+    
+    return finalRoomCode;
+    
+  } catch (error) {
+    console.error('Failed to start sync:', error);
+    SyncManager.state = 'error';
+    updateSyncUI();
+    
+    if (SyncManager.onError) {
+      SyncManager.onError(error);
+    }
+    
+    throw error;
+  }
+}
+
+/**
+ * Wait for WebRTC connection with timeout
+ * @param {number} timeout - Timeout in milliseconds
+ * @returns {Promise<void>}
+ */
+function waitForConnection(timeout) {
+  return new Promise(function(resolve, reject) {
+    var startTime = Date.now();
+    
+    var checkConnection = function() {
+      if (SyncManager.provider && SyncManager.provider.connected) {
+        resolve();
+        return;
+      }
+      
+      if (Date.now() - startTime > timeout) {
+        reject(new Error('Connection timeout'));
+        return;
+      }
+      
+      setTimeout(checkConnection, 100);
+    };
+    
+    checkConnection();
+  });
+}
+
+/**
+ * Stop sync - disconnect from current room
+ */
+function stopSync() {
+  // Destroy WebRTC provider
+  if (SyncManager.provider) {
+    SyncManager.provider.destroy();
+    SyncManager.provider = null;
+  }
+  
+  // Clear awareness
+  SyncManager.awareness = null;
+  
+  // Reset state
+  SyncManager.state = 'offline';
+  SyncManager.roomCode = null;
+  SyncManager.syncedSessionId = null;
+  SyncManager.peers.clear();
+  
+  // Clear localStorage (keep display name for convenience)
+  localStorage.removeItem('pbe-sync-room');
+  
+  updateSyncUI();
+  
+  if (SyncManager.onStateChange) {
+    SyncManager.onStateChange('offline');
+  }
+}
+
+/**
+ * Attempt to auto-reconnect to saved room
+ * Called on page load if room was saved
+ * @returns {Promise<boolean>} True if reconnection successful
+ */
+async function autoReconnect() {
+  var savedRoom = localStorage.getItem('pbe-sync-room');
+  var savedName = localStorage.getItem('pbe-sync-displayName');
+  
+  if (!savedRoom || !savedName) {
+    return false;
+  }
+  
+  console.log('Attempting auto-reconnect to room:', savedRoom);
+  
+  try {
+    await startSync(savedName, savedRoom);
+    return true;
+  } catch (error) {
+    console.warn('Auto-reconnect failed:', error);
+    // Don't clear saved room - user can manually retry
+    return false;
+  }
+}
+
+/**
+ * Handle visibility change for reconnection
+ */
+function setupVisibilityHandler() {
+  document.addEventListener('visibilitychange', function() {
+    if (document.visibilityState === 'visible') {
+      // Page became visible again
+      if (SyncManager.state === 'error' || 
+          (SyncManager.roomCode && SyncManager.state === 'offline')) {
+        autoReconnect();
+      }
+    }
+  });
+}
+
+/**
+ * Handle online/offline events
+ */
+function setupNetworkHandlers() {
+  window.addEventListener('online', function() {
+    console.log('Network online');
+    if (SyncManager.roomCode && SyncManager.state !== 'connected') {
+      autoReconnect();
+    }
+  });
+  
+  window.addEventListener('offline', function() {
+    console.log('Network offline');
+    // Provider will handle disconnection
+    // Keep state so we can reconnect when online
+  });
+}
+
+/**
+ * Check if name matching is needed and trigger dialog
+ */
+async function checkForNameMatching() {
+  // Get remote state from peers
+  var sessionDoc = typeof getActiveSessionDoc === 'function' ? getActiveSessionDoc() : null;
+  if (!sessionDoc) return;
+  
+  // Check if we have any peers with data
+  var peerCount = getSyncPeerCount();
+  if (peerCount <= 1) {
+    // We're alone, no matching needed
+    return;
+  }
+  
+  // Name matching will be implemented in Phase 4
+  // For now, just log
+  console.log('Connected with peers, name matching may be needed');
+}
+
+/**
+ * Show the join/create room dialog
+ */
+function showSyncDialog() {
+  // Remove any existing dialog
+  var existing = document.getElementById('sync-dialog-overlay');
+  if (existing) existing.remove();
+  
+  var isConnected = SyncManager.state === 'connected';
+  
+  var overlay = document.createElement('div');
+  overlay.id = 'sync-dialog-overlay';
+  overlay.className = 'sync-dialog-overlay';
+  
+  if (isConnected) {
+    // Show disconnect dialog
+    overlay.innerHTML = createDisconnectDialogHTML();
+  } else {
+    // Show connect dialog
+    overlay.innerHTML = createConnectDialogHTML();
+  }
+  
+  document.body.appendChild(overlay);
+  
+  // Store previously focused element
+  SyncManager.previousFocus = document.activeElement;
+  
+  // Set up event listeners
+  setupSyncDialogListeners();
+  setupPasswordToggle();
+  
+  // Focus first input
+  var firstInput = overlay.querySelector('input[type="text"]');
+  if (firstInput) firstInput.focus();
+  
+  // Trap focus within dialog
+  trapFocus(overlay);
+  
+  // Close on overlay click
+  overlay.addEventListener('click', function(e) {
+    if (e.target === overlay) {
+      closeSyncDialog();
+    }
+  });
+  
+  // Close on Escape key
+  document.addEventListener('keydown', handleSyncDialogKeydown);
+}
+
+/**
+ * Create HTML for connect dialog
+ * @returns {string} Dialog HTML
+ */
+function createConnectDialogHTML() {
+  var savedName = localStorage.getItem('pbe-sync-displayName') || '';
+  
+  return '<div class="sync-dialog" role="dialog" aria-labelledby="sync-dialog-title" aria-modal="true">' +
+    '<h2 id="sync-dialog-title">' + t('sync.dialog_title') + '</h2>' +
+    '<div id="sync-error-message"></div>' +
+    '<div class="form-group">' +
+      '<label for="sync-display-name">' + t('sync.display_name_label') + '</label>' +
+      '<input type="text" id="sync-display-name" ' +
+             'placeholder="' + t('sync.display_name_placeholder') + '" ' +
+             'value="' + escapeHtml(savedName) + '" ' +
+             'maxlength="30" ' +
+             'aria-required="true">' +
+    '</div>' +
+    '<fieldset class="radio-group">' +
+      '<legend class="visually-hidden">' + t('sync.mode_selection') + '</legend>' +
+      '<label>' +
+        '<input type="radio" name="sync-mode" value="create" checked> ' +
+        t('sync.create_room') +
+      '</label>' +
+      '<label>' +
+        '<input type="radio" name="sync-mode" value="join"> ' +
+        t('sync.join_room') +
+      '</label>' +
+    '</fieldset>' +
+    '<div class="form-group" id="sync-room-code-group" style="display: none;">' +
+      '<label for="sync-room-code">' + t('sync.room_code_label') + '</label>' +
+      '<input type="text" id="sync-room-code" ' +
+             'class="room-code-input" ' +
+             'placeholder="' + t('sync.room_code_placeholder') + '" ' +
+             'maxlength="6" ' +
+             'autocomplete="off" ' +
+             'autocorrect="off" ' +
+             'autocapitalize="characters" ' +
+             'aria-describedby="room-code-hint">' +
+      '<span id="room-code-hint" class="hint-text">' + t('sync.room_code_hint') + '</span>' +
+    '</div>' +
+    '<div class="form-group checkbox-group" id="sync-password-toggle">' +
+      '<label>' +
+        '<input type="checkbox" id="sync-use-password"> ' +
+        t('sync.use_password') +
+      '</label>' +
+    '</div>' +
+    '<div class="form-group" id="sync-password-group" style="display: none;">' +
+      '<label for="sync-password">' + t('sync.password_label') + '</label>' +
+      '<input type="password" id="sync-password" ' +
+             'placeholder="' + t('sync.password_placeholder') + '" ' +
+             'maxlength="50" ' +
+             'aria-describedby="password-hint">' +
+      '<span id="password-hint" class="hint-text">' + t('sync.password_hint') + '</span>' +
+    '</div>' +
+    '<div class="button-row">' +
+      '<button type="button" onclick="closeSyncDialog()">' + t('sync.cancel_button') + '</button>' +
+      '<button type="button" onclick="handleSyncConnect()" class="primary">' + t('sync.connect_button') + '</button>' +
+    '</div>' +
+  '</div>';
+}
+
+/**
+ * Create HTML for disconnect dialog (when already connected)
+ * @returns {string} Dialog HTML
+ */
+function createDisconnectDialogHTML() {
+  var peers = getSyncPeers();
+  var peerNames = peers.map(function(p) { return p.displayName; }).join(', ');
+  var passwordNote = SyncManager.password 
+    ? '<p class="password-note"><span aria-hidden="true">🔒</span> ' + t('sync.share_password_note') + '</p>' 
+    : '';
+  
+  return '<div class="sync-dialog" role="dialog" aria-labelledby="sync-dialog-title" aria-modal="true">' +
+    '<h2 id="sync-dialog-title">' + t('sync.dialog_title') + '</h2>' +
+    '<p>' + t('sync.status_connected') + '</p>' +
+    '<div class="room-code-display" aria-label="Room code: ' + SyncManager.roomCode.split('').join(' ') + '">' + SyncManager.roomCode + '</div>' +
+    '<p>' + t('sync.share_instructions') + '</p>' +
+    passwordNote +
+    '<p><strong>' + t_plural('sync.peer_count', getSyncPeerCount(), { count: getSyncPeerCount() }) + '</strong></p>' +
+    (peerNames ? '<p>' + escapeHtml(peerNames) + '</p>' : '') +
+    '<div class="button-row">' +
+      '<button type="button" onclick="copyRoomCode(\'' + SyncManager.roomCode + '\')" class="secondary">' +
+        '<span aria-hidden="true">📋</span> ' + t('sync.copy_code') +
+      '</button>' +
+      '<button type="button" onclick="closeSyncDialog()">' + t('sync.cancel_button') + '</button>' +
+      '<button type="button" onclick="handleSyncDisconnect()" class="danger">' + t('sync.disconnect_button') + '</button>' +
+    '</div>' +
+  '</div>';
+}
+
+/**
+ * Set up password checkbox toggle
+ */
+function setupPasswordToggle() {
+  var checkbox = document.getElementById('sync-use-password');
+  var passwordGroup = document.getElementById('sync-password-group');
+  
+  if (checkbox && passwordGroup) {
+    checkbox.addEventListener('change', function() {
+      passwordGroup.style.display = this.checked ? 'block' : 'none';
+      if (this.checked) {
+        document.getElementById('sync-password').focus();
+      }
+    });
+  }
+}
+
+/**
+ * Close the sync dialog
+ */
+function closeSyncDialog() {
+  var overlay = document.getElementById('sync-dialog-overlay');
+  if (overlay) overlay.remove();
+  document.removeEventListener('keydown', handleSyncDialogKeydown);
+  
+  // Return focus to trigger
+  if (SyncManager.previousFocus) {
+    SyncManager.previousFocus.focus();
+    SyncManager.previousFocus = null;
+  }
+}
+
+/**
+ * Handle keydown events in sync dialog
+ * @param {KeyboardEvent} e - Keyboard event
+ */
+function handleSyncDialogKeydown(e) {
+  if (e.key === 'Escape') {
+    closeSyncDialog();
+  }
+}
+
+/**
+ * Handle mode toggle in connect dialog
+ */
+function setupSyncDialogListeners() {
+  var radios = document.querySelectorAll('input[name="sync-mode"]');
+  var roomCodeGroup = document.getElementById('sync-room-code-group');
+  
+  radios.forEach(function(radio) {
+    radio.addEventListener('change', function() {
+      if (this.value === 'join') {
+        roomCodeGroup.style.display = 'block';
+        document.getElementById('sync-room-code').focus();
+      } else {
+        roomCodeGroup.style.display = 'none';
+      }
+    });
+  });
+}
+
+/**
+ * Handle connect button click
+ */
+async function handleSyncConnect() {
+  var displayName = document.getElementById('sync-display-name').value.trim();
+  var mode = document.querySelector('input[name="sync-mode"]:checked').value;
+  var roomCodeInput = document.getElementById('sync-room-code');
+  var roomCode = mode === 'join' ? roomCodeInput.value.trim().toUpperCase() : null;
+  
+  // Get password if enabled
+  var usePassword = document.getElementById('sync-use-password') ? document.getElementById('sync-use-password').checked : false;
+  var password = usePassword ? document.getElementById('sync-password').value : null;
+  
+  // Validate display name
+  if (!displayName) {
+    showSyncError(t('sync.invalid_display_name'));
+    document.getElementById('sync-display-name').focus();
+    return;
+  }
+  
+  // Validate room code for join mode
+  if (mode === 'join' && !isValidRoomCode(roomCode)) {
+    showSyncError(t('sync.invalid_room_code'));
+    roomCodeInput.focus();
+    return;
+  }
+  
+  try {
+    // For join mode, show session choice dialog first
+    if (mode === 'join') {
+      closeSyncDialog();
+      var joinChoice = await showJoinChoiceDialog();
+      if (!joinChoice) return; // User cancelled
+      
+      await startSync(displayName, roomCode, password, joinChoice);
+    } else {
+      await startSync(displayName, roomCode, password, 'create');
+      closeSyncDialog();
+      
+      // Show the room code for sharing
+      showRoomCodeDialog(SyncManager.roomCode, usePassword);
+    }
+  } catch (error) {
+    console.error('Sync connection failed:', error);
+    if (error.message === 'password_required') {
+      showSyncError(t('sync.password_required'));
+    } else if (error.message === 'password_incorrect') {
+      showSyncError(t('sync.password_incorrect'));
+    } else {
+      showSyncError(t('sync.connection_failed'));
+    }
+  }
+}
+
+/**
+ * Show accessible error message in dialog
+ * @param {string} message - Error message to display
+ */
+function showSyncError(message) {
+  var errorEl = document.getElementById('sync-error-message');
+  if (errorEl) {
+    errorEl.textContent = message;
+    errorEl.style.display = 'block';
+    errorEl.setAttribute('role', 'alert');
+  } else {
+    alert(message);
+  }
+}
+
+/**
+ * Handle disconnect button click
+ */
+function handleSyncDisconnect() {
+  stopSync();
+  closeSyncDialog();
+}
+
+/**
+ * Show room code after creating a room
+ * @param {string} roomCode - The generated room code
+ * @param {boolean} hasPassword - Whether room is password-protected
+ */
+function showRoomCodeDialog(roomCode, hasPassword) {
+  var existing = document.getElementById('sync-dialog-overlay');
+  if (existing) existing.remove();
+  
+  var overlay = document.createElement('div');
+  overlay.id = 'sync-dialog-overlay';
+  overlay.className = 'sync-dialog-overlay';
+  
+  var passwordNote = hasPassword 
+    ? '<p class="password-note"><span aria-hidden="true">🔒</span> ' + t('sync.share_password_note') + '</p>' 
+    : '';
+  
+  overlay.innerHTML = '<div class="sync-dialog" role="dialog" aria-labelledby="room-code-title" aria-modal="true">' +
+    '<h2 id="room-code-title">' + t('sync.dialog_title') + '</h2>' +
+    '<p>' + t('sync.share_instructions') + '</p>' +
+    '<div class="room-code-display" aria-label="Room code: ' + roomCode.split('').join(' ') + '">' + roomCode + '</div>' +
+    passwordNote +
+    '<div class="button-row">' +
+      '<button type="button" onclick="copyRoomCode(\'' + roomCode + '\')" class="secondary">' +
+        '<span aria-hidden="true">📋</span> ' + t('sync.copy_code') +
+      '</button>' +
+      '<button type="button" onclick="closeSyncDialog()" class="primary">OK</button>' +
+    '</div>' +
+  '</div>';
+  
+  document.body.appendChild(overlay);
+  
+  // Announce to screen readers
+  announceToScreenReader(t('sync.aria_room_created', { code: roomCode }));
+}
+
+/**
+ * Copy room code to clipboard
+ * @param {string} code - Room code to copy
+ */
+async function copyRoomCode(code) {
+  try {
+    await navigator.clipboard.writeText(code);
+    showToast(t('sync.code_copied'));
+  } catch (err) {
+    console.error('Failed to copy:', err);
+  }
+}
+
+/**
+ * Show join choice dialog when joining an existing room
+ * User chooses between creating new session or merging into current
+ * @returns {Promise<string|null>} 'new' | 'merge' | null (cancelled)
+ */
+async function showJoinChoiceDialog() {
+  return new Promise(function(resolve) {
+    var overlay = document.createElement('div');
+    overlay.id = 'sync-dialog-overlay';
+    overlay.className = 'sync-dialog-overlay';
+    
+    overlay.innerHTML = '<div class="sync-dialog" role="dialog" aria-labelledby="join-choice-title" aria-modal="true">' +
+      '<h2 id="join-choice-title">' + t('sync.join_choice_title') + '</h2>' +
+      '<p>' + t('sync.join_choice_description') + '</p>' +
+      '<fieldset class="choice-group">' +
+        '<legend class="visually-hidden">' + t('sync.join_choice_title') + '</legend>' +
+        '<label class="choice-option">' +
+          '<input type="radio" name="join-choice" value="new" checked>' +
+          '<div class="choice-content">' +
+            '<strong>' + t('sync.join_choice_new_session') + '</strong>' +
+            '<span class="choice-desc">' + t('sync.join_choice_new_session_desc') + '</span>' +
+          '</div>' +
+        '</label>' +
+        '<label class="choice-option">' +
+          '<input type="radio" name="join-choice" value="merge">' +
+          '<div class="choice-content">' +
+            '<strong>' + t('sync.join_choice_merge_session') + '</strong>' +
+            '<span class="choice-desc">' + t('sync.join_choice_merge_session_desc') + '</span>' +
+          '</div>' +
+        '</label>' +
+      '</fieldset>' +
+      '<div class="button-row">' +
+        '<button type="button" class="cancel-btn">' + t('sync.cancel_button') + '</button>' +
+        '<button type="button" class="confirm-btn primary">' + t('sync.connect_button') + '</button>' +
+      '</div>' +
+    '</div>';
+    
+    document.body.appendChild(overlay);
+    
+    // Focus first radio
+    overlay.querySelector('input[type="radio"]').focus();
+    
+    // Handle cancel
+    overlay.querySelector('.cancel-btn').addEventListener('click', function() {
+      overlay.remove();
+      resolve(null);
+    });
+    
+    // Handle confirm
+    overlay.querySelector('.confirm-btn').addEventListener('click', function() {
+      var choice = overlay.querySelector('input[name="join-choice"]:checked').value;
+      overlay.remove();
+      resolve(choice);
+    });
+    
+    // Handle Escape key
+    var handleEscape = function(e) {
+      if (e.key === 'Escape') {
+        document.removeEventListener('keydown', handleEscape);
+        overlay.remove();
+        resolve(null);
+      }
+    };
+    document.addEventListener('keydown', handleEscape);
+    
+    // Handle overlay click
+    overlay.addEventListener('click', function(e) {
+      if (e.target === overlay) {
+        overlay.remove();
+        resolve(null);
+      }
+    });
+  });
+}
+
+/**
+ * Announce message to screen readers using ARIA live region
+ * @param {string} message - Message to announce
+ * @param {string} [priority] - 'polite' or 'assertive'
+ */
+function announceToScreenReader(message, priority) {
+  priority = priority || 'polite';
+  var announcer = document.getElementById('sync-sr-announcer');
+  
+  if (!announcer) {
+    announcer = document.createElement('div');
+    announcer.id = 'sync-sr-announcer';
+    announcer.setAttribute('aria-live', priority);
+    announcer.setAttribute('aria-atomic', 'true');
+    announcer.className = 'visually-hidden';
+    document.body.appendChild(announcer);
+  }
+  
+  // Clear and set message to trigger announcement
+  announcer.textContent = '';
+  setTimeout(function() {
+    announcer.textContent = message;
+  }, 100);
+}
+
+/**
+ * Show toast notification
+ * @param {string} message - Message to display
+ * @param {number} [duration] - Duration in milliseconds
+ */
+function showToast(message, duration) {
+  duration = duration || 3000;
+  var toast = document.getElementById('sync-toast');
+  
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'sync-toast';
+    toast.className = 'sync-toast';
+    toast.setAttribute('role', 'status');
+    toast.setAttribute('aria-live', 'polite');
+    document.body.appendChild(toast);
+  }
+  
+  toast.textContent = message;
+  toast.classList.add('visible');
+  
+  setTimeout(function() {
+    toast.classList.remove('visible');
+  }, duration);
+}
+
+/**
+ * Trap focus within an element
+ * @param {HTMLElement} element - Container to trap focus within
+ */
+function trapFocus(element) {
+  var focusableElements = element.querySelectorAll(
+    'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+  );
+  var firstFocusable = focusableElements[0];
+  var lastFocusable = focusableElements[focusableElements.length - 1];
+  
+  element.addEventListener('keydown', function(e) {
+    if (e.key !== 'Tab') return;
+    
+    if (e.shiftKey) {
+      if (document.activeElement === firstFocusable) {
+        lastFocusable.focus();
+        e.preventDefault();
+      }
+    } else {
+      if (document.activeElement === lastFocusable) {
+        firstFocusable.focus();
+        e.preventDefault();
+      }
+    }
+  });
+}
+
+/**
+ * Escape HTML special characters
+ * @param {string} text - Text to escape
+ * @returns {string} Escaped text
+ */
+function escapeHtml(text) {
+  var div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+/**
+ * Update the sync UI elements based on current state
+ */
+function updateSyncUI() {
+  var syncButton = document.getElementById('sync_button');
+  var syncPeers = document.getElementById('sync_peers');
+  var syncStatus = syncButton ? syncButton.querySelector('.sync-status') : null;
+  
+  if (!syncButton) return;
+  
+  // Update button state
+  syncButton.classList.remove('offline', 'connecting', 'connected', 'error');
+  syncButton.classList.add(SyncManager.state);
+  
+  // Update button text
+  if (syncStatus) {
+    switch (SyncManager.state) {
+      case 'connecting':
+        syncStatus.textContent = t('sync.status_connecting');
+        break;
+      case 'connected':
+        syncStatus.textContent = SyncManager.roomCode || t('sync.status_connected');
+        break;
+      case 'error':
+        syncStatus.textContent = t('sync.status_error');
+        break;
+      default:
+        syncStatus.textContent = t('sync.button');
+    }
+  }
+  
+  // Update peer count indicator
+  if (syncPeers) {
+    if (SyncManager.state === 'connected') {
+      syncPeers.style.display = 'inline-flex';
+      
+      var peerCount = getSyncPeerCount();
+      var peerCountEl = syncPeers.querySelector('.peer-count');
+      var tooltipEl = syncPeers.querySelector('.peer-tooltip');
+      
+      if (peerCountEl) {
+        peerCountEl.textContent = t_plural('sync.peer_count', peerCount, { count: peerCount });
+      }
+      
+      if (tooltipEl) {
+        var allNames = [SyncManager.displayName + ' (you)'].concat(getSyncPeers().map(function(p) { return p.displayName; }));
+        tooltipEl.innerHTML = allNames.map(function(name) { return '<div>' + escapeHtml(name) + '</div>'; }).join('');
+      }
+    } else {
+      syncPeers.style.display = 'none';
+    }
+  }
+}
+
+/**
+ * Set up awareness handlers for presence
+ * @param {Object} awareness - Yjs awareness instance
+ */
+function setupAwareness(awareness) {
+  SyncManager.awareness = awareness;
+  
+  // Set local state
+  awareness.setLocalState({
+    displayName: SyncManager.displayName,
+    color: generateUserColor(SyncManager.displayName),
+    lastSeen: Date.now()
+  });
+  
+  // Listen for changes
+  awareness.on('change', function() {
+    updatePeersFromAwareness();
+    checkDisplayNameCollision();
+    updateSyncUI();
+    
+    if (SyncManager.onPeersChange) {
+      SyncManager.onPeersChange(getSyncPeers());
+    }
+  });
+}
+
+/**
+ * Update peers map from awareness states
+ */
+function updatePeersFromAwareness() {
+  if (!SyncManager.awareness) return;
+  
+  SyncManager.peers.clear();
+  
+  var states = SyncManager.awareness.getStates();
+  var localClientId = SyncManager.awareness.clientID;
+  
+  states.forEach(function(state, clientId) {
+    if (clientId !== localClientId && state.displayName) {
+      SyncManager.peers.set(clientId, {
+        displayName: state.displayName,
+        color: state.color || '#888',
+        lastSeen: state.lastSeen || Date.now()
+      });
+    }
+  });
+}
+
+/**
+ * Generate a consistent color for a user based on their name
+ * @param {string} name - User's display name
+ * @returns {string} Hex color
+ */
+function generateUserColor(name) {
+  var colors = [
+    '#4CAF50', '#2196F3', '#9C27B0', '#FF9800', 
+    '#E91E63', '#00BCD4', '#795548', '#607D8B'
+  ];
+  
+  var hash = 0;
+  for (var i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  
+  return colors[Math.abs(hash) % colors.length];
+}
+
+/**
+ * Get a unique display name by appending suffix if needed
+ * Checks existing peers and returns modified name if collision detected
+ * @param {string} baseName - Desired display name
+ * @returns {string} Unique display name (possibly with suffix)
+ */
+function getUniqueDisplayName(baseName) {
+  if (!SyncManager.awareness) return baseName;
+  
+  var existingNames = new Set();
+  var states = SyncManager.awareness.getStates();
+  var localClientId = SyncManager.awareness.clientID;
+  
+  states.forEach(function(state, clientId) {
+    if (clientId !== localClientId && state.displayName) {
+      existingNames.add(state.displayName.toLowerCase());
+    }
+  });
+  
+  // Check if base name is available
+  if (!existingNames.has(baseName.toLowerCase())) {
+    return baseName;
+  }
+  
+  // Find available suffix
+  var counter = 2;
+  while (existingNames.has((baseName.toLowerCase() + ' (' + counter + ')'))) {
+    counter++;
+    if (counter > 99) break; // Safety limit
+  }
+  
+  return baseName + ' (' + counter + ')';
+}
+
+/**
+ * Update display name if collision detected after peers change
+ * Called when awareness changes to handle late-joining duplicates
+ */
+function checkDisplayNameCollision() {
+  if (!SyncManager.awareness || !SyncManager.displayName) return;
+  
+  var uniqueName = getUniqueDisplayName(SyncManager.displayName);
+  
+  if (uniqueName !== SyncManager.displayName) {
+    console.log('Display name collision detected, changing to: ' + uniqueName);
+    SyncManager.displayName = uniqueName;
+    
+    // Update awareness with new name
+    SyncManager.awareness.setLocalState({
+      displayName: uniqueName,
+      color: generateUserColor(uniqueName),
+      lastSeen: Date.now()
+    });
+    
+    // Persist new name
+    localStorage.setItem('pbe-sync-displayName', uniqueName);
+    
+    // Notify user
+    showToast(t('sync.name_changed', { name: uniqueName }));
+  }
+}
+
+/**
+ * Handle session switch while synced
+ * Disconnects from current room since 1 room = 1 session
+ * @param {string} newSessionId - New session's UUID
+ */
+function handleSessionSwitch(newSessionId) {
+  if (SyncManager.state !== 'connected') {
+    return; // Not synced, nothing to do
+  }
+  
+  console.log('Session switched while synced, disconnecting...');
+  
+  // Notify user
+  showToast(t('sync.session_switch_disconnect'));
+  announceToScreenReader(t('sync.session_switch_disconnect'));
+  
+  // Disconnect from current room
+  stopSync();
+}
+
+/**
+ * Check if we should sync the current session
+ * @returns {boolean} True if sync should be active
+ */
+function shouldSyncCurrentSession() {
+  return SyncManager.state === 'connected' && 
+         SyncManager.provider !== null;
+}
+
+/**
+ * Get the synced session's ID
+ * @returns {string|null} Session ID being synced, or null
+ */
+function getSyncedSessionId() {
+  if (!shouldSyncCurrentSession()) return null;
+  return SyncManager.syncedSessionId;
+}
+
+/**
+ * Get current synced session name for display
+ * @returns {string|null} Session name or null if not synced
+ */
+function getSyncSessionName() {
+  if (!shouldSyncCurrentSession()) return null;
+  
+  var sessionDoc = typeof getActiveSessionDoc === 'function' ? getActiveSessionDoc() : null;
+  if (!sessionDoc) return null;
+  
+  var session = sessionDoc.getMap('session');
+  return session ? session.get('name') : null;
+}
+
+/**
+ * Show the name matching dialog
+ * @param {Object} remoteData - Remote session data for comparison
+ * @returns {Promise<Object>} Mapping configuration
+ */
+async function showNameMatchingDialog(remoteData) {
+  // Implementation in Phase 4
+  throw new Error('Not implemented yet');
+}
+
+// Export for testing
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = {
+    SyncManager: SyncManager,
+    initSyncManager: initSyncManager,
+    generateRoomCode: generateRoomCode,
+    isValidRoomCode: isValidRoomCode,
+    getSyncState: getSyncState,
+    getSyncRoomCode: getSyncRoomCode,
+    getSyncDisplayName: getSyncDisplayName,
+    getSyncPeers: getSyncPeers,
+    getSyncPeerCount: getSyncPeerCount,
+    startSync: startSync,
+    stopSync: stopSync,
+    showSyncDialog: showSyncDialog,
+    showNameMatchingDialog: showNameMatchingDialog,
+    updateSyncUI: updateSyncUI,
+    generateUserColor: generateUserColor,
+    getUniqueDisplayName: getUniqueDisplayName,
+    handleSessionSwitch: handleSessionSwitch,
+    getSyncedSessionId: getSyncedSessionId,
+    getSyncSessionName: getSyncSessionName
+  };
+}
