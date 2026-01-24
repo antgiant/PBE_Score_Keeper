@@ -493,6 +493,7 @@ async function createNewSession(name) {
 async function switchSession(sessionIdOrIndex) {
   const meta = getGlobalDoc().getMap('meta');
   const sessionOrder = meta.get('sessionOrder') || [];
+  const oldSessionId = DocManager.activeSessionId;
   
   let sessionId;
   
@@ -511,6 +512,11 @@ async function switchSession(sessionIdOrIndex) {
   if (!sessionId || !sessionOrder.includes(sessionId)) {
     console.error('Invalid session:', sessionIdOrIndex);
     return false;
+  }
+
+  // Notify sync module before switching sessions
+  if (typeof handleSessionSwitch === 'function' && oldSessionId !== sessionId) {
+    handleSessionSwitch(sessionId);
   }
 
   // Load session doc if not already loaded
