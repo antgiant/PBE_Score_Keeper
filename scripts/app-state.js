@@ -548,9 +548,10 @@ async function switchSession(sessionIdOrIndex) {
 /**
  * Delete a session
  * @param {string|number} sessionIdOrIndex - Session UUID or 1-based index
+ * @param {boolean} skipConfirm - Skip confirmation dialog (for merge operations)
  * @returns {Promise<boolean>} True if deletion successful
  */
-async function deleteSession(sessionIdOrIndex) {
+async function deleteSession(sessionIdOrIndex, skipConfirm) {
   const meta = getGlobalDoc().getMap('meta');
   const sessionOrder = meta.get('sessionOrder') || [];
 
@@ -589,7 +590,7 @@ async function deleteSession(sessionIdOrIndex) {
   const sessionDoc = getSessionDoc(sessionId);
   const sessionName = sessionDoc ? sessionDoc.getMap('session').get('name') : 'Unknown';
 
-  if (!window.confirm(t('confirm.delete_session', { name: sessionName }))) {
+  if (!skipConfirm && !window.confirm(t('confirm.delete_session', { name: sessionName }))) {
     return false;
   }
 
@@ -897,6 +898,9 @@ async function performSessionMerge(sourceId, targetId) {
       // All exact matches, merge directly
       await applySessionMerge(sourceId, targetId, null);
     }
+
+    // Delete the source session after successful merge
+    await deleteSession(sourceId, true); // Skip confirm since user already initiated merge
 
     showToast(t('merge.merge_success'));
 
