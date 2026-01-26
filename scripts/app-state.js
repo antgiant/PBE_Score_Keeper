@@ -997,6 +997,7 @@ async function autoMergeDuplicateSessions() {
 
   // Track merge results for summary
   const mergeResults = [];
+  const mergeFailures = [];
 
   for (let i = 0; i < duplicateGroups.length; i++) {
     const group = duplicateGroups[i];
@@ -1016,7 +1017,8 @@ async function autoMergeDuplicateSessions() {
         const targetExists = currentSessions.find(s => s.id === target.id);
 
         if (!sourceExists || !targetExists) {
-          console.log('Session no longer exists, skipping');
+          console.log('Session no longer exists, skipping:', source.name);
+          mergeFailures.push({ source: source.name, target: target.name, reason: 'Session not found' });
           continue;
         }
 
@@ -1032,6 +1034,7 @@ async function autoMergeDuplicateSessions() {
         mergedSources.push(source.name);
       } catch (error) {
         console.error('Auto merge failed for session:', source.name, error);
+        mergeFailures.push({ source: source.name, target: target.name, reason: error.message || 'Unknown error' });
         // Continue with next session
       }
     }
@@ -1051,14 +1054,15 @@ async function autoMergeDuplicateSessions() {
   sync_data_to_display();
 
   // Show summary dialog
-  showAutoMergeSummary(mergeResults);
+  showAutoMergeSummary(mergeResults, mergeFailures);
 }
 
 /**
  * Show summary dialog after auto merge
  * @param {Array} mergeResults - Array of {target, sources} objects
+ * @param {Array} mergeFailures - Array of {source, target, reason} objects
  */
-function showAutoMergeSummary(mergeResults) {
+function showAutoMergeSummary(mergeResults, mergeFailures = []) {
   // Remove any existing dialog
   const existing = document.getElementById('merge-summary-overlay');
   if (existing) existing.remove();
@@ -1070,10 +1074,10 @@ function showAutoMergeSummary(mergeResults) {
 
   const totalMerged = mergeResults.reduce((sum, r) => sum + r.sources.length, 0);
 
-  let tableRows = '';
+  let successTableRows = '';
   for (const result of mergeResults) {
     for (let i = 0; i < result.sources.length; i++) {
-      tableRows += `<tr>
+      successTableRows += `<tr>
         <td>${HTMLescape(result.sources[i])}</td>
         <td>→</td>
         <td>${HTMLescape(result.target)}</td>
@@ -1081,21 +1085,58 @@ function showAutoMergeSummary(mergeResults) {
     }
   }
 
-  const content = mergeResults.length > 0 ? `
-    <p>${t('merge.auto_merge_summary', { count: totalMerged })}</p>
-    <table class="merge-summary-table">
-      <thead>
-        <tr>
-          <th>${t('merge.source_session')}</th>
-          <th></th>
-          <th>${t('merge.target_session')}</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${tableRows}
-      </tbody>
-    </table>
-  ` : `<p>${t('merge.auto_merge_no_duplicates')}</p>`;
+  let failureTableRows = '';
+  for (const failure of mergeFailures) {
+    failureTableRows += `<tr>
+      <td>${HTMLescape(failure.source)}</td>
+      <td>→</td>
+      <td>${HTMLescape(failure.target)}</td>
+      <td style="color: #f44336;">${HTMLescape(failure.reason)}</td>
+    </tr>`;
+  }
+
+  let content = '';
+  
+  if (totalMerged > 0) {
+    content += `
+      <p>${t('merge.auto_merge_summary', { count: totalMerged })}</p>
+      <table class="merge-summary-table">
+        <thead>
+          <tr>
+            <th>${t('merge.source_session')}</th>
+            <th></th>
+            <th>${t('merge.target_session')}</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${successTableRows}
+        </tbody>
+      </table>
+    `;
+  }
+
+  if (mergeFailures.length > 0) {
+    content += `
+      <p style="color: #f44336; margin-top: 1rem;">${t('merge.auto_merge_failures', { count: mergeFailures.length })}</p>
+      <table class="merge-summary-table">
+        <thead>
+          <tr>
+            <th>${t('merge.source_session')}</th>
+            <th></th>
+            <th>${t('merge.target_session')}</th>
+            <th>${t('merge.failure_reason')}</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${failureTableRows}
+        </tbody>
+      </table>
+    `;
+  }
+
+  if (totalMerged === 0 && mergeFailures.length === 0) {
+    content = `<p>${t('merge.auto_merge_no_duplicates')}</p>`;
+  }
 
   overlay.innerHTML = `
     <div class="sync-dialog" role="dialog" aria-modal="true" aria-labelledby="merge-summary-title">

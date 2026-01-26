@@ -355,7 +355,9 @@ register_i18n_language('fr', {
       "auto_merge_summary": "{{count}} session(s) en double fusionnée(s) avec succès :",
       "source_session": "Session Source",
       "target_session": "Fusionné Dans",
-      "ok_button": "OK"
+      "ok_button": "OK",
+      "auto_merge_failures": "{{count}} fusion(s) échouée(s) :",
+      "failure_reason": "Erreur"
     }
   }
 });
