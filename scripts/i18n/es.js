@@ -197,6 +197,7 @@ register_i18n_language('es', {
       "danger_zone": "Zona de Peligro",
       "merge": "Fusionar",
       "merge_sessions": "Fusionar Sesiones",
+      "auto_merge": "Auto Fusionar Duplicados",
       "delete": "Eliminar",
       "delete_session": "Eliminar esta Sesión",
       "no_import_support": "Su navegador no soporta la importación."
@@ -348,7 +349,11 @@ register_i18n_language('es', {
       "merge_failed": "Fusión fallida: {{error}}",
       "matching_source": "Origen",
       "matching_target": "Destino",
-      "confirm_merge": "Confirmar Fusión"
+      "confirm_merge": "Confirmar Fusión",
+      "auto_merge_no_duplicates": "No se encontraron sesiones duplicadas para fusionar",
+      "auto_merge_found": "Se encontraron {{count}} grupo(s) de sesiones duplicadas",
+      "auto_merge_progress": "Fusionando {{current}} de {{total}} grupos...",
+      "auto_merge_complete": "Fusión automática completa: {{merged}} sesiones fusionadas"
     }
   }
 });

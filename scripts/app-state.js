@@ -914,6 +914,133 @@ async function performSessionMerge(sourceId, targetId) {
 }
 
 /**
+ * Check if a session name contains a date/time pattern
+ * @param {string} name - Session name
+ * @returns {boolean} True if name contains date/time
+ */
+function sessionNameHasDateTime(name) {
+  if (!name) return false;
+  // Match common date patterns: MM/DD/YYYY, YYYY-MM-DD, DD/MM/YYYY, etc.
+  // Also match time patterns: HH:MM, HH:MM:SS
+  const datePatterns = [
+    /\d{1,2}\/\d{1,2}\/\d{2,4}/, // MM/DD/YYYY or DD/MM/YYYY
+    /\d{4}-\d{2}-\d{2}/, // YYYY-MM-DD
+    /\d{1,2}:\d{2}(:\d{2})?/, // HH:MM or HH:MM:SS
+    /\d{1,2}\s+(AM|PM)/i // 12-hour time
+  ];
+  return datePatterns.some(pattern => pattern.test(name));
+}
+
+/**
+ * Find groups of sessions with identical names that contain date/time
+ * @returns {Array} Array of groups, each group is array of session objects with same name
+ */
+function findDuplicateSessionGroups() {
+  const sessions = getAllSessions();
+  const nameGroups = {};
+
+  // Group sessions by name
+  for (const session of sessions) {
+    // Only consider sessions with date/time in name
+    if (!sessionNameHasDateTime(session.name)) continue;
+
+    const name = session.name.trim().toLowerCase();
+    if (!nameGroups[name]) {
+      nameGroups[name] = [];
+    }
+    nameGroups[name].push(session);
+  }
+
+  // Filter to only groups with duplicates
+  const duplicateGroups = [];
+  for (const name in nameGroups) {
+    if (nameGroups[name].length > 1) {
+      duplicateGroups.push(nameGroups[name]);
+    }
+  }
+
+  return duplicateGroups;
+}
+
+/**
+ * Update the visibility of the Auto Merge button based on duplicate sessions
+ */
+function updateAutoMergeButtonVisibility() {
+  // Guard against test environment without full DOM
+  if (typeof document === 'undefined' || typeof document.getElementById !== 'function') return;
+  
+  const button = document.getElementById('auto_merge_sessions');
+  if (!button) return;
+
+  const duplicateGroups = findDuplicateSessionGroups();
+  button.style.display = duplicateGroups.length > 0 ? 'inline-block' : 'none';
+}
+
+/**
+ * Auto merge all duplicate sessions
+ */
+async function autoMergeDuplicateSessions() {
+  const duplicateGroups = findDuplicateSessionGroups();
+
+  if (duplicateGroups.length === 0) {
+    showToast(t('merge.auto_merge_no_duplicates'));
+    return;
+  }
+
+  showToast(t('merge.auto_merge_found', { count: duplicateGroups.length }));
+
+  let totalMerged = 0;
+
+  for (let i = 0; i < duplicateGroups.length; i++) {
+    const group = duplicateGroups[i];
+    
+    showToast(t('merge.auto_merge_progress', { current: i + 1, total: duplicateGroups.length }));
+
+    // Sort by index - use first session as target (oldest)
+    group.sort((a, b) => a.index - b.index);
+    const target = group[0];
+
+    // Merge all others into target
+    for (let j = 1; j < group.length; j++) {
+      const source = group[j];
+      try {
+        // Get fresh session data since IDs may have changed after deletions
+        const currentSessions = getAllSessions();
+        const sourceExists = currentSessions.find(s => s.id === source.id);
+        const targetExists = currentSessions.find(s => s.id === target.id);
+
+        if (!sourceExists || !targetExists) {
+          console.log('Session no longer exists, skipping');
+          continue;
+        }
+
+        // Extract and compare
+        const sourceData = await extractSessionDataForMerge(source.id);
+        const targetData = await extractSessionDataForMerge(target.id);
+        const comparison = compareSessionData(sourceData, targetData);
+
+        // For auto-merge, we don't show the matching dialog
+        // We use the auto-matched results directly
+        await applySessionMerge(source.id, target.id, null);
+        await deleteSession(source.id, true);
+        totalMerged++;
+      } catch (error) {
+        console.error('Auto merge failed for session:', source.name, error);
+        // Continue with next session
+      }
+    }
+  }
+
+  showToast(t('merge.auto_merge_complete', { merged: totalMerged }));
+
+  // Update button visibility
+  updateAutoMergeButtonVisibility();
+
+  // Refresh display
+  sync_data_to_display();
+}
+
+/**
  * Show matching dialog for merge (adapted from sync matching)
  * @param {Object} comparison - Comparison result
  * @returns {Promise<Object|null>} Mappings or null if cancelled

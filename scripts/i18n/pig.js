@@ -193,6 +193,7 @@ register_i18n_language('pig', {
       "danger_zone": "Anger-Day One-Zay",
       "merge": "Erge-May",
       "merge_sessions": "Erge-May Essions-Say",
+      "auto_merge": "Auto-ay Erge-May Uplicates-Day",
       "delete": "Elete-Day",
       "delete_session": "Elete-Day is-thay Ession-Say",
       "no_import_support": "Our-Yay Owser-Bray oes-day ot-nay upport-say importing-ay."
@@ -344,7 +345,11 @@ register_i18n_language('pig', {
       "merge_failed": "Erge-May ailed-fay: {{error}}",
       "matching_source": "Ource-Say",
       "matching_target": "Arget-Tay",
-      "confirm_merge": "Onfirm-Cay Erge-May"
+      "confirm_merge": "Onfirm-Cay Erge-May",
+      "auto_merge_no_duplicates": "O-Nay uplicate-day essions-say ound-fay o-tay erge-may",
+      "auto_merge_found": "Ound-Fay {{count}} oup(s)-gray of-ay uplicate-day essions-say",
+      "auto_merge_progress": "Erging-May {{current}} of-ay {{total}} oups-gray...",
+      "auto_merge_complete": "Auto-ay erge-may omplete-cay: {{merged}} essions-say erged-may"
     }
   }
 });

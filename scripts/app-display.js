@@ -591,6 +591,11 @@ function sync_data_to_display() {
     $("#next_question").prop("disabled", false);
     $("#next_question_2").prop("disabled", false);
   }
+
+  // Update Auto Merge button visibility based on duplicate sessions
+  if (typeof updateAutoMergeButtonVisibility === 'function') {
+    updateAutoMergeButtonVisibility();
+  }
 }
 /**
  * Show loading indicator

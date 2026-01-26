@@ -196,6 +196,7 @@ register_i18n_language('en', {
       "danger_zone": "Danger Zone",
       "merge": "Merge",
       "merge_sessions": "Merge Sessions",
+      "auto_merge": "Auto Merge Duplicates",
       "delete": "Delete",
       "delete_session": "Delete this Session",
       "no_import_support": "Your Browser does not support importing."
@@ -347,7 +348,11 @@ register_i18n_language('en', {
       "merge_failed": "Merge failed: {{error}}",
       "matching_source": "Source",
       "matching_target": "Target",
-      "confirm_merge": "Confirm Merge"
+      "confirm_merge": "Confirm Merge",
+      "auto_merge_no_duplicates": "No duplicate sessions found to merge",
+      "auto_merge_found": "Found {{count}} group(s) of duplicate sessions",
+      "auto_merge_progress": "Merging {{current}} of {{total}} groups...",
+      "auto_merge_complete": "Auto merge complete: {{merged}} sessions merged"
     }
   }
 });

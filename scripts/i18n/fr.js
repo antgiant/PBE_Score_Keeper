@@ -197,6 +197,7 @@ register_i18n_language('fr', {
       "danger_zone": "Zone de Danger",
       "merge": "Fusionner",
       "merge_sessions": "Fusionner les Sessions",
+      "auto_merge": "Fusion Auto des Doublons",
       "delete": "Supprimer",
       "delete_session": "Supprimer cette Session",
       "no_import_support": "Votre navigateur ne prend pas en charge l'importation."
@@ -348,7 +349,11 @@ register_i18n_language('fr', {
       "merge_failed": "Échec de la fusion : {{error}}",
       "matching_source": "Source",
       "matching_target": "Cible",
-      "confirm_merge": "Confirmer la Fusion"
+      "confirm_merge": "Confirmer la Fusion",
+      "auto_merge_no_duplicates": "Aucune session en double trouvée à fusionner",
+      "auto_merge_found": "{{count}} groupe(s) de sessions en double trouvés",
+      "auto_merge_progress": "Fusion de {{current}} sur {{total}} groupes...",
+      "auto_merge_complete": "Fusion automatique terminée : {{merged}} sessions fusionnées"
     }
   }
 });
