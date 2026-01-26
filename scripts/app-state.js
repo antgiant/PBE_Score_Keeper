@@ -1389,7 +1389,7 @@ function collectMergeMappings() {
  * @param {number} maxWait - Maximum wait time in ms
  * @returns {Promise<boolean>} True if data is available
  */
-async function waitForSessionData(sessionDoc, maxWait = 2000) {
+async function waitForSessionData(sessionDoc, maxWait = 5000) {
   const startTime = Date.now();
   
   while (Date.now() - startTime < maxWait) {
@@ -1397,9 +1397,16 @@ async function waitForSessionData(sessionDoc, maxWait = 2000) {
     if (session && session.get('teams') && session.get('blocks') && session.get('questions')) {
       return true;
     }
-    // Wait 50ms and try again
-    await new Promise(resolve => setTimeout(resolve, 50));
+    // Wait 100ms and try again
+    await new Promise(resolve => setTimeout(resolve, 100));
   }
+  
+  // Log what we found for debugging
+  const session = sessionDoc.getMap('session');
+  console.warn('waitForSessionData timeout. Session map exists:', !!session, 
+    'teams:', session ? !!session.get('teams') : false,
+    'blocks:', session ? !!session.get('blocks') : false,
+    'questions:', session ? !!session.get('questions') : false);
   
   return false;
 }
@@ -1430,10 +1437,27 @@ async function applySessionMerge(sourceId, targetId, mappings) {
   const targetReady = await waitForSessionData(targetDoc);
   
   if (!sourceReady) {
-    throw new Error('Source session data not available');
+    // Check what's missing for a more helpful error
+    const ss = sourceDoc.getMap('session');
+    const missing = [];
+    if (!ss) missing.push('session map');
+    else {
+      if (!ss.get('teams')) missing.push('teams');
+      if (!ss.get('blocks')) missing.push('blocks');
+      if (!ss.get('questions')) missing.push('questions');
+    }
+    throw new Error('Source session missing: ' + missing.join(', '));
   }
   if (!targetReady) {
-    throw new Error('Target session data not available');
+    const ts = targetDoc.getMap('session');
+    const missing = [];
+    if (!ts) missing.push('session map');
+    else {
+      if (!ts.get('teams')) missing.push('teams');
+      if (!ts.get('blocks')) missing.push('blocks');
+      if (!ts.get('questions')) missing.push('questions');
+    }
+    throw new Error('Target session missing: ' + missing.join(', '));
   }
 
   const sourceSession = sourceDoc.getMap('session');
