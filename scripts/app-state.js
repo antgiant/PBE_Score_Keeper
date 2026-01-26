@@ -1010,6 +1010,7 @@ async function autoMergeDuplicateSessions() {
     group.sort((a, b) => a.index - b.index);
     const target = group[0];
     const mergedSources = [];
+    const deletedEmpty = [];
 
     // Merge all others into target
     for (let j = 1; j < group.length; j++) {
@@ -1023,6 +1024,23 @@ async function autoMergeDuplicateSessions() {
         if (!sourceExists || !targetExists) {
           console.log('Session no longer exists, skipping:', source.name);
           mergeFailures.push({ source: source.name, target: target.name, reason: 'Session not found' });
+          continue;
+        }
+
+        // Check if source session has data before trying to merge
+        let sourceDoc = getSessionDoc(source.id);
+        if (!sourceDoc) {
+          sourceDoc = await initSessionDoc(source.id);
+        }
+        
+        // Wait for data to load
+        const sourceHasData = await waitForSessionData(sourceDoc);
+        
+        if (!sourceHasData) {
+          // Source is an empty/ghost session - just delete it
+          console.log('Source session is empty, deleting:', source.name);
+          await deleteSession(source.id, true);
+          deletedEmpty.push(source.name);
           continue;
         }
 
@@ -1043,10 +1061,11 @@ async function autoMergeDuplicateSessions() {
       }
     }
 
-    if (mergedSources.length > 0) {
+    if (mergedSources.length > 0 || deletedEmpty.length > 0) {
       mergeResults.push({
         target: target.name,
-        sources: mergedSources
+        sources: mergedSources,
+        deleted: deletedEmpty
       });
     }
   }
@@ -1081,6 +1100,7 @@ function showAutoMergeSummary(mergeResults, mergeFailures = []) {
   overlay.style.display = 'flex';
 
   const totalMerged = mergeResults.reduce((sum, r) => sum + r.sources.length, 0);
+  const totalDeleted = mergeResults.reduce((sum, r) => sum + (r.deleted ? r.deleted.length : 0), 0);
 
   let successTableRows = '';
   for (const result of mergeResults) {
@@ -1090,6 +1110,18 @@ function showAutoMergeSummary(mergeResults, mergeFailures = []) {
         <td>→</td>
         <td>${HTMLescape(result.target)}</td>
       </tr>`;
+    }
+  }
+
+  let deletedTableRows = '';
+  for (const result of mergeResults) {
+    if (result.deleted) {
+      for (let i = 0; i < result.deleted.length; i++) {
+        deletedTableRows += `<tr>
+          <td>${HTMLescape(result.deleted[i])}</td>
+          <td>${t('merge.empty_session_deleted')}</td>
+        </tr>`;
+      }
     }
   }
 
@@ -1123,6 +1155,23 @@ function showAutoMergeSummary(mergeResults, mergeFailures = []) {
     `;
   }
 
+  if (totalDeleted > 0) {
+    content += `
+      <p style="color: #ff9800; margin-top: 1rem;">${t('merge.empty_sessions_deleted', { count: totalDeleted })}</p>
+      <table class="merge-summary-table">
+        <thead>
+          <tr>
+            <th>${t('merge.source_session')}</th>
+            <th>${t('merge.status')}</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${deletedTableRows}
+        </tbody>
+      </table>
+    `;
+  }
+
   if (mergeFailures.length > 0) {
     content += `
       <p style="color: #f44336; margin-top: 1rem;">${t('merge.auto_merge_failures', { count: mergeFailures.length })}</p>
@@ -1142,7 +1191,7 @@ function showAutoMergeSummary(mergeResults, mergeFailures = []) {
     `;
   }
 
-  if (totalMerged === 0 && mergeFailures.length === 0) {
+  if (totalMerged === 0 && totalDeleted === 0 && mergeFailures.length === 0) {
     content = `<p>${t('merge.auto_merge_no_duplicates')}</p>`;
   }
 

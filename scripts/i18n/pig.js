@@ -354,7 +354,10 @@ register_i18n_language('pig', {
       "target_session": "Erged-May Into-ay",
       "ok_button": "OK-ay",
       "auto_merge_failures": "{{count}} erge(s)-may ailed-fay:",
-      "failure_reason": "Error-ay"
+      "failure_reason": "Error-ay",
+      "empty_sessions_deleted": "{{count}} empty-ay uplicate-day ession(s)-say eleted-day:",
+      "empty_session_deleted": "Eleted-Day (o-nay ata-day)",
+      "status": "Atus-Stay"
     }
   }
 });

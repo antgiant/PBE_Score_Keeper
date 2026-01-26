@@ -358,7 +358,10 @@ register_i18n_language('es', {
       "target_session": "Fusionado En",
       "ok_button": "Aceptar",
       "auto_merge_failures": "{{count}} fusión(es) fallida(s):",
-      "failure_reason": "Error"
+      "failure_reason": "Error",
+      "empty_sessions_deleted": "{{count}} sesión(es) duplicada(s) vacía(s) eliminada(s):",
+      "empty_session_deleted": "Eliminada (sin datos)",
+      "status": "Estado"
     }
   }
 });

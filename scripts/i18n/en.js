@@ -357,7 +357,10 @@ register_i18n_language('en', {
       "target_session": "Merged Into",
       "ok_button": "OK",
       "auto_merge_failures": "{{count}} merge(s) failed:",
-      "failure_reason": "Error"
+      "failure_reason": "Error",
+      "empty_sessions_deleted": "{{count}} empty duplicate session(s) deleted:",
+      "empty_session_deleted": "Deleted (no data)",
+      "status": "Status"
     }
   }
 });
