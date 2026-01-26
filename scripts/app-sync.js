@@ -1185,9 +1185,29 @@ function getUniqueDisplayName(baseName) {
 /**
  * Update display name if collision detected after peers change
  * Called when awareness changes to handle late-joining duplicates
+ * Only the user with the HIGHER client ID changes their name to prevent ping-pong
  */
 function checkDisplayNameCollision() {
   if (!SyncManager.awareness || !SyncManager.displayName) return;
+  
+  var localClientId = SyncManager.awareness.clientID;
+  var states = SyncManager.awareness.getStates();
+  var myName = SyncManager.displayName.toLowerCase();
+  
+  // Check if any peer has the same name AND a lower client ID
+  // If so, they have priority and we need to change
+  var shouldChange = false;
+  
+  states.forEach(function(state, clientId) {
+    if (clientId !== localClientId && state.displayName) {
+      if (state.displayName.toLowerCase() === myName && clientId < localClientId) {
+        // Peer with same name has lower ID, they have priority
+        shouldChange = true;
+      }
+    }
+  });
+  
+  if (!shouldChange) return;
   
   var uniqueName = getUniqueDisplayName(SyncManager.displayName);
   
