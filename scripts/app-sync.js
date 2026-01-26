@@ -2,6 +2,11 @@
 // Provides peer-to-peer real-time synchronization using y-webrtc
 
 /**
+ * Maximum length for display names (enforced in UI and validation)
+ */
+var MAX_DISPLAY_NAME_LENGTH = 30;
+
+/**
  * Error types for sync operations
  */
 var SyncError = {
@@ -182,6 +187,9 @@ async function startSync(displayName, roomCode, password, joinChoice) {
   if (!displayName || displayName.trim().length === 0) {
     throw new Error('Display name is required');
   }
+  
+  // Enforce max display name length (truncate if too long)
+  displayName = displayName.trim().substring(0, MAX_DISPLAY_NAME_LENGTH);
   
   // Validate room code if joining
   if (roomCode && !isValidRoomCode(roomCode)) {
@@ -599,7 +607,7 @@ function createConnectDialogHTML() {
       '<input type="text" id="sync-display-name" ' +
              'placeholder="' + t('sync.display_name_placeholder') + '" ' +
              'value="' + escapeHtml(savedName) + '" ' +
-             'maxlength="30" ' +
+             'maxlength="' + MAX_DISPLAY_NAME_LENGTH + '" ' +
              'aria-required="true">' +
     '</div>' +
     '<fieldset class="radio-group">' +
@@ -1179,7 +1187,12 @@ function getUniqueDisplayName(baseName) {
     if (counter > 99) break; // Safety limit
   }
   
-  return baseName + ' (' + counter + ')';
+  // Calculate suffix and truncate base name if needed to stay within max length
+  var suffix = ' (' + counter + ')';
+  var maxBaseLength = MAX_DISPLAY_NAME_LENGTH - suffix.length;
+  var truncatedBase = baseName.substring(0, maxBaseLength);
+  
+  return truncatedBase + suffix;
 }
 
 /**
