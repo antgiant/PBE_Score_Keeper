@@ -248,7 +248,7 @@ function sync_data_to_display() {
       //Add new
       let teamName = team_names[i] || t('defaults.team_name', {number: i});
       let deleteDisabled = team_count <= 1 ? ' disabled' : '';
-      $("#team_names").append('<div class="reorder-item" data-index="'+i+'"><button type="button" class="drag-handle" draggable="true" aria-label="'+t('teams.name_label', {number: i}).replace(':', '')+'">&equiv; &#8597;</button><label><span class="reorder-label">'+t('teams.name_label', {number: i})+'</span> <input type = "text" name = "team_'+i+'_name" id = "team_'+i+'_name" onchange="local_data_update(this)" value = "'+teamName.replace('"', "&quote")+'"></label><button type="button" class="item-delete-btn" id="delete_team_'+i+'" onclick="local_data_update(this)" aria-label="'+t('teams.delete_aria', {name: teamName}).replace(/"/g, '&quot;')+'" title="'+t('teams.delete_aria', {name: teamName}).replace(/"/g, '&quot;')+'"'+deleteDisabled+'>🗑</button></div>');
+      $("#team_names").append('<div class="reorder-item" data-index="'+i+'"><button type="button" class="drag-handle" draggable="true" aria-label="'+t('teams.name_label', {number: i}).replace(':', '')+'">&equiv; &#8597;</button><label><input type = "text" name = "team_'+i+'_name" id = "team_'+i+'_name" onchange="local_data_update(this)" value = "'+teamName.replace('"', "&quote")+'"></label><button type="button" class="item-delete-btn" id="delete_team_'+i+'" onclick="local_data_update(this)" aria-label="'+t('teams.delete_aria', {name: teamName}).replace(/"/g, '&quot;')+'" title="'+t('teams.delete_aria', {name: teamName}).replace(/"/g, '&quot;')+'"'+deleteDisabled+'>🗑</button></div>');
       let initialScoreLabel = teamName.slice(-1).toLowerCase() === 's' ? t('teams.score_label_s', {name: teamName}) : t('teams.score_label', {name: teamName});
       $("#question_teams").append('<fieldset><legend id=team_'+i+'_points_label>'+HTMLescape(initialScoreLabel)+'</legend><div id="team_'+i+'_score"></div>'+
                                    '<legend id=team_'+i+'_extra_credit_label style="display:none">'+t('defaults.extra_credit')+'<div><button id="team_'+i+'_extra_credit_decrease" onclick="local_data_update(this)" >-</button><span id="team_'+i+'_extra_credit" class="extra_credit_amount">0</span><button id ="team_'+i+'_extra_credit_increase" onclick="local_data_update(this)" >+</button></div></legend></fieldset>');
@@ -272,7 +272,6 @@ function sync_data_to_display() {
       let team_item = team_input.closest(".reorder-item");
       if (team_item.length) {
         team_item.attr("data-index", i);
-        team_item.find(".reorder-label").text(t('teams.name_label', {number: i}));
         team_item.find(".drag-handle").attr("aria-label", t('teams.name_label', {number: i}).replace(':', ''));
         // Update delete button state
         let deleteBtn = team_item.find(".item-delete-btn");
@@ -372,7 +371,7 @@ function sync_data_to_display() {
       let isDisabled = (block_count <= 1 || i <= smallest_valid_number_of_blocks);
       let deleteDisabled = isDisabled ? ' disabled' : '';
       let dataBlockName = isDisabled ? ' data-block-name="'+HTMLescape(blockName)+'"' : '';
-      $("#block_names").append('<div class="reorder-item" data-index="'+i+'"><button type="button" class="drag-handle" draggable="true" aria-label="'+t('blocks.name_label', {number: i}).replace(':', '')+'">&equiv; &#8597;</button><label><span class="reorder-label">'+t('blocks.name_label', {number: i})+'</span> <input type = "text" name = "block_'+i+'_name" id = "block_'+i+'_name" onchange="local_data_update(this)" value = "'+blockName.replace('"', "&quote")+'"></label><button type="button" class="item-delete-btn" id="delete_block_'+i+'" onclick="local_data_update(this)" aria-label="'+t('blocks.delete_aria', {name: blockName}).replace(/"/g, '&quot;')+'" title="'+t('blocks.delete_aria', {name: blockName}).replace(/"/g, '&quot;')+'"'+deleteDisabled+dataBlockName+'>🗑</button></div>');
+      $("#block_names").append('<div class="reorder-item" data-index="'+i+'"><button type="button" class="drag-handle" draggable="true" aria-label="'+t('blocks.name_label', {number: i}).replace(':', '')+'">&equiv; &#8597;</button><label><input type = "text" name = "block_'+i+'_name" id = "block_'+i+'_name" onchange="local_data_update(this)" value = "'+blockName.replace('"', "&quote")+'"></label><button type="button" class="item-delete-btn" id="delete_block_'+i+'" onclick="local_data_update(this)" aria-label="'+t('blocks.delete_aria', {name: blockName}).replace(/"/g, '&quot;')+'" title="'+t('blocks.delete_aria', {name: blockName}).replace(/"/g, '&quot;')+'"'+deleteDisabled+dataBlockName+'>🗑</button></div>');
       $("#question_block").append('<label><input type="radio" id="question_block_'+i+'" name="question_block" value="'+i+'" onchange="local_data_update(this)"><span id="block_'+i+'_label">'+HTMLescape(blockName)+'</span></label>');
     }
   }
@@ -398,7 +397,6 @@ function sync_data_to_display() {
       let block_item = block_input.closest(".reorder-item");
       if (block_item.length) {
         block_item.attr("data-index", i);
-        block_item.find(".reorder-label").text(t('blocks.name_label', {number: i}));
         block_item.find(".drag-handle").attr("aria-label", t('blocks.name_label', {number: i}).replace(':', ''));
         // Update delete button state
         let deleteBtn = block_item.find(".item-delete-btn");
