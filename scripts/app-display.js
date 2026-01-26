@@ -591,6 +591,11 @@ function sync_data_to_display() {
     $("#next_question").prop("disabled", false);
     $("#next_question_2").prop("disabled", false);
   }
+
+  // Update Auto Merge button visibility based on duplicate sessions
+  if (typeof updateAutoMergeButtonVisibility === 'function') {
+    updateAutoMergeButtonVisibility();
+  }
 }
 /**
  * Show loading indicator
@@ -598,14 +603,31 @@ function sync_data_to_display() {
  */
 function showLoading(message) {
   const loadingMessage = message || t('alerts.loading');
-  console.log('Loading: ' + loadingMessage);
+  
+  // Remove any existing loading overlay
+  hideLoading();
+  
+  const overlay = document.createElement('div');
+  overlay.id = 'loading-overlay';
+  overlay.className = 'sync-dialog-overlay';
+  overlay.style.display = 'flex';
+  overlay.innerHTML = `
+    <div class="sync-dialog loading-dialog" role="alert" aria-live="polite">
+      <div class="loading-spinner"></div>
+      <p class="loading-message">${HTMLescape(loadingMessage)}</p>
+    </div>
+  `;
+  document.body.appendChild(overlay);
 }
 
 /**
  * Hide loading indicator
  */
 function hideLoading() {
-  console.log('Loading complete');
+  const overlay = document.getElementById('loading-overlay');
+  if (overlay) {
+    overlay.remove();
+  }
 }
 
 /**

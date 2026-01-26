@@ -493,6 +493,7 @@ async function createNewSession(name) {
 async function switchSession(sessionIdOrIndex) {
   const meta = getGlobalDoc().getMap('meta');
   const sessionOrder = meta.get('sessionOrder') || [];
+  const oldSessionId = DocManager.activeSessionId;
   
   let sessionId;
   
@@ -511,6 +512,11 @@ async function switchSession(sessionIdOrIndex) {
   if (!sessionId || !sessionOrder.includes(sessionId)) {
     console.error('Invalid session:', sessionIdOrIndex);
     return false;
+  }
+
+  // Notify sync module before switching sessions
+  if (typeof handleSessionSwitch === 'function' && oldSessionId !== sessionId) {
+    handleSessionSwitch(sessionId);
   }
 
   // Load session doc if not already loaded
@@ -542,9 +548,10 @@ async function switchSession(sessionIdOrIndex) {
 /**
  * Delete a session
  * @param {string|number} sessionIdOrIndex - Session UUID or 1-based index
+ * @param {boolean} skipConfirm - Skip confirmation dialog (for merge operations)
  * @returns {Promise<boolean>} True if deletion successful
  */
-async function deleteSession(sessionIdOrIndex) {
+async function deleteSession(sessionIdOrIndex, skipConfirm) {
   const meta = getGlobalDoc().getMap('meta');
   const sessionOrder = meta.get('sessionOrder') || [];
 
@@ -583,7 +590,7 @@ async function deleteSession(sessionIdOrIndex) {
   const sessionDoc = getSessionDoc(sessionId);
   const sessionName = sessionDoc ? sessionDoc.getMap('session').get('name') : 'Unknown';
 
-  if (!window.confirm(t('confirm.delete_session', { name: sessionName }))) {
+  if (!skipConfirm && !window.confirm(t('confirm.delete_session', { name: sessionName }))) {
     return false;
   }
 
@@ -618,6 +625,11 @@ async function deleteSession(sessionIdOrIndex) {
   // Destroy session doc and clear storage
   await destroySessionDoc(sessionId, true);
 
+  // Disconnect from sync if we deleted the synced session
+  if (typeof handleSyncedSessionDeleted === 'function') {
+    handleSyncedSessionDeleted(sessionId);
+  }
+
   // Switch to new current if needed
   if (currentSessionId === sessionId) {
     await initSessionDoc(newCurrentId);
@@ -627,7 +639,9 @@ async function deleteSession(sessionIdOrIndex) {
   // Log in global history
   add_global_history_entry('history_global.actions.delete_session', 'history_global.details_templates.deleted_session', { name: sessionName });
 
-  alert(t('alerts.deleted'));
+  if (!skipConfirm) {
+    alert(t('alerts.deleted'));
+  }
   sync_data_to_display();
   return true;
 }
@@ -698,4 +712,974 @@ function updateSessionLastModified(sessionId) {
   }
 }
 
+/**
+ * Extract session data for comparison (teams, blocks, questions names)
+ * @param {string} sessionId - Session UUID
+ * @returns {Promise<Object>} Data object with teams, blocks, questions arrays
+ */
+async function extractSessionDataForMerge(sessionId) {
+  // Ensure session doc is loaded
+  let sessionDoc = getSessionDoc(sessionId);
+  if (!sessionDoc) {
+    sessionDoc = await initSessionDoc(sessionId);
+  }
+  if (!sessionDoc) return { teams: [null], blocks: [null], questions: [null] };
 
+  // Wait for session data to be available (IndexedDB sync may be in progress)
+  await waitForSessionData(sessionDoc);
+
+  const session = sessionDoc.getMap('session');
+  if (!session) return { teams: [null], blocks: [null], questions: [null] };
+
+  const result = {
+    teams: [null], // Index 0 is always null
+    blocks: [null], // Index 0 is always null
+    questions: [null] // Index 0 is always null
+  };
+
+  // Extract team names
+  const teams = session.get('teams');
+  if (teams) {
+    for (let i = 1; i < teams.length; i++) {
+      const team = teams.get(i);
+      result.teams.push(team ? team.get('name') : null);
+    }
+  }
+
+  // Extract block names
+  const blocks = session.get('blocks');
+  if (blocks) {
+    for (let i = 1; i < blocks.length; i++) {
+      const block = blocks.get(i);
+      result.blocks.push(block ? block.get('name') : null);
+    }
+  }
+
+  // Extract question names
+  const questions = session.get('questions');
+  if (questions) {
+    for (let i = 1; i < questions.length; i++) {
+      const question = questions.get(i);
+      result.questions.push(question ? question.get('name') : null);
+    }
+  }
+
+  return result;
+}
+
+/**
+ * Show the merge sessions dialog
+ */
+function showMergeSessionsDialog() {
+  const sessions = getAllSessions();
+
+  // Need at least 2 sessions to merge
+  if (sessions.length < 2) {
+    showToast(t('merge.no_sessions_error'));
+    return;
+  }
+
+  // Remove any existing dialog
+  const existing = document.getElementById('merge-dialog-overlay');
+  if (existing) existing.remove();
+
+  const overlay = document.createElement('div');
+  overlay.id = 'merge-dialog-overlay';
+  overlay.className = 'sync-dialog-overlay';
+
+  overlay.innerHTML = createMergeDialogHTML(sessions);
+  document.body.appendChild(overlay);
+
+  // Focus first focusable element
+  const firstSelect = overlay.querySelector('select');
+  if (firstSelect) firstSelect.focus();
+
+  // Handle cancel
+  overlay.querySelector('.cancel-merge-btn').addEventListener('click', function() {
+    overlay.remove();
+  });
+
+  // Handle merge
+  overlay.querySelector('.confirm-merge-btn').addEventListener('click', async function() {
+    const sourceSelect = document.getElementById('merge-source-session');
+    const targetSelect = document.getElementById('merge-target-session');
+
+    const sourceId = sourceSelect.value;
+    const targetId = targetSelect.value;
+
+    if (sourceId === targetId) {
+      showToast(t('merge.same_session_error'));
+      return;
+    }
+
+    overlay.remove();
+    await performSessionMerge(sourceId, targetId);
+  });
+
+  // Handle Escape key
+  function onMergeEscape(e) {
+    if (e.key === 'Escape') {
+      document.removeEventListener('keydown', onMergeEscape);
+      overlay.remove();
+    }
+  }
+  document.addEventListener('keydown', onMergeEscape);
+
+  // Handle overlay click
+  overlay.addEventListener('click', function(e) {
+    if (e.target === overlay) {
+      document.removeEventListener('keydown', onMergeEscape);
+      overlay.remove();
+    }
+  });
+}
+
+/**
+ * Create HTML for merge sessions dialog
+ * @param {Array} sessions - Array of session objects
+ * @returns {string} HTML string
+ */
+function createMergeDialogHTML(sessions) {
+  let optionsHtml = '';
+  for (let i = 0; i < sessions.length; i++) {
+    const session = sessions[i];
+    optionsHtml += '<option value="' + session.id + '">' + escapeHtml(session.name) + ' (#' + session.index + ')</option>';
+  }
+
+  return '<div class="sync-dialog" role="dialog" aria-labelledby="merge-dialog-title" aria-modal="true">' +
+    '<h2 id="merge-dialog-title">' + t('merge.dialog_title') + '</h2>' +
+    '<div class="form-group">' +
+      '<label for="merge-source-session">' + t('merge.select_source') + '</label>' +
+      '<select id="merge-source-session">' + optionsHtml + '</select>' +
+      '<small class="form-hint">' + t('merge.source_help') + '</small>' +
+    '</div>' +
+    '<div class="form-group">' +
+      '<label for="merge-target-session">' + t('merge.select_target') + '</label>' +
+      '<select id="merge-target-session">' + optionsHtml + '</select>' +
+      '<small class="form-hint">' + t('merge.target_help') + '</small>' +
+    '</div>' +
+    '<div class="button-row">' +
+      '<button type="button" class="cancel-merge-btn">' + t('merge.cancel_button') + '</button>' +
+      '<button type="button" class="confirm-merge-btn primary">' + t('merge.merge_button') + '</button>' +
+    '</div>' +
+  '</div>';
+}
+
+/**
+ * Perform the actual session merge
+ * @param {string} sourceId - Source session UUID
+ * @param {string} targetId - Target session UUID
+ */
+async function performSessionMerge(sourceId, targetId) {
+  try {
+    // Extract data from both sessions
+    const sourceData = extractSessionDataForMerge(sourceId);
+    const targetData = extractSessionDataForMerge(targetId);
+
+    // Compare the sessions
+    const comparison = compareSessionData(sourceData, targetData);
+    const stats = getMatchStats(comparison);
+
+    // If there are differences that need review, show the matching dialog
+    if (stats.overallNeedsReview || 
+        comparison.teams.unmatched.remote.length > 0 ||
+        comparison.blocks.unmatched.remote.length > 0 ||
+        comparison.questions.unmatched.remote.length > 0) {
+      
+      // Show matching dialog - reuse sync matching but with different labels
+      const mappings = await showMergeMatchingDialog(comparison);
+      
+      if (!mappings) {
+        // User cancelled
+        return;
+      }
+
+      // Apply the merge with mappings
+      await applySessionMerge(sourceId, targetId, mappings);
+    } else {
+      // All exact matches, merge directly
+      await applySessionMerge(sourceId, targetId, null);
+    }
+
+    // Delete the source session after successful merge
+    await deleteSession(sourceId, true); // Skip confirm since user already initiated merge
+
+    showToast(t('merge.merge_success'));
+
+    // Switch to target session to show results
+    await switchSession(targetId);
+
+  } catch (error) {
+    console.error('Merge failed:', error);
+    showToast(t('merge.merge_failed', { error: error.message }));
+  }
+}
+
+/**
+ * Check if a session name contains a date/time pattern
+ * @param {string} name - Session name
+ * @returns {boolean} True if name contains date/time
+ */
+function sessionNameHasDateTime(name) {
+  if (!name) return false;
+  // Match common date patterns: MM/DD/YYYY, YYYY-MM-DD, DD/MM/YYYY, etc.
+  // Also match time patterns: HH:MM, HH:MM:SS
+  const datePatterns = [
+    /\d{1,2}\/\d{1,2}\/\d{2,4}/, // MM/DD/YYYY or DD/MM/YYYY
+    /\d{4}-\d{2}-\d{2}/, // YYYY-MM-DD
+    /\d{1,2}:\d{2}(:\d{2})?/, // HH:MM or HH:MM:SS
+    /\d{1,2}\s+(AM|PM)/i // 12-hour time
+  ];
+  return datePatterns.some(pattern => pattern.test(name));
+}
+
+/**
+ * Find groups of sessions with identical names that contain date/time
+ * @returns {Array} Array of groups, each group is array of session objects with same name
+ */
+function findDuplicateSessionGroups() {
+  const sessions = getAllSessions();
+  const nameGroups = {};
+
+  // Group sessions by name
+  for (const session of sessions) {
+    // Only consider sessions with date/time in name
+    if (!sessionNameHasDateTime(session.name)) continue;
+
+    const name = session.name.trim().toLowerCase();
+    if (!nameGroups[name]) {
+      nameGroups[name] = [];
+    }
+    nameGroups[name].push(session);
+  }
+
+  // Filter to only groups with duplicates
+  const duplicateGroups = [];
+  for (const name in nameGroups) {
+    if (nameGroups[name].length > 1) {
+      duplicateGroups.push(nameGroups[name]);
+    }
+  }
+
+  return duplicateGroups;
+}
+
+/**
+ * Update the visibility of the Auto Merge button based on duplicate sessions
+ */
+function updateAutoMergeButtonVisibility() {
+  // Guard against test environment without full DOM
+  if (typeof document === 'undefined' || typeof document.getElementById !== 'function') return;
+  
+  const button = document.getElementById('auto_merge_sessions');
+  if (!button) return;
+
+  // Guard against being called before sessions are loaded
+  try {
+    const duplicateGroups = findDuplicateSessionGroups();
+    button.style.display = duplicateGroups.length > 0 ? 'inline-block' : 'none';
+  } catch (e) {
+    // Sessions not loaded yet, keep button hidden
+    button.style.display = 'none';
+  }
+}
+
+/**
+ * Auto merge all duplicate sessions
+ */
+async function autoMergeDuplicateSessions() {
+  const duplicateGroups = findDuplicateSessionGroups();
+
+  if (duplicateGroups.length === 0) {
+    showToast(t('merge.auto_merge_no_duplicates'));
+    return;
+  }
+
+  // Show loading indicator immediately
+  const totalDuplicates = duplicateGroups.reduce((sum, g) => sum + g.length - 1, 0);
+  showLoading(t('merge.auto_merge_processing', { count: totalDuplicates }));
+
+  // Track merge results for summary
+  const mergeResults = [];
+  const mergeFailures = [];
+
+  for (let i = 0; i < duplicateGroups.length; i++) {
+    const group = duplicateGroups[i];
+    
+    // Sort by index - use first session as target (oldest)
+    group.sort((a, b) => a.index - b.index);
+    const target = group[0];
+    const mergedSources = [];
+    const deletedEmpty = [];
+
+    // Merge all others into target
+    for (let j = 1; j < group.length; j++) {
+      const source = group[j];
+      try {
+        // Get fresh session data since IDs may have changed after deletions
+        const currentSessions = getAllSessions();
+        const sourceExists = currentSessions.find(s => s.id === source.id);
+        const targetExists = currentSessions.find(s => s.id === target.id);
+
+        if (!sourceExists || !targetExists) {
+          console.log('Session no longer exists, skipping:', source.name);
+          mergeFailures.push({ source: source.name, target: target.name, reason: 'Session not found' });
+          continue;
+        }
+
+        // Check if source session has data before trying to merge
+        let sourceDoc = getSessionDoc(source.id);
+        if (!sourceDoc) {
+          sourceDoc = await initSessionDoc(source.id);
+        }
+        
+        // Wait for data to load
+        const sourceHasData = await waitForSessionData(sourceDoc);
+        
+        if (!sourceHasData) {
+          // Source is an empty/ghost session - just delete it
+          console.log('Source session is empty, deleting:', source.name);
+          await deleteSession(source.id, true);
+          deletedEmpty.push(source.name);
+          continue;
+        }
+
+        // Extract and compare
+        const sourceData = await extractSessionDataForMerge(source.id);
+        const targetData = await extractSessionDataForMerge(target.id);
+        const comparison = compareSessionData(sourceData, targetData);
+
+        // For auto-merge, we don't show the matching dialog
+        // We use the auto-matched results directly
+        await applySessionMerge(source.id, target.id, null);
+        await deleteSession(source.id, true);
+        mergedSources.push(source.name);
+      } catch (error) {
+        console.error('Auto merge failed for session:', source.name, error);
+        mergeFailures.push({ source: source.name, target: target.name, reason: error.message || 'Unknown error' });
+        // Continue with next session
+      }
+    }
+
+    if (mergedSources.length > 0 || deletedEmpty.length > 0) {
+      mergeResults.push({
+        target: target.name,
+        sources: mergedSources,
+        deleted: deletedEmpty
+      });
+    }
+  }
+
+  // Update button visibility
+  // Update button visibility
+  updateAutoMergeButtonVisibility();
+
+  // Refresh display
+  sync_data_to_display();
+
+  // Hide loading indicator
+  hideLoading();
+
+  // Show summary dialog
+  showAutoMergeSummary(mergeResults, mergeFailures);
+}
+
+/**
+ * Show summary dialog after auto merge
+ * @param {Array} mergeResults - Array of {target, sources} objects
+ * @param {Array} mergeFailures - Array of {source, target, reason} objects
+ */
+function showAutoMergeSummary(mergeResults, mergeFailures = []) {
+  // Remove any existing dialog
+  const existing = document.getElementById('merge-summary-overlay');
+  if (existing) existing.remove();
+
+  const overlay = document.createElement('div');
+  overlay.id = 'merge-summary-overlay';
+  overlay.className = 'sync-dialog-overlay';
+  overlay.style.display = 'flex';
+
+  const totalMerged = mergeResults.reduce((sum, r) => sum + r.sources.length, 0);
+  const totalDeleted = mergeResults.reduce((sum, r) => sum + (r.deleted ? r.deleted.length : 0), 0);
+
+  let successTableRows = '';
+  for (const result of mergeResults) {
+    for (let i = 0; i < result.sources.length; i++) {
+      successTableRows += `<tr>
+        <td>${HTMLescape(result.sources[i])}</td>
+        <td>→</td>
+        <td>${HTMLescape(result.target)}</td>
+      </tr>`;
+    }
+  }
+
+  let deletedTableRows = '';
+  for (const result of mergeResults) {
+    if (result.deleted) {
+      for (let i = 0; i < result.deleted.length; i++) {
+        deletedTableRows += `<tr>
+          <td>${HTMLescape(result.deleted[i])}</td>
+          <td>${t('merge.empty_session_deleted')}</td>
+        </tr>`;
+      }
+    }
+  }
+
+  let failureTableRows = '';
+  for (const failure of mergeFailures) {
+    failureTableRows += `<tr>
+      <td>${HTMLescape(failure.source)}</td>
+      <td>→</td>
+      <td>${HTMLescape(failure.target)}</td>
+      <td style="color: #f44336;">${HTMLescape(failure.reason)}</td>
+    </tr>`;
+  }
+
+  let content = '';
+  
+  if (totalMerged > 0) {
+    content += `
+      <p>${t('merge.auto_merge_summary', { count: totalMerged })}</p>
+      <table class="merge-summary-table">
+        <thead>
+          <tr>
+            <th>${t('merge.source_session')}</th>
+            <th></th>
+            <th>${t('merge.target_session')}</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${successTableRows}
+        </tbody>
+      </table>
+    `;
+  }
+
+  if (totalDeleted > 0) {
+    content += `
+      <p style="color: #ff9800; margin-top: 1rem;">${t('merge.empty_sessions_deleted', { count: totalDeleted })}</p>
+      <table class="merge-summary-table">
+        <thead>
+          <tr>
+            <th>${t('merge.source_session')}</th>
+            <th>${t('merge.status')}</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${deletedTableRows}
+        </tbody>
+      </table>
+    `;
+  }
+
+  if (mergeFailures.length > 0) {
+    content += `
+      <p style="color: #f44336; margin-top: 1rem;">${t('merge.auto_merge_failures', { count: mergeFailures.length })}</p>
+      <table class="merge-summary-table">
+        <thead>
+          <tr>
+            <th>${t('merge.source_session')}</th>
+            <th></th>
+            <th>${t('merge.target_session')}</th>
+            <th>${t('merge.failure_reason')}</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${failureTableRows}
+        </tbody>
+      </table>
+    `;
+  }
+
+  if (totalMerged === 0 && totalDeleted === 0 && mergeFailures.length === 0) {
+    content = `<p>${t('merge.auto_merge_no_duplicates')}</p>`;
+  }
+
+  overlay.innerHTML = `
+    <div class="sync-dialog" role="dialog" aria-modal="true" aria-labelledby="merge-summary-title">
+      <h2 id="merge-summary-title">${t('merge.auto_merge_complete_title')}</h2>
+      ${content}
+      <div class="sync-dialog-buttons">
+        <button type="button" id="merge-summary-ok" class="sync-dialog-btn sync-dialog-btn-primary">${t('merge.ok_button')}</button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(overlay);
+
+  const okBtn = document.getElementById('merge-summary-ok');
+  okBtn.focus();
+
+  okBtn.addEventListener('click', function() {
+    overlay.remove();
+  });
+
+  // Close on Escape
+  overlay.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      overlay.remove();
+    }
+  });
+
+  // Close on overlay click
+  overlay.addEventListener('click', function(e) {
+    if (e.target === overlay) {
+      overlay.remove();
+    }
+  });
+}
+
+/**
+ * Show matching dialog for merge (adapted from sync matching)
+ * @param {Object} comparison - Comparison result
+ * @returns {Promise<Object|null>} Mappings or null if cancelled
+ */
+async function showMergeMatchingDialog(comparison) {
+  return new Promise(function(resolve) {
+    // Remove any existing dialog
+    const existing = document.getElementById('merge-dialog-overlay');
+    if (existing) existing.remove();
+
+    const overlay = document.createElement('div');
+    overlay.id = 'merge-dialog-overlay';
+    overlay.className = 'sync-dialog-overlay';
+
+    overlay.innerHTML = createMergeMatchingDialogHTML(comparison);
+    document.body.appendChild(overlay);
+
+    // Focus first button
+    const firstButton = overlay.querySelector('button');
+    if (firstButton) firstButton.focus();
+
+    // Handle cancel
+    overlay.querySelector('.cancel-matching-btn').addEventListener('click', function() {
+      overlay.remove();
+      resolve(null);
+    });
+
+    // Handle confirm
+    overlay.querySelector('.confirm-matching-btn').addEventListener('click', function() {
+      const mappings = collectMergeMappings();
+      overlay.remove();
+      resolve(mappings);
+    });
+
+    // Handle Escape
+    function onEscape(e) {
+      if (e.key === 'Escape') {
+        document.removeEventListener('keydown', onEscape);
+        overlay.remove();
+        resolve(null);
+      }
+    }
+    document.addEventListener('keydown', onEscape);
+
+    // Handle overlay click
+    overlay.addEventListener('click', function(e) {
+      if (e.target === overlay) {
+        document.removeEventListener('keydown', onEscape);
+        overlay.remove();
+        resolve(null);
+      }
+    });
+  });
+}
+
+/**
+ * Create HTML for merge matching dialog
+ * @param {Object} comparison - Comparison result
+ * @returns {string} HTML string
+ */
+function createMergeMatchingDialogHTML(comparison) {
+  let html = '<div class="sync-dialog matching-dialog" role="dialog" aria-labelledby="matching-dialog-title" aria-modal="true">' +
+    '<h2 id="matching-dialog-title">' + t('sync.matching_title') + '</h2>' +
+    '<p>' + t('sync.matching_description') + '</p>';
+
+  // Teams section
+  html += createMergeMatchingSection('teams', t('sync.matching_teams_header'), comparison.teams);
+
+  // Blocks section
+  html += createMergeMatchingSection('blocks', t('sync.matching_blocks_header'), comparison.blocks);
+
+  // Questions section
+  html += createMergeMatchingSection('questions', t('sync.matching_questions_header'), comparison.questions);
+
+  html += '<div class="button-row">' +
+    '<button type="button" class="cancel-matching-btn">' + t('merge.cancel_button') + '</button>' +
+    '<button type="button" class="confirm-matching-btn primary">' + t('merge.confirm_merge') + '</button>' +
+  '</div></div>';
+
+  return html;
+}
+
+/**
+ * Create HTML for a matching section in merge dialog
+ * @param {string} type - Category type (teams, blocks, questions)
+ * @param {string} title - Section title
+ * @param {Object} data - Matching data
+ * @returns {string} HTML string
+ */
+function createMergeMatchingSection(type, title, data) {
+  if (data.matches.length === 0 && data.unmatched.remote.length === 0) {
+    return '';
+  }
+
+  let html = '<h3>' + title + '</h3>' +
+    '<table class="matching-table">' +
+    '<thead><tr>' +
+    '<th>#</th>' +
+    '<th>' + t('merge.matching_source') + '</th>' +
+    '<th></th>' +
+    '<th>' + t('merge.matching_target') + '</th>' +
+    '</tr></thead><tbody>';
+
+  // Show matches
+  for (let i = 0; i < data.matches.length; i++) {
+    const match = data.matches[i];
+    const isExact = match.confidence === 'exact';
+    html += '<tr data-type="' + type + '" data-remote-index="' + match.remoteIndex + '">' +
+      '<td>' + match.remoteIndex + '</td>' +
+      '<td>' + escapeHtml(match.remoteName) + '</td>' +
+      '<td>→</td>' +
+      '<td>' +
+        (isExact ?
+          '<span class="auto-matched">' + escapeHtml(match.localName) + ' ✓</span>' :
+          createMergeLocalSelector(type, match.remoteIndex, match.localIndex, data.unmatched.local)
+        ) +
+      '</td></tr>';
+  }
+
+  // Show unmatched source items
+  for (let i = 0; i < data.unmatched.remote.length; i++) {
+    const item = data.unmatched.remote[i];
+    html += '<tr data-type="' + type + '" data-remote-index="' + item.index + '">' +
+      '<td>' + item.index + '</td>' +
+      '<td>' + escapeHtml(item.name) + '</td>' +
+      '<td>→</td>' +
+      '<td>' + createMergeLocalSelector(type, item.index, 'new', data.unmatched.local) + '</td>' +
+    '</tr>';
+  }
+
+  html += '</tbody></table>';
+  return html;
+}
+
+/**
+ * Create dropdown selector for merge matching
+ * @param {string} type - Category type
+ * @param {number} remoteIndex - Source item index
+ * @param {*} selectedValue - Currently selected value
+ * @param {Array} unmatchedLocal - Unmatched target items
+ * @returns {string} HTML for select
+ */
+function createMergeLocalSelector(type, remoteIndex, selectedValue, unmatchedLocal) {
+  let html = '<select class="matching-select" data-type="' + type + '" data-remote-index="' + remoteIndex + '">';
+
+  // Option to create new
+  html += '<option value="new" ' + (selectedValue === 'new' ? 'selected' : '') + '>' + t('sync.matching_create_new') + '</option>';
+
+  // Options for unmatched target items
+  for (let i = 0; i < unmatchedLocal.length; i++) {
+    const item = unmatchedLocal[i];
+    html += '<option value="' + item.index + '" ' + (selectedValue === item.index ? 'selected' : '') + '>' + escapeHtml(item.name) + '</option>';
+  }
+
+  html += '</select>';
+  return html;
+}
+
+/**
+ * Collect mappings from merge matching dialog
+ * @returns {Object} Mappings object
+ */
+function collectMergeMappings() {
+  const mappings = {
+    teams: {},
+    blocks: {},
+    questions: {}
+  };
+
+  // Collect from dropdowns
+  const selects = document.querySelectorAll('.matching-select');
+  selects.forEach(function(select) {
+    const type = select.dataset.type;
+    const remoteIndex = parseInt(select.dataset.remoteIndex);
+    const value = select.value;
+
+    if (value === 'new') {
+      mappings[type][remoteIndex] = 'new';
+    } else {
+      mappings[type][remoteIndex] = parseInt(value);
+    }
+  });
+
+  // Collect auto-matched (exact matches shown as text, not dropdown)
+  const autoMatched = document.querySelectorAll('tr[data-type][data-remote-index]');
+  autoMatched.forEach(function(row) {
+    const type = row.dataset.type;
+    const remoteIndex = parseInt(row.dataset.remoteIndex);
+    
+    // Skip if already in mappings (from dropdown)
+    if (mappings[type][remoteIndex] !== undefined) return;
+
+    // Auto-matched means source and target indices match
+    const autoMatchSpan = row.querySelector('.auto-matched');
+    if (autoMatchSpan) {
+      mappings[type][remoteIndex] = remoteIndex;
+    }
+  });
+
+  return mappings;
+}
+
+/**
+ * Wait for session data to be available
+ * @param {Y.Doc} sessionDoc - The session document
+ * @param {number} maxWait - Maximum wait time in ms
+ * @returns {Promise<boolean>} True if data is available
+ */
+async function waitForSessionData(sessionDoc, maxWait = 5000) {
+  const startTime = Date.now();
+  
+  while (Date.now() - startTime < maxWait) {
+    const session = sessionDoc.getMap('session');
+    if (session && session.get('teams') && session.get('blocks') && session.get('questions')) {
+      return true;
+    }
+    // Wait 100ms and try again
+    await new Promise(resolve => setTimeout(resolve, 100));
+  }
+  
+  // Log what we found for debugging
+  const session = sessionDoc.getMap('session');
+  console.warn('waitForSessionData timeout. Session map exists:', !!session, 
+    'teams:', session ? !!session.get('teams') : false,
+    'blocks:', session ? !!session.get('blocks') : false,
+    'questions:', session ? !!session.get('questions') : false);
+  
+  return false;
+}
+
+/**
+ * Apply the merge from source to target session
+ * @param {string} sourceId - Source session UUID
+ * @param {string} targetId - Target session UUID
+ * @param {Object|null} mappings - User-confirmed mappings or null for auto
+ */
+async function applySessionMerge(sourceId, targetId, mappings) {
+  // Ensure session docs are loaded
+  let sourceDoc = getSessionDoc(sourceId);
+  if (!sourceDoc) {
+    sourceDoc = await initSessionDoc(sourceId);
+  }
+  let targetDoc = getSessionDoc(targetId);
+  if (!targetDoc) {
+    targetDoc = await initSessionDoc(targetId);
+  }
+
+  if (!sourceDoc || !targetDoc) {
+    throw new Error('Session not found');
+  }
+
+  // Wait for session data to be available (IndexedDB sync may be in progress)
+  const sourceReady = await waitForSessionData(sourceDoc);
+  const targetReady = await waitForSessionData(targetDoc);
+  
+  if (!sourceReady) {
+    // Check what's missing for a more helpful error
+    const ss = sourceDoc.getMap('session');
+    const missing = [];
+    if (!ss) missing.push('session map');
+    else {
+      if (!ss.get('teams')) missing.push('teams');
+      if (!ss.get('blocks')) missing.push('blocks');
+      if (!ss.get('questions')) missing.push('questions');
+    }
+    throw new Error('Source session missing: ' + missing.join(', '));
+  }
+  if (!targetReady) {
+    const ts = targetDoc.getMap('session');
+    const missing = [];
+    if (!ts) missing.push('session map');
+    else {
+      if (!ts.get('teams')) missing.push('teams');
+      if (!ts.get('blocks')) missing.push('blocks');
+      if (!ts.get('questions')) missing.push('questions');
+    }
+    throw new Error('Target session missing: ' + missing.join(', '));
+  }
+
+  const sourceSession = sourceDoc.getMap('session');
+  const targetSession = targetDoc.getMap('session');
+
+  if (!sourceSession || !targetSession) {
+    throw new Error('Session data not found');
+  }
+
+  // Get the data arrays and validate they exist
+  const sourceTeams = sourceSession.get('teams');
+  const sourceBlocks = sourceSession.get('blocks');
+  const sourceQuestions = sourceSession.get('questions');
+  const targetTeams = targetSession.get('teams');
+  const targetBlocks = targetSession.get('blocks');
+  const targetQuestions = targetSession.get('questions');
+
+  // Validate required arrays exist
+  if (!sourceTeams || !sourceBlocks || !sourceQuestions) {
+    throw new Error('Source session data is incomplete');
+  }
+  if (!targetTeams || !targetBlocks || !targetQuestions) {
+    throw new Error('Target session data is incomplete');
+  }
+
+  targetDoc.transact(function() {
+    // Build mapping lookups
+    const teamMap = mappings ? mappings.teams : {};
+    const blockMap = mappings ? mappings.blocks : {};
+    const questionMap = mappings ? mappings.questions : {};
+
+    // For items mapped to 'new', we need to add them to target
+    // For items mapped to existing indices, we merge scores
+
+    // Process teams - add new ones
+    const newTeamIndices = {}; // Maps source index to new target index
+    for (let i = 1; i < sourceTeams.length; i++) {
+      const sourceTeam = sourceTeams.get(i);
+      if (!sourceTeam) continue;
+
+      if (teamMap[i] === 'new') {
+        // Add new team to target
+        const newTeam = new Y.Map();
+        newTeam.set('name', sourceTeam.get('name'));
+        targetTeams.push([newTeam]);
+        newTeamIndices[i] = targetTeams.length - 1;
+
+        // Add placeholder scores for existing target questions
+        for (let q = 1; q < targetQuestions.length; q++) {
+          const targetQ = targetQuestions.get(q);
+          if (targetQ) {
+            const teamScores = targetQ.get('teams');
+            const newScore = new Y.Map();
+            newScore.set('score', 0);
+            newScore.set('extraCredit', 0);
+            teamScores.push([newScore]);
+          }
+        }
+      }
+    }
+
+    // Process blocks - add new ones
+    const newBlockIndices = {};
+    for (let i = 1; i < sourceBlocks.length; i++) {
+      const sourceBlock = sourceBlocks.get(i);
+      if (!sourceBlock) continue;
+
+      if (blockMap[i] === 'new') {
+        const newBlock = new Y.Map();
+        newBlock.set('name', sourceBlock.get('name'));
+        targetBlocks.push([newBlock]);
+        newBlockIndices[i] = targetBlocks.length - 1;
+      }
+    }
+
+    // Process questions - add new ones and merge scores
+    for (let i = 1; i < sourceQuestions.length; i++) {
+      const sourceQ = sourceQuestions.get(i);
+      if (!sourceQ) continue;
+
+      if (questionMap[i] === 'new') {
+        // Add new question
+        const newQuestion = new Y.Map();
+        newQuestion.set('name', sourceQ.get('name'));
+        newQuestion.set('score', sourceQ.get('score'));
+        
+        // Map block index
+        const sourceBlockIdx = sourceQ.get('block');
+        let targetBlockIdx = sourceBlockIdx;
+        if (blockMap[sourceBlockIdx] === 'new') {
+          targetBlockIdx = newBlockIndices[sourceBlockIdx] || sourceBlockIdx;
+        } else if (typeof blockMap[sourceBlockIdx] === 'number') {
+          targetBlockIdx = blockMap[sourceBlockIdx];
+        }
+        newQuestion.set('block', targetBlockIdx);
+        newQuestion.set('ignore', sourceQ.get('ignore') || false);
+
+        // Create team scores array
+        const newTeamScores = new Y.Array();
+        newTeamScores.push([null]); // Index 0 is null
+
+        // Add scores for each target team
+        for (let t = 1; t < targetTeams.length; t++) {
+          const teamScore = new Y.Map();
+          
+          // Find if this target team maps from a source team
+          let found = false;
+          for (let st = 1; st < sourceTeams.length; st++) {
+            if (teamMap[st] === t || (!mappings && st === t && st < sourceTeams.length)) {
+              // This source team maps to this target team
+              const sourceTeamScores = sourceQ.get('teams');
+              if (sourceTeamScores && sourceTeamScores.get(st)) {
+                teamScore.set('score', sourceTeamScores.get(st).get('score') || 0);
+                teamScore.set('extraCredit', sourceTeamScores.get(st).get('extraCredit') || 0);
+                found = true;
+                break;
+              }
+            }
+          }
+          
+          if (!found) {
+            teamScore.set('score', 0);
+            teamScore.set('extraCredit', 0);
+          }
+          
+          newTeamScores.push([teamScore]);
+        }
+
+        newQuestion.set('teams', newTeamScores);
+        targetQuestions.push([newQuestion]);
+
+      } else if (typeof questionMap[i] === 'number') {
+        // Merge scores into existing question
+        const targetQIdx = questionMap[i];
+        const targetQ = targetQuestions.get(targetQIdx);
+        if (!targetQ) continue;
+
+        const sourceTeamScores = sourceQ.get('teams');
+        const targetTeamScores = targetQ.get('teams');
+
+        // Merge scores for mapped teams
+        for (let st = 1; st < sourceTeams.length; st++) {
+          let targetTeamIdx;
+          if (teamMap[st] === 'new') {
+            targetTeamIdx = newTeamIndices[st];
+          } else if (typeof teamMap[st] === 'number') {
+            targetTeamIdx = teamMap[st];
+          } else if (!mappings && st < targetTeams.length) {
+            targetTeamIdx = st;
+          } else {
+            continue;
+          }
+
+          if (targetTeamIdx && sourceTeamScores && sourceTeamScores.get(st)) {
+            const sourceScore = sourceTeamScores.get(st);
+            if (targetTeamScores && targetTeamScores.get(targetTeamIdx)) {
+              // Add scores together (merge)
+              const targetScore = targetTeamScores.get(targetTeamIdx);
+              const newScore = (targetScore.get('score') || 0) + (sourceScore.get('score') || 0);
+              const newExtra = (targetScore.get('extraCredit') || 0) + (sourceScore.get('extraCredit') || 0);
+              targetScore.set('score', newScore);
+              targetScore.set('extraCredit', newExtra);
+            }
+          }
+        }
+      }
+    }
+
+    // Add history entry
+    add_history_entry('history.actions.merge', 'history.details_templates.merged_sessions', { 
+      source: sourceSession.get('name'),
+      target: targetSession.get('name')
+    });
+
+  }, 'local');
+}

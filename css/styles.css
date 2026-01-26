@@ -205,4 +205,445 @@ tr:nth-child(even){
 .reorder-item.drag-over {
   border-top: 2px solid var(--link-color);
 }
+
+/* Sync Button & Status */
+.sync-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background: var(--control-bg);
+  cursor: pointer;
+  font-size: 0.875rem;
+}
+
+.sync-button:hover {
+  background: var(--row-alt);
+}
+
+.sync-button:focus {
+  outline: 2px solid var(--link-color);
+  outline-offset: 2px;
+}
+
+.sync-button.connecting .sync-icon {
+  animation: spin 1s linear infinite;
+}
+
+.sync-button.connected {
+  border-color: #4CAF50;
+  background: #E8F5E9;
+}
+
+[data-theme="dark"] .sync-button.connected {
+  background: #1B5E20;
+  border-color: #4CAF50;
+}
+
+.sync-button.error {
+  border-color: #f44336;
+  background: #FFEBEE;
+}
+
+[data-theme="dark"] .sync-button.error {
+  background: #B71C1C;
+  border-color: #f44336;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Peer Count Indicator */
+.sync-peers {
+  display: inline-flex;
+  align-items: center;
+  position: relative;
+  margin-left: 0.5rem;
+  padding: 0.25rem 0.5rem;
+  background: #E8F5E9;
+  border: 1px solid #4CAF50;
+  border-radius: 4px;
+  cursor: default;
+}
+
+[data-theme="dark"] .sync-peers {
+  background: #1B5E20;
+}
+
+.sync-peers .peer-count {
+  font-weight: bold;
+  color: #2E7D32;
+}
+
+[data-theme="dark"] .sync-peers .peer-count {
+  color: #A5D6A7;
+}
+
+.sync-peers .peer-tooltip {
+  display: none;
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 4px;
+  padding: 0.5rem;
+  background: var(--panel-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  white-space: nowrap;
+  z-index: 1000;
+}
+
+.sync-peers:hover .peer-tooltip {
+  display: block;
+}
+
+/* Sync Dialog */
+.sync-dialog-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+}
+
+.sync-dialog {
+  background: var(--panel-bg);
+  color: var(--text-color);
+  border-radius: 8px;
+  padding: 1.5rem;
+  max-width: 400px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.sync-dialog h2 {
+  margin-top: 0;
+}
+
+.sync-dialog .form-group {
+  margin-bottom: 1rem;
+}
+
+.sync-dialog label {
+  display: block;
+  margin-bottom: 0.25rem;
+  font-weight: bold;
+}
+
+.sync-dialog input[type="text"],
+.sync-dialog input[type="password"] {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  font-size: 1rem;
+  background: var(--control-bg);
+  color: var(--text-color);
+  box-sizing: border-box;
+}
+
+.sync-dialog .room-code-input {
+  font-family: monospace;
+  font-size: 1.5rem;
+  text-align: center;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+}
+
+.sync-dialog .radio-group {
+  margin: 1rem 0;
+  border: none;
+  padding: 0;
+}
+
+.sync-dialog .radio-group label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: normal;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 4px;
+}
+
+.sync-dialog .radio-group label:hover {
+  background: var(--row-alt);
+}
+
+.sync-dialog .button-row {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.sync-dialog button {
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background: var(--control-bg);
+  color: var(--text-color);
+  cursor: pointer;
+  font-size: 0.95rem;
+}
+
+.sync-dialog button:hover {
+  background: var(--row-alt);
+}
+
+.sync-dialog button:focus {
+  outline: 2px solid var(--link-color);
+  outline-offset: 2px;
+}
+
+.sync-dialog button.primary {
+  background: var(--link-color);
+  color: #fff;
+  border-color: var(--link-color);
+}
+
+.sync-dialog button.primary:hover {
+  opacity: 0.9;
+}
+
+.sync-dialog button.danger {
+  background: #f44336;
+  color: #fff;
+  border-color: #f44336;
+}
+
+.sync-dialog button.danger:hover {
+  background: #d32f2f;
+}
+
+.sync-dialog button.secondary {
+  background: var(--control-bg);
+}
+
+.sync-dialog .room-code-display {
+  font-family: monospace;
+  font-size: 2rem;
+  text-align: center;
+  letter-spacing: 0.25em;
+  padding: 1rem;
+  background: var(--row-alt);
+  border-radius: 4px;
+  margin: 1rem 0;
+}
+
+/* Name Matching Dialog */
+.matching-dialog {
+  max-width: 600px;
+}
+
+.matching-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1rem 0;
+}
+
+.matching-table th,
+.matching-table td {
+  padding: 0.5rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.matching-table th {
+  background: var(--header-bg);
+}
+
+.matching-table select {
+  width: 100%;
+  padding: 0.25rem;
+  background: var(--control-bg);
+  color: var(--text-color);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+}
+
+.matching-table .auto-matched {
+  color: #4CAF50;
+  font-size: 0.875rem;
+}
+
+/* Merge Summary Table */
+.merge-summary-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1rem 0;
+}
+
+.merge-summary-table th,
+.merge-summary-table td {
+  padding: 0.5rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.merge-summary-table th {
+  background: var(--header-bg);
+  font-weight: 600;
+}
+
+.merge-summary-table td:nth-child(2) {
+  text-align: center;
+  color: #4CAF50;
+  font-weight: bold;
+}
+
+/* Loading Dialog */
+.loading-dialog {
+  text-align: center;
+  min-width: 200px;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  margin: 0 auto 1rem;
+  border: 4px solid var(--border-color);
+  border-top-color: var(--link-color);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.loading-message {
+  margin: 0;
+  font-size: 1rem;
+  color: var(--text-color);
+}
+
+/* Accessibility Utilities */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Join Choice Dialog */
+.choice-group {
+  border: none;
+  padding: 0;
+  margin: 1rem 0;
+}
+
+.choice-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 1rem;
+  margin-bottom: 0.5rem;
+  border: 2px solid var(--border-color);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.choice-option:hover {
+  background: var(--row-alt);
+}
+
+.choice-option:has(input:checked) {
+  border-color: var(--link-color);
+  background: rgba(33, 150, 243, 0.1);
+}
+
+.choice-option input[type="radio"] {
+  margin-top: 0.25rem;
+}
+
+.choice-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.choice-desc {
+  font-size: 0.875rem;
+  color: var(--muted-text);
+}
+
+/* Password field styles */
+.checkbox-group label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  font-weight: normal;
+}
+
+.hint-text {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--muted-text);
+  margin-top: 0.25rem;
+}
+
+.password-note {
+  color: var(--muted-text);
+  font-size: 0.875rem;
+  text-align: center;
+}
+
+/* Toast notifications */
+.sync-toast {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%) translateY(100px);
+  padding: 0.75rem 1.5rem;
+  background: #333;
+  color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  opacity: 0;
+  transition: transform 0.3s, opacity 0.3s;
+  z-index: 10001;
+}
+
+.sync-toast.visible {
+  transform: translateX(-50%) translateY(0);
+  opacity: 1;
+}
+
+/* Error message styling */
+#sync-error-message {
+  display: none;
+  color: #d32f2f;
+  background: #FFEBEE;
+  padding: 0.5rem;
+  border-radius: 4px;
+  margin-bottom: 1rem;
+  font-size: 0.875rem;
+}
+
+[data-theme="dark"] #sync-error-message {
+  background: #3a2525;
+  color: #f88;
+}
   

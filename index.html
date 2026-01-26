@@ -28,6 +28,7 @@
   <script src="scripts/app-reorder.js"></script>
   <script src="scripts/app-summaries.js"></script>
   <script src="scripts/app-import-export.js"></script>
+  <script src="scripts/app-sync.js"></script>
   <script src="scripts/app-history.js"></script>
   <script src="scripts/app-display.js"></script>
   <script src="scripts/app-storage.js"></script>
@@ -57,6 +58,14 @@
             <option value="dark" data-i18n="theme.dark">Dark</option>
           </select>
         </label>
+        <button id="sync_button" class="sync-button" onclick="showSyncDialog()" data-i18n-title="sync.button_tooltip">
+          <span class="sync-icon">🔄</span>
+          <span class="sync-status" data-i18n="sync.button">Sync</span>
+        </button>
+        <div id="sync_peers" class="sync-peers" style="display: none;">
+          <span class="peer-count"></span>
+          <div class="peer-tooltip"></div>
+        </div>
       </div>
     </div>
     <div id="accordion">
@@ -170,6 +179,7 @@
             <thead>
               <tr>
                 <th data-i18n="history.time">Time</th>
+                <th data-i18n="history.user">User</th>
                 <th data-i18n="history.session">Session</th>
                 <th data-i18n="history.action">Action</th>
                 <th data-i18n="history.details_header">Details</th>
@@ -177,7 +187,7 @@
             </thead>
             <tbody id="history_list">
               <tr>
-                <td colspan="4" style="text-align: center; padding: 20px; color: #666;" data-i18n="history.no_changes">
+                <td colspan="5" style="text-align: center; padding: 20px; color: #666;" data-i18n="history.no_changes">
                   No changes recorded yet. Make some changes to see them here!
                 </td>
               </tr>
@@ -210,6 +220,11 @@
           </fieldset>
           <fieldset>
             <legend id = "danger_label" data-i18n="advanced.danger_zone">Danger Zone</legend>
+            <fieldset>
+              <legend data-i18n="advanced.merge">Merge</legend>
+              <button id="merge_sessions" onclick="showMergeSessionsDialog()" data-i18n="advanced.merge_sessions">Merge Sessions</button>
+              <button id="auto_merge_sessions" onclick="autoMergeDuplicateSessions()" data-i18n="advanced.auto_merge" style="display: none;">Auto Merge Duplicates</button>
+            </fieldset>
             <fieldset>
               <legend id = "delete_label" data-i18n="advanced.delete">Delete</legend>
               <button id="session_delete" onclick='local_data_update(this)' data-i18n="advanced.delete_session">Delete this Session (Round/Game)</button>
