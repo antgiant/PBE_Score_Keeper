@@ -987,18 +987,16 @@ async function autoMergeDuplicateSessions() {
     return;
   }
 
-  showToast(t('merge.auto_merge_found', { count: duplicateGroups.length }));
-
-  let totalMerged = 0;
+  // Track merge results for summary
+  const mergeResults = [];
 
   for (let i = 0; i < duplicateGroups.length; i++) {
     const group = duplicateGroups[i];
     
-    showToast(t('merge.auto_merge_progress', { current: i + 1, total: duplicateGroups.length }));
-
     // Sort by index - use first session as target (oldest)
     group.sort((a, b) => a.index - b.index);
     const target = group[0];
+    const mergedSources = [];
 
     // Merge all others into target
     for (let j = 1; j < group.length; j++) {
@@ -1023,21 +1021,106 @@ async function autoMergeDuplicateSessions() {
         // We use the auto-matched results directly
         await applySessionMerge(source.id, target.id, null);
         await deleteSession(source.id, true);
-        totalMerged++;
+        mergedSources.push(source.name);
       } catch (error) {
         console.error('Auto merge failed for session:', source.name, error);
         // Continue with next session
       }
     }
-  }
 
-  showToast(t('merge.auto_merge_complete', { merged: totalMerged }));
+    if (mergedSources.length > 0) {
+      mergeResults.push({
+        target: target.name,
+        sources: mergedSources
+      });
+    }
+  }
 
   // Update button visibility
   updateAutoMergeButtonVisibility();
 
   // Refresh display
   sync_data_to_display();
+
+  // Show summary dialog
+  showAutoMergeSummary(mergeResults);
+}
+
+/**
+ * Show summary dialog after auto merge
+ * @param {Array} mergeResults - Array of {target, sources} objects
+ */
+function showAutoMergeSummary(mergeResults) {
+  // Remove any existing dialog
+  const existing = document.getElementById('merge-summary-overlay');
+  if (existing) existing.remove();
+
+  const overlay = document.createElement('div');
+  overlay.id = 'merge-summary-overlay';
+  overlay.className = 'sync-dialog-overlay';
+  overlay.style.display = 'flex';
+
+  const totalMerged = mergeResults.reduce((sum, r) => sum + r.sources.length, 0);
+
+  let tableRows = '';
+  for (const result of mergeResults) {
+    for (let i = 0; i < result.sources.length; i++) {
+      tableRows += `<tr>
+        <td>${HTMLescape(result.sources[i])}</td>
+        <td>→</td>
+        <td>${HTMLescape(result.target)}</td>
+      </tr>`;
+    }
+  }
+
+  const content = mergeResults.length > 0 ? `
+    <p>${t('merge.auto_merge_summary', { count: totalMerged })}</p>
+    <table class="merge-summary-table">
+      <thead>
+        <tr>
+          <th>${t('merge.source_session')}</th>
+          <th></th>
+          <th>${t('merge.target_session')}</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${tableRows}
+      </tbody>
+    </table>
+  ` : `<p>${t('merge.auto_merge_no_duplicates')}</p>`;
+
+  overlay.innerHTML = `
+    <div class="sync-dialog" role="dialog" aria-modal="true" aria-labelledby="merge-summary-title">
+      <h2 id="merge-summary-title">${t('merge.auto_merge_complete_title')}</h2>
+      ${content}
+      <div class="sync-dialog-buttons">
+        <button type="button" id="merge-summary-ok" class="sync-dialog-btn sync-dialog-btn-primary">${t('buttons.ok')}</button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(overlay);
+
+  const okBtn = document.getElementById('merge-summary-ok');
+  okBtn.focus();
+
+  okBtn.addEventListener('click', function() {
+    overlay.remove();
+  });
+
+  // Close on Escape
+  overlay.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      overlay.remove();
+    }
+  });
+
+  // Close on overlay click
+  overlay.addEventListener('click', function(e) {
+    if (e.target === overlay) {
+      overlay.remove();
+    }
+  });
 }
 
 /**

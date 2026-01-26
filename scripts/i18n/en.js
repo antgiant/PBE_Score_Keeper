@@ -350,9 +350,10 @@ register_i18n_language('en', {
       "matching_target": "Target",
       "confirm_merge": "Confirm Merge",
       "auto_merge_no_duplicates": "No duplicate sessions found to merge",
-      "auto_merge_found": "Found {{count}} group(s) of duplicate sessions",
-      "auto_merge_progress": "Merging {{current}} of {{total}} groups...",
-      "auto_merge_complete": "Auto merge complete: {{merged}} sessions merged"
+      "auto_merge_complete_title": "Auto Merge Complete",
+      "auto_merge_summary": "Successfully merged {{count}} duplicate session(s):",
+      "source_session": "Source Session",
+      "target_session": "Merged Into"
     }
   }
 });

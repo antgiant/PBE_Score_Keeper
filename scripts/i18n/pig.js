@@ -347,9 +347,10 @@ register_i18n_language('pig', {
       "matching_target": "Arget-Tay",
       "confirm_merge": "Onfirm-Cay Erge-May",
       "auto_merge_no_duplicates": "O-Nay uplicate-day essions-say ound-fay o-tay erge-may",
-      "auto_merge_found": "Ound-Fay {{count}} oup(s)-gray of-ay uplicate-day essions-say",
-      "auto_merge_progress": "Erging-May {{current}} of-ay {{total}} oups-gray...",
-      "auto_merge_complete": "Auto-ay erge-may omplete-cay: {{merged}} essions-say erged-may"
+      "auto_merge_complete_title": "Auto-ay Erge-May Omplete-Cay",
+      "auto_merge_summary": "Uccessfully-Say erged-may {{count}} uplicate-day ession(s)-say:",
+      "source_session": "Ource-Say Ession-Say",
+      "target_session": "Erged-May Into-ay"
     }
   }
 });

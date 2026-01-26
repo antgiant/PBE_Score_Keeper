@@ -479,6 +479,31 @@ tr:nth-child(even){
   font-size: 0.875rem;
 }
 
+/* Merge Summary Table */
+.merge-summary-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1rem 0;
+}
+
+.merge-summary-table th,
+.merge-summary-table td {
+  padding: 0.5rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.merge-summary-table th {
+  background: var(--header-bg);
+  font-weight: 600;
+}
+
+.merge-summary-table td:nth-child(2) {
+  text-align: center;
+  color: #4CAF50;
+  font-weight: bold;
+}
+
 /* Accessibility Utilities */
 .visually-hidden {
   position: absolute;

@@ -351,9 +351,10 @@ register_i18n_language('fr', {
       "matching_target": "Cible",
       "confirm_merge": "Confirmer la Fusion",
       "auto_merge_no_duplicates": "Aucune session en double trouvée à fusionner",
-      "auto_merge_found": "{{count}} groupe(s) de sessions en double trouvés",
-      "auto_merge_progress": "Fusion de {{current}} sur {{total}} groupes...",
-      "auto_merge_complete": "Fusion automatique terminée : {{merged}} sessions fusionnées"
+      "auto_merge_complete_title": "Fusion Automatique Terminée",
+      "auto_merge_summary": "{{count}} session(s) en double fusionnée(s) avec succès :",
+      "source_session": "Session Source",
+      "target_session": "Fusionné Dans"
     }
   }
 });
