@@ -85,6 +85,41 @@ function saveDisplayName(name) {
 }
 
 /**
+ * Update the session name cache in global doc from session doc
+ * Called when remote updates come in to ensure cache reflects synced name
+ * @param {string} sessionId - Session UUID
+ * @param {Y.Doc} sessionDoc - Session document (optional, will load if not provided)
+ */
+function updateSessionNameCache(sessionId, sessionDoc) {
+  if (!sessionId) return;
+  
+  var doc = sessionDoc || (typeof getSessionDoc === 'function' ? getSessionDoc(sessionId) : null);
+  if (!doc) return;
+  
+  var session = doc.getMap('session');
+  if (!session) return;
+  
+  var name = session.get('name');
+  if (!name) return;
+  
+  var globalDoc = typeof getGlobalDoc === 'function' ? getGlobalDoc() : null;
+  if (!globalDoc) return;
+  
+  var meta = globalDoc.getMap('meta');
+  var sessionNames = meta.get('sessionNames');
+  
+  if (sessionNames) {
+    var cachedName = sessionNames.get(sessionId);
+    if (cachedName !== name) {
+      // Cache is out of date, update it
+      globalDoc.transact(function() {
+        sessionNames.set(sessionId, name);
+      }, 'local');
+    }
+  }
+}
+
+/**
  * Get sync room code from a session doc
  * @param {string} sessionId - Session UUID (optional, uses current if not provided)
  * @returns {string|null} Room code or null if not synced
@@ -392,6 +427,10 @@ async function startSync(displayName, roomCode, password, joinChoice) {
       // WebRTC provider uses 'null' or provider instance as origin for remote updates
       if (origin !== 'local' && origin !== sessionDoc.clientID) {
         console.log('Remote update on session doc, refreshing display');
+        
+        // Update session name cache from session doc (in case name changed remotely)
+        updateSessionNameCache(SyncManager.syncedSessionId, sessionDoc);
+        
         if (typeof sync_data_to_display === 'function') {
           sync_data_to_display();
         }
