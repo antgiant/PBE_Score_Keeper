@@ -455,6 +455,44 @@ tr:nth-child(even){
   margin: 1rem 0;
 }
 
+/* Edit name inline controls */
+.sync-your-name {
+  margin: 0.5rem 0;
+}
+
+.sync-dialog .link-button {
+  background: none;
+  border: none;
+  color: var(--accent-color);
+  padding: 0.25rem 0.5rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.sync-dialog .link-button:hover {
+  color: var(--accent-hover);
+}
+
+.sync-edit-name-container {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-left: 0.5rem;
+}
+
+.sync-edit-name-container input {
+  width: 150px;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.9rem;
+}
+
+.sync-dialog .small-btn {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.9rem;
+  min-width: auto;
+}
+
 /* Name Matching Dialog */
 .matching-dialog {
   max-width: 600px;

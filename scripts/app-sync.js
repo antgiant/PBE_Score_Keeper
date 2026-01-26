@@ -814,6 +814,18 @@ function createDisconnectDialogHTML() {
   return '<div class="sync-dialog" role="dialog" aria-labelledby="sync-dialog-title" aria-modal="true">' +
     '<h2 id="sync-dialog-title">' + t('sync.dialog_title') + '</h2>' +
     '<p>' + t('sync.status_connected') + '</p>' +
+    '<p class="sync-your-name">' + t('sync.your_name_label') + ' ' +
+      '<span id="sync-current-name-display"><strong>' + escapeHtml(SyncManager.displayName || '') + '</strong></span>' +
+      '<button type="button" id="sync-edit-name-btn" onclick="handleEditNameClick()" class="link-button" title="' + t('sync.edit_name_title') + '">' +
+        '<span aria-hidden="true">✏️</span> ' + t('sync.edit_name') +
+      '</button>' +
+      '<span id="sync-edit-name-container" class="sync-edit-name-container" style="display: none;">' +
+        '<input type="text" id="sync-edit-name-input" maxlength="' + MAX_DISPLAY_NAME_LENGTH + '" ' +
+               'aria-label="' + t('sync.display_name_label') + '">' +
+        '<button type="button" onclick="handleSaveNameClick()" class="small-btn primary" title="' + t('sync.save_name') + '">✓</button>' +
+        '<button type="button" onclick="handleCancelEditName()" class="small-btn" title="' + t('sync.cancel_button') + '">✗</button>' +
+      '</span>' +
+    '</p>' +
     '<div class="room-code-display" aria-label="Room code: ' + SyncManager.roomCode.split('').join(' ') + '">' + SyncManager.roomCode + '</div>' +
     '<p>' + t('sync.share_instructions') + '</p>' +
     passwordNote +
@@ -1259,6 +1271,106 @@ function setupAwareness(awareness) {
       SyncManager.onPeersChange(getSyncPeers());
     }
   });
+}
+
+/**
+ * Change display name while connected
+ * Updates awareness state and persists to global doc
+ * @param {string} newName - New display name
+ * @returns {boolean} True if name was changed successfully
+ */
+function changeDisplayName(newName) {
+  if (!newName || newName.trim().length === 0) {
+    return false;
+  }
+  
+  // Enforce max length
+  newName = newName.trim().substring(0, MAX_DISPLAY_NAME_LENGTH);
+  
+  // Check for collision and get unique name
+  var uniqueName = getUniqueDisplayName(newName);
+  
+  // Update SyncManager state
+  SyncManager.displayName = uniqueName;
+  
+  // Update awareness if connected
+  if (SyncManager.awareness) {
+    SyncManager.awareness.setLocalState({
+      displayName: uniqueName,
+      color: generateUserColor(uniqueName),
+      lastSeen: Date.now()
+    });
+  }
+  
+  // Persist to global doc
+  saveDisplayName(uniqueName);
+  
+  // Update UI
+  updateSyncUI();
+  
+  // Notify if name was changed due to collision
+  if (uniqueName !== newName) {
+    showToast(t('sync.name_changed', { name: uniqueName }));
+  } else {
+    showToast(t('sync.name_updated', { name: uniqueName }));
+  }
+  
+  return true;
+}
+
+/**
+ * Handle edit name button click - show inline editor
+ */
+function handleEditNameClick() {
+  var nameDisplay = document.getElementById('sync-current-name-display');
+  var editButton = document.getElementById('sync-edit-name-btn');
+  var editContainer = document.getElementById('sync-edit-name-container');
+  var editInput = document.getElementById('sync-edit-name-input');
+  
+  if (!nameDisplay || !editContainer || !editInput) return;
+  
+  // Hide display, show editor
+  nameDisplay.style.display = 'none';
+  if (editButton) editButton.style.display = 'none';
+  editContainer.style.display = 'flex';
+  
+  // Set current value and focus
+  editInput.value = SyncManager.displayName || '';
+  editInput.focus();
+  editInput.select();
+}
+
+/**
+ * Handle save name button click
+ */
+function handleSaveNameClick() {
+  var editInput = document.getElementById('sync-edit-name-input');
+  if (!editInput) return;
+  
+  var newName = editInput.value.trim();
+  if (newName) {
+    changeDisplayName(newName);
+  }
+  
+  // Refresh the dialog to show updated name
+  closeSyncDialog();
+  showSyncDialog();
+}
+
+/**
+ * Handle cancel edit name
+ */
+function handleCancelEditName() {
+  var nameDisplay = document.getElementById('sync-current-name-display');
+  var editButton = document.getElementById('sync-edit-name-btn');
+  var editContainer = document.getElementById('sync-edit-name-container');
+  
+  if (!nameDisplay || !editContainer) return;
+  
+  // Show display, hide editor
+  nameDisplay.style.display = 'inline';
+  if (editButton) editButton.style.display = 'inline';
+  editContainer.style.display = 'none';
 }
 
 /**
@@ -1916,6 +2028,10 @@ if (typeof module !== 'undefined' && module.exports) {
     compareArrays: compareArrays,
     compareSessionData: compareSessionData,
     getMatchStats: getMatchStats,
-    applyMappings: applyMappings
+    applyMappings: applyMappings,
+    changeDisplayName: changeDisplayName,
+    handleEditNameClick: handleEditNameClick,
+    handleSaveNameClick: handleSaveNameClick,
+    handleCancelEditName: handleCancelEditName
   };
 }
