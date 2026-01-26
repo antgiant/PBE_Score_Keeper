@@ -138,13 +138,56 @@ function initSyncManager() {
   setupVisibilityHandler();
   setupNetworkHandlers();
   
-  // Attempt auto-reconnect after a short delay
-  // (let the rest of the app initialize first)
-  setTimeout(function() {
-    tryAutoReconnectForCurrentSession();
-  }, 1000);
+  // Attempt auto-reconnect after ensuring session doc is ready
+  waitForSessionDocAndReconnect();
   
   console.log('SyncManager initialized');
+}
+
+/**
+ * Wait for session doc to be synced from IndexedDB, then try auto-reconnect
+ * Polls every 500ms up to 10 times (5 seconds max)
+ */
+function waitForSessionDocAndReconnect() {
+  var attempts = 0;
+  var maxAttempts = 10;
+  
+  function checkAndReconnect() {
+    attempts++;
+    
+    // Check if we have an active session and its doc is loaded
+    var sessionId = typeof get_current_session_id === 'function' ? get_current_session_id() : null;
+    console.log('waitForSessionDocAndReconnect - attempt', attempts, 'sessionId:', sessionId);
+    
+    if (!sessionId) {
+      if (attempts < maxAttempts) {
+        setTimeout(checkAndReconnect, 500);
+      } else {
+        console.log('waitForSessionDocAndReconnect - gave up waiting for session');
+      }
+      return;
+    }
+    
+    // Check if the session provider is synced
+    var provider = DocManager.sessionProviders ? DocManager.sessionProviders.get(sessionId) : null;
+    var isSynced = provider ? provider.synced : false;
+    console.log('waitForSessionDocAndReconnect - provider:', provider ? 'exists' : 'null', 'synced:', isSynced);
+    
+    if (isSynced) {
+      // Provider is synced, try auto-reconnect
+      tryAutoReconnectForCurrentSession();
+    } else if (attempts < maxAttempts) {
+      // Not synced yet, try again
+      setTimeout(checkAndReconnect, 500);
+    } else {
+      // Give up after max attempts, try anyway
+      console.log('waitForSessionDocAndReconnect - max attempts reached, trying anyway');
+      tryAutoReconnectForCurrentSession();
+    }
+  }
+  
+  // Start checking after a short initial delay
+  setTimeout(checkAndReconnect, 500);
 }
 
 /**
