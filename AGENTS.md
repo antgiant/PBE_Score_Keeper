@@ -8,6 +8,14 @@ These instructions apply to any AI assistant working in this repository.
 - If tests cannot be run, state why and provide the closest possible validation.
 - Use the summary reporter when you want a compact output (`node --test --test-reporter ./tests/helpers/table-reporter.js`).
 
+## Versioning
+- **All new features and bug fixes require incrementing the version number.**
+- The version is located in `index.html` in the footer section: `<p><center>v X.X.X</center></p>`
+- Use semantic versioning: MAJOR.MINOR.PATCH
+  - PATCH: Bug fixes, minor improvements
+  - MINOR: New features, non-breaking changes
+  - MAJOR: Breaking changes, major rewrites
+
 ## Internationalization (i18n)
 
 ### Translation-Friendly Content Guidelines
@@ -322,15 +330,34 @@ All history entries include `user` field:
 - Manual testing required for actual WebRTC functionality
 - Accessibility testing with screen readers recommended
 
+### Session Manager
+
+The session manager modal allows users to rename, reorder, and delete sessions from a single dialog.
+
+#### Key Functions
+
+Available in `app-state.js`:
+- `showSessionManagerDialog()` - Opens the session manager modal
+- `createSessionManagerDialogHTML(sessions, currentSessionId)` - Generates modal HTML
+- `renameSession(sessionId, newName)` - Renames a session
+- `reorderSessions(newOrder)` - Reorders sessions to a new order
+
+#### Features
+- Inline editing of session names
+- Drag-and-drop reordering (with touch support)
+- Delete sessions (disabled when only one session exists)
+- Current session is highlighted
+- Accessible with keyboard navigation
+
 ### Testing
 
-- **Total Tests**: 58
-- **Passing**: 58
+- **Total Tests**: 196
+- **Passing**: 196
 - **Failed**: 0
 - **Skipped**: 0
 - **Test Files**:
-  - UI tests: blocks, exports, extra-credit, ignore-question, max-points, reorder, rounding, score-summaries, sessions, teams
-  - Unit tests: core, multi-doc
+  - UI tests: blocks, cross-tab-sync, exports, extra-credit, ignore-question, max-points, reorder, rounding, score-summaries, session-manager, sessions, sync-accessibility, sync-dialog, sync-indicator, teams
+  - Unit tests: core, i18n, multi-doc, no-duplicates, repair-cache, sync-core, sync-matching, sync-presence, sync-sessions
 
 ### Notes for Maintainers
 

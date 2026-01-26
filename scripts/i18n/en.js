@@ -28,6 +28,7 @@ register_i18n_language('en', {
     },
     "config": {
       "title": "Configuration (Session)",
+      "session_title": "Session",
       "instructions_title": "Instructions",
       "instructions": "This is a score keeper for the Pathfinder Bible Experience (aka the Bible Bowl). Please enter your number of teams as well as blocks below so that the scoring grid can be created",
       "storage_title": "Data Storage Note",
@@ -251,12 +252,14 @@ register_i18n_language('en', {
         "create_session": "Create Session",
         "switch_session": "Switch Session",
         "delete_session": "Delete Session",
+        "reorder_sessions": "Reorder Sessions",
         "import": "Import"
       },
       "details_templates": {
         "created_session": "Created \"{{name}}\"",
         "switched_session": "Switched to \"{{name}}\"",
         "deleted_session": "Deleted \"{{name}}\"",
+        "reordered_sessions": "Changed session order",
         "imported_sessions": "Imported {{count}} session(s)",
         "imported_from_json": "Imported {{count}} session(s) from JSON file",
         "imported_from_yjs": "Imported {{count}} session(s) from .yjs file"
@@ -333,6 +336,19 @@ register_i18n_language('en', {
       "aria_peer_joined": "{{name}} has joined the session",
       "aria_peer_left": "{{name}} has left the session",
       "aria_room_created": "Room created with code {{code}}"
+    },
+    "session_manager": {
+      "dialog_title": "Manage Sessions",
+      "description": "Rename, reorder, or delete sessions",
+      "name_column": "Session Name",
+      "actions_column": "Actions",
+      "delete_aria": "Delete {{name}}",
+      "drag_aria": "Drag to reorder {{name}}",
+      "close_button": "Close",
+      "rename_placeholder": "Enter session name",
+      "empty_name_error": "Session name cannot be empty",
+      "manage_button": "Manage Sessions",
+      "reorder_hint": "Drag sessions to reorder"
     },
     "merge": {
       "dialog_title": "Merge Sessions",

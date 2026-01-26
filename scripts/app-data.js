@@ -22,38 +22,8 @@ function update_data_element(updated_id, new_value) {
   if (!session) return;
   var current_question = session.get('currentQuestion');
 
-  //Update Session Name
-  if (updated_id == "session_name") {
-    let new_value = $("#session_name").text();
-    const oldName = session.get('name');
-    const sessionDoc = getActiveSessionDoc();
-    if (sessionDoc) {
-      sessionDoc.transact(() => {
-        session.set('name', new_value);
-        add_history_entry('history.actions.rename_session', 'history.details_templates.renamed', { old: oldName, new: new_value });
-      }, 'local');
-      
-      // Update session name cache in global doc
-      const sessionId = session.get('id');
-      getGlobalDoc().transact(() => {
-        const meta = getGlobalDoc().getMap('meta');
-        let sessionNames = meta.get('sessionNames');
-        if (!sessionNames) {
-          sessionNames = new Y.Map();
-          meta.set('sessionNames', sessionNames);
-        }
-        sessionNames.set(sessionId, new_value);
-      }, 'local');
-      
-      // Refresh history display to show the rename entry
-      if (typeof refresh_history_display === 'function') {
-        refresh_history_display();
-      }
-    }
-    $("#session_quick_nav").focus();
-  }
   //Goto next session
-  else if (updated_id == "new_session") {
+  if (updated_id == "new_session") {
     // Use multi-doc createNewSession - return promise for await support
     return createNewSession().then(function(newSessionId) {
       if (newSessionId) {

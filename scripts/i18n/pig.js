@@ -25,6 +25,7 @@ register_i18n_language('pig', {
     },
     "config": {
       "title": "Onfiguration-Cay (Ession-Say)",
+      "session_title": "Ession-Say",
       "instructions_title": "Instructions-ay",
       "instructions": "Is-thay is-ay a-ay ore-scay eeper-kay or-fay e-thay Athfinder-Pay Ible-Bay Experience-ay (aka-ay e-thay Ible-Bay Owl-Bay). Ease-play enter-ay our-yay umber-nay of-ay eams-tay as-ay ell-way as-ay ocks-blay elow-bay o-say at-thay e-thay oring-scay id-gray an-cay e-bay eated-cray",
       "storage_title": "Ata-Day Orage-Stay Ote-Nay",
@@ -248,12 +249,14 @@ register_i18n_language('pig', {
         "create_session": "Eate-Cray Ession-Say",
         "switch_session": "Witch-Say Ession-Say",
         "delete_session": "Elete-Day Ession-Say",
-        "import": "Import-ay"
+        "reorder_sessions": "Eorderray Essionssay",
+        "import": "Importway"
       },
       "details_templates": {
-        "created_session": "Eated-Cray \"{{name}}\"",
-        "switched_session": "Witched-Say o-tay \"{{name}}\"",
-        "deleted_session": "Eleted-Day \"{{name}}\"",
+        "created_session": "Eatedcray \"{{name}}\"",
+        "switched_session": "Itchedsway otay \"{{name}}\"",
+        "deleted_session": "Eleteday \"{{name}}\"",
+        "reordered_sessions": "Angechay essionsay orderway",
         "imported_sessions": "Imported-ay {{count}} ession(s)-say",
         "imported_from_json": "Imported-ay {{count}} ession(s)-say om-fray JSON-ay ile-fay",
         "imported_from_yjs": "Imported-ay {{count}} ession(s)-say om-fray .yjs-ay ile-fay"
@@ -330,8 +333,19 @@ register_i18n_language('pig', {
       "aria_peer_joined": "{{name}} as-hay oined-jay e-thay ession-say",
       "aria_peer_left": "{{name}} as-hay eft-lay e-thay ession-say",
       "aria_room_created": "Oom-Ray eated-cray ith-way ode-cay {{code}}"
-    },
-    "merge": {
+    },    "session_manager": {
+      "dialog_title": "Anagemay Essionssay",
+      "description": "Enameray, eorderray, orway eleteday essionssay",
+      "name_column": "Essionsay Amenay",
+      "actions_column": "Actionsway",
+      "delete_aria": "Eleteday {{name}}",
+      "drag_aria": "Agdray otay eorderray {{name}}",
+      "close_button": "Oseclay",
+      "rename_placeholder": "Enterway essionsay amenay",
+      "empty_name_error": "Essionsay amenay annotcay ebay emptyway",
+      "manage_button": "Anagemay Essionssay",
+      "reorder_hint": "Agdray essionssay otay eorderray"
+    },    "merge": {
       "dialog_title": "Erge-May Essions-Say",
       "select_source": "Elect-Say Ource-Say Ession-Say",
       "select_target": "Elect-Say Arget-Tay Ession-Say",

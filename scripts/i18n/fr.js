@@ -29,6 +29,7 @@ register_i18n_language('fr', {
     },
     "config": {
       "title": "Configuration (Session)",
+      "session_title": "Session",
       "instructions_title": "Instructions",
       "instructions": "Ceci est un marqueur pour l'Expérience Biblique Pathfinder (aussi connu sous le nom de Bible Bowl). Veuillez entrer votre nombre d'équipes ainsi que les blocs ci-dessous afin que la grille de pointage puisse être créée",
       "storage_title": "Note sur le Stockage des Données",
@@ -252,12 +253,14 @@ register_i18n_language('fr', {
         "create_session": "Créer une Session",
         "switch_session": "Changer de Session",
         "delete_session": "Supprimer la Session",
+        "reorder_sessions": "Réorganiser les Sessions",
         "import": "Importer"
       },
       "details_templates": {
         "created_session": "\"{{name}}\" créée",
         "switched_session": "Basculé vers \"{{name}}\"",
         "deleted_session": "\"{{name}}\" supprimée",
+        "reordered_sessions": "Ordre des sessions modifié",
         "imported_sessions": "{{count}} session(s) importée(s)",
         "imported_from_json": "{{count}} session(s) importée(s) depuis un fichier JSON",
         "imported_from_yjs": "{{count}} session(s) importée(s) depuis un fichier .yjs"
@@ -334,6 +337,19 @@ register_i18n_language('fr', {
       "aria_peer_joined": "{{name}} a rejoint la session",
       "aria_peer_left": "{{name}} a quitté la session",
       "aria_room_created": "Salle créée avec le code {{code}}"
+    },
+    "session_manager": {
+      "dialog_title": "Gérer les Sessions",
+      "description": "Renommer, réorganiser ou supprimer des sessions",
+      "name_column": "Nom de Session",
+      "actions_column": "Actions",
+      "delete_aria": "Supprimer {{name}}",
+      "drag_aria": "Glisser pour réorganiser {{name}}",
+      "close_button": "Fermer",
+      "rename_placeholder": "Entrez le nom de la session",
+      "empty_name_error": "Le nom de la session ne peut pas être vide",
+      "manage_button": "Gérer les Sessions",
+      "reorder_hint": "Faites glisser les sessions pour les réorganiser"
     },
     "merge": {
       "dialog_title": "Fusionner les Sessions",

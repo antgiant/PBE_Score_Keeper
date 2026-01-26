@@ -22,19 +22,9 @@ async function initialize_state() {
       if (is_multi_doc()) {
         const wasRepaired = await repairSessionNamesCache();
         
-        // If cache was repaired, update session name display immediately
-        if (wasRepaired) {
-          // Wait for DOM to be ready and update the session name
-          const updateSessionName = function() {
-            if (typeof $ === 'undefined' || typeof get_session_names !== 'function') {
-              setTimeout(updateSessionName, 50);
-              return;
-            }
-            const session_names = get_session_names();
-            const currentSessionIndex = get_current_session_index();
-            $("#session_name").text(session_names[currentSessionIndex]);
-          };
-          updateSessionName();
+        // If cache was repaired, sync display to show corrected session
+        if (wasRepaired && typeof sync_data_to_display === 'function') {
+          sync_data_to_display();
         }
       }
       
@@ -765,6 +755,434 @@ async function extractSessionDataForMerge(sessionId) {
   }
 
   return result;
+}
+
+/**
+ * Show the session manager dialog for renaming and reordering sessions
+ */
+function showSessionManagerDialog() {
+  const sessions = getAllSessions();
+  const currentSessionId = DocManager.activeSessionId;
+
+  // Remove any existing dialog
+  const existing = document.getElementById('session-manager-overlay');
+  if (existing) existing.remove();
+
+  const overlay = document.createElement('div');
+  overlay.id = 'session-manager-overlay';
+  overlay.className = 'sync-dialog-overlay';
+
+  overlay.innerHTML = createSessionManagerDialogHTML(sessions, currentSessionId);
+  document.body.appendChild(overlay);
+
+  // Set up event listeners
+  setupSessionManagerListeners(overlay);
+
+  // Focus first input
+  const firstInput = overlay.querySelector('.session-manager-name-input');
+  if (firstInput) firstInput.focus();
+
+  // Handle close
+  overlay.querySelector('.session-manager-close-btn').addEventListener('click', function() {
+    overlay.remove();
+  });
+
+  // Handle Escape key
+  function onSessionManagerEscape(e) {
+    if (e.key === 'Escape') {
+      document.removeEventListener('keydown', onSessionManagerEscape);
+      overlay.remove();
+    }
+  }
+  document.addEventListener('keydown', onSessionManagerEscape);
+
+  // Handle overlay click
+  overlay.addEventListener('click', function(e) {
+    if (e.target === overlay) {
+      document.removeEventListener('keydown', onSessionManagerEscape);
+      overlay.remove();
+    }
+  });
+}
+
+/**
+ * Create HTML for session manager dialog
+ * @param {Array} sessions - Array of session objects
+ * @param {string} currentSessionId - UUID of the current session
+ * @returns {string} HTML string
+ */
+function createSessionManagerDialogHTML(sessions, currentSessionId) {
+  let listHtml = '';
+  const canDelete = sessions.length > 1;
+
+  for (let i = 0; i < sessions.length; i++) {
+    const session = sessions[i];
+    const isCurrent = session.id === currentSessionId;
+    const currentClass = isCurrent ? ' current-session' : '';
+    const currentBadge = isCurrent ? '<span class="session-manager-current-badge">●</span>' : '';
+
+    listHtml += '<li class="session-manager-item' + currentClass + '" data-session-id="' + session.id + '" data-index="' + i + '" draggable="true">' +
+      '<span class="session-manager-drag-handle" aria-label="' + t('session_manager.drag_aria', { name: HTMLescape(session.name) }) + '">☰</span>' +
+      '<span class="session-manager-index">' + (i + 1) + '</span>' +
+      '<input type="text" class="session-manager-name-input" ' +
+             'value="' + HTMLescape(session.name) + '" ' +
+             'placeholder="' + t('session_manager.rename_placeholder') + '" ' +
+             'data-session-id="' + session.id + '" ' +
+             'data-original-name="' + HTMLescape(session.name) + '">' +
+      currentBadge +
+      '<button class="session-manager-delete-btn" ' +
+              'data-session-id="' + session.id + '" ' +
+              'data-session-name="' + HTMLescape(session.name) + '" ' +
+              'aria-label="' + t('session_manager.delete_aria', { name: HTMLescape(session.name) }) + '"' +
+              (!canDelete ? ' disabled title="' + t('alerts.cannot_delete_only_session') + '"' : '') +
+      '>🗑️</button>' +
+    '</li>';
+  }
+
+  return '<div class="sync-dialog session-manager-dialog" role="dialog" aria-labelledby="session-manager-title" aria-modal="true">' +
+    '<h2 id="session-manager-title">' + t('session_manager.dialog_title') + '</h2>' +
+    '<p class="session-manager-hint">' + t('session_manager.reorder_hint') + '</p>' +
+    '<ul class="session-manager-list" id="session-manager-list">' + listHtml + '</ul>' +
+    '<div class="button-row">' +
+      '<button type="button" class="session-manager-close-btn primary">' + t('session_manager.close_button') + '</button>' +
+    '</div>' +
+  '</div>';
+}
+
+/**
+ * Set up event listeners for session manager dialog
+ * @param {HTMLElement} overlay - The dialog overlay element
+ */
+function setupSessionManagerListeners(overlay) {
+  const list = overlay.querySelector('#session-manager-list');
+
+  // Handle name changes
+  list.addEventListener('change', function(e) {
+    if (e.target.classList.contains('session-manager-name-input')) {
+      handleSessionRename(e.target);
+    }
+  });
+
+  // Handle blur for name inputs
+  list.addEventListener('blur', function(e) {
+    if (e.target.classList.contains('session-manager-name-input')) {
+      handleSessionRename(e.target);
+    }
+  }, true);
+
+  // Handle delete button clicks
+  list.addEventListener('click', function(e) {
+    const deleteBtn = e.target.closest('.session-manager-delete-btn');
+    if (deleteBtn && !deleteBtn.disabled) {
+      handleSessionManagerDelete(deleteBtn, overlay);
+    }
+  });
+
+  // Set up drag and drop
+  setupSessionManagerDragDrop(list, overlay);
+}
+
+/**
+ * Handle session rename from the manager dialog
+ * @param {HTMLInputElement} input - The name input element
+ */
+function handleSessionRename(input) {
+  const sessionId = input.getAttribute('data-session-id');
+  const originalName = input.getAttribute('data-original-name');
+  const newName = input.value.trim();
+
+  if (!newName) {
+    // Reset to original if empty
+    input.value = originalName;
+    showToast(t('session_manager.empty_name_error'));
+    return;
+  }
+
+  if (newName === originalName) {
+    return; // No change
+  }
+
+  // Update session name
+  renameSession(sessionId, newName);
+  input.setAttribute('data-original-name', newName);
+}
+
+/**
+ * Rename a session by ID
+ * @param {string} sessionId - Session UUID
+ * @param {string} newName - New session name
+ */
+function renameSession(sessionId, newName) {
+  const sessionDoc = getSessionDoc(sessionId);
+  if (!sessionDoc) return;
+
+  const session = sessionDoc.getMap('session');
+  const oldName = session.get('name');
+
+  sessionDoc.transact(() => {
+    session.set('name', newName);
+    
+    // Add history entry if this is the current session
+    if (sessionId === DocManager.activeSessionId) {
+      add_history_entry('history.actions.rename_session', 'history.details_templates.renamed', { old: oldName, new: newName });
+    }
+  }, 'local');
+
+  // Update session name cache in global doc
+  getGlobalDoc().transact(() => {
+    const meta = getGlobalDoc().getMap('meta');
+    let sessionNames = meta.get('sessionNames');
+    if (!sessionNames) {
+      sessionNames = new Y.Map();
+      meta.set('sessionNames', sessionNames);
+    }
+    sessionNames.set(sessionId, newName);
+  }, 'local');
+
+  // Update display if this was the current session
+  if (sessionId === DocManager.activeSessionId) {
+    sync_data_to_display();
+    if (typeof refresh_history_display === 'function') {
+      refresh_history_display();
+    }
+  }
+}
+
+/**
+ * Handle session delete from the manager dialog
+ * @param {HTMLButtonElement} button - The delete button
+ * @param {HTMLElement} overlay - The dialog overlay
+ */
+async function handleSessionManagerDelete(button, overlay) {
+  const sessionId = button.getAttribute('data-session-id');
+  const sessionName = button.getAttribute('data-session-name');
+
+  if (!window.confirm(t('confirm.delete_session', { name: sessionName }))) {
+    return;
+  }
+
+  // Close dialog first to prevent stale state issues
+  overlay.remove();
+
+  // Delete the session (skipConfirm=true since we already confirmed)
+  await deleteSession(sessionId, true);
+  alert(t('alerts.deleted'));
+
+  // Re-open the dialog if there are still sessions
+  const sessions = getAllSessions();
+  if (sessions.length > 0) {
+    showSessionManagerDialog();
+  }
+}
+
+/**
+ * Set up drag and drop for session reordering
+ * @param {HTMLElement} list - The session list element
+ * @param {HTMLElement} overlay - The dialog overlay
+ */
+function setupSessionManagerDragDrop(list, overlay) {
+  let draggingItem = null;
+  let isDraggingFromHandle = false;
+  const SCROLL_ZONE = 50; // pixels from edge to trigger scroll
+  const SCROLL_SPEED = 8; // pixels per frame
+
+  function getDragAfterElement(y) {
+    const draggableElements = Array.from(list.querySelectorAll('.session-manager-item:not(.dragging)'));
+    return draggableElements.reduce(function(closest, child) {
+      const box = child.getBoundingClientRect();
+      const offset = y - box.top - box.height / 2;
+      if (offset < 0 && offset > closest.offset) {
+        return { offset: offset, element: child };
+      }
+      return closest;
+    }, { offset: Number.NEGATIVE_INFINITY }).element;
+  }
+
+  function autoScroll(clientY) {
+    const rect = list.getBoundingClientRect();
+    const topEdge = rect.top;
+    const bottomEdge = rect.bottom;
+
+    if (clientY - topEdge < SCROLL_ZONE) {
+      // Scroll up
+      list.scrollTop -= SCROLL_SPEED;
+    } else if (bottomEdge - clientY < SCROLL_ZONE) {
+      // Scroll down
+      list.scrollTop += SCROLL_SPEED;
+    }
+  }
+
+  function finalizeReorder() {
+    if (!draggingItem) return;
+
+    draggingItem.classList.remove('dragging');
+    draggingItem = null;
+    isDraggingFromHandle = false;
+
+    // Get new order
+    const items = Array.from(list.querySelectorAll('.session-manager-item'));
+    const newOrder = items.map(function(item) {
+      return item.getAttribute('data-session-id');
+    });
+
+    // Check if order actually changed
+    const currentOrder = get_session_order();
+    const orderChanged = !newOrder.every(function(id, index) {
+      return id === currentOrder[index];
+    });
+
+    if (orderChanged) {
+      reorderSessions(newOrder);
+      
+      // Update indices in the UI
+      items.forEach(function(item, index) {
+        item.querySelector('.session-manager-index').textContent = index + 1;
+        item.setAttribute('data-index', index);
+      });
+    }
+  }
+
+  // Track mousedown on drag handle to allow drag
+  list.addEventListener('mousedown', function(e) {
+    const handle = e.target.closest('.session-manager-drag-handle');
+    if (handle) {
+      isDraggingFromHandle = true;
+    }
+  });
+
+  // Drag start
+  list.addEventListener('dragstart', function(e) {
+    if (!isDraggingFromHandle) {
+      e.preventDefault();
+      return;
+    }
+    draggingItem = e.target.closest('.session-manager-item');
+    if (draggingItem) {
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', '');
+      requestAnimationFrame(function() {
+        if (draggingItem) draggingItem.classList.add('dragging');
+      });
+    }
+  });
+
+  // Drag over
+  list.addEventListener('dragover', function(e) {
+    if (!draggingItem) return;
+    e.preventDefault();
+    autoScroll(e.clientY);
+    const afterElement = getDragAfterElement(e.clientY);
+    if (afterElement == null) {
+      list.appendChild(draggingItem);
+    } else {
+      list.insertBefore(draggingItem, afterElement);
+    }
+  });
+
+  // Drop
+  list.addEventListener('drop', function(e) {
+    if (!draggingItem) return;
+    e.preventDefault();
+    finalizeReorder();
+  });
+
+  // Drag end
+  list.addEventListener('dragend', function() {
+    if (draggingItem) {
+      draggingItem.classList.remove('dragging');
+      draggingItem = null;
+    }
+    isDraggingFromHandle = false;
+  });
+
+  // Touch support via pointer events
+  let touchDragging = null;
+  const supportsNativeDrag = 'draggable' in document.createElement('span');
+
+  list.addEventListener('pointerdown', function(e) {
+    const handle = e.target.closest('.session-manager-drag-handle');
+    if (!handle) return;
+    if (supportsNativeDrag && e.pointerType === 'mouse') return;
+
+    const item = handle.closest('.session-manager-item');
+    if (!item) return;
+
+    e.preventDefault();
+    touchDragging = item;
+    item.classList.add('dragging');
+    handle.setPointerCapture(e.pointerId);
+  });
+
+  list.addEventListener('pointermove', function(e) {
+    if (!touchDragging) return;
+    if (supportsNativeDrag && e.pointerType === 'mouse') return;
+
+    autoScroll(e.clientY);
+    const afterElement = getDragAfterElement(e.clientY);
+    if (afterElement == null) {
+      list.appendChild(touchDragging);
+    } else {
+      list.insertBefore(touchDragging, afterElement);
+    }
+  });
+
+  list.addEventListener('pointerup', function(e) {
+    if (!touchDragging) return;
+    if (supportsNativeDrag && e.pointerType === 'mouse') return;
+
+    touchDragging.classList.remove('dragging');
+    
+    // Get new order and apply
+    const items = Array.from(list.querySelectorAll('.session-manager-item'));
+    const newOrder = items.map(function(item) {
+      return item.getAttribute('data-session-id');
+    });
+
+    const currentOrder = get_session_order();
+    const orderChanged = !newOrder.every(function(id, index) {
+      return id === currentOrder[index];
+    });
+
+    if (orderChanged) {
+      reorderSessions(newOrder);
+      items.forEach(function(item, index) {
+        item.querySelector('.session-manager-index').textContent = index + 1;
+        item.setAttribute('data-index', index);
+      });
+    }
+
+    touchDragging = null;
+  });
+
+  list.addEventListener('pointercancel', function() {
+    if (touchDragging) {
+      touchDragging.classList.remove('dragging');
+      touchDragging = null;
+    }
+  });
+}
+
+/**
+ * Reorder sessions to a new order
+ * @param {Array<string>} newOrder - Array of session UUIDs in new order
+ */
+function reorderSessions(newOrder) {
+  const meta = getGlobalDoc().getMap('meta');
+
+  // Ensure we have a plain array of strings for Yjs
+  const plainOrder = Array.from(newOrder).map(function(id) {
+    return String(id);
+  });
+
+  getGlobalDoc().transact(() => {
+    meta.set('sessionOrder', plainOrder);
+  }, 'local');
+
+  // Log in global history
+  add_global_history_entry('history_global.actions.reorder_sessions', 'history_global.details_templates.reordered_sessions', {});
+
+  // Update display
+  sync_data_to_display();
 }
 
 /**

@@ -51,14 +51,15 @@ function buildBasicSessionSeed() {
   });
 }
 
-test('renaming a session updates session_names storage', () => {
+test('renaming a session via renameSession updates session name', () => {
   const { context, ydoc } = loadApp(buildBasicSessionSeed());
 
-  context.$('#session_name').text('Finals Round');
-  context.update_data_element('session_name');
-
-  // Check session doc instead of old sessions array
+  // Get the current session ID and rename via renameSession
   const session = context.get_current_session();
+  const sessionId = session.get('id');
+  context.renameSession(sessionId, 'Finals Round');
+
+  // Check session doc for updated name
   assert.equal(session.get('name'), 'Finals Round');
 });
 
