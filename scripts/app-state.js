@@ -380,6 +380,15 @@ async function createNewSession(name) {
     return null;
   }
 
+  // Check if currently synced - creating new session means leaving sync
+  if (typeof handleSessionSwitch === 'function') {
+    // Use existing handleSessionSwitch which shows confirmation and disconnects
+    var shouldProceed = await handleSessionSwitch('new-session-pending');
+    if (!shouldProceed) {
+      return null; // User cancelled
+    }
+  }
+
   // Get current settings to copy forward
   const config = currentSession.get('config');
   const temp_max_points = config.get('maxPointsPerQuestion');
