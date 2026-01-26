@@ -353,7 +353,8 @@ register_i18n_language('en', {
       "auto_merge_complete_title": "Auto Merge Complete",
       "auto_merge_summary": "Successfully merged {{count}} duplicate session(s):",
       "source_session": "Source Session",
-      "target_session": "Merged Into"
+      "target_session": "Merged Into",
+      "ok_button": "OK"
     }
   }
 });

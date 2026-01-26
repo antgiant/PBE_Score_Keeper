@@ -1096,7 +1096,7 @@ function showAutoMergeSummary(mergeResults) {
       <h2 id="merge-summary-title">${t('merge.auto_merge_complete_title')}</h2>
       ${content}
       <div class="sync-dialog-buttons">
-        <button type="button" id="merge-summary-ok" class="sync-dialog-btn sync-dialog-btn-primary">${t('buttons.ok')}</button>
+        <button type="button" id="merge-summary-ok" class="sync-dialog-btn sync-dialog-btn-primary">${t('merge.ok_button')}</button>
       </div>
     </div>
   `;

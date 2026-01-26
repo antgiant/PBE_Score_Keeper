@@ -350,7 +350,8 @@ register_i18n_language('pig', {
       "auto_merge_complete_title": "Auto-ay Erge-May Omplete-Cay",
       "auto_merge_summary": "Uccessfully-Say erged-may {{count}} uplicate-day ession(s)-say:",
       "source_session": "Ource-Say Ession-Say",
-      "target_session": "Erged-May Into-ay"
+      "target_session": "Erged-May Into-ay",
+      "ok_button": "OK-ay"
     }
   }
 });

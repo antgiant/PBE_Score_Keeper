@@ -354,7 +354,8 @@ register_i18n_language('es', {
       "auto_merge_complete_title": "Fusión Automática Completa",
       "auto_merge_summary": "Se fusionaron exitosamente {{count}} sesión(es) duplicada(s):",
       "source_session": "Sesión Origen",
-      "target_session": "Fusionado En"
+      "target_session": "Fusionado En",
+      "ok_button": "Aceptar"
     }
   }
 });
