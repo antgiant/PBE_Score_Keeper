@@ -1,6 +1,12 @@
 function local_data_update(record) {
-  update_data_element(record.id, record.value);
-
+  var result = update_data_element(record.id, record.value);
+  
+  // If update_data_element returns a promise (async operations like session switch),
+  // wait for it before syncing display
+  if (result && typeof result.then === 'function') {
+    return result;
+  }
+  
   sync_data_to_display();
 }
 
@@ -35,8 +41,13 @@ function update_data_element(updated_id, new_value) {
 
   //Jump to specific session
   else if (updated_id == "session_quick_nav") {
-    // Use multi-doc switchSession
-    switchSession(Number(new_value));
+    // Use multi-doc switchSession - return promise for await support
+    return switchSession(Number(new_value)).then(function(switched) {
+      if (switched) {
+        sync_data_to_display();
+      }
+      return switched;
+    });
   }
 
   //Increase total teams count
