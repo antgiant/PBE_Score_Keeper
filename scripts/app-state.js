@@ -28,6 +28,11 @@ async function initialize_state() {
         }
       }
       
+      // Initialize sync manager for WebRTC sync
+      if (typeof initSyncManager === 'function') {
+        initSyncManager();
+      }
+      
       window.stateInitialized = true;
       return;
     }
@@ -43,6 +48,11 @@ async function initialize_state() {
       // Migration needed from localStorage to v3.0
       await migrate_localStorage_to_v3(data_version);
       await load_from_yjs();
+    }
+
+    // Initialize sync manager for WebRTC sync
+    if (typeof initSyncManager === 'function') {
+      initSyncManager();
     }
 
     // Mark state as initialized
