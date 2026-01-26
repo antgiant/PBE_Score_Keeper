@@ -92,7 +92,15 @@ function getSessionSyncRoom(sessionId) {
   var doc = sessionId ? getSessionDoc(sessionId) : getActiveSessionDoc();
   console.log('getSessionSyncRoom - doc:', doc ? 'exists' : 'null', 'sessionId:', sessionId);
   if (!doc) return null;
-  var config = doc.getMap('config');
+  
+  // Config is nested inside session map, not at doc root
+  var session = doc.getMap('session');
+  if (!session) {
+    console.log('getSessionSyncRoom - no session map found');
+    return null;
+  }
+  
+  var config = session.get('config');
   console.log('getSessionSyncRoom - config:', config ? 'exists' : 'null');
   if (config) {
     var room = config.get('syncRoom');
@@ -111,7 +119,15 @@ function saveSessionSyncRoom(roomCode, sessionId) {
   var doc = sessionId ? getSessionDoc(sessionId) : getActiveSessionDoc();
   console.log('saveSessionSyncRoom - roomCode:', roomCode, 'sessionId:', sessionId, 'doc:', doc ? 'exists' : 'null');
   if (!doc) return;
-  var config = doc.getMap('config');
+  
+  // Config is nested inside session map, not at doc root
+  var session = doc.getMap('session');
+  if (!session) {
+    console.log('saveSessionSyncRoom - no session map found');
+    return;
+  }
+  
+  var config = session.get('config');
   if (config) {
     if (roomCode) {
       config.set('syncRoom', roomCode);
@@ -120,6 +136,8 @@ function saveSessionSyncRoom(roomCode, sessionId) {
       config.delete('syncRoom');
       console.log('saveSessionSyncRoom - deleted syncRoom');
     }
+  } else {
+    console.log('saveSessionSyncRoom - no config map found in session');
   }
 }
 
