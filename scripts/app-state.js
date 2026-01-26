@@ -639,7 +639,9 @@ async function deleteSession(sessionIdOrIndex, skipConfirm) {
   // Log in global history
   add_global_history_entry('history_global.actions.delete_session', 'history_global.details_templates.deleted_session', { name: sessionName });
 
-  alert(t('alerts.deleted'));
+  if (!skipConfirm) {
+    alert(t('alerts.deleted'));
+  }
   sync_data_to_display();
   return true;
 }
