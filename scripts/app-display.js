@@ -122,15 +122,19 @@ function sync_data_to_display() {
   var ignore_question = currentQuestionObj.get('ignore');
 
   const currentSessionIndex = get_current_session_index();
+  
+  // Get sync status for each session (to show 🔄 indicator)
+  var syncStatuses = (typeof getSessionSyncStatuses === 'function') ? getSessionSyncStatuses() : {};
 
   //Set up Session quick navigation
   var session_quick_nav = '<select name="session_quick_nav" id="session_quick_nav" onchange="local_data_update(this)"">';
   let temp_count = (currentSessionIndex>session_count?currentSessionIndex:session_count);
   for (let i=1; i <= temp_count; i++) {
+    var syncIndicator = syncStatuses[i] ? ' (🔄)' : '';
     if (i==currentSessionIndex) {
-      session_quick_nav += '<option value="'+i+'" selected>'+i+' of '+session_count+' - '+HTMLescape(session_names[i])+'</option>';
+      session_quick_nav += '<option value="'+i+'" selected>'+i+' of '+session_count+syncIndicator+' - '+HTMLescape(session_names[i])+'</option>';
     } else {
-      session_quick_nav += '<option value="'+i+'">'+i+' of '+session_count+' - '+HTMLescape(session_names[i])+'</option>';
+      session_quick_nav += '<option value="'+i+'">'+i+' of '+session_count+syncIndicator+' - '+HTMLescape(session_names[i])+'</option>';
     }
   }
   session_quick_nav += '</select>';

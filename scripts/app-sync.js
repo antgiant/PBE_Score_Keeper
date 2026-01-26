@@ -91,24 +91,37 @@ function saveDisplayName(name) {
  */
 function getSessionSyncRoom(sessionId) {
   var doc = sessionId ? getSessionDoc(sessionId) : getActiveSessionDoc();
-  console.log('getSessionSyncRoom - doc:', doc ? 'exists' : 'null', 'sessionId:', sessionId);
   if (!doc) return null;
   
   // Config is nested inside session map, not at doc root
   var session = doc.getMap('session');
   if (!session) {
-    console.log('getSessionSyncRoom - no session map found');
     return null;
   }
   
   var config = session.get('config');
-  console.log('getSessionSyncRoom - config:', config ? 'exists' : 'null');
   if (config) {
     var room = config.get('syncRoom');
-    console.log('getSessionSyncRoom - syncRoom value:', room);
     return room || null;
   }
   return null;
+}
+
+/**
+ * Get sync status for all sessions (for dropdown display)
+ * @returns {Object} Map of session index (1-based) to boolean (has syncRoom)
+ */
+function getSessionSyncStatuses() {
+  var statuses = {};
+  var sessionOrder = typeof get_session_order === 'function' ? get_session_order() : [];
+  
+  for (var i = 0; i < sessionOrder.length; i++) {
+    var sessionId = sessionOrder[i];
+    var syncRoom = getSessionSyncRoom(sessionId);
+    statuses[i + 1] = !!syncRoom;  // 1-based index
+  }
+  
+  return statuses;
 }
 
 /**
@@ -118,13 +131,11 @@ function getSessionSyncRoom(sessionId) {
  */
 function saveSessionSyncRoom(roomCode, sessionId) {
   var doc = sessionId ? getSessionDoc(sessionId) : getActiveSessionDoc();
-  console.log('saveSessionSyncRoom - roomCode:', roomCode, 'sessionId:', sessionId, 'doc:', doc ? 'exists' : 'null');
   if (!doc) return;
   
   // Config is nested inside session map, not at doc root
   var session = doc.getMap('session');
   if (!session) {
-    console.log('saveSessionSyncRoom - no session map found');
     return;
   }
   
@@ -132,13 +143,9 @@ function saveSessionSyncRoom(roomCode, sessionId) {
   if (config) {
     if (roomCode) {
       config.set('syncRoom', roomCode);
-      console.log('saveSessionSyncRoom - saved syncRoom:', roomCode);
     } else {
       config.delete('syncRoom');
-      console.log('saveSessionSyncRoom - deleted syncRoom');
     }
-  } else {
-    console.log('saveSessionSyncRoom - no config map found in session');
   }
 }
 
@@ -332,9 +339,8 @@ async function startSync(displayName, roomCode, password, joinChoice) {
   // Handle join choice - create new session or merge into current
   var sessionDoc;
   if (joinChoice === 'new') {
-    // Create a new session for this sync
-    var roomSessionName = 'Synced: ' + finalRoomCode;
-    await createNewSession(roomSessionName);
+    // Create a new session for this sync (uses default name)
+    await createNewSession();
     sessionDoc = getActiveSessionDoc();
   } else {
     // Use current session (for 'create' or 'merge')
