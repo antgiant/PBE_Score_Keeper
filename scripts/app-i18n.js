@@ -420,6 +420,21 @@ function t(key, params) {
 }
 
 /**
+ * Get pluralized translation for a key
+ * Convenience wrapper around t() that explicitly takes count as second parameter
+ * 
+ * @param {string} key - Translation key (without _one/_other suffix)
+ * @param {number} count - Count for pluralization
+ * @param {object} params - Optional additional parameters for interpolation
+ * @returns {string} Translated and pluralized string
+ */
+function t_plural(key, count, params) {
+  params = params || {};
+  params.count = count;
+  return t(key, params);
+}
+
+/**
  * Get nested translation value using dot notation
  * @param {object} obj - Translations object
  * @param {string} key - Dot-notation key
