@@ -347,6 +347,7 @@ register_i18n_language('pig', {
       "matching_target": "Arget-Tay",
       "confirm_merge": "Onfirm-Cay Erge-May",
       "auto_merge_no_duplicates": "O-Nay uplicate-day essions-say ound-fay o-tay erge-may",
+      "auto_merge_processing": "Erging-May {{count}} uplicate-day ession(s)-say...",
       "auto_merge_complete_title": "Auto-ay Erge-May Omplete-Cay",
       "auto_merge_summary": "Uccessfully-Say erged-may {{count}} uplicate-day ession(s)-say:",
       "source_session": "Ource-Say Ession-Say",

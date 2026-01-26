@@ -351,6 +351,7 @@ register_i18n_language('es', {
       "matching_target": "Destino",
       "confirm_merge": "Confirmar Fusión",
       "auto_merge_no_duplicates": "No se encontraron sesiones duplicadas para fusionar",
+      "auto_merge_processing": "Fusionando {{count}} sesión(es) duplicada(s)...",
       "auto_merge_complete_title": "Fusión Automática Completa",
       "auto_merge_summary": "Se fusionaron exitosamente {{count}} sesión(es) duplicada(s):",
       "source_session": "Sesión Origen",

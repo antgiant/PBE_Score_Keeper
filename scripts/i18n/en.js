@@ -350,6 +350,7 @@ register_i18n_language('en', {
       "matching_target": "Target",
       "confirm_merge": "Confirm Merge",
       "auto_merge_no_duplicates": "No duplicate sessions found to merge",
+      "auto_merge_processing": "Merging {{count}} duplicate session(s)...",
       "auto_merge_complete_title": "Auto Merge Complete",
       "auto_merge_summary": "Successfully merged {{count}} duplicate session(s):",
       "source_session": "Source Session",

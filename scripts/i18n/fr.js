@@ -351,6 +351,7 @@ register_i18n_language('fr', {
       "matching_target": "Cible",
       "confirm_merge": "Confirmer la Fusion",
       "auto_merge_no_duplicates": "Aucune session en double trouvée à fusionner",
+      "auto_merge_processing": "Fusion de {{count}} session(s) en double...",
       "auto_merge_complete_title": "Fusion Automatique Terminée",
       "auto_merge_summary": "{{count}} session(s) en double fusionnée(s) avec succès :",
       "source_session": "Session Source",

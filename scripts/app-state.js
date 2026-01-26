@@ -995,6 +995,10 @@ async function autoMergeDuplicateSessions() {
     return;
   }
 
+  // Show loading indicator immediately
+  const totalDuplicates = duplicateGroups.reduce((sum, g) => sum + g.length - 1, 0);
+  showLoading(t('merge.auto_merge_processing', { count: totalDuplicates }));
+
   // Track merge results for summary
   const mergeResults = [];
   const mergeFailures = [];
@@ -1048,10 +1052,14 @@ async function autoMergeDuplicateSessions() {
   }
 
   // Update button visibility
+  // Update button visibility
   updateAutoMergeButtonVisibility();
 
   // Refresh display
   sync_data_to_display();
+
+  // Hide loading indicator
+  hideLoading();
 
   // Show summary dialog
   showAutoMergeSummary(mergeResults, mergeFailures);
