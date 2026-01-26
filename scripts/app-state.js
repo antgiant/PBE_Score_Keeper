@@ -974,8 +974,14 @@ function updateAutoMergeButtonVisibility() {
   const button = document.getElementById('auto_merge_sessions');
   if (!button) return;
 
-  const duplicateGroups = findDuplicateSessionGroups();
-  button.style.display = duplicateGroups.length > 0 ? 'inline-block' : 'none';
+  // Guard against being called before sessions are loaded
+  try {
+    const duplicateGroups = findDuplicateSessionGroups();
+    button.style.display = duplicateGroups.length > 0 ? 'inline-block' : 'none';
+  } catch (e) {
+    // Sessions not loaded yet, keep button hidden
+    button.style.display = 'none';
+  }
 }
 
 /**
