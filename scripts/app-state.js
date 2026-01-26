@@ -712,10 +712,14 @@ function updateSessionLastModified(sessionId) {
 /**
  * Extract session data for comparison (teams, blocks, questions names)
  * @param {string} sessionId - Session UUID
- * @returns {Object} Data object with teams, blocks, questions arrays
+ * @returns {Promise<Object>} Data object with teams, blocks, questions arrays
  */
-function extractSessionDataForMerge(sessionId) {
-  const sessionDoc = getSessionDoc(sessionId);
+async function extractSessionDataForMerge(sessionId) {
+  // Ensure session doc is loaded
+  let sessionDoc = getSessionDoc(sessionId);
+  if (!sessionDoc) {
+    sessionDoc = await initSessionDoc(sessionId);
+  }
   if (!sessionDoc) return { teams: [null], blocks: [null], questions: [null] };
 
   const session = sessionDoc.getMap('session');
@@ -1112,8 +1116,15 @@ function collectMergeMappings() {
  * @param {Object|null} mappings - User-confirmed mappings or null for auto
  */
 async function applySessionMerge(sourceId, targetId, mappings) {
-  const sourceDoc = getSessionDoc(sourceId);
-  const targetDoc = getSessionDoc(targetId);
+  // Ensure session docs are loaded
+  let sourceDoc = getSessionDoc(sourceId);
+  if (!sourceDoc) {
+    sourceDoc = await initSessionDoc(sourceId);
+  }
+  let targetDoc = getSessionDoc(targetId);
+  if (!targetDoc) {
+    targetDoc = await initSessionDoc(targetId);
+  }
 
   if (!sourceDoc || !targetDoc) {
     throw new Error('Session not found');
