@@ -53,8 +53,8 @@ var SyncManager = {
   config: {
     signalingServers: [
       'wss://y-webrtc-pbe.fly.dev',           // Primary (dedicated)
-      'wss://signaling.yjs.dev',              // Backup 1 (Yjs community)
-      'wss://y-webrtc-signaling-us.herokuapp.com'  // Backup 2 (Heroku)
+      'wss://y-webrtc-signaling-eu.herokuapp.com',  // Backup 1 (Heroku EU)
+      'wss://y-webrtc-signaling-us.herokuapp.com'   // Backup 2 (Heroku US)
     ],
     minSignalingServers: 3,  // Minimum required for reliability
     roomPrefix: 'pbe-sync-',
