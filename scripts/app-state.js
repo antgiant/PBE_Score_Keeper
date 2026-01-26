@@ -722,6 +722,9 @@ async function extractSessionDataForMerge(sessionId) {
   }
   if (!sessionDoc) return { teams: [null], blocks: [null], questions: [null] };
 
+  // Wait for session data to be available (IndexedDB sync may be in progress)
+  await waitForSessionData(sessionDoc);
+
   const session = sessionDoc.getMap('session');
   if (!session) return { teams: [null], blocks: [null], questions: [null] };
 
@@ -1110,6 +1113,27 @@ function collectMergeMappings() {
 }
 
 /**
+ * Wait for session data to be available
+ * @param {Y.Doc} sessionDoc - The session document
+ * @param {number} maxWait - Maximum wait time in ms
+ * @returns {Promise<boolean>} True if data is available
+ */
+async function waitForSessionData(sessionDoc, maxWait = 2000) {
+  const startTime = Date.now();
+  
+  while (Date.now() - startTime < maxWait) {
+    const session = sessionDoc.getMap('session');
+    if (session && session.get('teams') && session.get('blocks') && session.get('questions')) {
+      return true;
+    }
+    // Wait 50ms and try again
+    await new Promise(resolve => setTimeout(resolve, 50));
+  }
+  
+  return false;
+}
+
+/**
  * Apply the merge from source to target session
  * @param {string} sourceId - Source session UUID
  * @param {string} targetId - Target session UUID
@@ -1130,6 +1154,17 @@ async function applySessionMerge(sourceId, targetId, mappings) {
     throw new Error('Session not found');
   }
 
+  // Wait for session data to be available (IndexedDB sync may be in progress)
+  const sourceReady = await waitForSessionData(sourceDoc);
+  const targetReady = await waitForSessionData(targetDoc);
+  
+  if (!sourceReady) {
+    throw new Error('Source session data not available');
+  }
+  if (!targetReady) {
+    throw new Error('Target session data not available');
+  }
+
   const sourceSession = sourceDoc.getMap('session');
   const targetSession = targetDoc.getMap('session');
 
@@ -1137,15 +1172,23 @@ async function applySessionMerge(sourceId, targetId, mappings) {
     throw new Error('Session data not found');
   }
 
+  // Get the data arrays and validate they exist
+  const sourceTeams = sourceSession.get('teams');
+  const sourceBlocks = sourceSession.get('blocks');
+  const sourceQuestions = sourceSession.get('questions');
+  const targetTeams = targetSession.get('teams');
+  const targetBlocks = targetSession.get('blocks');
+  const targetQuestions = targetSession.get('questions');
+
+  // Validate required arrays exist
+  if (!sourceTeams || !sourceBlocks || !sourceQuestions) {
+    throw new Error('Source session data is incomplete');
+  }
+  if (!targetTeams || !targetBlocks || !targetQuestions) {
+    throw new Error('Target session data is incomplete');
+  }
+
   targetDoc.transact(function() {
-    const sourceTeams = sourceSession.get('teams');
-    const sourceBlocks = sourceSession.get('blocks');
-    const sourceQuestions = sourceSession.get('questions');
-
-    const targetTeams = targetSession.get('teams');
-    const targetBlocks = targetSession.get('blocks');
-    const targetQuestions = targetSession.get('questions');
-
     // Build mapping lookups
     const teamMap = mappings ? mappings.teams : {};
     const blockMap = mappings ? mappings.blocks : {};
