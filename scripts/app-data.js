@@ -42,10 +42,9 @@ function update_data_element(updated_id, new_value) {
   //Jump to specific session
   else if (updated_id == "session_quick_nav") {
     // Use multi-doc switchSession - return promise for await support
+    // Always sync display after - if cancelled, reset dropdown to current session
     return switchSession(Number(new_value)).then(function(switched) {
-      if (switched) {
-        sync_data_to_display();
-      }
+      sync_data_to_display();
       return switched;
     });
   }
