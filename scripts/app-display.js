@@ -44,6 +44,21 @@ function initialize_display() {
       $("#block_in_use_notice").hide();
     }, 3000);
   });
+
+  // Set up hover/click handlers for disabled team delete buttons to show minimum notice
+  $("#team_names").on("mouseenter", ".item-delete-btn:disabled", function() {
+    $("#team_minimum_notice").show();
+  });
+  $("#team_names").on("mouseleave", ".item-delete-btn:disabled", function() {
+    $("#team_minimum_notice").hide();
+  });
+  $("#team_names").on("click", ".item-delete-btn:disabled", function() {
+    $("#team_minimum_notice").show();
+    // Auto-hide after a few seconds
+    setTimeout(function() {
+      $("#team_minimum_notice").hide();
+    }, 3000);
+  });
 }
 function sync_data_to_display() {
   //Load "Universal" DB data into variables from Yjs
@@ -194,10 +209,8 @@ function sync_data_to_display() {
   $("#total_teams").text(format_number(team_count));
   if (team_count == 1) {
     $("#total_teams_text").text(t('teams.team'));
-    $("#team_minimum_notice").show();
   } else {
     $("#total_teams_text").text(t('teams.teams'));
-    $("#team_minimum_notice").hide();
   }
 
   //Set up Team Name Editing
