@@ -1518,12 +1518,10 @@ async function handleSessionSwitch(newSessionId) {
     return true;
   }
   
-  console.log('Session switch requested while synced...');
-  
   // Show confirmation dialog
   return new Promise(function(resolve) {
     var overlay = document.createElement('div');
-    overlay.className = 'sync-overlay';
+    overlay.className = 'sync-dialog-overlay';
     overlay.innerHTML = createSessionSwitchConfirmHTML();
     document.body.appendChild(overlay);
     
