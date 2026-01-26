@@ -90,9 +90,16 @@ function saveDisplayName(name) {
  */
 function getSessionSyncRoom(sessionId) {
   var doc = sessionId ? getSessionDoc(sessionId) : getActiveSessionDoc();
+  console.log('getSessionSyncRoom - doc:', doc ? 'exists' : 'null', 'sessionId:', sessionId);
   if (!doc) return null;
   var config = doc.getMap('config');
-  return config ? config.get('syncRoom') || null : null;
+  console.log('getSessionSyncRoom - config:', config ? 'exists' : 'null');
+  if (config) {
+    var room = config.get('syncRoom');
+    console.log('getSessionSyncRoom - syncRoom value:', room);
+    return room || null;
+  }
+  return null;
 }
 
 /**
@@ -102,13 +109,16 @@ function getSessionSyncRoom(sessionId) {
  */
 function saveSessionSyncRoom(roomCode, sessionId) {
   var doc = sessionId ? getSessionDoc(sessionId) : getActiveSessionDoc();
+  console.log('saveSessionSyncRoom - roomCode:', roomCode, 'sessionId:', sessionId, 'doc:', doc ? 'exists' : 'null');
   if (!doc) return;
   var config = doc.getMap('config');
   if (config) {
     if (roomCode) {
       config.set('syncRoom', roomCode);
+      console.log('saveSessionSyncRoom - saved syncRoom:', roomCode);
     } else {
       config.delete('syncRoom');
+      console.log('saveSessionSyncRoom - deleted syncRoom');
     }
   }
 }
@@ -143,13 +153,17 @@ function initSyncManager() {
  */
 async function tryAutoReconnectForCurrentSession() {
   var savedName = getSavedDisplayName();
+  console.log('tryAutoReconnectForCurrentSession - savedName:', savedName);
   if (!savedName) {
+    console.log('No saved display name, skipping auto-reconnect');
     return false;
   }
   
   // Check current session for sync room
   var sessionRoom = getSessionSyncRoom();
+  console.log('tryAutoReconnectForCurrentSession - sessionRoom:', sessionRoom);
   if (!sessionRoom) {
+    console.log('No sync room saved in session, skipping auto-reconnect');
     return false;
   }
   
