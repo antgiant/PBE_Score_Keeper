@@ -150,7 +150,8 @@ register_i18n_language('es', {
         "export_session": "Exportar Sesión",
         "export_all_sessions": "Exportar Todas las Sesiones",
         "reorder_teams": "Reordenar Equipos",
-        "reorder_blocks": "Reordenar Bloques"
+        "reorder_blocks": "Reordenar Bloques",
+        "merge": "Fusionar Sesiones"
       },
       "details_templates": {
         "renamed": "Renombrado \"{{old}}\" a \"{{new}}\"",
@@ -176,7 +177,8 @@ register_i18n_language('es', {
         "exported_all_yjs": "Todas las sesiones exportadas como archivo .yjs",
         "exported_all_json": "Todas las sesiones exportadas como archivo JSON",
         "exported_all_json_fallback": "Todas las sesiones exportadas como archivo JSON (respaldo)",
-        "new_order": "Nuevo orden: {{order}}"
+        "new_order": "Nuevo orden: {{order}}",
+        "merged_sessions": "Fusionado \"{{source}}\" en \"{{target}}\""
       }
     },
     "advanced": {
@@ -193,6 +195,8 @@ register_i18n_language('es', {
       "import_warning": "Advertencia: Importar archivos incorrectos puede corromper sus datos. Se recomienda encarecidamente que ejecute una \"Exportar para Importar\" antes de importar.",
       "select_file": "Por favor seleccione el archivo a importar:",
       "danger_zone": "Zona de Peligro",
+      "merge": "Fusionar",
+      "merge_sessions": "Fusionar Sesiones",
       "delete": "Eliminar",
       "delete_session": "Eliminar esta Sesión",
       "no_import_support": "Su navegador no soporta la importación."
@@ -329,6 +333,22 @@ register_i18n_language('es', {
       "aria_peer_joined": "{{name}} se ha unido a la sesión",
       "aria_peer_left": "{{name}} ha dejado la sesión",
       "aria_room_created": "Sala creada con código {{code}}"
+    },
+    "merge": {
+      "dialog_title": "Fusionar Sesiones",
+      "select_source": "Seleccionar Sesión de Origen",
+      "select_target": "Seleccionar Sesión de Destino",
+      "source_help": "Los datos de esta sesión se fusionarán en el destino",
+      "target_help": "Esta sesión recibirá los datos fusionados",
+      "merge_button": "Fusionar",
+      "cancel_button": "Cancelar",
+      "same_session_error": "Por favor seleccione dos sesiones diferentes",
+      "no_sessions_error": "Necesita al menos dos sesiones para fusionar",
+      "merge_success": "Sesiones fusionadas exitosamente",
+      "merge_failed": "Fusión fallida: {{error}}",
+      "matching_source": "Origen",
+      "matching_target": "Destino",
+      "confirm_merge": "Confirmar Fusión"
     }
   }
 });

@@ -149,7 +149,8 @@ register_i18n_language('en', {
         "export_session": "Export Session",
         "export_all_sessions": "Export All Sessions",
         "reorder_teams": "Reorder Teams",
-        "reorder_blocks": "Reorder Blocks"
+        "reorder_blocks": "Reorder Blocks",
+        "merge": "Merge Sessions"
       },
       "details_templates": {
         "renamed": "Renamed \"{{old}}\" to \"{{new}}\"",
@@ -175,7 +176,8 @@ register_i18n_language('en', {
         "exported_all_yjs": "Exported all sessions as .yjs file",
         "exported_all_json": "Exported all sessions as JSON file",
         "exported_all_json_fallback": "Exported all sessions as JSON file (fallback)",
-        "new_order": "New order: {{order}}"
+        "new_order": "New order: {{order}}",
+        "merged_sessions": "Merged \"{{source}}\" into \"{{target}}\""
       }
     },
     "advanced": {
@@ -192,6 +194,8 @@ register_i18n_language('en', {
       "import_warning": "Warning: Importing bad files can corrupt your data. It is strongly recommended that you run an \"Export for Importing\" before importing.",
       "select_file": "Please Select file to import:",
       "danger_zone": "Danger Zone",
+      "merge": "Merge",
+      "merge_sessions": "Merge Sessions",
       "delete": "Delete",
       "delete_session": "Delete this Session",
       "no_import_support": "Your Browser does not support importing."
@@ -328,6 +332,22 @@ register_i18n_language('en', {
       "aria_peer_joined": "{{name}} has joined the session",
       "aria_peer_left": "{{name}} has left the session",
       "aria_room_created": "Room created with code {{code}}"
+    },
+    "merge": {
+      "dialog_title": "Merge Sessions",
+      "select_source": "Select Source Session",
+      "select_target": "Select Target Session",
+      "source_help": "Data from this session will be merged into the target",
+      "target_help": "This session will receive the merged data",
+      "merge_button": "Merge",
+      "cancel_button": "Cancel",
+      "same_session_error": "Please select two different sessions",
+      "no_sessions_error": "You need at least two sessions to merge",
+      "merge_success": "Sessions merged successfully",
+      "merge_failed": "Merge failed: {{error}}",
+      "matching_source": "Source",
+      "matching_target": "Target",
+      "confirm_merge": "Confirm Merge"
     }
   }
 });

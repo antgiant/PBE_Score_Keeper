@@ -150,7 +150,8 @@ register_i18n_language('fr', {
         "export_session": "Exporter la Session",
         "export_all_sessions": "Exporter Toutes les Sessions",
         "reorder_teams": "Réorganiser les Équipes",
-        "reorder_blocks": "Réorganiser les Blocs"
+        "reorder_blocks": "Réorganiser les Blocs",
+        "merge": "Fusionner les Sessions"
       },
       "details_templates": {
         "renamed": "Renommé \"{{old}}\" en \"{{new}}\"",
@@ -176,7 +177,8 @@ register_i18n_language('fr', {
         "exported_all_yjs": "Toutes les sessions exportées en fichier .yjs",
         "exported_all_json": "Toutes les sessions exportées en fichier JSON",
         "exported_all_json_fallback": "Toutes les sessions exportées en fichier JSON (secours)",
-        "new_order": "Nouvel ordre : {{order}}"
+        "new_order": "Nouvel ordre : {{order}}",
+        "merged_sessions": "Fusionné \"{{source}}\" dans \"{{target}}\""
       }
     },
     "advanced": {
@@ -193,6 +195,8 @@ register_i18n_language('fr', {
       "import_warning": "Attention : L'importation de fichiers incorrects peut corrompre vos données. Il est fortement recommandé d'effectuer une \"Exportation pour Importation\" avant d'importer.",
       "select_file": "Veuillez sélectionner le fichier à importer :",
       "danger_zone": "Zone de Danger",
+      "merge": "Fusionner",
+      "merge_sessions": "Fusionner les Sessions",
       "delete": "Supprimer",
       "delete_session": "Supprimer cette Session",
       "no_import_support": "Votre navigateur ne prend pas en charge l'importation."
@@ -329,6 +333,22 @@ register_i18n_language('fr', {
       "aria_peer_joined": "{{name}} a rejoint la session",
       "aria_peer_left": "{{name}} a quitté la session",
       "aria_room_created": "Salle créée avec le code {{code}}"
+    },
+    "merge": {
+      "dialog_title": "Fusionner les Sessions",
+      "select_source": "Sélectionner la Session Source",
+      "select_target": "Sélectionner la Session Cible",
+      "source_help": "Les données de cette session seront fusionnées dans la cible",
+      "target_help": "Cette session recevra les données fusionnées",
+      "merge_button": "Fusionner",
+      "cancel_button": "Annuler",
+      "same_session_error": "Veuillez sélectionner deux sessions différentes",
+      "no_sessions_error": "Vous avez besoin d'au moins deux sessions pour fusionner",
+      "merge_success": "Sessions fusionnées avec succès",
+      "merge_failed": "Échec de la fusion : {{error}}",
+      "matching_source": "Source",
+      "matching_target": "Cible",
+      "confirm_merge": "Confirmer la Fusion"
     }
   }
 });

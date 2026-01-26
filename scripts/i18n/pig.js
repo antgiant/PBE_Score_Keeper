@@ -146,7 +146,8 @@ register_i18n_language('pig', {
         "export_session": "Export-ay Ession-Say",
         "export_all_sessions": "Export-ay All-ay Essions-Say",
         "reorder_teams": "Eorder-Ray Eams-Tay",
-        "reorder_blocks": "Eorder-Ray Ocks-Blay"
+        "reorder_blocks": "Eorder-Ray Ocks-Blay",
+        "merge": "Erge-May Essions-Say"
       },
       "details_templates": {
         "renamed": "Enamed-Ray \"{{old}}\" o-tay \"{{new}}\"",
@@ -172,7 +173,8 @@ register_i18n_language('pig', {
         "exported_all_yjs": "Exported-ay all-ay essions-say as-ay .yjs ile-fay",
         "exported_all_json": "Exported-ay all-ay essions-say as-ay JSON-ay ile-fay",
         "exported_all_json_fallback": "Exported-ay all-ay essions-say as-ay JSON-ay ile-fay (allback-fay)",
-        "new_order": "Ew-Nay order-ay: {{order}}"
+        "new_order": "Ew-Nay order-ay: {{order}}",
+        "merged_sessions": "Erged-May \"{{source}}\" into-ay \"{{target}}\""
       }
     },
     "advanced": {
@@ -189,6 +191,8 @@ register_i18n_language('pig', {
       "import_warning": "Arning-Way: Importing-ay ad-bay iles-fay an-cay orrupt-cay our-yay ata-day. It-ay is-ay ongly-stray ecommended-ray at-thay ou-yay un-ray an-ay \"Export-ay or-fay Importing-ay\" efore-bay importing-ay.",
       "select_file": "Ease-Play Elect-Say ile-fay o-tay import-ay:",
       "danger_zone": "Anger-Day One-Zay",
+      "merge": "Erge-May",
+      "merge_sessions": "Erge-May Essions-Say",
       "delete": "Elete-Day",
       "delete_session": "Elete-Day is-thay Ession-Say",
       "no_import_support": "Our-Yay Owser-Bray oes-day ot-nay upport-say importing-ay."
@@ -325,6 +329,22 @@ register_i18n_language('pig', {
       "aria_peer_joined": "{{name}} as-hay oined-jay e-thay ession-say",
       "aria_peer_left": "{{name}} as-hay eft-lay e-thay ession-say",
       "aria_room_created": "Oom-Ray eated-cray ith-way ode-cay {{code}}"
+    },
+    "merge": {
+      "dialog_title": "Erge-May Essions-Say",
+      "select_source": "Elect-Say Ource-Say Ession-Say",
+      "select_target": "Elect-Say Arget-Tay Ession-Say",
+      "source_help": "Ata-Day om-fray is-thay ession-say ill-way e-bay erged-may into-ay e-thay arget-tay",
+      "target_help": "Is-Thay ession-say ill-way eceive-ray e-thay erged-may ata-day",
+      "merge_button": "Erge-May",
+      "cancel_button": "Ancel-Cay",
+      "same_session_error": "Ease-Play elect-say o-tway ifferent-day essions-say",
+      "no_sessions_error": "Ou-Yay eed-nay at-ay east-lay o-tway essions-say o-tay erge-may",
+      "merge_success": "Essions-Say erged-may uccessfully-say",
+      "merge_failed": "Erge-May ailed-fay: {{error}}",
+      "matching_source": "Ource-Say",
+      "matching_target": "Arget-Tay",
+      "confirm_merge": "Onfirm-Cay Erge-May"
     }
   }
 });
