@@ -49,7 +49,7 @@ register_i18n_language('es', {
       "add_team": "Agregar Equipo",
       "delete_team": "Eliminar Equipo",
       "delete_aria": "Eliminar {{name}}",
-      "minimum_notice": "Se requiere al menos 1 equipo"
+      "minimum_notice": "Este equipo no se puede eliminar porque se requiere al menos 1 equipo"
     },
     "blocks": {
       "title": "Configure sus Bloques",
@@ -61,8 +61,8 @@ register_i18n_language('es', {
       "add_block": "Agregar Bloque",
       "delete_block": "Eliminar Bloque",
       "delete_aria": "Eliminar {{name}}",
-      "minimum_notice": "Se requiere al menos 1 bloque",
-      "in_use_notice": "No se puede eliminar: {{name}} está asignado a preguntas"
+      "minimum_notice": "Este bloque no se puede eliminar porque se requiere al menos 1 bloque",
+      "in_use_notice": "{{name}} no se puede eliminar porque está asignado a preguntas"
     },
     "points": {
       "title": "Puntos Máximos por Pregunta",

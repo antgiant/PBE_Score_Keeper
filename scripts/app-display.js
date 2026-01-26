@@ -28,36 +28,64 @@ function initialize_display() {
 
   setup_file_import();
   
-  // Set up hover/click handlers for disabled block delete buttons to show in-use notice
-  $("#block_names").on("mouseenter", ".item-delete-btn:disabled[data-block-name]", function() {
-    var blockName = $(this).attr("data-block-name");
-    $("#block_in_use_notice").text(t('blocks.in_use_notice', {name: blockName})).show();
+  // Set up hover/click handlers for blocks that cannot be deleted (show notice on row hover/click)
+  $("#block_names").on("mouseenter", ".reorder-item", function() {
+    var deleteBtn = $(this).find(".item-delete-btn");
+    if (deleteBtn.prop("disabled")) {
+      var blockName = deleteBtn.attr("data-block-name");
+      if (blockName) {
+        // Block is in use by questions
+        $("#block_in_use_notice").text(t('blocks.in_use_notice', {name: blockName})).show();
+      } else {
+        // Block is the only one (minimum required)
+        $("#block_minimum_notice").show();
+      }
+    }
   });
-  $("#block_names").on("mouseleave", ".item-delete-btn:disabled[data-block-name]", function() {
+  $("#block_names").on("mouseleave", ".reorder-item", function() {
     $("#block_in_use_notice").hide();
+    $("#block_minimum_notice").hide();
   });
-  $("#block_names").on("click", ".item-delete-btn:disabled[data-block-name]", function() {
-    var blockName = $(this).attr("data-block-name");
-    $("#block_in_use_notice").text(t('blocks.in_use_notice', {name: blockName})).show();
-    // Auto-hide after a few seconds
-    setTimeout(function() {
-      $("#block_in_use_notice").hide();
-    }, 3000);
+  $("#block_names").on("click", ".reorder-item", function(e) {
+    // Don't trigger on input/button clicks
+    if ($(e.target).is("input, button")) return;
+    var deleteBtn = $(this).find(".item-delete-btn");
+    if (deleteBtn.prop("disabled")) {
+      var blockName = deleteBtn.attr("data-block-name");
+      if (blockName) {
+        $("#block_in_use_notice").text(t('blocks.in_use_notice', {name: blockName})).show();
+      } else {
+        $("#block_minimum_notice").show();
+      }
+      // Auto-hide after a few seconds
+      setTimeout(function() {
+        $("#block_in_use_notice").hide();
+        $("#block_minimum_notice").hide();
+      }, 3000);
+    }
   });
 
-  // Set up hover/click handlers for disabled team delete buttons to show minimum notice
-  $("#team_names").on("mouseenter", ".item-delete-btn:disabled", function() {
-    $("#team_minimum_notice").show();
+  // Set up hover/click handlers for teams that cannot be deleted (show notice on row hover/click)
+  $("#team_names").on("mouseenter", ".reorder-item", function() {
+    var deleteBtn = $(this).find(".item-delete-btn");
+    if (deleteBtn.prop("disabled")) {
+      $("#team_minimum_notice").show();
+    }
   });
-  $("#team_names").on("mouseleave", ".item-delete-btn:disabled", function() {
+  $("#team_names").on("mouseleave", ".reorder-item", function() {
     $("#team_minimum_notice").hide();
   });
-  $("#team_names").on("click", ".item-delete-btn:disabled", function() {
-    $("#team_minimum_notice").show();
-    // Auto-hide after a few seconds
-    setTimeout(function() {
-      $("#team_minimum_notice").hide();
-    }, 3000);
+  $("#team_names").on("click", ".reorder-item", function(e) {
+    // Don't trigger on input/button clicks
+    if ($(e.target).is("input, button")) return;
+    var deleteBtn = $(this).find(".item-delete-btn");
+    if (deleteBtn.prop("disabled")) {
+      $("#team_minimum_notice").show();
+      // Auto-hide after a few seconds
+      setTimeout(function() {
+        $("#team_minimum_notice").hide();
+      }, 3000);
+    }
   });
 }
 function sync_data_to_display() {
@@ -327,14 +355,13 @@ function sync_data_to_display() {
   $("#total_blocks").text(format_number(block_count));
   if (block_count == 1) {
     $("#total_blocks_text").text(t('blocks.block'));
-    $("#block_minimum_notice").show();
   } else {
     $("#total_blocks_text").text(t('blocks.blocks'));
-    $("#block_minimum_notice").hide();
   }
   
-  // Hide the in-use notice by default (shown on hover/click of disabled buttons)
+  // Hide the notices by default (shown on hover/click of items that can't be deleted)
   $("#block_in_use_notice").hide();
+  $("#block_minimum_notice").hide();
 
   //Set up Block/Group renaming
   let displayed_block_count = $("#block_names").children().length;

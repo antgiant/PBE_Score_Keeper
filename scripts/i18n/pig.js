@@ -45,7 +45,7 @@ register_i18n_language('pig', {
       "add_team": "Add-ay Eam-Tay",
       "delete_team": "Elete-Day Eam-Tay",
       "delete_aria": "Elete-Day {{name}}",
-      "minimum_notice": "At-ay east-lay 1 eam-tay is-ay equired-ray"
+      "minimum_notice": "Is-thay eam-tay annot-cay e-bay eleted-day ecause-bay at-ay east-lay 1 eam-tay is-ay equired-ray"
     },
     "blocks": {
       "title": "Et-Say up-ay our-yay Ocks-Blay",
@@ -57,8 +57,8 @@ register_i18n_language('pig', {
       "add_block": "Add-ay Ock-Blay",
       "delete_block": "Elete-Day Ock-Blay",
       "delete_aria": "Elete-Day {{name}}",
-      "minimum_notice": "At-ay east-lay 1 ock-blay is-ay equired-ray",
-      "in_use_notice": "Annot-cay elete-day: {{name}} is-ay assigned-ay o-tay uestions-qay"
+      "minimum_notice": "Is-thay ock-blay annot-cay e-bay eleted-day ecause-bay at-ay east-lay 1 ock-blay is-ay equired-ray",
+      "in_use_notice": "{{name}} annot-cay e-bay eleted-day ecause-bay it-ay is-ay assigned-ay o-tay uestions-qay"
     },
     "points": {
       "title": "Aximum-May Oints-Pay er-pay Uestion-Qay",

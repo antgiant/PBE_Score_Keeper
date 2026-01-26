@@ -48,7 +48,7 @@ register_i18n_language('en', {
       "add_team": "Add Team",
       "delete_team": "Delete Team",
       "delete_aria": "Delete {{name}}",
-      "minimum_notice": "At least 1 team is required"
+      "minimum_notice": "This team cannot be deleted because at least 1 team is required"
     },
     "blocks": {
       "title": "Set up your Blocks",
@@ -60,8 +60,8 @@ register_i18n_language('en', {
       "add_block": "Add Block",
       "delete_block": "Delete Block",
       "delete_aria": "Delete {{name}}",
-      "minimum_notice": "At least 1 block is required",
-      "in_use_notice": "Cannot delete: {{name}} is assigned to questions"
+      "minimum_notice": "This block cannot be deleted because at least 1 block is required",
+      "in_use_notice": "{{name}} cannot be deleted because it is assigned to questions"
     },
     "points": {
       "title": "Maximum Points per Question",

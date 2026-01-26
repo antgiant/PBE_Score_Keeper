@@ -49,7 +49,7 @@ register_i18n_language('fr', {
       "add_team": "Ajouter une Équipe",
       "delete_team": "Supprimer l'Équipe",
       "delete_aria": "Supprimer {{name}}",
-      "minimum_notice": "Au moins 1 équipe est requise"
+      "minimum_notice": "Cette équipe ne peut pas être supprimée car au moins 1 équipe est requise"
     },
     "blocks": {
       "title": "Configurez vos Blocs",
@@ -61,8 +61,8 @@ register_i18n_language('fr', {
       "add_block": "Ajouter un Bloc",
       "delete_block": "Supprimer le Bloc",
       "delete_aria": "Supprimer {{name}}",
-      "minimum_notice": "Au moins 1 bloc est requis",
-      "in_use_notice": "Impossible de supprimer : {{name}} est assigné à des questions"
+      "minimum_notice": "Ce bloc ne peut pas être supprimé car au moins 1 bloc est requis",
+      "in_use_notice": "{{name}} ne peut pas être supprimé car il est assigné à des questions"
     },
     "points": {
       "title": "Points Maximum par Question",

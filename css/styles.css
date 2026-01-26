@@ -182,12 +182,7 @@ tr:nth-child(even){
   outline-offset: 2px;
 }
 .item-delete-btn:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-.item-delete-btn:disabled:hover {
-  background: var(--control-bg);
-  color: var(--muted-text);
+  display: none;
 }
 
 /* Reorder item improvements */
