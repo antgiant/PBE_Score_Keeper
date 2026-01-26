@@ -35,6 +35,7 @@ var SyncManager = {
   provider: null,
   awareness: null,
   previousFocus: null,
+  sessionUpdateListener: null,  // Reference to session doc update listener
   
   // Peers tracking
   peers: new Map(),  // peerId -> { displayName, color, lastSeen }
@@ -249,6 +250,19 @@ async function startSync(displayName, roomCode, password, joinChoice) {
     // Set up awareness
     setupAwareness(SyncManager.provider.awareness);
     
+    // Listen for remote updates on session doc to refresh display
+    SyncManager.sessionUpdateListener = function(updateData, origin) {
+      // Only refresh on remote updates (not local changes)
+      // WebRTC provider uses 'null' or provider instance as origin for remote updates
+      if (origin !== 'local' && origin !== sessionDoc.clientID) {
+        console.log('Remote update on session doc, refreshing display');
+        if (typeof sync_data_to_display === 'function') {
+          sync_data_to_display();
+        }
+      }
+    };
+    sessionDoc.on('update', SyncManager.sessionUpdateListener);
+    
     // Listen for connection events
     SyncManager.provider.on('status', function(event) {
       console.log('WebRTC status:', event.status);
@@ -335,6 +349,15 @@ function waitForConnection(timeout) {
  * Stop sync - disconnect from current room
  */
 function stopSync() {
+  // Remove session doc update listener
+  if (SyncManager.sessionUpdateListener && SyncManager.syncedSessionId) {
+    var sessionDoc = getSessionDoc(SyncManager.syncedSessionId);
+    if (sessionDoc) {
+      sessionDoc.off('update', SyncManager.sessionUpdateListener);
+    }
+    SyncManager.sessionUpdateListener = null;
+  }
+  
   // Destroy WebRTC provider
   if (SyncManager.provider) {
     SyncManager.provider.destroy();
