@@ -191,10 +191,21 @@ tr:nth-child(even){
   align-items: center;
   gap: 0.5rem;
   margin-bottom: 0.35rem;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   padding: 0.25rem;
   border-radius: 4px;
   transition: background-color 0.15s;
+}
+.reorder-item label {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.reorder-item label input {
+  flex: 1;
+  min-width: 0;
 }
 .reorder-item:hover {
   background: var(--row-alt);
