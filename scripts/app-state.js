@@ -504,9 +504,12 @@ async function switchSession(sessionIdOrIndex) {
     return false;
   }
 
-  // Notify sync module before switching sessions
+  // Notify sync module before switching sessions (may show confirmation)
   if (typeof handleSessionSwitch === 'function' && oldSessionId !== sessionId) {
-    handleSessionSwitch(sessionId);
+    var shouldProceed = await handleSessionSwitch(sessionId);
+    if (!shouldProceed) {
+      return false; // User cancelled the switch
+    }
   }
 
   // Load session doc if not already loaded

@@ -166,12 +166,16 @@ describe('Sync Core', () => {
       assert.strictEqual(syncModule.getSyncRoomCode(), null);
     });
 
-    it('should clear localStorage room', () => {
+    it('should clear localStorage room (deprecated - now uses session doc)', () => {
+      // This test verifies stopSync no longer relies on localStorage
+      // Room code is now stored in session doc, not localStorage
       global.localStorage.setItem('pbe-sync-room', 'ABC123');
       
       syncModule.stopSync();
       
-      assert.strictEqual(global.localStorage.getItem('pbe-sync-room'), null);
+      // localStorage is no longer cleared by stopSync (behavior changed)
+      // The room code is now stored in session doc and cleared there
+      assert.strictEqual(syncModule.getSyncRoomCode(), null);
     });
 
     it('should clear peers', () => {
@@ -193,29 +197,23 @@ describe('Sync Core', () => {
   });
 
   describe('initSyncManager', () => {
-    it('should load saved room from localStorage', () => {
-      global.localStorage.setItem('pbe-sync-room', 'ABC123');
+    it('should load saved display name from global doc', () => {
       mockGlobalDocMeta['syncDisplayName'] = 'Test User';
       
       syncModule.initSyncManager();
       
-      assert.strictEqual(syncModule.SyncManager.roomCode, 'ABC123');
+      // Display name is loaded from global doc
       assert.strictEqual(syncModule.SyncManager.displayName, 'Test User');
     });
 
-    it('should not load room if display name missing', () => {
-      global.localStorage.setItem('pbe-sync-room', 'ABC123');
+    it('should not set display name if not saved', () => {
       // No display name set in global doc
-      
-      // Reset the module state first
-      syncModule.SyncManager.roomCode = null;
       syncModule.SyncManager.displayName = null;
       
       syncModule.initSyncManager();
       
-      // Should still load since the if condition checks both
-      // Let me re-read the code logic - it loads if both are present
-      assert.strictEqual(syncModule.SyncManager.roomCode, null);
+      // Should remain null
+      assert.strictEqual(syncModule.SyncManager.displayName, null);
     });
   });
 

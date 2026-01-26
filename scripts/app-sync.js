@@ -84,18 +84,44 @@ function saveDisplayName(name) {
 }
 
 /**
+ * Get sync room code from a session doc
+ * @param {string} sessionId - Session UUID (optional, uses current if not provided)
+ * @returns {string|null} Room code or null if not synced
+ */
+function getSessionSyncRoom(sessionId) {
+  var doc = sessionId ? getSessionDoc(sessionId) : getActiveSessionDoc();
+  if (!doc) return null;
+  var config = doc.getMap('config');
+  return config ? config.get('syncRoom') || null : null;
+}
+
+/**
+ * Save sync room code to session doc
+ * @param {string} roomCode - Room code to save (null to clear)
+ * @param {string} sessionId - Session UUID (optional, uses current if not provided)
+ */
+function saveSessionSyncRoom(roomCode, sessionId) {
+  var doc = sessionId ? getSessionDoc(sessionId) : getActiveSessionDoc();
+  if (!doc) return;
+  var config = doc.getMap('config');
+  if (config) {
+    if (roomCode) {
+      config.set('syncRoom', roomCode);
+    } else {
+      config.delete('syncRoom');
+    }
+  }
+}
+
+/**
  * Initialize the sync manager
  * Call once on app startup
  */
 function initSyncManager() {
-  // Load persisted room info from localStorage and Yjs
-  var savedRoom = localStorage.getItem('pbe-sync-room');
+  // Load saved display name
   var savedName = getSavedDisplayName();
-  
-  if (savedRoom && savedName) {
-    SyncManager.roomCode = savedRoom;
+  if (savedName) {
     SyncManager.displayName = savedName;
-    // Will auto-reconnect in Phase 3
   }
   
   // Set up event handlers
@@ -104,13 +130,40 @@ function initSyncManager() {
   
   // Attempt auto-reconnect after a short delay
   // (let the rest of the app initialize first)
-  if (savedRoom && savedName) {
-    setTimeout(function() {
-      autoReconnect();
-    }, 1000);
-  }
+  setTimeout(function() {
+    tryAutoReconnectForCurrentSession();
+  }, 1000);
   
   console.log('SyncManager initialized');
+}
+
+/**
+ * Try to auto-reconnect for the current session if it has sync info
+ * @returns {Promise<boolean>} True if reconnection successful
+ */
+async function tryAutoReconnectForCurrentSession() {
+  var savedName = getSavedDisplayName();
+  if (!savedName) {
+    return false;
+  }
+  
+  // Check current session for sync room
+  var sessionRoom = getSessionSyncRoom();
+  if (!sessionRoom) {
+    return false;
+  }
+  
+  console.log('Auto-reconnecting to room from session:', sessionRoom);
+  
+  try {
+    // Use 'merge' join choice since this is the original session
+    await startSync(savedName, sessionRoom, null, 'merge');
+    showToast(t('sync.auto_reconnected', { code: sessionRoom }));
+    return true;
+  } catch (error) {
+    console.warn('Auto-reconnect failed:', error);
+    return false;
+  }
 }
 
 /**
@@ -221,11 +274,12 @@ async function startSync(displayName, roomCode, password, joinChoice) {
   SyncManager.displayName = displayName;
   SyncManager.roomCode = finalRoomCode;
   SyncManager.password = password || null;
-  SyncManager.syncedSessionId = typeof getActiveSessionId === 'function' ? getActiveSessionId() : null;
+  SyncManager.syncedSessionId = typeof get_current_session_id === 'function' ? get_current_session_id() : null;
   
-  // Persist to global Yjs doc and localStorage (NOT password - must re-enter)
+  // Persist display name to global Yjs doc
   saveDisplayName(displayName);
-  localStorage.setItem('pbe-sync-room', finalRoomCode);
+  // Save room code to session doc for auto-reconnect
+  saveSessionSyncRoom(finalRoomCode);
   
   updateSyncUI();
   
@@ -347,8 +401,14 @@ function waitForConnection(timeout) {
 
 /**
  * Stop sync - disconnect from current room
+ * @param {boolean} clearSessionRoom - Whether to clear the room code from session doc (default true)
  */
-function stopSync() {
+function stopSync(clearSessionRoom) {
+  // Default to true if not specified
+  if (clearSessionRoom === undefined) {
+    clearSessionRoom = true;
+  }
+  
   // Remove session doc update listener
   if (SyncManager.sessionUpdateListener && SyncManager.syncedSessionId) {
     var sessionDoc = getSessionDoc(SyncManager.syncedSessionId);
@@ -356,6 +416,11 @@ function stopSync() {
       sessionDoc.off('update', SyncManager.sessionUpdateListener);
     }
     SyncManager.sessionUpdateListener = null;
+  }
+  
+  // Clear sync room from session doc if requested
+  if (clearSessionRoom && SyncManager.syncedSessionId) {
+    saveSessionSyncRoom(null, SyncManager.syncedSessionId);
   }
   
   // Destroy WebRTC provider
@@ -373,9 +438,6 @@ function stopSync() {
   SyncManager.syncedSessionId = null;
   SyncManager.peers.clear();
   
-  // Clear localStorage (keep display name for convenience)
-  localStorage.removeItem('pbe-sync-room');
-  
   updateSyncUI();
   
   if (SyncManager.onStateChange) {
@@ -387,25 +449,11 @@ function stopSync() {
  * Attempt to auto-reconnect to saved room
  * Called on page load if room was saved
  * @returns {Promise<boolean>} True if reconnection successful
+ * @deprecated Use tryAutoReconnectForCurrentSession instead
  */
 async function autoReconnect() {
-  var savedRoom = localStorage.getItem('pbe-sync-room');
-  var savedName = getSavedDisplayName();
-  
-  if (!savedRoom || !savedName) {
-    return false;
-  }
-  
-  console.log('Attempting auto-reconnect to room:', savedRoom);
-  
-  try {
-    await startSync(savedName, savedRoom);
-    return true;
-  } catch (error) {
-    console.warn('Auto-reconnect failed:', error);
-    // Don't clear saved room - user can manually retry
-    return false;
-  }
+  // Delegate to session-based auto-reconnect
+  return tryAutoReconnectForCurrentSession();
 }
 
 /**
@@ -414,10 +462,10 @@ async function autoReconnect() {
 function setupVisibilityHandler() {
   document.addEventListener('visibilitychange', function() {
     if (document.visibilityState === 'visible') {
-      // Page became visible again
+      // Page became visible again - try to reconnect if we were connected
       if (SyncManager.state === 'error' || 
           (SyncManager.roomCode && SyncManager.state === 'offline')) {
-        autoReconnect();
+        tryAutoReconnectForCurrentSession();
       }
     }
   });
@@ -1268,22 +1316,84 @@ function checkDisplayNameCollision() {
 
 /**
  * Handle session switch while synced
- * Disconnects from current room since 1 room = 1 session
+ * Shows confirmation dialog and disconnects if user proceeds
  * @param {string} newSessionId - New session's UUID
+ * @returns {Promise<boolean>} True if switch should proceed, false to cancel
  */
-function handleSessionSwitch(newSessionId) {
+async function handleSessionSwitch(newSessionId) {
+  // Not synced - always allow switch, but check if new session has sync info
   if (SyncManager.state !== 'connected') {
-    return; // Not synced, nothing to do
+    // After switch completes, try to auto-reconnect to new session's room
+    setTimeout(function() {
+      tryAutoReconnectForCurrentSession();
+    }, 500);
+    return true;
   }
   
-  console.log('Session switched while synced, disconnecting...');
+  console.log('Session switch requested while synced...');
   
-  // Notify user
-  showToast(t('sync.session_switch_disconnect'));
-  announceToScreenReader(t('sync.session_switch_disconnect'));
-  
-  // Disconnect from current room
-  stopSync();
+  // Show confirmation dialog
+  return new Promise(function(resolve) {
+    var overlay = document.createElement('div');
+    overlay.className = 'sync-overlay';
+    overlay.innerHTML = createSessionSwitchConfirmHTML();
+    document.body.appendChild(overlay);
+    
+    // Focus trap
+    var confirmBtn = overlay.querySelector('#sync-switch-confirm');
+    var cancelBtn = overlay.querySelector('#sync-switch-cancel');
+    
+    confirmBtn.focus();
+    
+    function cleanup() {
+      overlay.remove();
+    }
+    
+    confirmBtn.addEventListener('click', function() {
+      cleanup();
+      
+      // Disconnect from current room (don't clear room code - session retains it)
+      stopSync(false);
+      
+      showToast(t('sync.session_switch_disconnect'));
+      announceToScreenReader(t('sync.session_switch_disconnect'));
+      
+      // After switch, try to reconnect to new session's room
+      setTimeout(function() {
+        tryAutoReconnectForCurrentSession();
+      }, 500);
+      
+      resolve(true);
+    });
+    
+    cancelBtn.addEventListener('click', function() {
+      cleanup();
+      resolve(false);
+    });
+    
+    // Escape to cancel
+    overlay.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        cleanup();
+        resolve(false);
+      }
+    });
+  });
+}
+
+/**
+ * Create HTML for session switch confirmation dialog
+ * @returns {string} Dialog HTML
+ */
+function createSessionSwitchConfirmHTML() {
+  return '<div class="sync-dialog" role="alertdialog" aria-labelledby="switch-confirm-title" aria-describedby="switch-confirm-desc" aria-modal="true">' +
+    '<h2 id="switch-confirm-title">' + t('sync.switch_confirm_title') + '</h2>' +
+    '<p id="switch-confirm-desc">' + t('sync.switch_confirm_message', { code: SyncManager.roomCode }) + '</p>' +
+    '<div class="button-row">' +
+      '<button type="button" id="sync-switch-cancel" class="ui-button">' + t('sync.switch_cancel') + '</button>' +
+      '<button type="button" id="sync-switch-confirm" class="ui-button ui-button-primary">' + t('sync.switch_confirm') + '</button>' +
+    '</div>' +
+  '</div>';
 }
 
 /**
