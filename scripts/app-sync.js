@@ -2225,11 +2225,599 @@ function applyMappings(mappings, sessionDoc) {
   }, 'local');
 }
 
+// ============================================================================
+// DEVICE MIGRATION FUNCTIONS
+// ============================================================================
+
+/**
+ * Migration state tracking
+ */
+var MigrationState = {
+  mode: null,           // 'send' or 'receive'
+  roomCode: null,
+  provider: null,
+  globalDoc: null,
+  sessionDocs: [],      // Array of session docs being synced
+  currentSessionIndex: 0,
+  totalSessions: 0,
+  isComplete: false,
+  error: null,
+  peerConnected: false,
+  previousFocus: null
+};
+
+/**
+ * Show migration dialog
+ * @param {string} mode - 'send' or 'receive'
+ */
+function showMigrationDialog(mode) {
+  // Remove any existing dialog
+  var existing = document.getElementById('migration-dialog-overlay');
+  if (existing) existing.remove();
+  
+  MigrationState.mode = mode;
+  MigrationState.previousFocus = document.activeElement;
+  
+  var overlay = document.createElement('div');
+  overlay.id = 'migration-dialog-overlay';
+  overlay.className = 'sync-dialog-overlay';
+  
+  if (mode === 'send') {
+    overlay.innerHTML = createMigrationSendDialogHTML();
+  } else {
+    overlay.innerHTML = createMigrationReceiveDialogHTML();
+  }
+  
+  document.body.appendChild(overlay);
+  
+  // Focus first input or button
+  var firstFocusable = overlay.querySelector('input, button');
+  if (firstFocusable) firstFocusable.focus();
+  
+  // Trap focus within dialog
+  trapFocus(overlay);
+  
+  // Close on overlay click
+  overlay.addEventListener('click', function(e) {
+    if (e.target === overlay) {
+      closeMigrationDialog();
+    }
+  });
+  
+  // Close on Escape key
+  document.addEventListener('keydown', handleMigrationDialogKeydown);
+  
+  // If sending, auto-generate room code and show it
+  if (mode === 'send') {
+    var roomCode = generateRoomCode();
+    MigrationState.roomCode = roomCode;
+    var codeDisplay = document.getElementById('migration-room-code-display');
+    if (codeDisplay) {
+      codeDisplay.textContent = roomCode;
+    }
+  }
+}
+
+/**
+ * Create HTML for send migration dialog
+ * @returns {string} Dialog HTML
+ */
+function createMigrationSendDialogHTML() {
+  return '<div class="sync-dialog migration-dialog" role="dialog" aria-labelledby="migration-dialog-title" aria-modal="true">' +
+    '<h2 id="migration-dialog-title">' + t('advanced.migration_send_title') + '</h2>' +
+    '<p>' + t('advanced.migration_send_instructions') + '</p>' +
+    '<div class="room-code-display" id="migration-room-code-display" aria-label="' + t('advanced.migration_room_code_label') + '">------</div>' +
+    '<p class="info-text">' + t('advanced.migration_info') + '</p>' +
+    '<div class="button-row">' +
+      '<button type="button" onclick="closeMigrationDialog()">' + t('advanced.migration_cancel') + '</button>' +
+      '<button type="button" onclick="handleStartMigrationSend()" class="primary">' + t('advanced.migration_start_send') + '</button>' +
+    '</div>' +
+  '</div>';
+}
+
+/**
+ * Create HTML for receive migration dialog
+ * @returns {string} Dialog HTML
+ */
+function createMigrationReceiveDialogHTML() {
+  return '<div class="sync-dialog migration-dialog" role="dialog" aria-labelledby="migration-dialog-title" aria-modal="true">' +
+    '<h2 id="migration-dialog-title">' + t('advanced.migration_receive_title') + '</h2>' +
+    '<p>' + t('advanced.migration_receive_instructions') + '</p>' +
+    '<div class="form-group">' +
+      '<label for="migration-room-code">' + t('advanced.migration_room_code_label') + '</label>' +
+      '<input type="text" id="migration-room-code" ' +
+             'class="room-code-input" ' +
+             'placeholder="' + t('advanced.migration_room_code_placeholder') + '" ' +
+             'maxlength="6" ' +
+             'autocomplete="off" ' +
+             'autocorrect="off" ' +
+             'autocapitalize="characters">' +
+    '</div>' +
+    '<p class="info-text">' + t('advanced.migration_info') + '</p>' +
+    '<div class="button-row">' +
+      '<button type="button" onclick="closeMigrationDialog()">' + t('advanced.migration_cancel') + '</button>' +
+      '<button type="button" onclick="handleStartMigrationReceive()" class="primary">' + t('advanced.migration_start_receive') + '</button>' +
+    '</div>' +
+  '</div>';
+}
+
+/**
+ * Create HTML for migration progress dialog
+ * @returns {string} Dialog HTML
+ */
+function createMigrationProgressDialogHTML() {
+  var statusClass = MigrationState.peerConnected ? 'connected' : 'waiting';
+  var statusText = MigrationState.peerConnected 
+    ? t('advanced.migration_connected')
+    : t('advanced.migration_waiting');
+  
+  return '<div class="sync-dialog migration-dialog" role="dialog" aria-labelledby="migration-dialog-title" aria-modal="true">' +
+    '<h2 id="migration-dialog-title">' + 
+      (MigrationState.mode === 'send' ? t('advanced.migration_send_title') : t('advanced.migration_receive_title')) + 
+    '</h2>' +
+    '<div class="room-code-display">' + MigrationState.roomCode + '</div>' +
+    '<div class="migration-progress">' +
+      '<div class="migration-status ' + statusClass + '" id="migration-status">' + statusText + '</div>' +
+      '<div class="migration-progress-bar">' +
+        '<div class="migration-progress-bar-fill" id="migration-progress-fill" style="width: 0%;"></div>' +
+      '</div>' +
+      '<div id="migration-progress-text"></div>' +
+    '</div>' +
+    '<div class="button-row">' +
+      '<button type="button" onclick="cancelMigration()">' + t('advanced.migration_cancel') + '</button>' +
+    '</div>' +
+  '</div>';
+}
+
+/**
+ * Update migration dialog to show progress
+ */
+function showMigrationProgressDialog() {
+  var dialog = document.querySelector('.migration-dialog');
+  if (dialog) {
+    dialog.outerHTML = createMigrationProgressDialogHTML();
+  }
+}
+
+/**
+ * Update migration progress display
+ * @param {number} current - Current session index (1-based)
+ * @param {number} total - Total sessions
+ * @param {string} name - Current session name
+ */
+function updateMigrationProgress(current, total, name) {
+  var statusEl = document.getElementById('migration-status');
+  var progressFill = document.getElementById('migration-progress-fill');
+  var progressText = document.getElementById('migration-progress-text');
+  
+  if (statusEl) {
+    statusEl.textContent = t('advanced.migration_connected');
+    statusEl.className = 'migration-status connected';
+  }
+  
+  if (progressFill) {
+    var percent = total > 0 ? Math.round((current / total) * 100) : 0;
+    progressFill.style.width = percent + '%';
+  }
+  
+  if (progressText) {
+    progressText.textContent = t('advanced.migration_progress', {
+      current: current,
+      total: total,
+      name: name
+    });
+  }
+}
+
+/**
+ * Show migration complete
+ * @param {number} count - Number of sessions transferred
+ */
+function showMigrationComplete(count) {
+  var statusEl = document.getElementById('migration-status');
+  var progressFill = document.getElementById('migration-progress-fill');
+  var progressText = document.getElementById('migration-progress-text');
+  var buttonRow = document.querySelector('.migration-dialog .button-row');
+  
+  if (statusEl) {
+    statusEl.textContent = t('advanced.migration_complete', { count: count });
+    statusEl.className = 'migration-status complete';
+  }
+  
+  if (progressFill) {
+    progressFill.style.width = '100%';
+  }
+  
+  if (progressText) {
+    progressText.textContent = '';
+  }
+  
+  if (buttonRow) {
+    buttonRow.innerHTML = '<button type="button" onclick="closeMigrationDialog()" class="primary">' + t('advanced.migration_close') + '</button>';
+  }
+  
+  // Refresh display
+  if (typeof sync_data_to_display === 'function') {
+    sync_data_to_display();
+  }
+}
+
+/**
+ * Show migration error
+ * @param {string} error - Error message
+ */
+function showMigrationError(error) {
+  var statusEl = document.getElementById('migration-status');
+  var buttonRow = document.querySelector('.migration-dialog .button-row');
+  
+  if (statusEl) {
+    statusEl.textContent = t('advanced.migration_error', { error: error });
+    statusEl.className = 'migration-status error';
+  }
+  
+  if (buttonRow) {
+    buttonRow.innerHTML = '<button type="button" onclick="closeMigrationDialog()" class="primary">' + t('advanced.migration_close') + '</button>';
+  }
+}
+
+/**
+ * Handle start migration send button click
+ */
+async function handleStartMigrationSend() {
+  try {
+    // Get all sessions
+    var sessionOrder = typeof get_session_order === 'function' ? get_session_order() : [];
+    
+    if (sessionOrder.length === 0) {
+      showToast(t('advanced.migration_no_sessions'));
+      return;
+    }
+    
+    MigrationState.totalSessions = sessionOrder.length;
+    MigrationState.currentSessionIndex = 0;
+    MigrationState.isComplete = false;
+    MigrationState.error = null;
+    
+    // Show progress dialog
+    showMigrationProgressDialog();
+    
+    // Start sending
+    await startMigrationSend();
+    
+  } catch (error) {
+    console.error('Migration send error:', error);
+    showMigrationError(error.message || 'Unknown error');
+  }
+}
+
+/**
+ * Handle start migration receive button click
+ */
+async function handleStartMigrationReceive() {
+  var roomCodeInput = document.getElementById('migration-room-code');
+  var roomCode = roomCodeInput ? roomCodeInput.value.trim().toUpperCase() : '';
+  
+  if (!isValidRoomCode(roomCode)) {
+    showToast(t('sync.invalid_room_code'));
+    if (roomCodeInput) roomCodeInput.focus();
+    return;
+  }
+  
+  MigrationState.roomCode = roomCode;
+  MigrationState.isComplete = false;
+  MigrationState.error = null;
+  
+  // Show progress dialog
+  showMigrationProgressDialog();
+  
+  try {
+    await startMigrationReceive();
+  } catch (error) {
+    console.error('Migration receive error:', error);
+    showMigrationError(error.message || 'Unknown error');
+  }
+}
+
+/**
+ * Start migration send process
+ * Creates a WebRTC room and syncs all session docs sequentially
+ */
+async function startMigrationSend() {
+  // Check if WebrtcProvider is available
+  if (typeof WebrtcProvider === 'undefined') {
+    throw new Error('WebrtcProvider not available');
+  }
+  
+  var roomName = 'pbe-migrate-' + MigrationState.roomCode;
+  var sessionOrder = typeof get_session_order === 'function' ? get_session_order() : [];
+  
+  // Get global doc
+  var globalDoc = typeof getGlobalDoc === 'function' ? getGlobalDoc() : null;
+  if (!globalDoc) {
+    throw new Error('Could not get global document');
+  }
+  
+  // Create provider for global doc first
+  console.log('Migration: Starting send for room', roomName);
+  
+  MigrationState.provider = new WebrtcProvider(roomName + '-global', globalDoc, {
+    signaling: SyncManager.config.signalingServers,
+    password: null,
+    maxConns: 10,
+    filterBcConns: true,
+    peerOpts: {}
+  });
+  
+  // Wait for connection
+  await waitForMigrationConnection(MigrationState.provider);
+  
+  MigrationState.peerConnected = true;
+  updateMigrationProgress(0, sessionOrder.length, 'Global metadata');
+  
+  // Wait a moment for global doc to sync
+  await delay(2000);
+  
+  // Sync each session doc sequentially
+  for (var i = 0; i < sessionOrder.length; i++) {
+    var sessionId = sessionOrder[i];
+    
+    // Initialize and get the session doc
+    var sessionDoc = typeof initSessionDoc === 'function' 
+      ? await initSessionDoc(sessionId) 
+      : null;
+    
+    if (!sessionDoc) {
+      console.warn('Could not load session doc:', sessionId);
+      continue;
+    }
+    
+    // Get session name for progress display
+    var session = sessionDoc.getMap('session');
+    var sessionName = session ? (session.get('name') || 'Unnamed') : 'Unnamed';
+    
+    updateMigrationProgress(i + 1, sessionOrder.length, sessionName);
+    
+    // Create provider for this session
+    var sessionProvider = new WebrtcProvider(roomName + '-session-' + sessionId, sessionDoc, {
+      signaling: SyncManager.config.signalingServers,
+      password: null,
+      maxConns: 10,
+      filterBcConns: true,
+      peerOpts: {}
+    });
+    
+    // Wait for sync
+    await waitForMigrationConnection(sessionProvider);
+    await delay(3000); // Give time for data to sync
+    
+    // Destroy this session provider
+    sessionProvider.destroy();
+  }
+  
+  // Complete
+  MigrationState.isComplete = true;
+  showMigrationComplete(sessionOrder.length);
+  
+  // Keep global provider alive for a bit in case receiver needs more time
+  setTimeout(function() {
+    if (MigrationState.provider) {
+      MigrationState.provider.destroy();
+      MigrationState.provider = null;
+    }
+  }, 5000);
+}
+
+/**
+ * Start migration receive process
+ * Joins a WebRTC room and receives all session docs sequentially
+ */
+async function startMigrationReceive() {
+  // Check if WebrtcProvider is available
+  if (typeof WebrtcProvider === 'undefined') {
+    throw new Error('WebrtcProvider not available');
+  }
+  
+  var roomName = 'pbe-migrate-' + MigrationState.roomCode;
+  
+  // Get global doc
+  var globalDoc = typeof getGlobalDoc === 'function' ? getGlobalDoc() : null;
+  if (!globalDoc) {
+    throw new Error('Could not get global document');
+  }
+  
+  console.log('Migration: Starting receive for room', roomName);
+  
+  // Connect to global doc room
+  MigrationState.provider = new WebrtcProvider(roomName + '-global', globalDoc, {
+    signaling: SyncManager.config.signalingServers,
+    password: null,
+    maxConns: 10,
+    filterBcConns: true,
+    peerOpts: {}
+  });
+  
+  // Wait for connection
+  await waitForMigrationConnection(MigrationState.provider);
+  
+  MigrationState.peerConnected = true;
+  
+  // Wait for global doc to sync (get session list from sender)
+  await delay(3000);
+  
+  // Get the session order from the synced global doc
+  var meta = globalDoc.getMap('meta');
+  var sessionOrderArray = meta.get('sessionOrder');
+  var sessionOrder = sessionOrderArray ? sessionOrderArray.toArray() : [];
+  
+  if (sessionOrder.length === 0) {
+    showMigrationComplete(0);
+    return;
+  }
+  
+  MigrationState.totalSessions = sessionOrder.length;
+  updateMigrationProgress(0, sessionOrder.length, 'Global metadata');
+  
+  // Receive each session doc
+  for (var i = 0; i < sessionOrder.length; i++) {
+    var sessionId = sessionOrder[i];
+    
+    updateMigrationProgress(i + 1, sessionOrder.length, 'Session ' + (i + 1));
+    
+    // Initialize the session doc (creates if doesn't exist)
+    var sessionDoc = typeof initSessionDoc === 'function' 
+      ? await initSessionDoc(sessionId) 
+      : null;
+    
+    if (!sessionDoc) {
+      console.warn('Could not create session doc:', sessionId);
+      continue;
+    }
+    
+    // Connect to this session's room
+    var sessionProvider = new WebrtcProvider(roomName + '-session-' + sessionId, sessionDoc, {
+      signaling: SyncManager.config.signalingServers,
+      password: null,
+      maxConns: 10,
+      filterBcConns: true,
+      peerOpts: {}
+    });
+    
+    // Wait for sync
+    await waitForMigrationConnection(sessionProvider);
+    await delay(3000); // Give time for data to sync
+    
+    // Get session name after sync
+    var session = sessionDoc.getMap('session');
+    var sessionName = session ? (session.get('name') || 'Unnamed') : 'Unnamed';
+    updateMigrationProgress(i + 1, sessionOrder.length, sessionName);
+    
+    // Destroy this session provider
+    sessionProvider.destroy();
+  }
+  
+  // Complete
+  MigrationState.isComplete = true;
+  showMigrationComplete(sessionOrder.length);
+  
+  // Cleanup
+  if (MigrationState.provider) {
+    MigrationState.provider.destroy();
+    MigrationState.provider = null;
+  }
+  
+  // Refresh display
+  if (typeof sync_data_to_display === 'function') {
+    sync_data_to_display();
+  }
+}
+
+/**
+ * Wait for WebRTC connection with timeout
+ * @param {WebrtcProvider} provider - The provider to wait for
+ * @param {number} timeout - Timeout in milliseconds (default 30000)
+ * @returns {Promise<void>}
+ */
+function waitForMigrationConnection(provider, timeout) {
+  timeout = timeout || 30000;
+  
+  return new Promise(function(resolve, reject) {
+    var startTime = Date.now();
+    
+    var checkMigrationConnection = function() {
+      if (provider && provider.connected) {
+        resolve();
+        return;
+      }
+      
+      if (Date.now() - startTime > timeout) {
+        reject(new Error('Connection timeout'));
+        return;
+      }
+      
+      setTimeout(checkMigrationConnection, 100);
+    };
+    
+    checkMigrationConnection();
+  });
+}
+
+/**
+ * Helper function for delays
+ * @param {number} ms - Milliseconds to delay
+ * @returns {Promise<void>}
+ */
+function delay(ms) {
+  return new Promise(function(resolve) {
+    setTimeout(resolve, ms);
+  });
+}
+
+/**
+ * Cancel ongoing migration
+ */
+function cancelMigration() {
+  if (MigrationState.provider) {
+    MigrationState.provider.destroy();
+    MigrationState.provider = null;
+  }
+  
+  MigrationState.isComplete = false;
+  MigrationState.error = 'Cancelled';
+  
+  closeMigrationDialog();
+}
+
+/**
+ * Close migration dialog
+ */
+function closeMigrationDialog() {
+  var overlay = document.getElementById('migration-dialog-overlay');
+  if (overlay) overlay.remove();
+  
+  document.removeEventListener('keydown', handleMigrationDialogKeydown);
+  
+  // Clean up any active provider
+  if (MigrationState.provider) {
+    MigrationState.provider.destroy();
+    MigrationState.provider = null;
+  }
+  
+  // Reset state
+  MigrationState.mode = null;
+  MigrationState.roomCode = null;
+  MigrationState.peerConnected = false;
+  MigrationState.currentSessionIndex = 0;
+  MigrationState.totalSessions = 0;
+  MigrationState.isComplete = false;
+  MigrationState.error = null;
+  
+  // Restore focus
+  if (MigrationState.previousFocus) {
+    MigrationState.previousFocus.focus();
+    MigrationState.previousFocus = null;
+  }
+}
+
+/**
+ * Handle keydown events in migration dialog
+ * @param {KeyboardEvent} e - Keyboard event
+ */
+function handleMigrationDialogKeydown(e) {
+  if (e.key === 'Escape') {
+    if (MigrationState.isComplete || !MigrationState.peerConnected) {
+      closeMigrationDialog();
+    } else {
+      cancelMigration();
+    }
+  }
+}
+
 // Export for testing
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
     SyncManager: SyncManager,
     SyncError: SyncError,
+    MigrationState: MigrationState,
     initSyncManager: initSyncManager,
     generateRoomCode: generateRoomCode,
     isValidRoomCode: isValidRoomCode,
@@ -2259,6 +2847,11 @@ if (typeof module !== 'undefined' && module.exports) {
     changeDisplayName: changeDisplayName,
     handleEditNameClick: handleEditNameClick,
     handleSaveNameClick: handleSaveNameClick,
-    handleCancelEditName: handleCancelEditName
+    handleCancelEditName: handleCancelEditName,
+    showMigrationDialog: showMigrationDialog,
+    closeMigrationDialog: closeMigrationDialog,
+    handleStartMigrationSend: handleStartMigrationSend,
+    handleStartMigrationReceive: handleStartMigrationReceive,
+    cancelMigration: cancelMigration
   };
 }

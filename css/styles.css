@@ -509,6 +509,64 @@ tr:nth-child(even){
   color: var(--accent-hover);
 }
 
+/* Migration dialog styles */
+.migration-dialog {
+  max-width: 450px;
+}
+
+.migration-dialog p {
+  margin: 0.75rem 0;
+  line-height: 1.5;
+}
+
+.migration-dialog .info-text {
+  font-size: 0.9em;
+  color: var(--text-secondary, #666);
+  font-style: italic;
+}
+
+.migration-progress {
+  margin: 1rem 0;
+}
+
+.migration-progress-bar {
+  width: 100%;
+  height: 20px;
+  background: var(--row-alt);
+  border-radius: 10px;
+  overflow: hidden;
+  margin: 0.5rem 0;
+}
+
+.migration-progress-bar-fill {
+  height: 100%;
+  background: var(--accent-color);
+  border-radius: 10px;
+  transition: width 0.3s ease;
+}
+
+.migration-status {
+  text-align: center;
+  font-weight: bold;
+  margin: 0.5rem 0;
+}
+
+.migration-status.waiting {
+  color: var(--text-secondary, #666);
+}
+
+.migration-status.connected {
+  color: var(--accent-color);
+}
+
+.migration-status.complete {
+  color: #4caf50;
+}
+
+.migration-status.error {
+  color: #d32f2f;
+}
+
 .sync-dialog .room-code-display {
   font-family: monospace;
   font-size: 2rem;

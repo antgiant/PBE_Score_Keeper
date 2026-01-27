@@ -232,6 +232,12 @@
             </div>
           </fieldset>
           <fieldset>
+            <legend data-i18n="advanced.device_migration">Device Migration</legend>
+            <p data-i18n="advanced.migration_description">Transfer all sessions between devices using peer-to-peer sync.</p>
+            <button id="migration_send" onclick="showMigrationDialog('send')" data-i18n="advanced.migration_send">Send to Another Device</button>
+            <button id="migration_receive" onclick="showMigrationDialog('receive')" data-i18n="advanced.migration_receive">Receive from Another Device</button>
+          </fieldset>
+          <fieldset>
             <legend id = "danger_label" data-i18n="advanced.danger_zone">Danger Zone</legend>
             <fieldset>
               <legend data-i18n="advanced.merge">Merge</legend>
@@ -247,7 +253,7 @@
       </div>
     </div>
     <footer><p><span data-i18n="footer.feedback">Have an idea to make this better?</span> <a target="_blank" href="https://github.com/antgiant/PBE_Score_Keeper/issues" data-i18n="footer.let_me_know">Let me know</a>.</p>
-    <p><center>v 2.3.11</center></p></footer>
+    <p><center>v 2.4.0</center></p></footer>
 </body>
 
 </html>
