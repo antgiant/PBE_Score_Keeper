@@ -962,10 +962,10 @@ function showContinueOrNewSessionDialog(currentSessionName, sessionCreatedAt) {
       closeContinueOrNewDialog('new');
     });
 
-    // Handle Escape key - use default choice
+    // Handle Escape key - always continue previous session
     function onContinueOrNewDialogEscape(e) {
       if (e.key === 'Escape') {
-        closeContinueOrNewDialog(defaultChoice);
+        closeContinueOrNewDialog('continue');
       }
     }
     document.addEventListener('keydown', onContinueOrNewDialogEscape);
