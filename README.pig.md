@@ -1,17 +1,17 @@
 🌐 [English](README.md) | [Español](README.es.md) | [Français](README.fr.md) | [Secret Code](README.pig.md)
 
 # BPE-ay Ore-Scay Eeper-Kay
-A-ay ool-tay o-tay elp-hay eep-kay ack-tray of-ay Athfinder-Pay Ible-Bay Experience-ay (BPE-ay) (aka-ay Ible-Bay Owl-Bay) Ores-Scay y-bay ock/group-blay and-ay eam-tay.
+A-ay ool-tay o-tay elp-hay eep-kay ack-tray of-ay Athfinder-Pay Ible-Bay Experience-ay (BPE-ay) (aka-ay Ible-Bay Owl-Bay) Ores-Scay y-bay ock-blay and-ay eam-tay.
 
 ## Ata-Day Orage-Stay Ote-Nay
-Ata-Day is-ay ored-stay only-ay on-ay our-yay evice-day, and-ay is-ay ot-nay ared-shay in-ay any-ay ay-way ith-way any-ay erver-say. Is-thay eans-may is-thay ata-day is-ay only-ay on-ay our-yay urrent-cay evice-day, and-ay at-thay ou-yay ust-may use-ay e-thay Export-ay Ata-Day options-ay under-ay Advanced-ay if-ay ou-yay eed-nay o-tay ave-say opies-cay of-ay is-thay ata-day.
+Ata-Day is-ay ored-stay only-ay on-ay our-yay evice-day, and-ay is-ay ot-nay ared-shay in-ay any-ay ay-way ith-way any-ay erver-say. Is-thay eans-may is-thay ata-day is-ay only-ay on-ay our-yay urrent-cay evice-day, and-ay at-thay ou-yay ust-may use-ay e-thay Export-ay Ata-Day options-ay under-ay Import-ay/Export-ay if-ay ou-yay eed-nay o-tay ave-say opies-cay of-ay is-thay ata-day.
 
 ## Ontributing-Cay a-ay Anslation-Tray
 
 Ant-way o-tay elp-hay anslate-tray BPE-ay Ore-Scay Eeper-Kay into-ay our-yay anguage-lay? E-way'd ove-lay our-yay elp-hay!
 
 **O-tay ontribute-cay a-ay anslation-tray:**
-1. Opy-cay `scripts/i18n/en.js` as-ay our-yay arting-stay oint-pay
+1. Opy-cay `scripts/i18n/pig.js` as-ay our-yay arting-stay oint-pay
 2. Anslate-tray all-ay e-thay ings-stray o-tay our-yay anguage-lay
 3. Ubmit-say a-ay [Ull-Pay Equest-Ray](https://github.com/antgiant/PBE_Score_Keeper/pulls) ith-way our-yay anslation-tray
 

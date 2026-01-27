@@ -1,17 +1,17 @@
 🌐 [English](README.md) | [Español](README.es.md) | [Français](README.fr.md) | [Secret Code](README.pig.md)
 
 # PBE Marqueur
-Un outil pour aider à suivre les scores de l'Expérience Biblique Pathfinder (PBE) (aussi connu sous le nom de Bible Bowl) par bloc/groupe et équipe.
+Un outil pour aider à suivre les scores de l'Expérience Biblique Pathfinder (PBE) (aussi connu sous le nom de Bible Bowl) par bloc et équipe.
 
 ## Note sur le Stockage des Données
-Les données sont stockées uniquement sur votre appareil et ne sont partagées d'aucune manière avec aucun serveur. Cela signifie que ces données sont uniquement sur votre appareil actuel, et que vous devez utiliser les options Exporter les Données sous Avancé si vous avez besoin de sauvegarder des copies de ces données.
+Les données sont stockées uniquement sur votre appareil et ne sont partagées d'aucune manière avec aucun serveur. Cela signifie que ces données sont uniquement sur votre appareil actuel, et que vous devez utiliser les options Exporter les Données sous Importer/Exporter si vous avez besoin de sauvegarder des copies de ces données.
 
 ## Contribuer une Traduction
 
 Vous voulez aider à traduire PBE Marqueur dans votre langue ? Nous serions ravis de votre aide !
 
 **Pour contribuer une traduction :**
-1. Copiez `scripts/i18n/en.js` comme point de départ
+1. Copiez `scripts/i18n/fr.js` comme point de départ
 2. Traduisez toutes les chaînes de caractères dans votre langue
 3. Soumettez une [Pull Request](https://github.com/antgiant/PBE_Score_Keeper/pulls) avec votre traduction
 
