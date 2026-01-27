@@ -151,3 +151,47 @@ test('reordering keeps score summaries intact', () => {
   assert.deepEqual(updatedTeamSummary, initialTeamSummary);
   assert.deepEqual(updatedBlockSummary, initialBlockSummary);
 });
+
+test('score entry field order can be saved and retrieved', () => {
+  const { context } = loadApp(buildReorderSeed());
+  
+  // Initially no order is set
+  const initialOrder = context.get_score_entry_field_order();
+  assert.equal(initialOrder, null);
+  
+  // Set a custom order
+  const newOrder = ['block', 'points'];
+  const success = context.set_score_entry_field_order(newOrder);
+  assert.equal(success, true);
+  
+  // Verify order is saved
+  const savedOrder = context.get_score_entry_field_order();
+  assert.deepEqual(savedOrder, newOrder);
+});
+
+test('score entry field order is stored in global doc', () => {
+  const { context } = loadApp(buildReorderSeed());
+  
+  // Set order
+  context.set_score_entry_field_order(['block', 'points']);
+  
+  // Verify it's in the global doc (stored as JSON string)
+  const globalDoc = context.getGlobalDoc();
+  const meta = globalDoc.getMap('meta');
+  const orderStr = meta.get('scoreEntryFieldOrder');
+  assert.equal(orderStr, JSON.stringify(['block', 'points']));
+});
+
+test('apply_score_entry_field_order function exists', () => {
+  const { context } = loadApp(buildReorderSeed());
+  
+  // Verify the functions exist
+  assert.equal(typeof context.apply_score_entry_field_order, 'function');
+  assert.equal(typeof context.initialize_score_entry_field_reorder, 'function');
+  assert.equal(typeof context.save_score_entry_field_order, 'function');
+  
+  // DOM manipulation is tested in browser; here we verify the logic functions work
+  context.set_score_entry_field_order(['block', 'points']);
+  const order = context.get_score_entry_field_order();
+  assert.deepEqual(order, ['block', 'points']);
+});

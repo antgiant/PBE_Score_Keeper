@@ -88,6 +88,36 @@ button {
 .drag-handle:active {
   cursor: grabbing;
 }
+
+/* Score entry field reordering */
+.score-entry-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.score-entry-field {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+.score-entry-field fieldset {
+  flex: 1;
+  min-width: 0;
+}
+.score-entry-drag-handle {
+  margin-top: 0.25rem;
+  flex-shrink: 0;
+}
+.score-entry-field.dragging {
+  opacity: 0.5;
+}
+.score-entry-field.drag-over {
+  border-top: 2px solid var(--accent-color, #007bff);
+}
+/* Hide drag handles when only one block exists (nothing to reorder) */
+.score-entry-fields.single-block .score-entry-drag-handle {
+  display: none;
+}
 tr:nth-child(even){
   background-color : var(--row-alt);
 }

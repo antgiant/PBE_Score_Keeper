@@ -182,6 +182,22 @@ function buildContext(seed = {}) {
       focus() {
         return this;
       },
+      addClass(className) {
+        if (!element.classes) {
+          element.classes = new Set();
+        }
+        element.classes.add(className);
+        return this;
+      },
+      removeClass(className) {
+        if (element.classes) {
+          element.classes.delete(className);
+        }
+        return this;
+      },
+      hasClass(className) {
+        return element.classes ? element.classes.has(className) : false;
+      },
     };
   }
 

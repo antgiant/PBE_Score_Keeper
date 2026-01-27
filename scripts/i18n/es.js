@@ -85,7 +85,9 @@ register_i18n_language('es', {
       "ignore": "Ignorar esta Pregunta en los Cálculos de Puntuación",
       "extra_credit": "Permitir Crédito Extra",
       "question": "Pregunta",
-      "block_group": "Bloque"
+      "block_group": "Bloque",
+      "reorder_points": "Arrastrar para reordenar el campo de Puntos Posibles",
+      "reorder_block": "Arrastrar para reordenar el campo de Bloque"
     },
     "scores": {
       "team_exact": "Puntuación por Equipo (Exacta)",

@@ -84,7 +84,9 @@ register_i18n_language('en', {
       "ignore": "Ignore this Question in Score Calculations",
       "extra_credit": "Allow Extra Credit",
       "question": "Question",
-      "block_group": "Block"
+      "block_group": "Block",
+      "reorder_points": "Drag to reorder Possible Points field",
+      "reorder_block": "Drag to reorder Block field"
     },
     "scores": {
       "team_exact": "Score by Team (Exact)",

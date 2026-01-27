@@ -81,7 +81,9 @@ register_i18n_language('pig', {
       "ignore": "Ignore-ay is-thay Uestion-Qay in-ay Ore-Scay Alculations-Cay",
       "extra_credit": "Allow-ay Extra-ay Edit-Cray",
       "question": "Uestion-Qay",
-      "block_group": "Ock-Blay"
+      "block_group": "Ock-Blay",
+      "reorder_points": "Ag-Dray o-tay eorder-ray Ossible-Pay Oints-Pay ield-fay",
+      "reorder_block": "Ag-Dray o-tay eorder-ray Ock-Blay ield-fay"
     },
     "scores": {
       "team_exact": "Ore-Scay y-bay Eam-Tay (Exact-ay)",

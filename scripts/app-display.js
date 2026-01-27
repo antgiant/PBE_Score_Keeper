@@ -22,6 +22,8 @@ function initialize_display() {
   
   initialize_language_controls();
   initialize_theme_controls();
+  apply_score_entry_field_order();
+  initialize_score_entry_field_reorder();
   sync_data_to_display();
   initialize_reorder_controls();
   initialize_history_viewer();
@@ -437,6 +439,46 @@ function sync_data_to_display() {
   }
   $( "#question_block" ).controlgroup();
 
+  // Handle single block scenario - hide block-related UI elements
+  if (block_count === 1) {
+    // Auto-select the only block if not already selected
+    if (current_selected_block !== 1) {
+      currentQuestionObj.set('block', 1);
+    }
+    $("#question_block_1").prop("checked", true);
+    
+    // Hide the entire block selector container (including drag handle) in score entry
+    $("#score_entry_block_container").css('display', 'none');
+    
+    // Hide all drag handles since there's nothing to reorder with only one field visible
+    // Add single-block class to container which hides handles via CSS
+    $("#score_entry_fields").addClass('single-block');
+    
+    // Hide the Score by Block and Score by Team & Block accordion sections
+    // Use inline style to hide - accordion will be refreshed
+    $("#accordion_score_by_block").css('display', 'none');
+    $("#accordion_score_by_block_panel").css('display', 'none');
+    $("#accordion_score_by_team_and_block").css('display', 'none');
+    $("#accordion_score_by_team_and_block_panel").css('display', 'none');
+  } else {
+    // Show block-related UI elements when there are multiple blocks
+    $("#score_entry_block_container").css('display', '');
+    // Remove single-block class to show drag handles
+    $("#score_entry_fields").removeClass('single-block');
+    // Remove inline display style to let accordion control visibility
+    $("#accordion_score_by_block").css('display', '');
+    $("#accordion_score_by_block_panel").css('display', '');
+    $("#accordion_score_by_team_and_block").css('display', '');
+    $("#accordion_score_by_team_and_block_panel").css('display', '');
+  }
+  
+  // Refresh accordion to account for visibility changes
+  try {
+    $("#accordion").accordion("refresh");
+  } catch(e) {
+    // Accordion not initialized yet
+  }
+
   //Update Question name to saved name
   $("#current_question_title").text(question_names[current_question]);
 
@@ -687,4 +729,255 @@ function disableSessionControls() {
  */
 function enableSessionControls() {
   // Placeholder: Can be expanded to enable UI controls
+}
+
+/**
+ * Get the saved score entry field order from global doc
+ * @returns {Array|null} - Array of field IDs in order, or null if not set
+ */
+function get_score_entry_field_order() {
+  if (typeof getGlobalDoc !== "function") {
+    return null;
+  }
+  var doc = getGlobalDoc();
+  if (!doc) {
+    return null;
+  }
+  var meta = doc.getMap("meta");
+  var orderStr = meta.get("scoreEntryFieldOrder");
+  if (typeof orderStr === "string") {
+    try {
+      var order = JSON.parse(orderStr);
+      if (Array.isArray(order) && order.length > 0) {
+        return order;
+      }
+    } catch (e) {
+      // Invalid JSON
+    }
+  }
+  return null;
+}
+
+/**
+ * Set the score entry field order in global doc
+ * @param {Array} order - Array of field IDs in order (e.g., ['points', 'block'])
+ * @returns {boolean} - True if successfully set, false otherwise
+ */
+function set_score_entry_field_order(order) {
+  if (typeof getGlobalDoc !== "function") {
+    return false;
+  }
+  var doc = getGlobalDoc();
+  if (!doc) {
+    return false;
+  }
+  if (!Array.isArray(order) || order.length === 0) {
+    return false;
+  }
+  var meta = doc.getMap("meta");
+  doc.transact(function() {
+    meta.set("scoreEntryFieldOrder", JSON.stringify(order));
+  }, "scoreEntryFieldOrder");
+  return true;
+}
+
+/**
+ * Apply the saved score entry field order to the DOM
+ */
+function apply_score_entry_field_order() {
+  var order = get_score_entry_field_order();
+  if (!order) {
+    return; // Use default order
+  }
+  var $container = $("#score_entry_fields");
+  if ($container.length === 0) {
+    return;
+  }
+  var container = $container[0];
+  var fields = $container.find(".score-entry-field").toArray();
+  var fieldMap = {};
+  fields.forEach(function(field) {
+    fieldMap[$(field).data("field")] = field;
+  });
+  // Reorder based on saved order
+  order.forEach(function(fieldId) {
+    if (fieldMap[fieldId]) {
+      container.appendChild(fieldMap[fieldId]);
+    }
+  });
+}
+
+/**
+ * Initialize drag and drop for score entry fields
+ */
+function initialize_score_entry_field_reorder() {
+  var $container = $("#score_entry_fields");
+  if ($container.length === 0) {
+    return;
+  }
+  var container = $container[0];
+  
+  var draggedItem = null;
+  
+  // Handle drag start
+  container.addEventListener("dragstart", function(e) {
+    var handle = e.target.closest(".score-entry-drag-handle");
+    if (!handle) {
+      e.preventDefault();
+      return;
+    }
+    draggedItem = handle.closest(".score-entry-field");
+    if (draggedItem) {
+      draggedItem.classList.add("dragging");
+      e.dataTransfer.effectAllowed = "move";
+      e.dataTransfer.setData("text/plain", draggedItem.dataset.field);
+    }
+  });
+  
+  // Handle drag over
+  container.addEventListener("dragover", function(e) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    var target = e.target.closest(".score-entry-field");
+    if (target && target !== draggedItem) {
+      // Remove drag-over from all
+      container.querySelectorAll(".score-entry-field").forEach(function(f) {
+        f.classList.remove("drag-over");
+      });
+      target.classList.add("drag-over");
+    }
+  });
+  
+  // Handle drag leave
+  container.addEventListener("dragleave", function(e) {
+    var target = e.target.closest(".score-entry-field");
+    if (target) {
+      target.classList.remove("drag-over");
+    }
+  });
+  
+  // Handle drop
+  container.addEventListener("drop", function(e) {
+    e.preventDefault();
+    var target = e.target.closest(".score-entry-field");
+    if (target && draggedItem && target !== draggedItem) {
+      // Insert before or after based on position
+      var targetRect = target.getBoundingClientRect();
+      var dropY = e.clientY;
+      if (dropY < targetRect.top + targetRect.height / 2) {
+        container.insertBefore(draggedItem, target);
+      } else {
+        container.insertBefore(draggedItem, target.nextSibling);
+      }
+      // Save the new order
+      save_score_entry_field_order();
+    }
+    // Clean up
+    container.querySelectorAll(".score-entry-field").forEach(function(f) {
+      f.classList.remove("drag-over");
+    });
+  });
+  
+  // Handle drag end
+  container.addEventListener("dragend", function(e) {
+    if (draggedItem) {
+      draggedItem.classList.remove("dragging");
+      draggedItem = null;
+    }
+    container.querySelectorAll(".score-entry-field").forEach(function(f) {
+      f.classList.remove("drag-over");
+    });
+  });
+  
+  // Touch support for mobile
+  var touchDraggedItem = null;
+  var touchStartY = 0;
+  var touchClone = null;
+  
+  container.addEventListener("touchstart", function(e) {
+    var handle = e.target.closest(".score-entry-drag-handle");
+    if (!handle) {
+      return;
+    }
+    e.preventDefault();
+    touchDraggedItem = handle.closest(".score-entry-field");
+    touchStartY = e.touches[0].clientY;
+    touchDraggedItem.classList.add("dragging");
+  }, { passive: false });
+  
+  container.addEventListener("touchmove", function(e) {
+    if (!touchDraggedItem) {
+      return;
+    }
+    e.preventDefault();
+    var touchY = e.touches[0].clientY;
+    var fields = Array.from(container.querySelectorAll(".score-entry-field"));
+    
+    // Find which field we're over
+    container.querySelectorAll(".score-entry-field").forEach(function(f) {
+      f.classList.remove("drag-over");
+    });
+    
+    for (var i = 0; i < fields.length; i++) {
+      var field = fields[i];
+      if (field === touchDraggedItem) continue;
+      var rect = field.getBoundingClientRect();
+      if (touchY >= rect.top && touchY <= rect.bottom) {
+        field.classList.add("drag-over");
+        break;
+      }
+    }
+  }, { passive: false });
+  
+  container.addEventListener("touchend", function(e) {
+    if (!touchDraggedItem) {
+      return;
+    }
+    var touchY = e.changedTouches[0].clientY;
+    var fields = Array.from(container.querySelectorAll(".score-entry-field"));
+    
+    // Find target field
+    var targetField = null;
+    for (var i = 0; i < fields.length; i++) {
+      var field = fields[i];
+      if (field === touchDraggedItem) continue;
+      var rect = field.getBoundingClientRect();
+      if (touchY >= rect.top && touchY <= rect.bottom) {
+        targetField = field;
+        break;
+      }
+    }
+    
+    if (targetField) {
+      var targetRect = targetField.getBoundingClientRect();
+      if (touchY < targetRect.top + targetRect.height / 2) {
+        container.insertBefore(touchDraggedItem, targetField);
+      } else {
+        container.insertBefore(touchDraggedItem, targetField.nextSibling);
+      }
+      save_score_entry_field_order();
+    }
+    
+    // Clean up
+    touchDraggedItem.classList.remove("dragging");
+    container.querySelectorAll(".score-entry-field").forEach(function(f) {
+      f.classList.remove("drag-over");
+    });
+    touchDraggedItem = null;
+  });
+}
+
+/**
+ * Save the current score entry field order to global doc
+ */
+function save_score_entry_field_order() {
+  var container = document.getElementById("score_entry_fields");
+  if (!container) {
+    return;
+  }
+  var fields = Array.from(container.querySelectorAll(".score-entry-field"));
+  var order = fields.map(function(field) {
+    return field.dataset.field;
+  });
+  set_score_entry_field_order(order);
 }

@@ -85,7 +85,9 @@ register_i18n_language('fr', {
       "ignore": "Ignorer cette Question dans les Calculs de Score",
       "extra_credit": "Autoriser le Crédit Supplémentaire",
       "question": "Question",
-      "block_group": "Bloc"
+      "block_group": "Bloc",
+      "reorder_points": "Glisser pour réordonner le champ Points Possibles",
+      "reorder_block": "Glisser pour réordonner le champ Bloc"
     },
     "scores": {
       "team_exact": "Score par Équipe (Exact)",
