@@ -213,7 +213,7 @@ register_i18n_language('pig', {
       "question_log": "Uestion-Qay Og-Lay Oes-Gay Ere-Hay"
     },
     "defaults": {
-      "session_name": "Ession-Say {{date}}",
+      "session_name": "{{date}}",
       "team_name": "Eam-Tay {{number}}",
       "block_name": "Ock-Blay {{number}}",
       "no_block": "O-Nay Ock-Blay",

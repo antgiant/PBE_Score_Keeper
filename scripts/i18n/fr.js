@@ -217,7 +217,7 @@ register_i18n_language('fr', {
       "question_log": "Le Journal des Questions Va Ici"
     },
     "defaults": {
-      "session_name": "Session {{date}}",
+      "session_name": "{{date}}",
       "team_name": "Équipe {{number}}",
       "block_name": "Bloc {{number}}",
       "no_block": "Aucun Bloc",

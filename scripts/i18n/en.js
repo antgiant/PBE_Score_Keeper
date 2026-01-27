@@ -216,7 +216,7 @@ register_i18n_language('en', {
       "question_log": "Question Log Goes Here"
     },
     "defaults": {
-      "session_name": "Session {{date}}",
+      "session_name": "{{date}}",
       "team_name": "Team {{number}}",
       "block_name": "Block {{number}}",
       "no_block": "No Block",

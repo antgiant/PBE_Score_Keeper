@@ -217,7 +217,7 @@ register_i18n_language('es', {
       "question_log": "El Registro de Preguntas Va Aquí"
     },
     "defaults": {
-      "session_name": "Sesión {{date}}",
+      "session_name": "{{date}}",
       "team_name": "Equipo {{number}}",
       "block_name": "Bloque {{number}}",
       "no_block": "Sin Bloque",
