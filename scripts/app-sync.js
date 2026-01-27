@@ -1,5 +1,6 @@
 // WebRTC Sync Module for PBE Score Keeper
 // Provides peer-to-peer real-time synchronization using y-webrtc
+// Also supports server-based sync for large events using y-websocket
 
 /**
  * Maximum length for display names (enforced in UI and validation)
@@ -17,17 +18,21 @@ var SyncError = {
   NETWORK_ERROR: 'network_error',
   PASSWORD_REQUIRED: 'password_required',
   PASSWORD_INCORRECT: 'password_incorrect',
-  SERVER_DOWN: 'server_down'
+  SERVER_DOWN: 'server_down',
+  ROOM_EXISTS: 'room_exists',
+  ROOM_NOT_FOUND: 'room_not_found'
 };
 
 /**
- * SyncManager - Central controller for WebRTC synchronization
+ * SyncManager - Central controller for WebRTC and WebSocket synchronization
  * 
  * States: 'offline' | 'connecting' | 'connected' | 'error'
+ * Connection Types: 'webrtc' (P2P) | 'websocket' (server-based for large events)
  */
 var SyncManager = {
   // Connection state
   state: 'offline',
+  connectionType: 'webrtc',  // 'webrtc' for P2P, 'websocket' for large events
   roomCode: null,
   displayName: null,
   password: null,
@@ -51,14 +56,21 @@ var SyncManager = {
   
   // Configuration
   config: {
+    // Combined server URL (handles both signaling and websocket)
+    syncServer: 'wss://y-webrtc-pbe.fly.dev',
+    
+    // Signaling servers - use ROOT PATH for backwards compatibility with backups
     signalingServers: [
-      'wss://y-webrtc-pbe.fly.dev',           // Primary (dedicated)
-      'wss://signaling.yjs.dev',              // Backup 1 (official Yjs server)
-      'wss://y-webrtc-signaling-us.herokuapp.com',  // Backup 2 (Heroku US - may be down)
-      'wss://y-webrtc-signaling-eu.herokuapp.com'   // Backup 3 (Heroku EU - may be down)
+      'wss://y-webrtc-pbe.fly.dev',              // Primary (combined server, root path)
+      'wss://signaling.yjs.dev',                 // Backup 1 (official, root path)
+      'wss://y-webrtc-signaling-us.herokuapp.com'  // Backup 2 (root path)
     ],
     minSignalingServers: 3,  // Minimum required for reliability
-    roomPrefix: 'pbe-sync-',
+    
+    // Room prefixes
+    roomPrefix: 'pbe-sync-',         // P2P rooms
+    roomPrefixLarge: 'pbe-ws-',      // Large event rooms (server-based)
+    
     reconnectInterval: 5000,
     maxReconnectAttempts: 10
   }
@@ -314,6 +326,12 @@ function initSyncManager() {
   // Set up event handlers
   setupVisibilityHandler();
   setupNetworkHandlers();
+  
+  // Check for expired large event sync (connected on a previous day)
+  if (isLargeEventSyncExpired()) {
+    clearExpiredLargeEventSync();
+    console.log('Cleared expired large event sync metadata');
+  }
   
   // Build sync rooms cache for dropdown display (async, don't wait)
   repairSessionSyncRoomsCache().then(function(wasBuilt) {
@@ -675,6 +693,17 @@ function stopSync(clearSessionRoom) {
     SyncManager.provider = null;
   }
   
+  // Destroy WebSocket provider (for large events)
+  if (SyncManager.wsProvider) {
+    SyncManager.wsProvider.destroy();
+    SyncManager.wsProvider = null;
+  }
+  
+  // Clear websocket sync metadata from session if it was a websocket connection
+  if (clearSessionRoom && SyncManager.connectionType === 'websocket') {
+    clearExpiredLargeEventSync();
+  }
+  
   // Clear awareness
   SyncManager.awareness = null;
   
@@ -682,6 +711,7 @@ function stopSync(clearSessionRoom) {
   SyncManager.state = 'offline';
   SyncManager.roomCode = null;
   SyncManager.syncedSessionId = null;
+  SyncManager.connectionType = 'webrtc'; // Reset to default
   SyncManager.peers.clear();
   
   updateSyncUI();
@@ -1063,8 +1093,8 @@ function showSyncInfoDialog() {
     '<p>' + t('sync.info_dialog_p2p') + '</p>' +
     '<p><strong>' + t('sync.info_dialog_limit') + '</strong></p>' +
     '<p>' + t('sync.info_dialog_larger') + '</p>' +
-    '<p><a href="https://github.com/antgiant/PBE_Score_Keeper/issues" target="_blank" rel="noopener noreferrer" class="github-link">' +
-      '<span aria-hidden="true">🔗</span> ' + t('sync.info_dialog_github') +
+    '<p><a href="#" id="large-event-link" class="large-event-link">' +
+      '<span aria-hidden="true">🔗</span> ' + t('sync.info_dialog_large_link') +
     '</a></p>' +
     '<div class="button-row">' +
       '<button type="button" onclick="closeSyncInfoDialog()" class="primary">' + t('sync.info_dialog_close') + '</button>' +
@@ -1072,6 +1102,16 @@ function showSyncInfoDialog() {
   '</div>';
   
   document.body.appendChild(overlay);
+  
+  // Handle large event link click
+  var largeEventLink = document.getElementById('large-event-link');
+  if (largeEventLink) {
+    largeEventLink.addEventListener('click', function(e) {
+      e.preventDefault();
+      closeSyncInfoDialog();
+      showLargeEventDialog();
+    });
+  }
   
   // Focus the close button
   var closeBtn = overlay.querySelector('button');
@@ -1085,13 +1125,13 @@ function showSyncInfoDialog() {
   });
   
   // Close on Escape key
-  var handleKeydown = function(e) {
+  function infoDialogKeyHandler(e) {
     if (e.key === 'Escape') {
       closeSyncInfoDialog();
-      document.removeEventListener('keydown', handleKeydown);
+      document.removeEventListener('keydown', infoDialogKeyHandler);
     }
-  };
-  document.addEventListener('keydown', handleKeydown);
+  }
+  document.addEventListener('keydown', infoDialogKeyHandler);
 }
 
 /**
@@ -1100,6 +1140,305 @@ function showSyncInfoDialog() {
 function closeSyncInfoDialog() {
   var overlay = document.getElementById('sync-info-dialog-overlay');
   if (overlay) overlay.remove();
+}
+
+/**
+ * Show the large event sync dialog
+ */
+function showLargeEventDialog() {
+  // Remove any existing dialog
+  var existing = document.getElementById('large-event-dialog-overlay');
+  if (existing) existing.remove();
+  
+  var overlay = document.createElement('div');
+  overlay.id = 'large-event-dialog-overlay';
+  overlay.className = 'sync-dialog-overlay';
+  
+  overlay.innerHTML = '<div class="sync-dialog large-event-dialog" role="dialog" aria-labelledby="large-event-dialog-title" aria-modal="true">' +
+    '<h2 id="large-event-dialog-title">' + t('sync.large_dialog_title') + '</h2>' +
+    '<p class="large-event-description">' + t('sync.large_dialog_description') + '</p>' +
+    '<form id="large-event-form">' +
+      '<div class="form-group">' +
+        '<label for="large-event-display-name">' + t('sync.label_display_name') + '</label>' +
+        '<input type="text" id="large-event-display-name" required maxlength="50" autocomplete="off" placeholder="' + t('sync.placeholder_display_name') + '">' +
+      '</div>' +
+      '<fieldset class="mode-toggle">' +
+        '<legend class="visually-hidden">' + t('sync.large_mode_label') + '</legend>' +
+        '<div class="radio-group">' +
+          '<label class="radio-label">' +
+            '<input type="radio" name="large-event-mode" value="create" checked>' +
+            '<span>' + t('sync.large_mode_create') + '</span>' +
+          '</label>' +
+          '<label class="radio-label">' +
+            '<input type="radio" name="large-event-mode" value="join">' +
+            '<span>' + t('sync.large_mode_join') + '</span>' +
+          '</label>' +
+        '</div>' +
+      '</fieldset>' +
+      '<div class="form-group" id="large-event-room-group" style="display: none;">' +
+        '<label for="large-event-room">' + t('sync.label_room') + '</label>' +
+        '<input type="text" id="large-event-room" maxlength="8" autocomplete="off" placeholder="L-ABC123" pattern="L-[A-Z2-9]{6}">' +
+        '<small class="help-text">' + t('sync.large_room_help') + '</small>' +
+      '</div>' +
+      '<div class="form-group">' +
+        '<label for="large-event-password">' + t('sync.label_password') + ' <span class="required-indicator">*</span></label>' +
+        '<input type="password" id="large-event-password" required minlength="4" autocomplete="off">' +
+        '<small class="help-text">' + t('sync.large_password_help') + '</small>' +
+      '</div>' +
+      '<p class="expiry-notice">' +
+        '<span aria-hidden="true">⏰</span> ' + t('sync.large_expiry_notice') +
+      '</p>' +
+      '<div id="large-event-error" class="error-message" role="alert" style="display: none;"></div>' +
+      '<div class="button-row">' +
+        '<button type="button" onclick="closeLargeEventDialog()">' + t('sync.button_cancel') + '</button>' +
+        '<button type="submit" class="primary" id="large-event-connect">' + t('sync.large_button_connect') + '</button>' +
+      '</div>' +
+    '</form>' +
+  '</div>';
+  
+  document.body.appendChild(overlay);
+  
+  // Setup mode toggle listener
+  var modeRadios = overlay.querySelectorAll('input[name="large-event-mode"]');
+  var roomGroup = document.getElementById('large-event-room-group');
+  var roomInput = document.getElementById('large-event-room');
+  
+  modeRadios.forEach(function(radio) {
+    radio.addEventListener('change', function() {
+      if (this.value === 'join') {
+        roomGroup.style.display = 'block';
+        roomInput.required = true;
+      } else {
+        roomGroup.style.display = 'none';
+        roomInput.required = false;
+      }
+    });
+  });
+  
+  // Handle form submission
+  var form = document.getElementById('large-event-form');
+  form.addEventListener('submit', function(e) {
+    e.preventDefault();
+    handleLargeEventFormSubmit();
+  });
+  
+  // Focus the display name input
+  var displayNameInput = document.getElementById('large-event-display-name');
+  if (displayNameInput) displayNameInput.focus();
+  
+  // Close on overlay click
+  overlay.addEventListener('click', function(e) {
+    if (e.target === overlay) {
+      closeLargeEventDialog();
+    }
+  });
+  
+  // Close on Escape key
+  function largeEventKeyHandler(e) {
+    if (e.key === 'Escape') {
+      closeLargeEventDialog();
+      document.removeEventListener('keydown', largeEventKeyHandler);
+    }
+  }
+  document.addEventListener('keydown', largeEventKeyHandler);
+}
+
+/**
+ * Close the large event sync dialog
+ */
+function closeLargeEventDialog() {
+  var overlay = document.getElementById('large-event-dialog-overlay');
+  if (overlay) overlay.remove();
+}
+
+/**
+ * Handle large event form submission
+ */
+async function handleLargeEventFormSubmit() {
+  var displayName = document.getElementById('large-event-display-name').value.trim();
+  var mode = document.querySelector('input[name="large-event-mode"]:checked').value;
+  var roomInput = document.getElementById('large-event-room');
+  var password = document.getElementById('large-event-password').value;
+  var errorDiv = document.getElementById('large-event-error');
+  var connectButton = document.getElementById('large-event-connect');
+  
+  // Validate display name
+  if (!displayName) {
+    showLargeEventError(t('sync.error_display_name'));
+    return;
+  }
+  
+  // Validate password
+  if (!password || password.length < 4) {
+    showLargeEventError(t('sync.error_password'));
+    return;
+  }
+  
+  // Validate room code if joining
+  var roomCode = '';
+  if (mode === 'join') {
+    roomCode = roomInput.value.trim().toUpperCase();
+    if (!roomCode) {
+      showLargeEventError(t('sync.error_room_required'));
+      return;
+    }
+    // Normalize room code - remove L- prefix if present
+    if (roomCode.startsWith('L-')) {
+      roomCode = roomCode.substring(2);
+    }
+    // Validate format
+    if (!/^[A-Z2-9]{6}$/.test(roomCode)) {
+      showLargeEventError(t('sync.error_room_format'));
+      return;
+    }
+  } else {
+    // Generate new room code for create mode
+    roomCode = generateRoomCode();
+  }
+  
+  // Disable button during connection
+  connectButton.disabled = true;
+  connectButton.textContent = t('sync.connecting');
+  errorDiv.style.display = 'none';
+  
+  try {
+    await startWebsocketSync(displayName, roomCode, password);
+    closeLargeEventDialog();
+    
+    // Show room code toast for create mode
+    if (mode === 'create') {
+      showToast(t('sync.large_room_created', { code: 'L-' + roomCode }));
+    }
+  } catch (error) {
+    connectButton.disabled = false;
+    connectButton.textContent = t('sync.large_button_connect');
+    showLargeEventError(error.message || t('sync.error_connection'));
+  }
+}
+
+/**
+ * Show error message in large event dialog
+ * @param {string} message - Error message to display
+ */
+function showLargeEventError(message) {
+  var errorDiv = document.getElementById('large-event-error');
+  if (errorDiv) {
+    errorDiv.textContent = message;
+    errorDiv.style.display = 'block';
+  }
+}
+
+/**
+ * Start WebSocket-based sync for large events
+ * @param {string} displayName - User's display name
+ * @param {string} roomCode - 6-character room code (without L- prefix)
+ * @param {string} password - Room password for encryption
+ */
+async function startWebsocketSync(displayName, roomCode, password) {
+  // Stop any existing sync first
+  if (SyncManager.state !== 'disconnected') {
+    stopSync();
+  }
+  
+  var sessionDoc = DocManager.getActiveSessionDoc();
+  if (!sessionDoc) {
+    throw new Error(t('sync.error_no_session'));
+  }
+  
+  var fullRoomName = SyncManager.roomPrefixLarge + roomCode;
+  
+  // Store sync metadata in session
+  var meta = sessionDoc.getMap('meta');
+  meta.set('syncType', 'websocket');
+  meta.set('syncRoomCode', roomCode);
+  meta.set('syncConnectedDate', new Date().toISOString().split('T')[0]); // YYYY-MM-DD
+  
+  // Create encrypted websocket provider
+  SyncManager.wsProvider = new EncryptedWebsocketProvider(
+    SyncManager.syncServer,
+    fullRoomName,
+    sessionDoc,
+    password,
+    {
+      awareness: null // Will create internally
+    }
+  );
+  
+  // Wait for connection or timeout
+  await new Promise(function(resolve, reject) {
+    var timeout = setTimeout(function() {
+      reject(new Error(t('sync.error_timeout')));
+    }, 10000);
+    
+    SyncManager.wsProvider.on('status', function(event) {
+      if (event.status === 'connected') {
+        clearTimeout(timeout);
+        resolve();
+      }
+    });
+    
+    SyncManager.wsProvider.on('connection-error', function(error) {
+      clearTimeout(timeout);
+      reject(new Error(t('sync.error_connection')));
+    });
+  });
+  
+  // Set up awareness
+  var awareness = SyncManager.wsProvider.awareness;
+  awareness.setLocalStateField('user', {
+    name: displayName,
+    color: getRandomColor()
+  });
+  
+  // Store connection info
+  SyncManager.state = 'connected';
+  SyncManager.connectionType = 'websocket';
+  SyncManager.roomCode = roomCode;
+  SyncManager.displayName = displayName;
+  SyncManager.awareness = awareness;
+  SyncManager.sessionId = DocManager.getActiveSessionId();
+  
+  // Set up awareness change listener
+  awareness.on('change', function() {
+    updateSyncIndicator();
+    updatePeerList();
+  });
+  
+  updateSyncIndicator();
+  announceForScreenReader(t('sync.connected_announcement', { code: 'L-' + roomCode }));
+}
+
+/**
+ * Check if the current session's large event sync has expired
+ * @returns {boolean} True if expired (connected on a previous day)
+ */
+function isLargeEventSyncExpired() {
+  if (typeof DocManager === 'undefined') return false;
+  var sessionDoc = DocManager.getActiveSessionDoc();
+  if (!sessionDoc) return false;
+  
+  var meta = sessionDoc.getMap('meta');
+  var syncType = meta.get('syncType');
+  var connectedDate = meta.get('syncConnectedDate');
+  
+  if (syncType !== 'websocket' || !connectedDate) return false;
+  
+  var today = new Date().toISOString().split('T')[0];
+  return connectedDate !== today;
+}
+
+/**
+ * Clear expired large event sync metadata from session
+ */
+function clearExpiredLargeEventSync() {
+  if (typeof DocManager === 'undefined') return;
+  var sessionDoc = DocManager.getActiveSessionDoc();
+  if (!sessionDoc) return;
+  
+  var meta = sessionDoc.getMap('meta');
+  meta.delete('syncType');
+  meta.delete('syncRoomCode');
+  meta.delete('syncConnectedDate');
 }
 
 /**
@@ -1443,13 +1782,29 @@ function updateSyncUI() {
         syncStatus.textContent = t('sync.status_connecting');
         break;
       case 'connected':
-        syncStatus.textContent = SyncManager.roomCode || t('sync.status_connected');
+        var roomDisplay = SyncManager.roomCode || t('sync.status_connected');
+        // Add L- prefix and server badge for websocket connections
+        if (SyncManager.connectionType === 'websocket') {
+          roomDisplay = 'L-' + roomDisplay;
+        }
+        syncStatus.textContent = roomDisplay;
         break;
       case 'error':
         syncStatus.textContent = t('sync.status_error');
         break;
       default:
         syncStatus.textContent = t('sync.button');
+    }
+  }
+  
+  // Update server badge visibility
+  var serverBadge = document.getElementById('sync_server_badge');
+  if (serverBadge) {
+    if (SyncManager.state === 'connected' && SyncManager.connectionType === 'websocket') {
+      serverBadge.style.display = 'inline-block';
+      serverBadge.setAttribute('title', t('sync.server_badge_tooltip'));
+    } else {
+      serverBadge.style.display = 'none';
     }
   }
   
@@ -2852,6 +3207,11 @@ if (typeof module !== 'undefined' && module.exports) {
     closeMigrationDialog: closeMigrationDialog,
     handleStartMigrationSend: handleStartMigrationSend,
     handleStartMigrationReceive: handleStartMigrationReceive,
-    cancelMigration: cancelMigration
+    cancelMigration: cancelMigration,
+    showLargeEventDialog: showLargeEventDialog,
+    closeLargeEventDialog: closeLargeEventDialog,
+    startWebsocketSync: startWebsocketSync,
+    isLargeEventSyncExpired: isLargeEventSyncExpired,
+    clearExpiredLargeEventSync: clearExpiredLargeEventSync
   };
 }

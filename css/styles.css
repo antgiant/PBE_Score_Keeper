@@ -403,6 +403,66 @@ tr:nth-child(even){
   display: block;
 }
 
+/* Server Badge for Large Event Sync */
+.sync-server-badge {
+  display: inline-block;
+  margin-left: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  background: #E3F2FD;
+  border: 1px solid #2196F3;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  cursor: help;
+}
+
+[data-theme="dark"] .sync-server-badge {
+  background: #1565C0;
+  border-color: #64B5F6;
+}
+
+/* Large Event Link in Info Dialog */
+.large-event-link {
+  color: var(--link-color, #1976D2);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.large-event-link:hover {
+  text-decoration: underline;
+}
+
+/* Large Event Dialog Styles */
+.large-event-dialog .large-event-description {
+  color: var(--text-muted, #666);
+  font-size: 0.95rem;
+  margin-bottom: 1.5rem;
+}
+
+.large-event-dialog .expiry-notice {
+  background: #FFF8E1;
+  border: 1px solid #FFC107;
+  border-radius: 4px;
+  padding: 0.75rem;
+  margin: 1rem 0;
+  font-size: 0.9rem;
+}
+
+[data-theme="dark"] .large-event-dialog .expiry-notice {
+  background: #5D4037;
+  border-color: #FFB300;
+}
+
+.large-event-dialog .required-indicator {
+  color: #D32F2F;
+}
+
+.large-event-dialog .help-text {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.85rem;
+  color: var(--text-muted, #666);
+}
+
 /* Sync Dialog */
 .sync-dialog-overlay {
   position: fixed;

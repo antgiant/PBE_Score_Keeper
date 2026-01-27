@@ -1,4 +1,4 @@
-// build-yjs-sync.js - Rebuild Yjs bundle with WebRTC support
+// build-yjs-sync.js - Rebuild Yjs bundle with WebRTC and WebSocket support
 const esbuild = require('esbuild');
 const fs = require('fs');
 
@@ -6,11 +6,13 @@ const yjsEntry = `
 import * as Y from 'yjs';
 import { IndexeddbPersistence } from 'y-indexeddb';
 import { WebrtcProvider } from 'y-webrtc';
+import { WebsocketProvider } from 'y-websocket';
 import * as awarenessProtocol from 'y-protocols/awareness.js';
 
 window.Y = Y;
 window.IndexeddbPersistence = IndexeddbPersistence;
 window.WebrtcProvider = WebrtcProvider;
+window.WebsocketProvider = WebsocketProvider;
 window.awarenessProtocol = awarenessProtocol;
 window.yjsModulesLoaded = true;
 window.dispatchEvent(new Event('yjsModulesLoaded'));
@@ -26,7 +28,7 @@ esbuild.build({
   minify: true,
   platform: 'browser',
 }).then(() => {
-  console.log('✓ Yjs bundle with WebRTC created successfully');
+  console.log('✓ Yjs bundle with WebRTC and WebSocket created successfully');
   const stats = fs.statSync('scripts/yjs-bundle.min.js');
   console.log('  Bundle size:', Math.round(stats.size / 1024), 'KB');
   fs.unlinkSync('yjs-bundle-entry.js');
