@@ -160,6 +160,7 @@ register_i18n_language('pig', {
         "deleted": "Eleted-Day \"{{name}}\"",
         "increased_max_points": "Increased-ay ax-may oints-pay om-fray {{old}} o-tay {{new}}",
         "decreased_max_points": "Ecreased-Day ax-may oints-pay om-fray {{old}} o-tay {{new}}",
+        "set_max_points": "Et-Say ax-may oints-pay om-fray {{old}} o-tay {{new}}",
         "enabled_rounding": "Enabled-ay ounding-ray o-tay est-bay eam's-tay otal-tay",
         "disabled_rounding": "Isabled-Day ounding-ray",
         "set_ignored": "Et-Say \"{{name}}\" o-tay e-bay ignored-ay",

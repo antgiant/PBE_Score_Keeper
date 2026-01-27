@@ -163,6 +163,7 @@ register_i18n_language('en', {
         "deleted": "Deleted \"{{name}}\"",
         "increased_max_points": "Increased max points from {{old}} to {{new}}",
         "decreased_max_points": "Decreased max points from {{old}} to {{new}}",
+        "set_max_points": "Set max points from {{old}} to {{new}}",
         "enabled_rounding": "Enabled rounding to best team's total",
         "disabled_rounding": "Disabled rounding",
         "set_ignored": "Set \"{{name}}\" to be ignored",

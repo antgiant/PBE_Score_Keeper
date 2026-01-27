@@ -275,6 +275,23 @@ function update_data_element(updated_id, new_value) {
       }
     }
   }
+  //Set Max Points per Question directly (from click-to-edit)
+  else if (updated_id == "max_points_direct") {
+    const config = session.get('config');
+    const oldValue = config.get('maxPointsPerQuestion');
+    const newValue = Math.max(1, Math.floor(Number(new_value)));
+    
+    // Only update if value changed
+    if (newValue !== oldValue) {
+      const sessionDoc = getActiveSessionDoc();
+      if (sessionDoc) {
+        sessionDoc.transact(() => {
+          config.set('maxPointsPerQuestion', newValue);
+          add_history_entry('edit_log.actions.change_max_points', 'edit_log.details_templates.set_max_points', { old: oldValue, new: newValue });
+        }, 'local');
+      }
+    }
+  }
   //Update Question Title
   else if (updated_id == "current_question_title") {
     let new_value = $("#current_question_title").text();

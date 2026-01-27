@@ -149,6 +149,39 @@ tr:nth-child(even){
   border-radius: 3px;
 }
 
+/* Editable number (click to edit) */
+.editable-number {
+  cursor: pointer;
+  padding: 0.1rem 0.3rem;
+  border-radius: 3px;
+  border: 1px solid transparent;
+  min-width: 2em;
+  display: inline-block;
+  text-align: center;
+}
+.editable-number:hover {
+  background-color: var(--row-alt);
+  border-color: var(--border-color);
+}
+.editable-number:focus {
+  outline: 2px solid var(--link-color);
+  outline-offset: 1px;
+}
+.editable-number-input {
+  width: 4em;
+  padding: 0.1rem 0.3rem;
+  font-size: inherit;
+  text-align: center;
+  border: 1px solid var(--border-color);
+  border-radius: 3px;
+  background: var(--control-bg);
+  color: var(--text-color);
+}
+.editable-number-input:focus {
+  outline: 2px solid var(--link-color);
+  outline-offset: 1px;
+}
+
 /* Configuration fieldset styles */
 #session_configuration fieldset {
   margin-bottom: 1rem;

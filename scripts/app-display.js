@@ -20,6 +20,9 @@ function initialize_display() {
     } 
   });
   
+  // Set up click-to-edit for max points
+  initialize_max_points_edit();
+  
   initialize_language_controls();
   initialize_theme_controls();
   apply_score_entry_field_order();
@@ -782,6 +785,90 @@ function disableSessionControls() {
  */
 function enableSessionControls() {
   // Placeholder: Can be expanded to enable UI controls
+}
+
+/**
+ * Initialize click-to-edit behavior for max points
+ */
+function initialize_max_points_edit() {
+  var maxPointsSpan = $("#max_points");
+  
+  // Handle click to switch to edit mode
+  maxPointsSpan.on("click", function() {
+    startMaxPointsEdit();
+  });
+  
+  // Handle keyboard activation (Enter or Space)
+  maxPointsSpan.on("keydown", function(e) {
+    if (e.which === 13 || e.which === 32) { // Enter or Space
+      e.preventDefault();
+      startMaxPointsEdit();
+    }
+  });
+}
+
+/**
+ * Start editing max points - replace span with input
+ */
+function startMaxPointsEdit() {
+  var maxPointsSpan = $("#max_points");
+  
+  // Don't start edit if already editing
+  if (maxPointsSpan.find("input").length > 0) {
+    return;
+  }
+  
+  // Get current value (strip formatting)
+  var currentValue = parseInt(maxPointsSpan.text().replace(/[^0-9]/g, ''), 10) || 1;
+  
+  // Create input element
+  var input = $('<input type="number" class="editable-number-input" min="1" step="1">');
+  input.val(currentValue);
+  
+  // Replace span content with input
+  maxPointsSpan.empty().append(input);
+  input.focus().select();
+  
+  // Handle blur - save the value
+  input.on("blur", function() {
+    finishMaxPointsEdit(input);
+  });
+  
+  // Handle Enter key - save and blur
+  input.on("keydown", function(e) {
+    if (e.which === 13) { // Enter
+      e.preventDefault();
+      input.blur();
+    } else if (e.which === 27) { // Escape - cancel
+      e.preventDefault();
+      // Restore original value and blur
+      input.val(currentValue);
+      input.blur();
+    }
+  });
+}
+
+/**
+ * Finish editing max points - validate and save
+ * @param {jQuery} input - The input element
+ */
+function finishMaxPointsEdit(input) {
+  var newValue = parseInt(input.val(), 10);
+  
+  // Validate - must be positive integer
+  if (isNaN(newValue) || newValue < 1) {
+    newValue = 1;
+  }
+  
+  // Round to integer
+  newValue = Math.floor(newValue);
+  
+  // Update the display immediately
+  var maxPointsSpan = $("#max_points");
+  maxPointsSpan.text(format_number(newValue));
+  
+  // Save the new value via data update
+  local_data_update({ id: "max_points_direct", value: newValue });
 }
 
 /**

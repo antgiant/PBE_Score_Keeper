@@ -164,6 +164,7 @@ register_i18n_language('fr', {
         "deleted": "Supprimé \"{{name}}\"",
         "increased_max_points": "Points maximum augmentés de {{old}} à {{new}}",
         "decreased_max_points": "Points maximum réduits de {{old}} à {{new}}",
+        "set_max_points": "Points maximum définis de {{old}} à {{new}}",
         "enabled_rounding": "Arrondi au total de la meilleure équipe activé",
         "disabled_rounding": "Arrondi désactivé",
         "set_ignored": "\"{{name}}\" défini comme ignoré",
