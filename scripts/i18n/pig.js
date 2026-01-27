@@ -34,7 +34,8 @@ register_i18n_language('pig', {
       "enter_scores": "Enter-ay Ores-Scay"
     },
     "teams": {
-      "title": "Et-Say up-ay our-yay Eams-Tay",
+      "title_one": "Et-Say up-ay our-yay Eam-Tay",
+      "title_other": "Et-Say up-ay our-yay {{count}} Eams-Tay",
       "count_one": "{{count}} eam-tay",
       "count_other": "{{count}} eams-tay",
       "team": "eam-tay",
@@ -48,7 +49,8 @@ register_i18n_language('pig', {
       "minimum_notice": "Is-thay eam-tay annot-cay e-bay eleted-day ecause-bay at-ay east-lay 1 eam-tay is-ay equired-ray"
     },
     "blocks": {
-      "title": "Et-Say up-ay our-yay Ocks-Blay",
+      "title_one": "Et-Say up-ay our-yay Ock-Blay",
+      "title_other": "Et-Say up-ay our-yay {{count}} Ocks-Blay",
       "count_one": "{{count}} ock-blay",
       "count_other": "{{count}} ocks-blay",
       "block": "ock-blay",
@@ -90,7 +92,7 @@ register_i18n_language('pig', {
       "team_rounded": "Ore-Scay y-bay Eam-Tay (Ounded-Ray)",
       "by_block": "Ore-Scay y-bay Ock-Blay",
       "team_and_block": "Ore-Scay y-bay Eam-Tay & Ock-Blay",
-      "question_log": "Uestion-Qay Og-Lay"
+      "question_history": "Uestion-Qay Istory-Hay"
     },
     "table": {
       "team_name": "Eam-Tay Ame-Nay",
@@ -113,8 +115,8 @@ register_i18n_language('pig', {
       "second": "Econd-Say Ace-Play",
       "third": "Ird-Thay Ace-Play"
     },
-    "history": {
-      "title": "Istory-Hay",
+    "edit_log": {
+      "title": "Ange-Chay Og-Lay",
       "change_log": "Ange-Chay Og-Lay",
       "time": "Ime-Tay",
       "user": "User-ay",
@@ -181,12 +183,12 @@ register_i18n_language('pig', {
       }
     },
     "advanced": {
-      "title": "Advanced-ay",
+      "title": "Import-ay/Export-ay",
       "export_csv": "Export-ay CSV-ay",
       "export_team": "Export-ay Ore-Scay y-bay Eam-Tay",
       "export_block": "Export-ay Ore-Scay y-bay Ock-Blay",
       "export_team_and_block": "Export-ay Ore-Scay y-bay Eam-Tay & Ock-Blay",
-      "export_question_log": "Export-ay Uestion-Qay Og-Lay",
+      "export_question_history": "Export-ay Uestion-Qay Istory-Hay",
       "export_json": "Export-ay or-fay Importing-ay",
       "export_session": "Export-ay Ession-Say",
       "export_all": "Export-ay All-ay",
@@ -231,7 +233,7 @@ register_i18n_language('pig', {
       "rounded_scores": "Ounded-Ray Eam-Tay Ores-Scay O-Gay Ere-Hay",
       "block_scores": "Ock-Blay Ores-Scay O-Gay Ere-Hay",
       "team_block_scores": "Eam-Tay & Ock-Blay Ores-Scay O-Gay Ere-Hay",
-      "question_log": "Uestion-Qay Og-Lay Oes-Gay Ere-Hay"
+      "question_history": "Uestion-Qay Istory-Hay Oes-Gay Ere-Hay"
     },
     "defaults": {
       "session_name": "{{date}}",
@@ -272,6 +274,7 @@ register_i18n_language('pig', {
         "create_session": "Eate-Cray Ession-Say",
         "switch_session": "Witch-Say Ession-Say",
         "delete_session": "Elete-Day Ession-Say",
+        "merge_session": "Erge-May Ession-Say",
         "reorder_sessions": "Eorderray Essionssay",
         "import": "Importway"
       },
@@ -279,6 +282,7 @@ register_i18n_language('pig', {
         "created_session": "Eatedcray \"{{name}}\"",
         "switched_session": "Itchedsway otay \"{{name}}\"",
         "deleted_session": "Eleteday \"{{name}}\"",
+        "merged_session": "Erged-May \"{{source}}\" into-ay \"{{target}}\"",
         "reordered_sessions": "Angechay essionsay orderway",
         "imported_sessions": "Imported-ay {{count}} ession(s)-say",
         "imported_from_json": "Imported-ay {{count}} ession(s)-say om-fray JSON-ay ile-fay",
@@ -292,6 +296,7 @@ register_i18n_language('pig', {
       "status_connecting": "Onnecting-Cay...",
       "status_connected": "Onnected-Cay",
       "status_error": "Onnection-Cay Error-ay",
+      "has_sync_room": "Is-thay ession-say as-hay een-bay ynced-say",
       "peer_count_one": "{{count}} erson-pay editing-ay",
       "peer_count_other": "{{count}} eople-pay editing-ay",
       "peers_tooltip": "Onnected-Cay: {{names}}",

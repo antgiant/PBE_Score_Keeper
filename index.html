@@ -86,8 +86,8 @@
           </div>
         </fieldset>
         <fieldset class="config-fieldset">
-          <legend data-i18n="teams.title">Set up your Teams</legend>
-          <div class="config-count-row">
+          <legend id="teams_legend" data-i18n="teams.title_other">Set up your Teams</legend>
+          <div class="config-count-row" style="display:none;">
             <span id="total_teams"></span> <span id="total_teams_text" data-i18n="teams.teams">teams</span>
           </div>
           <div id="team_names" class="config-items-list"></div>
@@ -95,8 +95,8 @@
           <button id="total_teams_increase" class="config-add-btn" onclick='local_data_update(this)' data-i18n="teams.add_team">Add Team</button>
         </fieldset>
         <fieldset class="config-fieldset">
-          <legend data-i18n="blocks.title">Set up your Blocks/Groups</legend>
-          <div class="config-count-row">
+          <legend id="blocks_legend" data-i18n="blocks.title_other">Set up your Blocks</legend>
+          <div class="config-count-row" style="display:none;">
             <span id="total_blocks"></span> <span id="total_blocks_text" data-i18n="blocks.blocks">blocks/groups</span>
           </div>
           <div id="block_names" class="config-items-list"></div>
@@ -104,7 +104,6 @@
           <div id="block_in_use_notice" class="config-in-use-notice" style="display:none;" data-i18n="blocks.in_use_notice">Cannot delete: block/group is assigned to questions</div>
           <button id="total_blocks_increase" class="config-add-btn" onclick='local_data_update(this)' data-i18n="blocks.add_block">Add Block/Group</button>
         </fieldset>
-        <br>
         <fieldset>
           <legend data-i18n="points.title">Maximum Points per Question</legend>
           <span id="max_points"></span> <span id="max_points_text" data-i18n="points.points">points</span> <button id="max_points_decrease" onclick='local_data_update(this)'>-</button> <button id="max_points_increase" onclick='local_data_update(this)'>+</button><br>
@@ -116,17 +115,17 @@
             <label><input type="radio" id="rounding_no" name="rounding" value="false" onchange="local_data_update(this)"><span data-i18n="rounding.no">No</span></label>
           </div>
         </fieldset>
-        <br>
-        <br>
-        <button onclick="local_data_update(this);$( '#accordion' ).accordion({active: 1});" data-i18n="config.enter_scores">Enter Scores</button>
+        <button class="config-add-btn" onclick="local_data_update(this);$( '#accordion' ).accordion({active: 1});" data-i18n="config.enter_scores">Enter Scores</button>
       </div>
       <h3 data-i18n="score_entry.title">Score Entry</h3>
       <div>
         <div data-role="score_entry">
           <div>
-            <button id="previous_question" onclick='local_data_update(this)' data-i18n="score_entry.previous">Previous Question</button>
-            <button id="next_question" onclick='local_data_update(this)' data-i18n="score_entry.next">Next Question</button>
-            <br><br>
+            <div class="nav-buttons">
+              <button class="config-add-btn" id="previous_question" onclick='local_data_update(this)' data-i18n="score_entry.previous">Previous Question</button>
+              <button class="config-add-btn" id="next_question" onclick='local_data_update(this)' data-i18n="score_entry.next">Next Question</button>
+            </div>
+            <br>
             <label><span id="ignore_question_warning" style="font-size: xx-large;display:none">🚫</span><input type="checkbox" id="ignore_question" onchange="local_data_update(this)"><span data-i18n="score_entry.ignore">Ignore this Question in Score Calculations</span></label></div>
         <div id="ignored_question">
           <label><input type="checkbox" id="extra_credit" onchange="local_data_update(this)"><span data-i18n="score_entry.extra_credit">Allow Extra Credit</span></label>
@@ -150,8 +149,10 @@
             </div>
             <div id = "question_teams"></div>
           </div><br>
-          <button id="previous_question_2" onclick='local_data_update(this)' data-i18n="score_entry.previous">Previous Question</button>
-          <button id="next_question_2" onclick='local_data_update(this)' data-i18n="score_entry.next">Next Question</button>
+          <div class="nav-buttons">
+            <button class="config-add-btn" id="previous_question_2" onclick='local_data_update(this)' data-i18n="score_entry.previous">Previous Question</button>
+            <button class="config-add-btn" id="next_question_2" onclick='local_data_update(this)' data-i18n="score_entry.next">Next Question</button>
+          </div>
         </div>
       </div>
       <h3 data-i18n="scores.team_exact">Score by Team (Exact)</h3>
@@ -178,29 +179,29 @@
           Team &amp; Block/Group Scores Go Here
         </div>
       </div>
-      <h3 data-i18n="scores.question_log">Question Log</h3>
+      <h3 data-i18n="scores.question_history">Question History</h3>
       <div>
-        <div data-role="scores" id="scores" data-i18n="placeholders.question_log">
-          Question Log Goes Here
+        <div data-role="scores" id="scores" data-i18n="placeholders.question_history">
+          Question History Goes Here
         </div>
       </div>
-      <h3 data-i18n="history.title">History</h3>
+      <h3 data-i18n="edit_log.title">Change Log</h3>
       <div>
         <div data-role="history" id="history_viewer">
-          <h4 data-i18n="history.change_log">Change Log</h4>
+          <h4 data-i18n="edit_log.change_log">Change Log</h4>
           <table id="history_table">
             <thead>
               <tr>
-                <th data-i18n="history.time">Time</th>
-                <th data-i18n="history.user">User</th>
-                <th data-i18n="history.session">Session</th>
-                <th data-i18n="history.action">Action</th>
-                <th data-i18n="history.details_header">Details</th>
+                <th data-i18n="edit_log.time">Time</th>
+                <th data-i18n="edit_log.user">User</th>
+                <th data-i18n="edit_log.session">Session</th>
+                <th data-i18n="edit_log.action">Action</th>
+                <th data-i18n="edit_log.details_header">Details</th>
               </tr>
             </thead>
             <tbody id="history_list">
               <tr>
-                <td colspan="5" style="text-align: center; padding: 20px; color: #666;" data-i18n="history.no_changes">
+                <td colspan="5" style="text-align: center; padding: 20px; color: #666;" data-i18n="edit_log.no_changes">
                   No changes recorded yet. Make some changes to see them here!
                 </td>
               </tr>
@@ -208,20 +209,20 @@
           </table>
         </div>
       </div>
-      <h3 data-i18n="advanced.title">Advanced</h3>
+      <h3 data-i18n="advanced.title">Import/Export</h3>
       <div>
         <div data-role="Advanced" id="Advanced">
           <fieldset>
             <legend id = "export_csv_label" data-i18n="advanced.export_csv">Export CSV</legend>
-            <button id= "export_team" onclick='local_data_update(this)' data-i18n="advanced.export_team">Export Score by Team</button><br>
-            <button id= "export_block" onclick='local_data_update(this)' data-i18n="advanced.export_block">Export Score by Block/Group</button><br>
-            <button id= "export_team_and_block" onclick='local_data_update(this)' data-i18n="advanced.export_team_and_block">Export Score by Team & Block/Group</button><br>
-            <button id= "export_question_log" onclick='local_data_update(this)' data-i18n="advanced.export_question_log">Export Question Log</button><br>
+            <button class="config-add-btn" id= "export_team" onclick='local_data_update(this)' data-i18n="advanced.export_team">Export Score by Team</button>
+            <button class="config-add-btn" id= "export_block" onclick='local_data_update(this)' data-i18n="advanced.export_block">Export Score by Block/Group</button>
+            <button class="config-add-btn" id= "export_team_and_block" onclick='local_data_update(this)' data-i18n="advanced.export_team_and_block">Export Score by Team & Block/Group</button>
+            <button class="config-add-btn" id= "export_question_log" onclick='local_data_update(this)' data-i18n="advanced.export_question_history">Export Question History</button>
           </fieldset>
           <fieldset>
             <legend id = "export_json_label" data-i18n="advanced.export_json">Export for Importing</legend>
-            <button id= "export_session_json" onclick='local_data_update(this)' data-i18n="advanced.export_session">Export Session (Round/Game)</button><br>
-            <button id= "export_all_json" onclick='local_data_update(this)' data-i18n="advanced.export_all">Export All</button>
+            <button class="config-add-btn" id= "export_session_json" onclick='local_data_update(this)' data-i18n="advanced.export_session">Export Session (Round/Game)</button>
+            <button class="config-add-btn" id= "export_all_json" onclick='local_data_update(this)' data-i18n="advanced.export_all">Export All</button>
           </fieldset>
           <fieldset>
             <legend id = "import_json_label" data-i18n="advanced.import">Import</legend>
@@ -234,26 +235,14 @@
           <fieldset>
             <legend data-i18n="advanced.device_migration">Device Migration</legend>
             <p data-i18n="advanced.migration_description">Transfer all sessions between devices using peer-to-peer sync.</p>
-            <button id="migration_send" onclick="showMigrationDialog('send')" data-i18n="advanced.migration_send">Send to Another Device</button>
-            <button id="migration_receive" onclick="showMigrationDialog('receive')" data-i18n="advanced.migration_receive">Receive from Another Device</button>
+            <button class="config-add-btn" id="migration_send" onclick="showMigrationDialog('send')" data-i18n="advanced.migration_send">Send to Another Device</button>
+            <button class="config-add-btn" id="migration_receive" onclick="showMigrationDialog('receive')" data-i18n="advanced.migration_receive">Receive from Another Device</button>
           </fieldset>
-          <fieldset>
-            <legend id = "danger_label" data-i18n="advanced.danger_zone">Danger Zone</legend>
-            <fieldset>
-              <legend data-i18n="advanced.merge">Merge</legend>
-              <button id="merge_sessions" onclick="showMergeSessionsDialog()" data-i18n="advanced.merge_sessions">Merge Sessions</button>
-              <button id="auto_merge_sessions" onclick="autoMergeDuplicateSessions()" data-i18n="advanced.auto_merge" style="display: none;">Auto Merge Duplicates</button>
-            </fieldset>
-            <fieldset>
-              <legend id = "delete_label" data-i18n="advanced.delete">Delete</legend>
-              <button id="session_delete" onclick='local_data_update(this)' data-i18n="advanced.delete_session">Delete this Session (Round/Game)</button>
-            </fieldset>
-         </fieldset>
         </div>
       </div>
     </div>
     <footer><p><span data-i18n="footer.feedback">Have an idea to make this better?</span> <a target="_blank" href="https://github.com/antgiant/PBE_Score_Keeper/issues" data-i18n="footer.let_me_know">Let me know</a>.</p>
-    <p><center>v 2.4.0</center></p></footer>
+    <p><center>v 2.5.3</center></p></footer>
 </body>
 
 </html>

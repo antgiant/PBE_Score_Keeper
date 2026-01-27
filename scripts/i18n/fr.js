@@ -38,7 +38,8 @@ register_i18n_language('fr', {
       "enter_scores": "Entrer les Scores"
     },
     "teams": {
-      "title": "Configurez vos Équipes",
+      "title_one": "Configurez votre Équipe",
+      "title_other": "Configurez vos {{count}} Équipes",
       "count_one": "{{count}} équipe",
       "count_other": "{{count}} équipes",
       "team": "équipe",
@@ -52,7 +53,8 @@ register_i18n_language('fr', {
       "minimum_notice": "Cette équipe ne peut pas être supprimée car au moins 1 équipe est requise"
     },
     "blocks": {
-      "title": "Configurez vos Blocs",
+      "title_one": "Configurez votre Bloc",
+      "title_other": "Configurez vos {{count}} Blocs",
       "count_one": "{{count}} bloc",
       "count_other": "{{count}} blocs",
       "block": "bloc",
@@ -94,7 +96,7 @@ register_i18n_language('fr', {
       "team_rounded": "Score par Équipe (Arrondi)",
       "by_block": "Score par Bloc",
       "team_and_block": "Score par Équipe et Bloc",
-      "question_log": "Journal des Questions"
+      "question_history": "Historique des Questions"
     },
     "table": {
       "team_name": "Nom de l'Équipe",
@@ -117,8 +119,8 @@ register_i18n_language('fr', {
       "second": "Deuxième Place",
       "third": "Troisième Place"
     },
-    "history": {
-      "title": "Historique",
+    "edit_log": {
+      "title": "Journal des Modifications",
       "change_log": "Journal des Modifications",
       "time": "Heure",
       "user": "Utilisateur",
@@ -185,12 +187,12 @@ register_i18n_language('fr', {
       }
     },
     "advanced": {
-      "title": "Avancé",
+      "title": "Importer/Exporter",
       "export_csv": "Exporter CSV",
       "export_team": "Exporter le Score par Équipe",
       "export_block": "Exporter le Score par Bloc",
       "export_team_and_block": "Exporter le Score par Équipe et Bloc",
-      "export_question_log": "Exporter le Journal des Questions",
+      "export_question_history": "Exporter l'Historique des Questions",
       "export_json": "Exporter pour Importation",
       "export_session": "Exporter la Session",
       "export_all": "Tout Exporter",
@@ -235,7 +237,7 @@ register_i18n_language('fr', {
       "rounded_scores": "Les Scores Arrondis des Équipes Vont Ici",
       "block_scores": "Les Scores des Blocs Vont Ici",
       "team_block_scores": "Les Scores des Équipes et Blocs Vont Ici",
-      "question_log": "Le Journal des Questions Va Ici"
+      "question_history": "L'Historique des Questions Va Ici"
     },
     "defaults": {
       "session_name": "{{date}}",
@@ -276,6 +278,7 @@ register_i18n_language('fr', {
         "create_session": "Créer une Session",
         "switch_session": "Changer de Session",
         "delete_session": "Supprimer la Session",
+        "merge_session": "Fusionner la Session",
         "reorder_sessions": "Réorganiser les Sessions",
         "import": "Importer"
       },
@@ -283,6 +286,7 @@ register_i18n_language('fr', {
         "created_session": "\"{{name}}\" créée",
         "switched_session": "Basculé vers \"{{name}}\"",
         "deleted_session": "\"{{name}}\" supprimée",
+        "merged_session": "\"{{source}}\" fusionnée dans \"{{target}}\"",
         "reordered_sessions": "Ordre des sessions modifié",
         "imported_sessions": "{{count}} session(s) importée(s)",
         "imported_from_json": "{{count}} session(s) importée(s) depuis un fichier JSON",
@@ -295,8 +299,7 @@ register_i18n_language('fr', {
       "status_offline": "Hors ligne",
       "status_connecting": "Connexion...",
       "status_connected": "Connecté",
-      "status_error": "Erreur de Connexion",
-      "peer_count_one": "{{count}} personne en cours d'édition",
+      "status_error": "Erreur de Connexion",      "has_sync_room": "Cette session a été synchronisée",      "peer_count_one": "{{count}} personne en cours d'édition",
       "peer_count_other": "{{count}} personnes en cours d'édition",
       "peers_tooltip": "Connectés : {{names}}",
       "dialog_title": "Synchronisation en Temps Réel",

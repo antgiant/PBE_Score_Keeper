@@ -569,9 +569,11 @@ async function switchSession(sessionIdOrIndex) {
  * Delete a session
  * @param {string|number} sessionIdOrIndex - Session UUID or 1-based index
  * @param {boolean} skipConfirm - Skip confirmation dialog (for merge operations)
+ * @param {Object} [mergeContext] - Optional context when deleting due to merge
+ * @param {string} mergeContext.targetName - Name of the session merged into
  * @returns {Promise<boolean>} True if deletion successful
  */
-async function deleteSession(sessionIdOrIndex, skipConfirm) {
+async function deleteSession(sessionIdOrIndex, skipConfirm, mergeContext) {
   const meta = getGlobalDoc().getMap('meta');
   const sessionOrder = meta.get('sessionOrder') || [];
 
@@ -656,8 +658,15 @@ async function deleteSession(sessionIdOrIndex, skipConfirm) {
     DocManager.setActiveSession(newCurrentId);
   }
 
-  // Log in global history
-  add_global_history_entry('history_global.actions.delete_session', 'history_global.details_templates.deleted_session', { name: sessionName });
+  // Log in global history - use merge entry if this is part of a merge operation
+  if (mergeContext && mergeContext.targetName) {
+    add_global_history_entry('history_global.actions.merge_session', 'history_global.details_templates.merged_session', { 
+      source: sessionName, 
+      target: mergeContext.targetName 
+    });
+  } else {
+    add_global_history_entry('history_global.actions.delete_session', 'history_global.details_templates.deleted_session', { name: sessionName });
+  }
 
   if (!skipConfirm) {
     alert(t('alerts.deleted'));
@@ -988,16 +997,21 @@ function showContinueOrNewSessionDialog(currentSessionName, sessionCreatedAt) {
 function createSessionManagerDialogHTML(sessions, currentSessionId) {
   let listHtml = '';
   const canDelete = sessions.length > 1;
+  
+  // Get sync statuses for all sessions (shows if session has a saved sync room)
+  const syncStatuses = (typeof getSessionSyncStatuses === 'function') ? getSessionSyncStatuses() : {};
 
   for (let i = 0; i < sessions.length; i++) {
     const session = sessions[i];
     const isCurrent = session.id === currentSessionId;
+    const hasSyncRoom = syncStatuses[i + 1]; // 1-based index in syncStatuses
     const currentClass = isCurrent ? ' current-session' : '';
     const currentBadge = isCurrent ? '<span class="session-manager-current-badge">●</span>' : '';
+    const syncIcon = hasSyncRoom ? '<span class="session-manager-sync-icon" title="' + t('sync.has_sync_room') + '">🔄</span>' : '';
 
     listHtml += '<li class="session-manager-item' + currentClass + '" data-session-id="' + session.id + '" data-index="' + i + '" draggable="true">' +
       '<span class="session-manager-drag-handle" aria-label="' + t('session_manager.drag_aria', { name: HTMLescape(session.name) }) + '">☰</span>' +
-      '<span class="session-manager-index">' + (i + 1) + '</span>' +
+      '<span class="session-manager-index">' + (i + 1) + syncIcon + '</span>' +
       '<input type="text" class="session-manager-name-input" ' +
              'value="' + HTMLescape(session.name) + '" ' +
              'placeholder="' + t('session_manager.rename_placeholder') + '" ' +
@@ -1013,12 +1027,28 @@ function createSessionManagerDialogHTML(sessions, currentSessionId) {
     '</li>';
   }
 
+  // Check for duplicate sessions for auto-merge button visibility
+  let hasDuplicates = false;
+  try {
+    if (typeof findDuplicateSessionGroups === 'function') {
+      hasDuplicates = findDuplicateSessionGroups().length > 0;
+    }
+  } catch (e) {
+    // Ignore if sessions not loaded yet
+  }
+
   return '<div class="sync-dialog session-manager-dialog" role="dialog" aria-labelledby="session-manager-title" aria-modal="true">' +
     '<h2 id="session-manager-title">' + t('session_manager.dialog_title') + '</h2>' +
     '<p class="session-manager-hint">' + t('session_manager.reorder_hint') + '</p>' +
     '<ul class="session-manager-list" id="session-manager-list">' + listHtml + '</ul>' +
-    '<div class="button-row">' +
-      '<button type="button" class="session-manager-close-btn primary">' + t('session_manager.close_button') + '</button>' +
+    '<div class="session-manager-footer">' +
+      '<div class="session-manager-merge-buttons">' +
+        '<button type="button" class="session-manager-merge-btn secondary" id="session-manager-merge">' + t('advanced.merge_sessions') + '</button>' +
+        (hasDuplicates ? '<button type="button" class="session-manager-auto-merge-btn secondary" id="session-manager-auto-merge">' + t('advanced.auto_merge') + '</button>' : '') +
+      '</div>' +
+      '<div class="button-row">' +
+        '<button type="button" class="session-manager-close-btn primary">' + t('session_manager.close_button') + '</button>' +
+      '</div>' +
     '</div>' +
   '</div>';
 }
@@ -1051,6 +1081,24 @@ function setupSessionManagerListeners(overlay) {
       handleSessionManagerDelete(deleteBtn, overlay);
     }
   });
+
+  // Handle merge button click
+  const mergeBtn = overlay.querySelector('#session-manager-merge');
+  if (mergeBtn) {
+    mergeBtn.addEventListener('click', function() {
+      overlay.remove();
+      showMergeSessionsDialog();
+    });
+  }
+
+  // Handle auto-merge button click
+  const autoMergeBtn = overlay.querySelector('#session-manager-auto-merge');
+  if (autoMergeBtn) {
+    autoMergeBtn.addEventListener('click', function() {
+      overlay.remove();
+      autoMergeDuplicateSessions();
+    });
+  }
 
   // Set up drag and drop
   setupSessionManagerDragDrop(list, overlay);
@@ -1098,7 +1146,7 @@ function renameSession(sessionId, newName) {
     
     // Add history entry if this is the current session
     if (sessionId === DocManager.activeSessionId) {
-      add_history_entry('history.actions.rename_session', 'history.details_templates.renamed', { old: oldName, new: newName });
+      add_history_entry('edit_log.actions.rename_session', 'edit_log.details_templates.renamed', { old: oldName, new: newName });
     }
   }, 'local');
 
@@ -1468,6 +1516,10 @@ async function performSessionMerge(sourceId, targetId) {
     const sourceData = extractSessionDataForMerge(sourceId);
     const targetData = extractSessionDataForMerge(targetId);
 
+    // Get target session name for history entry
+    const targetDoc = getSessionDoc(targetId);
+    const targetName = targetDoc ? targetDoc.getMap('session').get('name') : 'Unknown';
+
     // Compare the sessions
     const comparison = compareSessionData(sourceData, targetData);
     const stats = getMatchStats(comparison);
@@ -1493,8 +1545,8 @@ async function performSessionMerge(sourceId, targetId) {
       await applySessionMerge(sourceId, targetId, null);
     }
 
-    // Delete the source session after successful merge
-    await deleteSession(sourceId, true); // Skip confirm since user already initiated merge
+    // Delete the source session after successful merge, with merge context for history
+    await deleteSession(sourceId, true, { targetName: targetName });
 
     showToast(t('merge.merge_success'));
 
@@ -1644,7 +1696,7 @@ async function autoMergeDuplicateSessions() {
         // For auto-merge, we don't show the matching dialog
         // We use the auto-matched results directly
         await applySessionMerge(source.id, target.id, null);
-        await deleteSession(source.id, true);
+        await deleteSession(source.id, true, { targetName: target.name });
         mergedSources.push(source.name);
       } catch (error) {
         console.error('Auto merge failed for session:', source.name, error);
@@ -2268,7 +2320,7 @@ async function applySessionMerge(sourceId, targetId, mappings) {
     }
 
     // Add history entry
-    add_history_entry('history.actions.merge', 'history.details_templates.merged_sessions', { 
+    add_history_entry('edit_log.actions.merge', 'edit_log.details_templates.merged_sessions', { 
       source: sourceSession.get('name'),
       target: targetSession.get('name')
     });

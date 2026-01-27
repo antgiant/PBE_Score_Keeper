@@ -37,7 +37,8 @@ register_i18n_language('en', {
       "enter_scores": "Enter Scores"
     },
     "teams": {
-      "title": "Set up your Teams",
+      "title_one": "Set up your Team",
+      "title_other": "Set up your {{count}} Teams",
       "count_one": "{{count}} team",
       "count_other": "{{count}} teams",
       "team": "team",
@@ -51,7 +52,8 @@ register_i18n_language('en', {
       "minimum_notice": "This team cannot be deleted because at least 1 team is required"
     },
     "blocks": {
-      "title": "Set up your Blocks",
+      "title_one": "Set up your Block",
+      "title_other": "Set up your {{count}} Blocks",
       "count_one": "{{count}} block",
       "count_other": "{{count}} blocks",
       "block": "block",
@@ -93,7 +95,7 @@ register_i18n_language('en', {
       "team_rounded": "Score by Team (Rounded)",
       "by_block": "Score by Block",
       "team_and_block": "Score by Team & Block",
-      "question_log": "Question Log"
+      "question_history": "Question History"
     },
     "table": {
       "team_name": "Team Name",
@@ -116,8 +118,8 @@ register_i18n_language('en', {
       "second": "Second Place",
       "third": "Third Place"
     },
-    "history": {
-      "title": "History",
+    "edit_log": {
+      "title": "Change Log",
       "change_log": "Change Log",
       "time": "Time",
       "user": "User",
@@ -184,12 +186,12 @@ register_i18n_language('en', {
       }
     },
     "advanced": {
-      "title": "Advanced",
+      "title": "Import/Export",
       "export_csv": "Export CSV",
       "export_team": "Export Score by Team",
       "export_block": "Export Score by Block",
       "export_team_and_block": "Export Score by Team & Block",
-      "export_question_log": "Export Question Log",
+      "export_question_history": "Export Question History",
       "export_json": "Export for Importing",
       "export_session": "Export Session",
       "export_all": "Export All",
@@ -234,7 +236,7 @@ register_i18n_language('en', {
       "rounded_scores": "Rounded Team Scores Go Here",
       "block_scores": "Block Scores Go Here",
       "team_block_scores": "Team & Block Scores Go Here",
-      "question_log": "Question Log Goes Here"
+      "question_history": "Question History Goes Here"
     },
     "defaults": {
       "session_name": "{{date}}",
@@ -275,6 +277,7 @@ register_i18n_language('en', {
         "create_session": "Create Session",
         "switch_session": "Switch Session",
         "delete_session": "Delete Session",
+        "merge_session": "Merge Session",
         "reorder_sessions": "Reorder Sessions",
         "import": "Import"
       },
@@ -282,6 +285,7 @@ register_i18n_language('en', {
         "created_session": "Created \"{{name}}\"",
         "switched_session": "Switched to \"{{name}}\"",
         "deleted_session": "Deleted \"{{name}}\"",
+        "merged_session": "Merged \"{{source}}\" into \"{{target}}\"",
         "reordered_sessions": "Changed session order",
         "imported_sessions": "Imported {{count}} session(s)",
         "imported_from_json": "Imported {{count}} session(s) from JSON file",
@@ -295,6 +299,7 @@ register_i18n_language('en', {
       "status_connecting": "Connecting...",
       "status_connected": "Connected",
       "status_error": "Connection Error",
+      "has_sync_room": "This session has been synced",
       "peer_count_one": "{{count}} person editing",
       "peer_count_other": "{{count}} people editing",
       "peers_tooltip": "Connected: {{names}}",
