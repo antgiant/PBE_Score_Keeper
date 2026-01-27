@@ -144,27 +144,47 @@ function getSessionSyncRoom(sessionId) {
 
 /**
  * Get sync status for all sessions (for dropdown display)
+ * Uses global cache so works even for unloaded sessions
  * @returns {Object} Map of session index (1-based) to boolean (has syncRoom)
  */
 function getSessionSyncStatuses() {
   var statuses = {};
   var sessionOrder = typeof get_session_order === 'function' ? get_session_order() : [];
   
+  // Try to use global cache first (works for unloaded sessions)
+  var globalDoc = typeof getGlobalDoc === 'function' ? getGlobalDoc() : null;
+  var sessionSyncRooms = null;
+  if (globalDoc) {
+    var meta = globalDoc.getMap('meta');
+    sessionSyncRooms = meta.get('sessionSyncRooms');
+  }
+  
   for (var i = 0; i < sessionOrder.length; i++) {
     var sessionId = sessionOrder[i];
-    var syncRoom = getSessionSyncRoom(sessionId);
-    statuses[i + 1] = !!syncRoom;  // 1-based index
+    var hasSyncRoom = false;
+    
+    if (sessionSyncRooms) {
+      // Use cache for fast lookup
+      hasSyncRoom = sessionSyncRooms.has(sessionId) && !!sessionSyncRooms.get(sessionId);
+    } else {
+      // Fallback to session doc (only works if loaded)
+      var syncRoom = getSessionSyncRoom(sessionId);
+      hasSyncRoom = !!syncRoom;
+    }
+    
+    statuses[i + 1] = hasSyncRoom;  // 1-based index
   }
   
   return statuses;
 }
 
 /**
- * Save sync room code to session doc
+ * Save sync room code to session doc and global cache
  * @param {string} roomCode - Room code to save (null to clear)
  * @param {string} sessionId - Session UUID (optional, uses current if not provided)
  */
 function saveSessionSyncRoom(roomCode, sessionId) {
+  var effectiveSessionId = sessionId || (typeof get_current_session_id === 'function' ? get_current_session_id() : null);
   var doc = sessionId ? getSessionDoc(sessionId) : getActiveSessionDoc();
   if (!doc) return;
   
@@ -182,6 +202,102 @@ function saveSessionSyncRoom(roomCode, sessionId) {
       config.delete('syncRoom');
     }
   }
+  
+  // Also update global cache for sync status display
+  updateSessionSyncRoomCache(effectiveSessionId, roomCode);
+}
+
+/**
+ * Update the session sync room cache in global doc
+ * @param {string} sessionId - Session UUID
+ * @param {string|null} roomCode - Room code or null to clear
+ */
+function updateSessionSyncRoomCache(sessionId, roomCode) {
+  if (!sessionId) return;
+  
+  var globalDoc = typeof getGlobalDoc === 'function' ? getGlobalDoc() : null;
+  if (!globalDoc) return;
+  
+  var meta = globalDoc.getMap('meta');
+  var sessionSyncRooms = meta.get('sessionSyncRooms');
+  
+  if (!sessionSyncRooms) {
+    // Create the map if it doesn't exist
+    globalDoc.transact(function() {
+      sessionSyncRooms = new Y.Map();
+      if (roomCode) {
+        sessionSyncRooms.set(sessionId, roomCode);
+      }
+      meta.set('sessionSyncRooms', sessionSyncRooms);
+    }, 'local');
+  } else {
+    globalDoc.transact(function() {
+      if (roomCode) {
+        sessionSyncRooms.set(sessionId, roomCode);
+      } else {
+        sessionSyncRooms.delete(sessionId);
+      }
+    }, 'local');
+  }
+}
+
+/**
+ * Repair/build the sessionSyncRooms cache from individual session docs
+ * Called during init to ensure cache is populated for dropdown display
+ * @returns {Promise<boolean>} True if repair was performed
+ */
+async function repairSessionSyncRoomsCache() {
+  var globalDoc = typeof getGlobalDoc === 'function' ? getGlobalDoc() : null;
+  if (!globalDoc) return false;
+  
+  var meta = globalDoc.getMap('meta');
+  var sessionOrder = typeof get_session_order === 'function' ? get_session_order() : [];
+  
+  if (!sessionOrder || sessionOrder.length === 0) {
+    return false; // No sessions to repair
+  }
+  
+  // Check if cache exists
+  var sessionSyncRooms = meta.get('sessionSyncRooms');
+  
+  // Always rebuild cache to ensure it's current
+  console.log('Building sessionSyncRooms cache...');
+  
+  var syncRoomMap = new Map();
+  
+  for (var i = 0; i < sessionOrder.length; i++) {
+    var sessionId = sessionOrder[i];
+    
+    // Load the session doc from IndexedDB if not already loaded
+    var sessionDoc = typeof initSessionDoc === 'function' ? await initSessionDoc(sessionId) : null;
+    if (!sessionDoc) continue;
+    
+    var session = sessionDoc.getMap('session');
+    if (!session) continue;
+    
+    var config = session.get('config');
+    if (!config) continue;
+    
+    var syncRoom = config.get('syncRoom');
+    if (syncRoom) {
+      syncRoomMap.set(sessionId, syncRoom);
+    }
+  }
+  
+  // Update global doc with cache
+  if (syncRoomMap.size > 0 || sessionSyncRooms) {
+    globalDoc.transact(function() {
+      var newSessionSyncRooms = new Y.Map();
+      syncRoomMap.forEach(function(room, sessionId) {
+        newSessionSyncRooms.set(sessionId, room);
+      });
+      meta.set('sessionSyncRooms', newSessionSyncRooms);
+    }, 'repair');
+    
+    console.log('Built sessionSyncRooms cache with ' + syncRoomMap.size + ' entries');
+  }
+  
+  return syncRoomMap.size > 0;
 }
 
 /**
@@ -198,6 +314,15 @@ function initSyncManager() {
   // Set up event handlers
   setupVisibilityHandler();
   setupNetworkHandlers();
+  
+  // Build sync rooms cache for dropdown display (async, don't wait)
+  repairSessionSyncRoomsCache().then(function(wasBuilt) {
+    if (wasBuilt && typeof sync_data_to_display === 'function') {
+      sync_data_to_display(); // Refresh display to show sync icons
+    }
+  }).catch(function(err) {
+    console.error('Error building sessionSyncRooms cache:', err);
+  });
   
   // Attempt auto-reconnect after ensuring session doc is ready
   waitForSessionDocAndReconnect();

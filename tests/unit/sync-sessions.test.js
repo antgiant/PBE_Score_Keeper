@@ -22,18 +22,39 @@ global.t_plural = function(key, count, params) {
 // Mock session doc functions
 var mockSessionConfigs = {};
 var mockGlobalDocMeta = {};
+var mockSessionSyncRooms = {};
+
+// Mock Y.Map for sessionSyncRooms cache
+function MockYMap() {
+  this.data = {};
+}
+MockYMap.prototype.get = function(key) { return this.data[key]; };
+MockYMap.prototype.set = function(key, value) { this.data[key] = value; };
+MockYMap.prototype.delete = function(key) { delete this.data[key]; };
+MockYMap.prototype.has = function(key) { return key in this.data; };
+
+// Mock Y global
+global.Y = {
+  Map: MockYMap
+};
 
 global.getGlobalDoc = function() {
   return {
     getMap: function(mapName) {
       if (mapName === 'meta') {
         return {
-          get: function(key) { return mockGlobalDocMeta[key] || null; },
+          get: function(key) { 
+            if (key === 'sessionSyncRooms' && !mockGlobalDocMeta.sessionSyncRooms) {
+              mockGlobalDocMeta.sessionSyncRooms = new MockYMap();
+            }
+            return mockGlobalDocMeta[key] || null; 
+          },
           set: function(key, value) { mockGlobalDocMeta[key] = value; }
         };
       }
       return { get: function() { return null; }, set: function() {} };
-    }
+    },
+    transact: function(fn, origin) { fn(); }
   };
 };
 
@@ -101,6 +122,7 @@ describe('Sync Sessions', () => {
   beforeEach(() => {
     global.localStorage.clear();
     mockSessionConfigs = {}; // Reset session configs
+    mockGlobalDocMeta = {}; // Reset global doc meta
     delete require.cache[require.resolve('../../scripts/app-sync.js')];
     syncModule = require('../../scripts/app-sync.js');
   });
