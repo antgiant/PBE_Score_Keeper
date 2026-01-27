@@ -893,11 +893,26 @@ function showNewSessionCreatedModal(sessionName) {
 }
 
 /**
+ * Check if a timestamp is from today
+ * @param {number} timestamp - Unix timestamp in milliseconds
+ * @returns {boolean} true if the timestamp is from today
+ */
+function isFromToday(timestamp) {
+  if (!timestamp) return false;
+  const date = new Date(timestamp);
+  const today = new Date();
+  return date.getFullYear() === today.getFullYear() &&
+         date.getMonth() === today.getMonth() &&
+         date.getDate() === today.getDate();
+}
+
+/**
  * Show dialog asking user to continue with current session or create new one
  * @param {string} currentSessionName - Name of the current session
+ * @param {number} [sessionCreatedAt] - Timestamp when session was created (optional)
  * @returns {Promise<string>} 'continue' or 'new'
  */
-function showContinueOrNewSessionDialog(currentSessionName) {
+function showContinueOrNewSessionDialog(currentSessionName, sessionCreatedAt) {
   return new Promise(function(resolve) {
     // Remove any existing dialog
     const existing = document.getElementById('continue-or-new-dialog-overlay');
@@ -908,23 +923,29 @@ function showContinueOrNewSessionDialog(currentSessionName) {
     overlay.className = 'sync-dialog-overlay';
 
     const escapedName = HTMLescape(currentSessionName);
+    
+    // Default to continue if session was created today, otherwise default to new
+    const defaultToContinue = isFromToday(sessionCreatedAt);
 
     overlay.innerHTML = '<div class="sync-dialog" role="dialog" aria-labelledby="continue-or-new-dialog-title" aria-modal="true" style="text-align: center;">' +
       '<h2 id="continue-or-new-dialog-title">' + t('session_dialogs.continue_or_new_title') + '</h2>' +
       '<p>' + t('session_dialogs.continue_or_new_message') + '</p>' +
       '<p><strong>' + t('session_dialogs.current_session_label') + '</strong> ' + escapedName + '</p>' +
       '<div class="button-row" style="justify-content: center;">' +
-        '<button type="button" class="continue-session-btn primary">' + t('session_dialogs.continue_session') + '</button>' +
-        '<button type="button" class="start-new-session-btn">' + t('session_dialogs.start_new_session') + '</button>' +
+        '<button type="button" class="continue-session-btn' + (defaultToContinue ? ' primary' : '') + '">' + t('session_dialogs.continue_session') + '</button>' +
+        '<button type="button" class="start-new-session-btn' + (defaultToContinue ? '' : ' primary') + '">' + t('session_dialogs.start_new_session') + '</button>' +
       '</div>' +
     '</div>';
 
     document.body.appendChild(overlay);
 
-    // Focus continue button (default action)
+    // Focus the default button
     const continueBtn = overlay.querySelector('.continue-session-btn');
     const newBtn = overlay.querySelector('.start-new-session-btn');
-    if (continueBtn) continueBtn.focus();
+    const defaultBtn = defaultToContinue ? continueBtn : newBtn;
+    if (defaultBtn) defaultBtn.focus();
+    
+    const defaultChoice = defaultToContinue ? 'continue' : 'new';
 
     function closeContinueOrNewDialog(choice) {
       document.removeEventListener('keydown', onContinueOrNewDialogEscape);
@@ -941,18 +962,18 @@ function showContinueOrNewSessionDialog(currentSessionName) {
       closeContinueOrNewDialog('new');
     });
 
-    // Handle Escape key - default to continue
+    // Handle Escape key - use default choice
     function onContinueOrNewDialogEscape(e) {
       if (e.key === 'Escape') {
-        closeContinueOrNewDialog('continue');
+        closeContinueOrNewDialog(defaultChoice);
       }
     }
     document.addEventListener('keydown', onContinueOrNewDialogEscape);
 
-    // Clicking overlay defaults to continue
+    // Clicking overlay uses default choice
     overlay.addEventListener('click', function(e) {
       if (e.target === overlay) {
-        closeContinueOrNewDialog('continue');
+        closeContinueOrNewDialog(defaultChoice);
       }
     });
   });

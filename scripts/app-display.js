@@ -106,8 +106,9 @@ function checkAndShowContinueOrNewDialog() {
   const session = get_current_session();
   if (!session) return;
 
-  // Get session name for the dialog
+  // Get session name and creation date for the dialog
   const sessionName = session.get('name') || t('defaults.unnamed_session');
+  const sessionCreatedAt = session.get('createdAt');
   
   // Check if session has meaningful data (more than just the initial question)
   const questions = session.get('questions');
@@ -118,7 +119,7 @@ function checkAndShowContinueOrNewDialog() {
 
   // Only show dialog if there's actual data (at least 2 completed questions or multiple teams with data)
   if (questionCount >= 2) {
-    showContinueOrNewSessionDialog(sessionName).then(function(choice) {
+    showContinueOrNewSessionDialog(sessionName, sessionCreatedAt).then(function(choice) {
       if (choice === 'new') {
         // Create a new session
         createNewSession().then(function(newSessionId) {
