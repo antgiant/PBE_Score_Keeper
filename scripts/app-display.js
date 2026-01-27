@@ -284,16 +284,18 @@ function sync_data_to_display() {
   }
   temp_output = temp_output+"</tbody></table>";
 
-  //Update displayed Question Log
+  //Update displayed Question History
   $("#scores").html(temp_output);
   //Set up Teams
 
-  //Show Team Count
+  //Show Team Count and update legend
   $("#total_teams").text(format_number(team_count));
   if (team_count == 1) {
     $("#total_teams_text").text(t('teams.team'));
+    $("#teams_legend").text(t('teams.title_one'));
   } else {
     $("#total_teams_text").text(t('teams.teams'));
+    $("#teams_legend").text(t('teams.title_other', { count: team_count }));
   }
 
   //Set up Team Name Editing
@@ -405,12 +407,14 @@ function sync_data_to_display() {
     }
   }
   
-  //Show block/group count
+  //Show block/group count and update legend
   $("#total_blocks").text(format_number(block_count));
   if (block_count == 1) {
     $("#total_blocks_text").text(t('blocks.block'));
+    $("#blocks_legend").text(t('blocks.title_one'));
   } else {
     $("#total_blocks_text").text(t('blocks.blocks'));
+    $("#blocks_legend").text(t('blocks.title_other', { count: block_count }));
   }
   
   // Hide the notices by default (shown on hover/click of items that can't be deleted)

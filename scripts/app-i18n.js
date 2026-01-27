@@ -555,7 +555,7 @@ function format_date(date, options) {
     date = new Date(date);
   }
   if (!(date instanceof Date) || isNaN(date)) {
-    return t('history.unknown_time');
+    return t('edit_log.unknown_time');
   }
   
   // Get locale from language registry

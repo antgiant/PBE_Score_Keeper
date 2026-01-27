@@ -172,6 +172,49 @@ test.describe('Session Manager Functions', function() {
     const deleteButtonPattern = /session-manager-delete-btn[^>]*disabled(?!=)/;
     assert.ok(!deleteButtonPattern.test(html), 'Delete buttons should not be disabled');
   });
+
+test('createSessionManagerDialogHTML shows sync icon when session has sync room', function() {
+    const { context } = loadApp(buildMultiSessionSeed(2));
+    
+    const sessions = context.getAllSessions();
+    const currentSessionId = context.DocManager.activeSessionId;
+    
+    // Set a sync room on the first session to simulate a synced session
+    const sessionDoc = context.getSessionDoc(sessions[0].id);
+    const session = sessionDoc.getMap('session');
+    let config = session.get('config');
+    if (!config) {
+      config = new context.Y.Map();
+      session.set('config', config);
+    }
+    config.set('syncRoom', 'ABC123');
+    
+    // Also update the global cache
+    const globalDoc = context.getGlobalDoc();
+    const meta = globalDoc.getMap('meta');
+    let sessionSyncRooms = meta.get('sessionSyncRooms');
+    if (!sessionSyncRooms) {
+      sessionSyncRooms = new context.Y.Map();
+      meta.set('sessionSyncRooms', sessionSyncRooms);
+    }
+    sessionSyncRooms.set(sessions[0].id, 'ABC123');
+    
+    const html = context.createSessionManagerDialogHTML(sessions, currentSessionId);
+    
+    assert.ok(html.includes('session-manager-sync-icon'), 'Should have sync icon for session with sync room');
+  });
+
+  test('createSessionManagerDialogHTML does not show sync icon when no sync room', function() {
+    const { context } = loadApp(buildMultiSessionSeed(2));
+    
+    const sessions = context.getAllSessions();
+    const currentSessionId = context.DocManager.activeSessionId;
+    
+    // Don't set any sync rooms - sessions should not have sync icons
+    const html = context.createSessionManagerDialogHTML(sessions, currentSessionId);
+    
+    assert.ok(!html.includes('session-manager-sync-icon'), 'Should not have sync icon when no sync room');
+  });
 });
 
 

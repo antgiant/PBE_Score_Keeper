@@ -77,7 +77,7 @@ function refresh_history_display() {
       details = detailsKey ? t(detailsKey, detailsParams ? JSON.parse(detailsParams) : {}) : '';
     } else {
       // Legacy format: use pre-translated strings
-      action = entry.get('action') || t('history.actions.change');
+      action = entry.get('action') || t('edit_log.actions.change');
       details = entry.get('details') || '';
     }
     
@@ -95,7 +95,7 @@ function refresh_history_display() {
           const translated = translateEntry(entry);
           allEntries.push({
             timestamp: entry.get('timestamp') || 0,
-            session: t('history.global'),
+            session: t('edit_log.global'),
             action: translated.action,
             details: translated.details,
             user: entry.get('user') || null,
@@ -110,7 +110,7 @@ function refresh_history_display() {
   // Get session history
   const currentSession = get_current_session();
   if (currentSession) {
-    const sessionName = currentSession.get('name') || t('history.current_session');
+    const sessionName = currentSession.get('name') || t('edit_log.current_session');
     const historyLog = currentSession.get('historyLog');
     
     if (historyLog) {
@@ -135,25 +135,25 @@ function refresh_history_display() {
 
   // Display entries
   if (allEntries.length === 0) {
-    var noChangesText = (typeof t === 'function') ? t('history.no_changes') : 'No changes recorded yet. Make some changes to see them here!';
+    var noChangesText = (typeof t === 'function') ? t('edit_log.no_changes') : 'No changes recorded yet. Make some changes to see them here!';
     historyList.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 20px; color: #666;">'+noChangesText+'</td></tr>';
     return;
   }
 
   for (const entry of allEntries) {
     const row = document.createElement('tr');
-    const timeStr = entry.timestamp ? ((typeof format_time === 'function') ? format_time(entry.timestamp) : new Date(entry.timestamp).toLocaleTimeString()) : t('history.unknown_time');
+    const timeStr = entry.timestamp ? ((typeof format_time === 'function') ? format_time(entry.timestamp) : new Date(entry.timestamp).toLocaleTimeString()) : t('edit_log.unknown_time');
     
     // User display: show display name or "(local)" for local changes
     const userDisplay = entry.user || t('sync.history_local_user');
 
-    // Style global entries differently
+    // Style global entries differently with CSS class (not inline style)
     if (entry.isGlobal) {
-      row.style.backgroundColor = 'var(--history-global-bg, #f0f0f0)';
+      row.classList.add('history-global');
     }
 
     // Use translated "Global" for global entries
-    const sessionDisplay = entry.isGlobal ? t('history.global') : entry.session;
+    const sessionDisplay = entry.isGlobal ? t('edit_log.global') : entry.session;
 
     row.innerHTML =
       '<td>' + timeStr + '</td>' +
@@ -171,8 +171,8 @@ function refresh_history_display() {
 /**
  * Add a history entry to the current session's history log
  * Stores translation keys and params for language-independent history
- * @param {string} actionKey - Translation key for the action (e.g., "history.actions.rename_team")
- * @param {string} detailsKey - Translation key for details (e.g., "history.details_templates.renamed")
+ * @param {string} actionKey - Translation key for the action (e.g., "edit_log.actions.rename_team")
+ * @param {string} detailsKey - Translation key for details (e.g., "edit_log.details_templates.renamed")
  * @param {object} detailsParams - Parameters for details interpolation (e.g., { old: "Team 1", new: "Team 2" })
  */
 function add_history_entry(actionKey, detailsKey, detailsParams) {

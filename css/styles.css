@@ -94,6 +94,7 @@ button {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  margin-bottom: 0.5rem;
 }
 .score-entry-field {
   display: flex;
@@ -103,6 +104,10 @@ button {
 .score-entry-field fieldset {
   flex: 1;
   min-width: 0;
+  margin-bottom: 0;
+}
+#question_teams fieldset {
+  margin-bottom: 0.5rem;
 }
 .score-entry-drag-handle {
   margin-top: 0.25rem;
@@ -121,6 +126,16 @@ button {
 tr:nth-child(even){
   background-color : var(--row-alt);
 }
+/* Change Log table zebra striping */
+#history_table tbody tr:nth-child(odd) {
+  background-color: transparent;
+}
+#history_table tbody tr:nth-child(even) {
+  background-color: var(--row-alt);
+}
+#history_table tbody tr.history-global {
+  font-style: italic;
+}
 .extra_credit_amount {
   padding: 0 0.5em;
 }
@@ -135,6 +150,9 @@ tr:nth-child(even){
 }
 
 /* Configuration fieldset styles */
+#session_configuration fieldset {
+  margin-bottom: 1rem;
+}
 .config-fieldset {
   margin-bottom: 1rem;
 }
@@ -146,7 +164,7 @@ tr:nth-child(even){
   margin-bottom: 0.75rem;
 }
 .config-add-btn {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 0.3rem;
   padding: 0.4rem 0.8rem;
@@ -158,6 +176,14 @@ tr:nth-child(even){
   cursor: pointer;
   font-size: 0.95rem;
 }
+
+/* Navigation buttons row */
+.nav-buttons {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
 .config-add-btn:hover {
   background: var(--row-alt);
 }
@@ -935,4 +961,40 @@ tr:nth-child(even){
   color: #fff;
   border-radius: 4px;
   margin-left: 0.25rem;
+}
+
+.session-manager-sync-icon {
+  margin-left: 0.25rem;
+  font-size: 0.75rem;
+}
+
+.session-manager-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 1rem;
+  gap: 1rem;
+}
+
+.session-manager-merge-buttons {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.session-manager-merge-btn,
+.session-manager-auto-merge-btn {
+  padding: 0.4rem 0.8rem;
+  font-size: 0.95rem;
+  opacity: 0.7;
+  border: 1px solid var(--border-color);
+  background: var(--control-bg);
+  color: var(--text-color);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.session-manager-merge-btn:hover,
+.session-manager-auto-merge-btn:hover {
+  opacity: 1;
+  background: var(--row-alt);
 }
