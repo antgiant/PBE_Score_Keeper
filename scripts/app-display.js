@@ -554,14 +554,36 @@ function sync_data_to_display() {
 
   //Set up Max Points per Question
 
+  // Calculate the minimum valid max points (highest score across all questions)
+  let smallest_valid_max_points = 1;
+  for (let i = 1; i <= question_count; i++) {
+    let temp_max_points = questions.get(i).get('score');
+    if (smallest_valid_max_points < temp_max_points) {
+      smallest_valid_max_points = temp_max_points;
+    }
+  }
+
   //Show max points count
   $("#max_points").text(format_number(max_points));
+  if (max_points <= smallest_valid_max_points) {
+    // At minimum due to scores - disable button and show notice
+    $("#max_points_decrease").prop("disabled", true);
+    if (smallest_valid_max_points > 1) {
+      // Only show notice if the constraint is due to scores, not just being at 1
+      $("#max_points_minimum_notice").show().text(t('points.minimum_notice'));
+    } else {
+      $("#max_points_minimum_notice").hide();
+    }
+  } else {
+    $("#max_points_decrease").prop("disabled", false);
+    $("#max_points_minimum_notice").hide();
+  }
+  
+  // Update points text for singular/plural
   if (max_points == 1) {
     $("#max_points_text").text(t('points.point'));
-    $("#max_points_decrease").prop("disabled", true);
   } else {
     $("#max_points_text").text(t('points.points'));
-    $("#max_points_decrease").prop("disabled", false);
   }
 
   //Set up max possible points for all questions

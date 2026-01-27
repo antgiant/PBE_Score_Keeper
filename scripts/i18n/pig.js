@@ -68,7 +68,8 @@ register_i18n_language('pig', {
       "count_other": "{{count}} oints-pay",
       "point": "oint-pay",
       "points": "oints-pay",
-      "possible": "Ossible-Pay Oints-Pay or-fay Uestion-Qay"
+      "possible": "Ossible-Pay Oints-Pay or-fay Uestion-Qay",
+      "minimum_notice": "Annot-cay e-bay ower-lay ue-day o-tay already-ay entered-ay ores-scay"
     },
     "rounding": {
       "title": "Ounding-Ray Ive-Lay Eam-Tay ore-scay o-tay est-bay eam's-tay otal-tay?",

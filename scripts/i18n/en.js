@@ -71,7 +71,8 @@ register_i18n_language('en', {
       "count_other": "{{count}} points",
       "point": "point",
       "points": "points",
-      "possible": "Possible Points for Question"
+      "possible": "Possible Points for Question",
+      "minimum_notice": "Cannot be lower due to already entered scores"
     },
     "rounding": {
       "title": "Rounding Live Team score to best team's total?",

@@ -72,7 +72,8 @@ register_i18n_language('fr', {
       "count_other": "{{count}} points",
       "point": "point",
       "points": "points",
-      "possible": "Points Possibles pour la Question"
+      "possible": "Points Possibles pour la Question",
+      "minimum_notice": "Ne peut pas être inférieur en raison des scores déjà saisis"
     },
     "rounding": {
       "title": "Arrondir le score de l'équipe en direct au total de la meilleure équipe ?",
