@@ -909,11 +909,11 @@ function showContinueOrNewSessionDialog(currentSessionName) {
 
     const escapedName = HTMLescape(currentSessionName);
 
-    overlay.innerHTML = '<div class="sync-dialog" role="dialog" aria-labelledby="continue-or-new-dialog-title" aria-modal="true">' +
+    overlay.innerHTML = '<div class="sync-dialog" role="dialog" aria-labelledby="continue-or-new-dialog-title" aria-modal="true" style="text-align: center;">' +
       '<h2 id="continue-or-new-dialog-title">' + t('session_dialogs.continue_or_new_title') + '</h2>' +
       '<p>' + t('session_dialogs.continue_or_new_message') + '</p>' +
       '<p><strong>' + t('session_dialogs.current_session_label') + '</strong> ' + escapedName + '</p>' +
-      '<div class="button-row">' +
+      '<div class="button-row" style="justify-content: center;">' +
         '<button type="button" class="continue-session-btn primary">' + t('session_dialogs.continue_session') + '</button>' +
         '<button type="button" class="start-new-session-btn">' + t('session_dialogs.start_new_session') + '</button>' +
       '</div>' +
