@@ -917,7 +917,9 @@ function createConnectDialogHTML() {
   var savedName = getSavedDisplayName() || '';
   
   return '<div class="sync-dialog" role="dialog" aria-labelledby="sync-dialog-title" aria-modal="true">' +
-    '<h2 id="sync-dialog-title">' + t('sync.dialog_title') + '</h2>' +
+    '<h2 id="sync-dialog-title">' + t('sync.dialog_title') + 
+      ' <a href="#" class="sync-info-link" onclick="showSyncInfoDialog(); return false;" title="' + t('sync.info_link_title') + '">ⓘ</a>' +
+    '</h2>' +
     '<div id="sync-error-message"></div>' +
     '<div class="form-group">' +
       '<label for="sync-display-name">' + t('sync.display_name_label') + '</label>' +
@@ -1042,6 +1044,62 @@ function closeSyncDialog() {
     SyncManager.previousFocus.focus();
     SyncManager.previousFocus = null;
   }
+}
+
+/**
+ * Show the sync info dialog explaining P2P limitations
+ */
+function showSyncInfoDialog() {
+  // Remove any existing info dialog
+  var existing = document.getElementById('sync-info-dialog-overlay');
+  if (existing) existing.remove();
+  
+  var overlay = document.createElement('div');
+  overlay.id = 'sync-info-dialog-overlay';
+  overlay.className = 'sync-dialog-overlay';
+  
+  overlay.innerHTML = '<div class="sync-dialog sync-info-dialog" role="dialog" aria-labelledby="sync-info-dialog-title" aria-modal="true">' +
+    '<h2 id="sync-info-dialog-title">' + t('sync.info_dialog_title') + '</h2>' +
+    '<p>' + t('sync.info_dialog_p2p') + '</p>' +
+    '<p><strong>' + t('sync.info_dialog_limit') + '</strong></p>' +
+    '<p>' + t('sync.info_dialog_larger') + '</p>' +
+    '<p><a href="https://github.com/antgiant/PBE_Score_Keeper/issues" target="_blank" rel="noopener noreferrer" class="github-link">' +
+      '<span aria-hidden="true">🔗</span> ' + t('sync.info_dialog_github') +
+    '</a></p>' +
+    '<div class="button-row">' +
+      '<button type="button" onclick="closeSyncInfoDialog()" class="primary">' + t('sync.info_dialog_close') + '</button>' +
+    '</div>' +
+  '</div>';
+  
+  document.body.appendChild(overlay);
+  
+  // Focus the close button
+  var closeBtn = overlay.querySelector('button');
+  if (closeBtn) closeBtn.focus();
+  
+  // Close on overlay click
+  overlay.addEventListener('click', function(e) {
+    if (e.target === overlay) {
+      closeSyncInfoDialog();
+    }
+  });
+  
+  // Close on Escape key
+  var handleKeydown = function(e) {
+    if (e.key === 'Escape') {
+      closeSyncInfoDialog();
+      document.removeEventListener('keydown', handleKeydown);
+    }
+  };
+  document.addEventListener('keydown', handleKeydown);
+}
+
+/**
+ * Close the sync info dialog
+ */
+function closeSyncInfoDialog() {
+  var overlay = document.getElementById('sync-info-dialog-overlay');
+  if (overlay) overlay.remove();
 }
 
 /**

@@ -344,7 +344,14 @@ register_i18n_language('pig', {
       "aria_peer_count": "{{count}} eople-pay urrently-cay editing-ay",
       "aria_peer_joined": "{{name}} as-hay oined-jay e-thay ession-say",
       "aria_peer_left": "{{name}} as-hay eft-lay e-thay ession-say",
-      "aria_room_created": "Oom-Ray eated-cray ith-way ode-cay {{code}}"
+      "aria_room_created": "Oom-Ray eated-cray ith-way ode-cay {{code}}",
+      "info_link_title": "Earn-Lay about-ay ync-say imitations-lay",
+      "info_dialog_title": "About-ay Eal-Ray Ime-Tay Ync-Say",
+      "info_dialog_p2p": "Is-Thay eature-fay uses-ay eer-pay-o-tay-eer-pay (P2P) ync-say echnology-tay, ich-whay orks-way est-bay or-fay all-smay o-tay edium-may ized-say oups-gray.",
+      "info_dialog_limit": "Ecommended-Ray imit-lay: 20-30 imultaneous-say users-ay er-pay oom-ray.",
+      "info_dialog_larger": "Eed-Nay o-tay upport-say a-ay arger-lay oup-gray? Ease-Play open-ay an-ay issue-ay o-tay iscuss-day options-ay:",
+      "info_dialog_github": "Open-ay GitHub-ay Issue-ay",
+      "info_dialog_close": "Ose-Clay"
     },    "session_manager": {
       "dialog_title": "Anagemay Essionssay",
       "description": "Enameray, eorderray, orway eleteday essionssay",

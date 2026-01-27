@@ -347,7 +347,14 @@ register_i18n_language('en', {
       "aria_peer_count": "{{count}} people currently editing",
       "aria_peer_joined": "{{name}} has joined the session",
       "aria_peer_left": "{{name}} has left the session",
-      "aria_room_created": "Room created with code {{code}}"
+      "aria_room_created": "Room created with code {{code}}",
+      "info_link_title": "Learn about sync limitations",
+      "info_dialog_title": "About Real-Time Sync",
+      "info_dialog_p2p": "This feature uses peer-to-peer (P2P) sync technology, which works best for small to medium-sized groups.",
+      "info_dialog_limit": "Recommended limit: 20-30 simultaneous users per room.",
+      "info_dialog_larger": "Need to support a larger group? Please open an issue to discuss options:",
+      "info_dialog_github": "Open GitHub Issue",
+      "info_dialog_close": "Close"
     },
     "session_manager": {
       "dialog_title": "Manage Sessions",

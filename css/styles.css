@@ -474,6 +474,41 @@ tr:nth-child(even){
   background: var(--control-bg);
 }
 
+/* Sync info link */
+.sync-info-link {
+  font-size: 0.9em;
+  text-decoration: none;
+  color: var(--accent-color);
+  margin-left: 0.5rem;
+  vertical-align: middle;
+}
+
+.sync-info-link:hover {
+  color: var(--accent-hover);
+}
+
+/* Sync info dialog */
+.sync-info-dialog {
+  max-width: 450px;
+}
+
+.sync-info-dialog p {
+  margin: 0.75rem 0;
+  line-height: 1.5;
+}
+
+.sync-info-dialog .github-link {
+  display: inline-block;
+  color: var(--accent-color);
+  text-decoration: none;
+  padding: 0.5rem 0;
+}
+
+.sync-info-dialog .github-link:hover {
+  text-decoration: underline;
+  color: var(--accent-hover);
+}
+
 .sync-dialog .room-code-display {
   font-family: monospace;
   font-size: 2rem;

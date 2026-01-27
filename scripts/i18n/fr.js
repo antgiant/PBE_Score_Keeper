@@ -348,7 +348,14 @@ register_i18n_language('fr', {
       "aria_peer_count": "{{count}} personnes en cours d'édition",
       "aria_peer_joined": "{{name}} a rejoint la session",
       "aria_peer_left": "{{name}} a quitté la session",
-      "aria_room_created": "Salle créée avec le code {{code}}"
+      "aria_room_created": "Salle créée avec le code {{code}}",
+      "info_link_title": "En savoir plus sur les limitations de synchronisation",
+      "info_dialog_title": "À propos de la Synchronisation en Temps Réel",
+      "info_dialog_p2p": "Cette fonctionnalité utilise la technologie de synchronisation pair-à-pair (P2P), qui fonctionne mieux pour les groupes de petite à moyenne taille.",
+      "info_dialog_limit": "Limite recommandée : 20-30 utilisateurs simultanés par salle.",
+      "info_dialog_larger": "Besoin de supporter un groupe plus grand ? Veuillez ouvrir une issue pour discuter des options :",
+      "info_dialog_github": "Ouvrir une Issue GitHub",
+      "info_dialog_close": "Fermer"
     },
     "session_manager": {
       "dialog_title": "Gérer les Sessions",
