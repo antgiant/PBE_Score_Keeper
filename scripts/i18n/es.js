@@ -362,8 +362,16 @@ register_i18n_language('es', {
       "empty_name_error": "El nombre de la sesión no puede estar vacío",
       "manage_button": "Gestionar Sesiones",
       "reorder_hint": "Arrastre las sesiones para reordenar"
-    },
-    "merge": {
+    },    "session_dialogs": {
+      "new_session_created_title": "Nueva Sesión Creada",
+      "new_session_created_message": "Se ha creado una nueva sesión \"{{name}}\" y ahora está activa.",
+      "new_session_ok": "Aceptar",
+      "continue_or_new_title": "¡Bienvenido de Nuevo!",
+      "continue_or_new_message": "Tiene datos de sesión existentes. ¿Desea continuar con su sesión actual o comenzar de nuevo con una nueva?",
+      "continue_session": "Continuar Sesión Actual",
+      "start_new_session": "Iniciar Nueva Sesión",
+      "current_session_label": "Sesión actual:"
+    },    "merge": {
       "dialog_title": "Fusionar Sesiones",
       "select_source": "Seleccionar Sesión de Origen",
       "select_target": "Seleccionar Sesión de Destino",

@@ -89,7 +89,55 @@ function initialize_display() {
       }, 3000);
     }
   });
+
+  // Show continue/new session dialog if returning user with existing data
+  // Only in browser environment with proper DOM support
+  if (typeof hasExistingDataOnLoad !== 'undefined' && hasExistingDataOnLoad && 
+      typeof document !== 'undefined' && document.getElementById) {
+    hasExistingDataOnLoad = false; // Reset flag so it doesn't show again
+    checkAndShowContinueOrNewDialog();
+  }
 }
+
+/**
+ * Check if user has meaningful data and show the continue/new session dialog
+ */
+function checkAndShowContinueOrNewDialog() {
+  const session = get_current_session();
+  if (!session) return;
+
+  // Get session name for the dialog
+  const sessionName = session.get('name') || t('defaults.unnamed_session');
+  
+  // Check if session has meaningful data (more than just the initial question)
+  const questions = session.get('questions');
+  let questionCount = questions ? questions.length - 1 : 0;
+  if (questionCount > 0 && questions.get(questionCount).get('score') === 0) {
+    questionCount--;
+  }
+
+  // Only show dialog if there's actual data (at least 2 completed questions or multiple teams with data)
+  if (questionCount >= 2) {
+    showContinueOrNewSessionDialog(sessionName).then(function(choice) {
+      if (choice === 'new') {
+        // Create a new session
+        createNewSession().then(function(newSessionId) {
+          if (newSessionId) {
+            sync_data_to_display();
+            // Show confirmation modal with session name
+            const newSession = get_current_session();
+            if (newSession) {
+              const newSessionName = newSession.get('name') || t('defaults.unnamed_session');
+              showNewSessionCreatedModal(newSessionName);
+            }
+          }
+        });
+      }
+      // If 'continue', do nothing - user continues with current session
+    });
+  }
+}
+
 function sync_data_to_display() {
   //Load "Universal" DB data into variables from Yjs
   var session_names = get_session_names();

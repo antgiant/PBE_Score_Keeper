@@ -357,6 +357,16 @@ register_i18n_language('pig', {
       "empty_name_error": "Essionsay amenay annotcay ebay emptyway",
       "manage_button": "Anagemay Essionssay",
       "reorder_hint": "Agdray essionssay otay eorderray"
+    },
+    "session_dialogs": {
+      "new_session_created_title": "Ew-Nay Ession-Say Eated-Cray",
+      "new_session_created_message": "A-ay ew-nay ession-say \"{{name}}\" as-hay een-bay eated-cray and-ay is-ay ow-nay active-ay.",
+      "new_session_ok": "OK-ay",
+      "continue_or_new_title": "Elcome-Way Ack-Bay!",
+      "continue_or_new_message": "Ou-Yay ave-hay existing-ay ession-say ata-day. Ould-Way ou-yay ike-lay o-tay ontinue-cay ith-way our-yay urrent-cay ession-say or-ay art-stay esh-fray ith-way a-ay ew-nay one-ay?",
+      "continue_session": "Ontinue-Cay Urrent-Cay Ession-Say",
+      "start_new_session": "Art-Stay Ew-Nay Ession-Say",
+      "current_session_label": "Urrent-Cay ession-say:"
     },    "merge": {
       "dialog_title": "Erge-May Essions-Say",
       "select_source": "Elect-Say Ource-Say Ession-Say",

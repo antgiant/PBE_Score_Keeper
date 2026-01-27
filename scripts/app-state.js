@@ -1,6 +1,9 @@
 // State Management for PBE Score Keeper
 // Multi-doc architecture: Global doc for metadata + Per-session Y.Docs
 
+// Flag to track if user is returning with existing data (for welcome back dialog)
+var hasExistingDataOnLoad = false;
+
 /**
  * Initialize application state
  * Handles first run, legacy migration, and v2→v3 migration
@@ -17,6 +20,9 @@ async function initialize_state() {
     if (has_yjs_data()) {
       // Load from Yjs (will migrate v2.0 to v3.0 if needed)
       await load_from_yjs();
+      
+      // Set flag to show welcome back dialog after display is initialized
+      hasExistingDataOnLoad = true;
       
       // Repair sessionNames cache if needed (for users who migrated before fix)
       if (is_multi_doc()) {
@@ -46,6 +52,8 @@ async function initialize_state() {
       await load_from_yjs();
     } else if (data_version < 2.0) {
       // Migration needed from localStorage to v3.0
+      // Set flag for welcome back dialog after migration
+      hasExistingDataOnLoad = true;
       await migrate_localStorage_to_v3(data_version);
       await load_from_yjs();
     }
@@ -824,6 +832,129 @@ function showSessionManagerDialog() {
       document.removeEventListener('keydown', onSessionManagerEscape);
       overlay.remove();
     }
+  });
+}
+
+/**
+ * Show a modal confirming that a new session has been created
+ * @param {string} sessionName - Name of the newly created session
+ * @returns {Promise<void>} Resolves when dialog is closed
+ */
+function showNewSessionCreatedModal(sessionName) {
+  return new Promise(function(resolve) {
+    // Remove any existing dialog
+    const existing = document.getElementById('new-session-modal-overlay');
+    if (existing) existing.remove();
+
+    const overlay = document.createElement('div');
+    overlay.id = 'new-session-modal-overlay';
+    overlay.className = 'sync-dialog-overlay';
+
+    const escapedName = HTMLescape(sessionName);
+
+    overlay.innerHTML = '<div class="sync-dialog" role="dialog" aria-labelledby="new-session-modal-title" aria-modal="true">' +
+      '<h2 id="new-session-modal-title">' + t('session_dialogs.new_session_created_title') + '</h2>' +
+      '<p>' + t('session_dialogs.new_session_created_message', { name: escapedName }) + '</p>' +
+      '<div class="button-row">' +
+        '<button type="button" class="new-session-ok-btn primary">' + t('session_dialogs.new_session_ok') + '</button>' +
+      '</div>' +
+    '</div>';
+
+    document.body.appendChild(overlay);
+
+    // Focus OK button
+    const okBtn = overlay.querySelector('.new-session-ok-btn');
+    if (okBtn) okBtn.focus();
+
+    function closeNewSessionModal() {
+      document.removeEventListener('keydown', onNewSessionModalEscape);
+      overlay.remove();
+      resolve();
+    }
+
+    // Handle OK button click
+    okBtn.addEventListener('click', closeNewSessionModal);
+
+    // Handle Escape key
+    function onNewSessionModalEscape(e) {
+      if (e.key === 'Escape') {
+        closeNewSessionModal();
+      }
+    }
+    document.addEventListener('keydown', onNewSessionModalEscape);
+
+    // Handle overlay click
+    overlay.addEventListener('click', function(e) {
+      if (e.target === overlay) {
+        closeNewSessionModal();
+      }
+    });
+  });
+}
+
+/**
+ * Show dialog asking user to continue with current session or create new one
+ * @param {string} currentSessionName - Name of the current session
+ * @returns {Promise<string>} 'continue' or 'new'
+ */
+function showContinueOrNewSessionDialog(currentSessionName) {
+  return new Promise(function(resolve) {
+    // Remove any existing dialog
+    const existing = document.getElementById('continue-or-new-dialog-overlay');
+    if (existing) existing.remove();
+
+    const overlay = document.createElement('div');
+    overlay.id = 'continue-or-new-dialog-overlay';
+    overlay.className = 'sync-dialog-overlay';
+
+    const escapedName = HTMLescape(currentSessionName);
+
+    overlay.innerHTML = '<div class="sync-dialog" role="dialog" aria-labelledby="continue-or-new-dialog-title" aria-modal="true">' +
+      '<h2 id="continue-or-new-dialog-title">' + t('session_dialogs.continue_or_new_title') + '</h2>' +
+      '<p>' + t('session_dialogs.continue_or_new_message') + '</p>' +
+      '<p><strong>' + t('session_dialogs.current_session_label') + '</strong> ' + escapedName + '</p>' +
+      '<div class="button-row">' +
+        '<button type="button" class="continue-session-btn primary">' + t('session_dialogs.continue_session') + '</button>' +
+        '<button type="button" class="start-new-session-btn">' + t('session_dialogs.start_new_session') + '</button>' +
+      '</div>' +
+    '</div>';
+
+    document.body.appendChild(overlay);
+
+    // Focus continue button (default action)
+    const continueBtn = overlay.querySelector('.continue-session-btn');
+    const newBtn = overlay.querySelector('.start-new-session-btn');
+    if (continueBtn) continueBtn.focus();
+
+    function closeContinueOrNewDialog(choice) {
+      document.removeEventListener('keydown', onContinueOrNewDialogEscape);
+      overlay.remove();
+      resolve(choice);
+    }
+
+    // Handle button clicks
+    continueBtn.addEventListener('click', function() {
+      closeContinueOrNewDialog('continue');
+    });
+
+    newBtn.addEventListener('click', function() {
+      closeContinueOrNewDialog('new');
+    });
+
+    // Handle Escape key - default to continue
+    function onContinueOrNewDialogEscape(e) {
+      if (e.key === 'Escape') {
+        closeContinueOrNewDialog('continue');
+      }
+    }
+    document.addEventListener('keydown', onContinueOrNewDialogEscape);
+
+    // Clicking overlay defaults to continue
+    overlay.addEventListener('click', function(e) {
+      if (e.target === overlay) {
+        closeContinueOrNewDialog('continue');
+      }
+    });
   });
 }
 

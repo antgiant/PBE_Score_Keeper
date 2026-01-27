@@ -362,6 +362,16 @@ register_i18n_language('en', {
       "manage_button": "Manage Sessions",
       "reorder_hint": "Drag sessions to reorder"
     },
+    "session_dialogs": {
+      "new_session_created_title": "New Session Created",
+      "new_session_created_message": "A new session \"{{name}}\" has been created and is now active.",
+      "new_session_ok": "OK",
+      "continue_or_new_title": "Welcome Back!",
+      "continue_or_new_message": "You have existing session data. Would you like to continue with your current session or start fresh with a new one?",
+      "continue_session": "Continue Current Session",
+      "start_new_session": "Start New Session",
+      "current_session_label": "Current session:"
+    },
     "merge": {
       "dialog_title": "Merge Sessions",
       "select_source": "Select Source Session",

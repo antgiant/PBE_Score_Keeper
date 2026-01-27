@@ -34,6 +34,14 @@ function update_data_element(updated_id, new_value) {
     return createNewSession().then(function(newSessionId) {
       if (newSessionId) {
         sync_data_to_display();
+        // Show confirmation modal with session name (only in browser environment)
+        if (typeof showNewSessionCreatedModal === 'function' && typeof document !== 'undefined' && document.getElementById) {
+          const session = get_current_session();
+          if (session) {
+            const sessionName = session.get('name') || t('defaults.unnamed_session');
+            showNewSessionCreatedModal(sessionName);
+          }
+        }
       }
       return newSessionId;
     });
