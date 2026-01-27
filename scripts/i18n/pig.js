@@ -363,10 +363,10 @@ register_i18n_language('pig', {
       "new_session_created_message": "A-ay ew-nay ession-say \"{{name}}\" as-hay een-bay eated-cray and-ay is-ay ow-nay active-ay.",
       "new_session_ok": "OK-ay",
       "continue_or_new_title": "Elcome-Way Ack-Bay!",
-      "continue_or_new_message": "Ou-Yay ave-hay existing-ay ession-say ata-day. Ould-Way ou-yay ike-lay o-tay ontinue-cay ith-way our-yay urrent-cay ession-say or-ay art-stay esh-fray ith-way a-ay ew-nay one-ay?",
+      "continue_or_new_message": "Ould-Way ou-yay ike-lay o-tay ontinue-cay ith-way our-yay evious-pray ession-say or-ay art-stay esh-fray ith-way a-ay ew-nay one-ay?",
       "continue_session": "Ontinue-Cay Evious-Pray",
       "start_new_session": "Art-Stay Ew-Nay",
-      "current_session_label": "Evious-Pray ession-say:"
+      "current_session_label": "Evious-Pray:"
     },    "merge": {
       "dialog_title": "Erge-May Essions-Say",
       "select_source": "Elect-Say Ource-Say Ession-Say",

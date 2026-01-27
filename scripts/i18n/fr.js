@@ -367,10 +367,10 @@ register_i18n_language('fr', {
       "new_session_created_message": "Une nouvelle session \"{{name}}\" a été créée et est maintenant active.",
       "new_session_ok": "OK",
       "continue_or_new_title": "Bon Retour !",
-      "continue_or_new_message": "Vous avez des données de session existantes. Souhaitez-vous continuer avec votre session actuelle ou en commencer une nouvelle ?",
+      "continue_or_new_message": "Souhaitez-vous continuer avec votre session précédente ou en commencer une nouvelle ?",
       "continue_session": "Continuer Précédente",
       "start_new_session": "Démarrer Nouvelle",
-      "current_session_label": "Session précédente :"
+      "current_session_label": "Précédente :"
     },    "merge": {
       "dialog_title": "Fusionner les Sessions",
       "select_source": "Sélectionner la Session Source",
