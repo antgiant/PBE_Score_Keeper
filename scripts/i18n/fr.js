@@ -368,9 +368,9 @@ register_i18n_language('fr', {
       "new_session_ok": "OK",
       "continue_or_new_title": "Bon Retour !",
       "continue_or_new_message": "Vous avez des données de session existantes. Souhaitez-vous continuer avec votre session actuelle ou en commencer une nouvelle ?",
-      "continue_session": "Continuer la Session Actuelle",
-      "start_new_session": "Démarrer une Nouvelle Session",
-      "current_session_label": "Session actuelle :"
+      "continue_session": "Continuer Précédente",
+      "start_new_session": "Démarrer Nouvelle",
+      "current_session_label": "Session précédente :"
     },    "merge": {
       "dialog_title": "Fusionner les Sessions",
       "select_source": "Sélectionner la Session Source",

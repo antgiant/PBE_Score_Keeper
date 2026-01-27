@@ -364,9 +364,9 @@ register_i18n_language('pig', {
       "new_session_ok": "OK-ay",
       "continue_or_new_title": "Elcome-Way Ack-Bay!",
       "continue_or_new_message": "Ou-Yay ave-hay existing-ay ession-say ata-day. Ould-Way ou-yay ike-lay o-tay ontinue-cay ith-way our-yay urrent-cay ession-say or-ay art-stay esh-fray ith-way a-ay ew-nay one-ay?",
-      "continue_session": "Ontinue-Cay Urrent-Cay Ession-Say",
-      "start_new_session": "Art-Stay Ew-Nay Ession-Say",
-      "current_session_label": "Urrent-Cay ession-say:"
+      "continue_session": "Ontinue-Cay Evious-Pray",
+      "start_new_session": "Art-Stay Ew-Nay",
+      "current_session_label": "Evious-Pray ession-say:"
     },    "merge": {
       "dialog_title": "Erge-May Essions-Say",
       "select_source": "Elect-Say Ource-Say Ession-Say",
