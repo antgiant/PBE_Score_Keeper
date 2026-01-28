@@ -1,3 +1,158 @@
+/**
+ * Active focus state for preservation during sync updates
+ * @typedef {Object} FocusState
+ * @property {string|null} id - Element ID (null if no focused element)
+ * @property {string|null} selector - CSS selector for the focused element
+ * @property {number|null} selectionStart - Cursor start position (for inputs)
+ * @property {number|null} selectionEnd - Cursor end position (for inputs)
+ * @property {Object|null} contentEditableSelection - Range info for contenteditable
+ * @property {boolean} isContentEditable - Whether element is contenteditable
+ */
+
+/**
+ * Capture the current focus state including cursor/selection position.
+ * Works with both regular inputs and contenteditable elements.
+ * @returns {FocusState} The current focus state
+ */
+function getActiveFocusState() {
+  var activeEl = document.activeElement;
+  var state = {
+    id: null,
+    selector: null,
+    selectionStart: null,
+    selectionEnd: null,
+    contentEditableSelection: null,
+    isContentEditable: false
+  };
+  
+  if (!activeEl || activeEl === document.body) {
+    return state;
+  }
+  
+  // Check if it's an editable element
+  var isInput = activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA';
+  var isContentEditable = activeEl.contentEditable === 'true';
+  
+  if (!isInput && !isContentEditable) {
+    return state;
+  }
+  
+  state.id = activeEl.id || null;
+  state.selector = activeEl.id ? '#' + activeEl.id : null;
+  state.isContentEditable = isContentEditable;
+  
+  if (isInput) {
+    // Standard input element - save cursor position
+    try {
+      state.selectionStart = activeEl.selectionStart;
+      state.selectionEnd = activeEl.selectionEnd;
+    } catch (e) {
+      // Some input types don't support selection
+    }
+  } else if (isContentEditable && typeof window !== 'undefined' && window.getSelection) {
+    // Contenteditable element - save selection range
+    var selection = window.getSelection();
+    if (selection.rangeCount > 0) {
+      var range = selection.getRangeAt(0);
+      // Store text-based offsets relative to element
+      state.contentEditableSelection = {
+        startOffset: range.startOffset,
+        endOffset: range.endOffset,
+        collapsed: range.collapsed
+      };
+    }
+  }
+  
+  return state;
+}
+
+/**
+ * Restore focus and cursor/selection position from a saved state.
+ * @param {FocusState} state - The focus state to restore
+ */
+function restoreFocusState(state) {
+  if (!state || !state.id) {
+    return;
+  }
+  
+  var element = document.getElementById(state.id);
+  if (!element) {
+    return;
+  }
+  
+  // Focus the element
+  try {
+    element.focus();
+  } catch (e) {
+    return;
+  }
+  
+  if (state.isContentEditable && state.contentEditableSelection) {
+    // Restore contenteditable selection
+    if (typeof window !== 'undefined' && window.getSelection) {
+      var selection = window.getSelection();
+      try {
+        var range = document.createRange();
+        var textNode = element.firstChild || element;
+        var textLength = textNode.textContent ? textNode.textContent.length : 0;
+        var startOffset = Math.min(state.contentEditableSelection.startOffset, textLength);
+        var endOffset = Math.min(state.contentEditableSelection.endOffset, textLength);
+        
+        range.setStart(textNode, startOffset);
+        range.setEnd(textNode, endOffset);
+        selection.removeAllRanges();
+        selection.addRange(range);
+      } catch (e) {
+        // Selection restore failed, focus is still set
+      }
+    }
+  } else if (state.selectionStart !== null) {
+    // Restore input cursor position
+    try {
+      var textLength = element.value ? element.value.length : 0;
+      var start = Math.min(state.selectionStart, textLength);
+      var end = Math.min(state.selectionEnd, textLength);
+      element.setSelectionRange(start, end);
+    } catch (e) {
+      // Some input types don't support setSelectionRange
+    }
+  }
+}
+
+/**
+ * Check if an element ID is currently focused and being edited.
+ * @param {string} elementId - The element ID to check
+ * @param {FocusState} focusState - The current focus state
+ * @returns {boolean} True if the element is focused
+ */
+function isElementFocused(elementId, focusState) {
+  if (!focusState || !focusState.id) {
+    return false;
+  }
+  return focusState.id === elementId;
+}
+
+/**
+ * Debounced version of sync_data_to_display for sync updates.
+ * Waits 100ms before refreshing to batch rapid updates and avoid interrupting user input.
+ * @type {number|null}
+ */
+var _syncDisplayDebounceTimer = null;
+
+/**
+ * Trigger a debounced sync refresh. Used by sync update listener.
+ * Multiple calls within 100ms will be batched into a single refresh.
+ */
+function sync_data_to_display_debounced() {
+  if (_syncDisplayDebounceTimer) {
+    clearTimeout(_syncDisplayDebounceTimer);
+  }
+  _syncDisplayDebounceTimer = setTimeout(function() {
+    _syncDisplayDebounceTimer = null;
+    sync_data_to_display();
+  }, 100);
+}
+
 function initialize_display() {
   //Set up Accordion display
   $("#accordion").accordion({
@@ -143,6 +298,9 @@ function checkAndShowContinueOrNewDialog() {
 }
 
 function sync_data_to_display() {
+  // Save focus state before any DOM updates to preserve user's editing position
+  var focusState = getActiveFocusState();
+  
   //Load "Universal" DB data into variables from Yjs
   var session_names = get_session_names();
   var session_count = session_names.length - 1;
@@ -385,7 +543,10 @@ function sync_data_to_display() {
     } else {
       $("#team_"+i+"_points_label").text(t('teams.score_label', {name: currentTeamName})+temp_team_score);
     }
-    $("#team_"+i+"_name").val(currentTeamName);
+    // Skip updating value if this input is currently focused (user is typing)
+    if (!isElementFocused("team_"+i+"_name", focusState)) {
+      $("#team_"+i+"_name").val(currentTeamName);
+    }
   }
 
   for (let i=1;i<=team_count;i++) {
@@ -485,7 +646,10 @@ function sync_data_to_display() {
       $("#question_block").append(question_block.closest("label"));
     }
 
-    $("#block_"+i+"_name").val(currentBlockName);
+    // Skip updating value if this input is currently focused (user is typing)
+    if (!isElementFocused("block_"+i+"_name", focusState)) {
+      $("#block_"+i+"_name").val(currentBlockName);
+    }
     //Check off saved block/group
     if (i == current_selected_block) {
       $("#question_block_"+i).prop("checked", true);
@@ -535,8 +699,10 @@ function sync_data_to_display() {
     // Accordion not initialized yet
   }
 
-  //Update Question name to saved name
-  $("#current_question_title").text(question_names[current_question]);
+  //Update Question name to saved name (skip if user is editing it)
+  if (!isElementFocused("current_question_title", focusState)) {
+    $("#current_question_title").text(question_names[current_question]);
+  }
 
   //Set up Question quick navigation
   let question_quick_nav = '<select name="question_quick_nav" id="question_quick_nav" onchange="local_data_update(this)"">';
@@ -747,6 +913,9 @@ function sync_data_to_display() {
   if (typeof updateAutoMergeButtonVisibility === 'function') {
     updateAutoMergeButtonVisibility();
   }
+  
+  // Restore focus state that was saved at the beginning
+  restoreFocusState(focusState);
 }
 /**
  * Show loading indicator

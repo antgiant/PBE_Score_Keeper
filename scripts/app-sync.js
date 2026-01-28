@@ -574,7 +574,10 @@ async function startSync(displayName, roomCode, password, joinChoice) {
         // Update session name cache from session doc (in case name changed remotely)
         updateSessionNameCache(SyncManager.syncedSessionId, sessionDoc);
         
-        if (typeof sync_data_to_display === 'function') {
+        // Use debounced refresh to batch rapid updates and avoid interrupting user input
+        if (typeof sync_data_to_display_debounced === 'function') {
+          sync_data_to_display_debounced();
+        } else if (typeof sync_data_to_display === 'function') {
           sync_data_to_display();
         }
       }
