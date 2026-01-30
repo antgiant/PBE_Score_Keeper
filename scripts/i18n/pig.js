@@ -153,7 +153,8 @@ register_i18n_language('pig', {
         "export_all_sessions": "Export-ay All-ay Essions-Say",
         "reorder_teams": "Eorder-Ray Eams-Tay",
         "reorder_blocks": "Eorder-Ray Ocks-Blay",
-        "merge": "Erge-May Essions-Say"
+        "merge": "Erge-May Essions-Say",
+        "restore_backup": "Estore-Ray Ackup-Bay"
       },
       "details_templates": {
         "renamed": "Enamed-Ray \"{{old}}\" o-tay \"{{new}}\"",
@@ -181,7 +182,9 @@ register_i18n_language('pig', {
         "exported_all_json": "Exported-ay all-ay essions-say as-ay JSON-ay ile-fay",
         "exported_all_json_fallback": "Exported-ay all-ay essions-say as-ay JSON-ay ile-fay (allback-fay)",
         "new_order": "Ew-Nay order-ay: {{order}}",
-        "merged_sessions": "Erged-May \"{{source}}\" into-ay \"{{target}}\""
+        "merged_sessions": "Erged-May \"{{source}}\" into-ay \"{{target}}\"",
+        "merged_items": "Erged-May {{teams}} eam(s)-tay, {{blocks}} ock(s)-blay om-fray ocal-lay ata-day",
+        "restored_backup": "Estored-Ray om-fray ackup-bay ({{date}}, {{reason}})"
       }
     },
     "advanced": {
@@ -281,8 +284,7 @@ register_i18n_language('pig', {
         "import": "Importway"
       },
       "details_templates": {
-        "created_session": "Eatedcray \"{{name}}\"",
-        "switched_session": "Itchedsway otay \"{{name}}\"",
+        "created_session": "Eatedcray \"{{name}}\"",        "created_synced_session": "Eated-Cray ynced-say ession-say \"{{name}}\"",        "switched_session": "Itchedsway otay \"{{name}}\"",
         "deleted_session": "Eleteday \"{{name}}\"",
         "merged_session": "Erged-May \"{{source}}\" into-ay \"{{target}}\"",
         "reordered_sessions": "Angechay essionsay orderway",
@@ -405,8 +407,35 @@ register_i18n_language('pig', {
       "error_room_exists": "Oom-Ray already-ay exists-ay. Y-Tray oining-jay instead-ay.",
       "error_room_not_found": "Oom-Ray ot-nay ound-fay. Eck-Chay e-thay ode-cay or-ay eate-cray a-ay ew-nay oom-ray.",
       "error_invalid_password": "Invalid-ay assword-pay or-fay is-thay oom-ray.",
-      "error_server_unavailable": "Erver-Say unavailable-ay. Ease-Play y-tray again-ay ater-lay."
-    },    "session_manager": {
+      "error_server_unavailable": "Erver-Say unavailable-ay. Ease-Play y-tray again-ay ater-lay.",
+      "join_choice_join_session": "Oin-Jay Ession-Say",
+      "join_choice_join_session_desc": "Eceive-Ray ata-day om-fray e-thay ynced-say oom-ray (ecommended-ray)",
+      "join_advanced_options": "Advanced-ay Options-ay",
+      "join_merge_warning": "Only-ay use-ay erge-may if-ay ou-yay understand-ay at-thay it-ay adds-ay our-yay ocal-lay eams-tay/ocks-blay o-tay e-thay ynced-say ession-say.",
+      "join_button": "Oin-Jay",
+      "receiving_data": "Eceiving-Ray ession-say ata-day...",
+      "synced_session_name": "Ynced-Say Ession-Say {{date}}",
+      "merge_nothing_to_add": "All-ay items-ay already-ay exist-ay in-ay e-thay ynced-say ession-say",
+      "merge_cancelled": "Erge-May ancelled-cay",
+      "merge_complete": "Erged-May {{teams}} eam(s)-tay and-ay {{blocks}} ock(s)-blay",
+      "merge_preview_title": "Erge-May Eview-Pray",
+      "merge_preview_description": "E-Thay ollowing-fay items-ay ill-way e-bay added-ay o-tay e-thay ynced-say ession-say:",
+      "merge_teams_to_add": "Eams-Tay o-tay add-ay ({{count}}):",
+      "merge_blocks_to_add": "Ocks-Blay o-tay add-ay ({{count}}):",
+      "merge_none": "(one-nay)",
+      "merge_backup_note": "A-ay ackup-bay ill-way e-bay eated-cray efore-bay erging-may.",
+      "merge_confirm_button": "Erge-May Items-ay"
+    },
+    "backup": {
+      "reason_pre_merge": "Efore-Bay Erge-May",
+      "reason_pre_restore": "Efore-Bay Estore-Ray",
+      "reason_pre_import": "Efore-Bay Import-ay",
+      "reason_manual": "Anual-May Ackup-Bay",
+      "reason_auto": "Auto-ay Ackup-Bay",
+      "restored_success": "Ession-Say estored-ray om-fray ackup-bay",
+      "restore_failed": "Ailed-Fay o-tay estore-ray om-fray ackup-bay"
+    },
+    "session_manager": {
       "dialog_title": "Anagemay Essionssay",
       "description": "Enameray, eorderray, orway eleteday essionssay",
       "name_column": "Essionsay Amenay",

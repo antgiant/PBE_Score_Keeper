@@ -1091,3 +1091,99 @@ tr:nth-child(even){
   opacity: 1;
   background: var(--row-alt);
 }
+
+/* Sync loading overlay */
+.sync-loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+}
+
+.sync-loading-content {
+  background: var(--panel-bg);
+  padding: 2rem;
+  border-radius: 8px;
+  text-align: center;
+  color: var(--text-color);
+}
+
+.sync-loading-spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid var(--border-color);
+  border-top-color: var(--link-color);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 1rem;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Advanced options in join dialog */
+.sync-join-dialog .advanced-options {
+  margin: 1rem 0;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background: var(--control-bg);
+}
+
+.sync-join-dialog .advanced-options summary {
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  user-select: none;
+  color: var(--muted-text);
+}
+
+.sync-join-dialog .advanced-content {
+  padding: 0 1rem 1rem;
+}
+
+.sync-join-dialog .advanced-warning {
+  color: #856404;
+  background: #fff3cd;
+  padding: 0.75rem;
+  border-radius: 4px;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+}
+
+[data-theme="dark"] .sync-join-dialog .advanced-warning {
+  color: #ffc107;
+  background: #332701;
+}
+
+.sync-join-dialog .choice-option-primary {
+  border: 2px solid var(--link-color);
+}
+
+/* Merge preview sections */
+.merge-preview-section {
+  margin: 1rem 0;
+}
+
+.merge-preview-section h4 {
+  margin: 0.5rem 0;
+}
+
+.merge-item-list {
+  padding: 0.5rem;
+  background: var(--row-alt);
+  border-radius: 4px;
+  font-style: italic;
+}
+
+.merge-backup-note {
+  font-style: italic;
+  color: var(--muted-text);
+  margin-top: 1rem;
+  font-size: 0.9rem;
+}

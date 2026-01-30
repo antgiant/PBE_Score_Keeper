@@ -506,6 +506,87 @@ async function createNewSession(name) {
 }
 
 /**
+ * Create an empty session for sync joining
+ * Unlike createNewSession, this does NOT populate with teams/blocks/questions
+ * The session will receive data from the synced room
+ * @param {string} name - Optional name for the session
+ * @returns {Promise<string>} Session UUID or null if creation failed
+ */
+async function createEmptySessionForSync(name) {
+  // Generate new session ID
+  const sessionId = generateSessionId();
+  var d = new Date();
+  var formattedDate = (typeof format_date === 'function') ? format_date(d) : d.toLocaleString();
+  const sessionName = name || t('sync.synced_session_name', { date: formattedDate });
+
+  // Create new session doc - completely empty except for basic structure
+  const sessionDoc = await initSessionDoc(sessionId);
+
+  sessionDoc.transact(function() {
+    const session = sessionDoc.getMap('session');
+    session.set('id', sessionId);
+    session.set('name', sessionName);
+    session.set('createdAt', Date.now());
+    session.set('lastModified', Date.now());
+    session.set('isAwaitingSync', true);  // Flag to indicate waiting for sync data
+
+    // Minimal config
+    const newConfig = new Y.Map();
+    newConfig.set('maxPointsPerQuestion', 20);
+    newConfig.set('rounding', false);
+    session.set('config', newConfig);
+
+    // Empty teams array with just the null placeholder
+    const newTeams = new Y.Array();
+    newTeams.push([null]); // Placeholder at index 0
+    session.set('teams', newTeams);
+
+    // Empty blocks array - not even "No Block"
+    const newBlocks = new Y.Array();
+    session.set('blocks', newBlocks);
+
+    // Empty questions array with just the null placeholder
+    const newQuestions = new Y.Array();
+    newQuestions.push([null]); // Placeholder at index 0
+    session.set('questions', newQuestions);
+
+    // Empty history log
+    const historyLog = new Y.Array();
+    session.set('historyLog', historyLog);
+  }, 'local');
+
+  // Update global doc
+  const meta = getGlobalDoc().getMap('meta');
+  const sessionOrder = meta.get('sessionOrder') || [];
+
+  getGlobalDoc().transact(function() {
+    const newOrder = sessionOrder.slice();
+    newOrder.push(sessionId);
+    meta.set('sessionOrder', newOrder);
+    meta.set('currentSession', sessionId);
+    
+    // Update session name cache
+    let sessionNames = meta.get('sessionNames');
+    if (!sessionNames) {
+      sessionNames = new Y.Map();
+      meta.set('sessionNames', sessionNames);
+    }
+    sessionNames.set(sessionId, sessionName);
+  }, 'local');
+
+  // Switch to new session
+  DocManager.setActiveSession(sessionId);
+  
+  // Reset to first question for the new session
+  current_question_index = 1;
+
+  // Log in global history
+  add_global_history_entry('history_global.actions.create_session', 'history_global.details_templates.created_synced_session', { name: sessionName });
+
+  return sessionId;
+}
+
+/**
  * Switch to a different session
  * @param {string|number} sessionIdOrIndex - Session UUID or 1-based index
  * @returns {Promise<boolean>} True if switch successful

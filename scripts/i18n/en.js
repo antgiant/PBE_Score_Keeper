@@ -156,7 +156,8 @@ register_i18n_language('en', {
         "export_all_sessions": "Export All Sessions",
         "reorder_teams": "Reorder Teams",
         "reorder_blocks": "Reorder Blocks",
-        "merge": "Merge Sessions"
+        "merge": "Merge Sessions",
+        "restore_backup": "Restore Backup"
       },
       "details_templates": {
         "renamed": "Renamed \"{{old}}\" to \"{{new}}\"",
@@ -184,7 +185,9 @@ register_i18n_language('en', {
         "exported_all_json": "Exported all sessions as JSON file",
         "exported_all_json_fallback": "Exported all sessions as JSON file (fallback)",
         "new_order": "New order: {{order}}",
-        "merged_sessions": "Merged \"{{source}}\" into \"{{target}}\""
+        "merged_sessions": "Merged \"{{source}}\" into \"{{target}}\"",
+        "merged_items": "Merged {{teams}} team(s), {{blocks}} block(s) from local data",
+        "restored_backup": "Restored from backup ({{date}}, {{reason}})"
       }
     },
     "advanced": {
@@ -285,6 +288,7 @@ register_i18n_language('en', {
       },
       "details_templates": {
         "created_session": "Created \"{{name}}\"",
+        "created_synced_session": "Created synced session \"{{name}}\"",
         "switched_session": "Switched to \"{{name}}\"",
         "deleted_session": "Deleted \"{{name}}\"",
         "merged_session": "Merged \"{{source}}\" into \"{{target}}\"",
@@ -408,7 +412,33 @@ register_i18n_language('en', {
       "error_room_exists": "Room already exists. Try joining instead.",
       "error_room_not_found": "Room not found. Check the code or create a new room.",
       "error_invalid_password": "Invalid password for this room.",
-      "error_server_unavailable": "Server unavailable. Please try again later."
+      "error_server_unavailable": "Server unavailable. Please try again later.",
+      "join_choice_join_session": "Join Session",
+      "join_choice_join_session_desc": "Receive data from the synced room (recommended)",
+      "join_advanced_options": "Advanced Options",
+      "join_merge_warning": "Only use merge if you understand that it adds your local teams/blocks to the synced session.",
+      "join_button": "Join",
+      "receiving_data": "Receiving session data...",
+      "synced_session_name": "Synced Session {{date}}",
+      "merge_nothing_to_add": "All items already exist in the synced session",
+      "merge_cancelled": "Merge cancelled",
+      "merge_complete": "Merged {{teams}} team(s) and {{blocks}} block(s)",
+      "merge_preview_title": "Merge Preview",
+      "merge_preview_description": "The following items will be added to the synced session:",
+      "merge_teams_to_add": "Teams to add ({{count}}):",
+      "merge_blocks_to_add": "Blocks to add ({{count}}):",
+      "merge_none": "(none)",
+      "merge_backup_note": "A backup will be created before merging.",
+      "merge_confirm_button": "Merge Items"
+    },
+    "backup": {
+      "reason_pre_merge": "Before Merge",
+      "reason_pre_restore": "Before Restore",
+      "reason_pre_import": "Before Import",
+      "reason_manual": "Manual Backup",
+      "reason_auto": "Auto Backup",
+      "restored_success": "Session restored from backup",
+      "restore_failed": "Failed to restore from backup"
     },
     "session_manager": {
       "dialog_title": "Manage Sessions",

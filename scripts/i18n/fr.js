@@ -157,7 +157,8 @@ register_i18n_language('fr', {
         "export_all_sessions": "Exporter Toutes les Sessions",
         "reorder_teams": "Réorganiser les Équipes",
         "reorder_blocks": "Réorganiser les Blocs",
-        "merge": "Fusionner les Sessions"
+        "merge": "Fusionner les Sessions",
+        "restore_backup": "Restaurer la Sauvegarde"
       },
       "details_templates": {
         "renamed": "Renommé \"{{old}}\" en \"{{new}}\"",
@@ -185,7 +186,9 @@ register_i18n_language('fr', {
         "exported_all_json": "Toutes les sessions exportées en fichier JSON",
         "exported_all_json_fallback": "Toutes les sessions exportées en fichier JSON (secours)",
         "new_order": "Nouvel ordre : {{order}}",
-        "merged_sessions": "Fusionné \"{{source}}\" dans \"{{target}}\""
+        "merged_sessions": "Fusionné \"{{source}}\" dans \"{{target}}\"",
+        "merged_items": "{{teams}} équipe(s), {{blocks}} bloc(s) fusionnés depuis les données locales",
+        "restored_backup": "Restauré depuis la sauvegarde ({{date}}, {{reason}})"
       }
     },
     "advanced": {
@@ -286,6 +289,7 @@ register_i18n_language('fr', {
       },
       "details_templates": {
         "created_session": "\"{{name}}\" créée",
+        "created_synced_session": "Session synchronisée \"{{name}}\" créée",
         "switched_session": "Basculé vers \"{{name}}\"",
         "deleted_session": "\"{{name}}\" supprimée",
         "merged_session": "\"{{source}}\" fusionnée dans \"{{target}}\"",
@@ -407,7 +411,33 @@ register_i18n_language('fr', {
       "error_room_exists": "La salle existe déjà. Essayez de la rejoindre.",
       "error_room_not_found": "Salle non trouvée. Vérifiez le code ou créez une nouvelle salle.",
       "error_invalid_password": "Mot de passe invalide pour cette salle.",
-      "error_server_unavailable": "Serveur indisponible. Veuillez réessayer plus tard."
+      "error_server_unavailable": "Serveur indisponible. Veuillez réessayer plus tard.",
+      "join_choice_join_session": "Rejoindre la Session",
+      "join_choice_join_session_desc": "Recevoir les données de la salle synchronisée (recommandé)",
+      "join_advanced_options": "Options Avancées",
+      "join_merge_warning": "N'utilisez la fusion que si vous comprenez qu'elle ajoute vos équipes/blocs locaux à la session synchronisée.",
+      "join_button": "Rejoindre",
+      "receiving_data": "Réception des données de session...",
+      "synced_session_name": "Session Synchronisée {{date}}",
+      "merge_nothing_to_add": "Tous les éléments existent déjà dans la session synchronisée",
+      "merge_cancelled": "Fusion annulée",
+      "merge_complete": "{{teams}} équipe(s) et {{blocks}} bloc(s) fusionnés",
+      "merge_preview_title": "Aperçu de la Fusion",
+      "merge_preview_description": "Les éléments suivants seront ajoutés à la session synchronisée:",
+      "merge_teams_to_add": "Équipes à ajouter ({{count}}):",
+      "merge_blocks_to_add": "Blocs à ajouter ({{count}}):",
+      "merge_none": "(aucun)",
+      "merge_backup_note": "Une sauvegarde sera créée avant la fusion.",
+      "merge_confirm_button": "Fusionner les Éléments"
+    },
+    "backup": {
+      "reason_pre_merge": "Avant Fusion",
+      "reason_pre_restore": "Avant Restauration",
+      "reason_pre_import": "Avant Importation",
+      "reason_manual": "Sauvegarde Manuelle",
+      "reason_auto": "Sauvegarde Automatique",
+      "restored_success": "Session restaurée depuis la sauvegarde",
+      "restore_failed": "Échec de la restauration depuis la sauvegarde"
     },
     "session_manager": {
       "dialog_title": "Gérer les Sessions",

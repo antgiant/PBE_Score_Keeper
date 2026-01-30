@@ -492,7 +492,7 @@ function getSyncPeerCount() {
  * @param {string} displayName - User's display name
  * @param {string} [roomCode] - Room to join, or null to create new
  * @param {string} [password] - Optional room password for encryption
- * @param {string} [joinChoice] - 'create' | 'new' | 'merge' (how to handle joining)
+ * @param {string} [joinChoice] - 'create' | 'join' | 'merge' (how to handle joining)
  * @returns {Promise<string>} Room code on success
  */
 async function startSync(displayName, roomCode, password, joinChoice) {
@@ -511,14 +511,42 @@ async function startSync(displayName, roomCode, password, joinChoice) {
   // Generate room code if creating
   var finalRoomCode = roomCode ? roomCode.toUpperCase() : generateRoomCode();
   
-  // Handle join choice - create new session or merge into current
+  // Handle join choice - determine which session doc to use
   var sessionDoc;
-  if (joinChoice === 'new') {
-    // Create a new session for this sync (uses default name)
-    await createNewSession();
+  var isJoiningExistingRoom = !!roomCode && (joinChoice === 'join' || joinChoice === 'merge');
+  
+  if (joinChoice === 'join') {
+    // SAFE JOIN: Create an empty session that will receive remote data
+    // This prevents the LWW data loss bug by connecting an empty doc
+    var newSessionId = await createEmptySessionForSync();
+    if (!newSessionId) {
+      throw new Error('Failed to create session for sync');
+    }
     sessionDoc = getActiveSessionDoc();
+    
+    // Show loading state while waiting for sync data
+    if (typeof showSyncLoadingState === 'function') {
+      showSyncLoadingState();
+    }
+  } else if (joinChoice === 'merge') {
+    // MERGE: User wants to add their local data to the synced session
+    // First capture current session data before we switch to an empty session
+    SyncManager.pendingMergeData = captureSessionDataForMerge();
+    
+    // Create an empty session that will receive remote data first
+    var newSessionId = await createEmptySessionForSync();
+    if (!newSessionId) {
+      throw new Error('Failed to create session for sync');
+    }
+    sessionDoc = getActiveSessionDoc();
+    
+    // Show loading state while waiting for sync data
+    if (typeof showSyncLoadingState === 'function') {
+      showSyncLoadingState();
+    }
   } else {
-    // Use current session (for 'create' or 'merge')
+    // CREATE: User is creating a new room with their current session
+    // 'create' or undefined - use current session as-is
     sessionDoc = getActiveSessionDoc();
   }
   
@@ -532,11 +560,14 @@ async function startSync(displayName, roomCode, password, joinChoice) {
   SyncManager.roomCode = finalRoomCode;
   SyncManager.password = password || null;
   SyncManager.syncedSessionId = typeof get_current_session_id === 'function' ? get_current_session_id() : null;
+  SyncManager.joinChoice = joinChoice || 'create';  // Store for reconnection
   
   // Persist display name to global Yjs doc
   saveDisplayName(displayName);
   // Save room code to session doc for auto-reconnect
   saveSessionSyncRoom(finalRoomCode);
+  // Save join choice for reconnection
+  saveSessionJoinChoice(joinChoice || 'create');
   
   updateSyncUI();
   
@@ -568,8 +599,16 @@ async function startSync(displayName, roomCode, password, joinChoice) {
       if (origin !== 'local' && origin !== sessionDoc.clientID) {
         console.log('Remote update on session doc, refreshing display');
         
+        // Clear the awaiting sync flag if we received data
+        clearAwaitingSyncFlag(sessionDoc);
+        
         // Update session name cache from session doc (in case name changed remotely)
         updateSessionNameCache(SyncManager.syncedSessionId, sessionDoc);
+        
+        // Hide loading state
+        if (typeof hideSyncLoadingState === 'function') {
+          hideSyncLoadingState();
+        }
         
         // Use debounced refresh to batch rapid updates and avoid interrupting user input
         if (typeof sync_data_to_display_debounced === 'function') {
@@ -598,10 +637,24 @@ async function startSync(displayName, roomCode, password, joinChoice) {
     SyncManager.provider.on('synced', function(event) {
       console.log('WebRTC synced:', event.synced);
       
-      // This is where we'd trigger the name matching dialog
-      // if there are differences between local and remote data
-      if (event.synced && SyncManager.state === 'connecting') {
-        checkForNameMatching();
+      if (event.synced) {
+        // Clear the awaiting sync flag
+        clearAwaitingSyncFlag(sessionDoc);
+        
+        // Hide loading state
+        if (typeof hideSyncLoadingState === 'function') {
+          hideSyncLoadingState();
+        }
+        
+        // Handle merge if that was the join choice
+        if (SyncManager.state === 'connecting' && joinChoice === 'merge') {
+          handleMergeAfterSync();
+        }
+        
+        // Refresh display with synced data
+        if (typeof sync_data_to_display === 'function') {
+          sync_data_to_display();
+        }
       }
     });
     
@@ -637,6 +690,12 @@ async function startSync(displayName, roomCode, password, joinChoice) {
   } catch (error) {
     console.error('Failed to start sync:', error);
     SyncManager.state = 'error';
+    
+    // Hide loading state on error
+    if (typeof hideSyncLoadingState === 'function') {
+      hideSyncLoadingState();
+    }
+    
     updateSyncUI();
     
     if (SyncManager.onError) {
@@ -645,6 +704,336 @@ async function startSync(displayName, roomCode, password, joinChoice) {
     
     throw error;
   }
+}
+
+/**
+ * Clear the isAwaitingSync flag from a session doc
+ * Called when remote data is received
+ * @param {Y.Doc} sessionDoc - Session document
+ */
+function clearAwaitingSyncFlag(sessionDoc) {
+  if (!sessionDoc) return;
+  
+  var session = sessionDoc.getMap('session');
+  if (session && session.get('isAwaitingSync')) {
+    sessionDoc.transact(function() {
+      session.delete('isAwaitingSync');
+    }, 'local');
+  }
+}
+
+/**
+ * Save join choice to session doc for reconnection
+ * @param {string} joinChoice - 'create' | 'join' | 'merge'
+ * @param {string} [sessionId] - Session UUID (optional, uses current if not provided)
+ */
+function saveSessionJoinChoice(joinChoice, sessionId) {
+  var doc = sessionId ? getSessionDoc(sessionId) : getActiveSessionDoc();
+  if (!doc) return;
+  
+  var session = doc.getMap('session');
+  if (!session) return;
+  
+  var config = session.get('config');
+  if (config) {
+    config.set('syncJoinChoice', joinChoice);
+  }
+}
+
+/**
+ * Get saved join choice from session doc
+ * @param {string} [sessionId] - Session UUID (optional, uses current if not provided)
+ * @returns {string|null} Join choice or null
+ */
+function getSessionJoinChoice(sessionId) {
+  var doc = sessionId ? getSessionDoc(sessionId) : getActiveSessionDoc();
+  if (!doc) return null;
+  
+  var session = doc.getMap('session');
+  if (!session) return null;
+  
+  var config = session.get('config');
+  if (config) {
+    return config.get('syncJoinChoice') || null;
+  }
+  return null;
+}
+
+/**
+ * Show loading state while waiting for sync data
+ */
+function showSyncLoadingState() {
+  // Show a loading overlay or update the UI to indicate waiting for data
+  var loadingOverlay = document.getElementById('sync-loading-overlay');
+  if (!loadingOverlay) {
+    loadingOverlay = document.createElement('div');
+    loadingOverlay.id = 'sync-loading-overlay';
+    loadingOverlay.className = 'sync-loading-overlay';
+    loadingOverlay.innerHTML = '<div class="sync-loading-content">' +
+      '<div class="sync-loading-spinner"></div>' +
+      '<p>' + t('sync.receiving_data') + '</p>' +
+    '</div>';
+    document.body.appendChild(loadingOverlay);
+  }
+  loadingOverlay.style.display = 'flex';
+}
+
+/**
+ * Hide loading state after sync data received
+ */
+function hideSyncLoadingState() {
+  var loadingOverlay = document.getElementById('sync-loading-overlay');
+  if (loadingOverlay) {
+    loadingOverlay.style.display = 'none';
+  }
+}
+
+/**
+ * Handle merge after initial sync is complete
+ * Creates backup of synced session and then performs additive merge
+ */
+async function handleMergeAfterSync() {
+  // This is where the advanced merge would be triggered
+  // For now, just log - the full merge implementation will be added
+  console.log('Merge after sync - would trigger safeAdditiveMerge');
+  
+  // The merge happens through pendingMergeData stored before connecting
+  if (SyncManager.pendingMergeData) {
+    await performSafeAdditiveMerge(SyncManager.pendingMergeData);
+    SyncManager.pendingMergeData = null;
+  }
+}
+
+/**
+ * Capture current session data for merge (before connecting to room)
+ * @returns {Object|null} Captured data or null if session is empty
+ */
+function captureSessionDataForMerge() {
+  var sessionDoc = getActiveSessionDoc();
+  if (!sessionDoc) return null;
+  
+  var session = sessionDoc.getMap('session');
+  if (!session) return null;
+  
+  var teams = session.get('teams');
+  var blocks = session.get('blocks');
+  var questions = session.get('questions');
+  
+  // Check if session has meaningful data
+  var hasTeams = teams && teams.length > 1;
+  var hasQuestions = questions && questions.length > 1;
+  
+  if (!hasTeams && !hasQuestions) {
+    return null; // Nothing to merge
+  }
+  
+  return {
+    teams: teams ? teams.toArray() : [],
+    blocks: blocks ? blocks.toArray() : [],
+    questions: questions ? questions.toArray() : []
+  };
+}
+
+/**
+ * Perform safe additive merge - adds only unmatched items from local to synced session
+ * Creates backup before merging and shows preview dialog
+ * @param {Object} localData - Captured local data (teams, blocks, questions)
+ * @returns {Promise<boolean>} True if merge completed
+ */
+async function performSafeAdditiveMerge(localData) {
+  if (!localData) return false;
+  
+  var sessionId = typeof get_current_session_id === 'function' ? get_current_session_id() : null;
+  if (!sessionId) return false;
+  
+  // Step 1: Create backup of synced session BEFORE merge
+  if (typeof createSessionBackup === 'function') {
+    var backup = await createSessionBackup(sessionId, BackupReason.PRE_MERGE);
+    if (!backup) {
+      console.warn('performSafeAdditiveMerge: Failed to create backup');
+      // Continue anyway - data is still in Yjs
+    }
+  }
+  
+  var sessionDoc = getActiveSessionDoc();
+  var session = sessionDoc.getMap('session');
+  
+  // Step 2: Compare names to find unmatched items
+  var remoteTeams = session.get('teams');
+  var remoteBlocks = session.get('blocks');
+  
+  // Build sets of existing names (case-insensitive)
+  var existingTeamNames = new Set();
+  if (remoteTeams) {
+    for (var i = 1; i < remoteTeams.length; i++) {
+      var t = remoteTeams.get(i);
+      if (t && t.get('name')) {
+        existingTeamNames.add(t.get('name').toLowerCase());
+      }
+    }
+  }
+  
+  var existingBlockNames = new Set();
+  if (remoteBlocks) {
+    for (var i = 0; i < remoteBlocks.length; i++) {
+      var b = remoteBlocks.get(i);
+      if (b && b.get('name')) {
+        existingBlockNames.add(b.get('name').toLowerCase());
+      }
+    }
+  }
+  
+  // Find unmatched local items
+  var unmatchedTeams = [];
+  for (var i = 1; i < localData.teams.length; i++) {
+    var team = localData.teams[i];
+    if (team && team.get && team.get('name')) {
+      var name = team.get('name');
+      if (!existingTeamNames.has(name.toLowerCase())) {
+        unmatchedTeams.push({ index: i, name: name, data: team });
+      }
+    }
+  }
+  
+  var unmatchedBlocks = [];
+  for (var i = 0; i < localData.blocks.length; i++) {
+    var block = localData.blocks[i];
+    if (block && block.get && block.get('name')) {
+      var name = block.get('name');
+      if (!existingBlockNames.has(name.toLowerCase())) {
+        unmatchedBlocks.push({ index: i, name: name, data: block });
+      }
+    }
+  }
+  
+  // If nothing to merge, show message and return
+  if (unmatchedTeams.length === 0 && unmatchedBlocks.length === 0) {
+    if (typeof showToast === 'function') {
+      showToast(t('sync.merge_nothing_to_add'));
+    }
+    return true;
+  }
+  
+  // Step 3: Show preview dialog
+  var confirmed = await showMergePreviewDialog(unmatchedTeams, unmatchedBlocks, []);
+  if (!confirmed) {
+    if (typeof showToast === 'function') {
+      showToast(t('sync.merge_cancelled'));
+    }
+    return false;
+  }
+  
+  // Step 4: Apply the merge (add unmatched items)
+  sessionDoc.transact(function() {
+    // Add unmatched teams
+    for (var i = 0; i < unmatchedTeams.length; i++) {
+      var teamData = unmatchedTeams[i].data;
+      var newTeam = new Y.Map();
+      if (teamData.forEach) {
+        teamData.forEach(function(value, key) {
+          newTeam.set(key, value);
+        });
+      }
+      remoteTeams.push([newTeam]);
+    }
+    
+    // Add unmatched blocks
+    for (var i = 0; i < unmatchedBlocks.length; i++) {
+      var blockData = unmatchedBlocks[i].data;
+      var newBlock = new Y.Map();
+      if (blockData.forEach) {
+        blockData.forEach(function(value, key) {
+          newBlock.set(key, value);
+        });
+      }
+      remoteBlocks.push([newBlock]);
+    }
+  }, 'local');
+  
+  // Step 5: Log and notify
+  if (typeof add_history_entry === 'function') {
+    add_history_entry(
+      'edit_log.actions.merge',
+      'edit_log.details_templates.merged_items',
+      { 
+        teams: unmatchedTeams.length,
+        blocks: unmatchedBlocks.length
+      }
+    );
+  }
+  
+  if (typeof showToast === 'function') {
+    showToast(t('sync.merge_complete', {
+      teams: unmatchedTeams.length,
+      blocks: unmatchedBlocks.length
+    }));
+  }
+  
+  if (typeof sync_data_to_display === 'function') {
+    sync_data_to_display();
+  }
+  return true;
+}
+
+/**
+ * Show preview dialog for merge operation
+ * @param {Array} teams - Unmatched teams to add
+ * @param {Array} blocks - Unmatched blocks to add  
+ * @param {Array} questions - Unmatched questions to add (future)
+ * @returns {Promise<boolean>} True if user confirms
+ */
+function showMergePreviewDialog(teams, blocks, questions) {
+  return new Promise(function(resolve) {
+    var overlay = document.createElement('div');
+    overlay.id = 'merge-preview-overlay';
+    overlay.className = 'sync-dialog-overlay';
+    
+    var teamList = teams.map(function(t) { return t.name; }).join(', ') || t('sync.merge_none');
+    var blockList = blocks.map(function(b) { return b.name; }).join(', ') || t('sync.merge_none');
+    
+    overlay.innerHTML = '<div class="sync-dialog" role="dialog" aria-modal="true">' +
+      '<h2>' + t('sync.merge_preview_title') + '</h2>' +
+      '<p>' + t('sync.merge_preview_description') + '</p>' +
+      '<div class="merge-preview-section">' +
+        '<h4>' + t('sync.merge_teams_to_add', { count: teams.length }) + '</h4>' +
+        '<p class="merge-item-list">' + teamList + '</p>' +
+      '</div>' +
+      '<div class="merge-preview-section">' +
+        '<h4>' + t('sync.merge_blocks_to_add', { count: blocks.length }) + '</h4>' +
+        '<p class="merge-item-list">' + blockList + '</p>' +
+      '</div>' +
+      '<p class="merge-backup-note">' + t('sync.merge_backup_note') + '</p>' +
+      '<div class="button-row">' +
+        '<button type="button" class="cancel-btn">' + t('sync.cancel_button') + '</button>' +
+        '<button type="button" class="confirm-btn primary">' + t('sync.merge_confirm_button') + '</button>' +
+      '</div>' +
+    '</div>';
+    
+    document.body.appendChild(overlay);
+    
+    var cancelBtn = overlay.querySelector('.cancel-btn');
+    var confirmBtn = overlay.querySelector('.confirm-btn');
+    
+    function close(result) {
+      overlay.remove();
+      resolve(result);
+    }
+    
+    cancelBtn.onclick = function() { close(false); };
+    confirmBtn.onclick = function() { close(true); };
+    overlay.onclick = function(e) {
+      if (e.target === overlay) close(false);
+    };
+    
+    // Keyboard handling
+    overlay.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        close(false);
+      }
+    });
+    
+    confirmBtn.focus();
+  });
 }
 
 /**
@@ -1601,8 +1990,8 @@ async function copyRoomCode(code) {
 
 /**
  * Show join choice dialog when joining an existing room
- * User chooses between creating new session or merging into current
- * @returns {Promise<string|null>} 'new' | 'merge' | null (cancelled)
+ * Default: Join and receive remote data. Advanced: Merge local data into synced session.
+ * @returns {Promise<string|null>} 'join' | 'merge' | null (cancelled)
  */
 async function showJoinChoiceDialog() {
   return new Promise(function(resolve) {
@@ -1610,29 +1999,37 @@ async function showJoinChoiceDialog() {
     overlay.id = 'sync-dialog-overlay';
     overlay.className = 'sync-dialog-overlay';
     
-    overlay.innerHTML = '<div class="sync-dialog" role="dialog" aria-labelledby="join-choice-title" aria-modal="true">' +
+    overlay.innerHTML = '<div class="sync-dialog sync-join-dialog" role="dialog" aria-labelledby="join-choice-title" aria-modal="true">' +
       '<h2 id="join-choice-title">' + t('sync.join_choice_title') + '</h2>' +
       '<p>' + t('sync.join_choice_description') + '</p>' +
       '<fieldset class="choice-group">' +
         '<legend class="visually-hidden">' + t('sync.join_choice_title') + '</legend>' +
-        '<label class="choice-option">' +
-          '<input type="radio" name="join-choice" value="new" checked>' +
+        '<label class="choice-option choice-option-primary">' +
+          '<input type="radio" name="join-choice" value="join" checked>' +
           '<div class="choice-content">' +
-            '<strong>' + t('sync.join_choice_new_session') + '</strong>' +
-            '<span class="choice-desc">' + t('sync.join_choice_new_session_desc') + '</span>' +
-          '</div>' +
-        '</label>' +
-        '<label class="choice-option">' +
-          '<input type="radio" name="join-choice" value="merge">' +
-          '<div class="choice-content">' +
-            '<strong>' + t('sync.join_choice_merge_session') + '</strong>' +
-            '<span class="choice-desc">' + t('sync.join_choice_merge_session_desc') + '</span>' +
+            '<strong>' + t('sync.join_choice_join_session') + '</strong>' +
+            '<span class="choice-desc">' + t('sync.join_choice_join_session_desc') + '</span>' +
           '</div>' +
         '</label>' +
       '</fieldset>' +
+      '<details class="advanced-options">' +
+        '<summary>' + t('sync.join_advanced_options') + '</summary>' +
+        '<div class="advanced-content">' +
+          '<p class="advanced-warning">' +
+            '<span aria-hidden="true">⚠️</span> ' + t('sync.join_merge_warning') +
+          '</p>' +
+          '<label class="choice-option">' +
+            '<input type="radio" name="join-choice" value="merge">' +
+            '<div class="choice-content">' +
+              '<strong>' + t('sync.join_choice_merge_session') + '</strong>' +
+              '<span class="choice-desc">' + t('sync.join_choice_merge_session_desc') + '</span>' +
+            '</div>' +
+          '</label>' +
+        '</div>' +
+      '</details>' +
       '<div class="button-row">' +
         '<button type="button" class="cancel-btn">' + t('sync.cancel_button') + '</button>' +
-        '<button type="button" class="confirm-btn primary">' + t('sync.connect_button') + '</button>' +
+        '<button type="button" class="confirm-btn primary">' + t('sync.join_button') + '</button>' +
       '</div>' +
     '</div>';
     
@@ -3198,6 +3595,9 @@ if (typeof module !== 'undefined' && module.exports) {
     clearRetryTimeout: clearRetryTimeout,
     getSyncedSessionId: getSyncedSessionId,
     getSyncSessionName: getSyncSessionName,
+    captureSessionDataForMerge: captureSessionDataForMerge,
+    performSafeAdditiveMerge: performSafeAdditiveMerge,
+    showMergePreviewDialog: showMergePreviewDialog,
     compareArrays: compareArrays,
     compareSessionData: compareSessionData,
     getMatchStats: getMatchStats,
