@@ -647,8 +647,13 @@ async function switchSession(sessionIdOrIndex) {
   // Set active session
   DocManager.setActiveSession(sessionId);
 
-  // Jump to last question for this session
+  // Validate question counter for deterministic sessions (v5.0+)
   const session = get_current_session();
+  if (session && typeof validateQuestionCounter === 'function') {
+    validateQuestionCounter(session);
+  }
+
+  // Jump to last question for this session
   if (session) {
     const questions = session.get('questions');
     const lastQuestionIndex = Math.max(1, questions.length - 1);

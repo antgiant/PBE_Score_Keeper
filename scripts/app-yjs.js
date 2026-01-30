@@ -50,10 +50,12 @@ var DocManager = {
 /**
  * Current data version for sessions.
  * v3.0 = multi-doc architecture with index-based arrays
- * v4.0 = UUID-keyed Y.Maps with order arrays (migration target)
+ * v4.0 = UUID-keyed Y.Maps with order arrays
+ * v5.0 = Deterministic question IDs (q-1, q-2, etc.)
  */
 var DATA_VERSION_CURRENT = '3.0';
 var DATA_VERSION_UUID = '4.0';
+var DATA_VERSION_DETERMINISTIC = '5.0';
 
 /**
  * Whether to create new sessions using UUID-based v4.0 format.
@@ -88,11 +90,20 @@ function generateTeamId() {
 }
 
 /**
- * Generate a UUID for a new question
- * Uses 'q-' prefix for easy identification in debugging
- * @returns {string} New question UUID (e.g., "q-abc123...")
+ * Generate a deterministic ID for a new question
+ * Uses 'q-' prefix followed by sequential number (e.g., "q-1", "q-2")
+ * If session is provided, uses nextQuestionNumber counter for deterministic IDs.
+ * Falls back to UUID for legacy calls without session parameter.
+ * @param {Y.Map} [session] - Optional session Y.Map for deterministic ID generation
+ * @returns {string} New question ID (e.g., "q-1", "q-2", or "q-uuid..." for legacy)
  */
-function generateQuestionId() {
+function generateQuestionId(session) {
+  if (session && session.get) {
+    const nextNum = session.get('nextQuestionNumber') || 1;
+    session.set('nextQuestionNumber', nextNum + 1);
+    return 'q-' + nextNum;
+  }
+  // Legacy fallback for calls without session parameter
   return 'q-' + generateUUID();
 }
 
@@ -126,14 +137,58 @@ function generateUUID() {
 // ============================================================================
 
 /**
- * Check if a session uses the new UUID-based structure (v4.0)
+ * Check if a session uses the new UUID-based structure (v4.0 or v5.0)
  * @param {Y.Map} session - The session Y.Map
  * @returns {boolean} True if session uses UUID structure
  */
 function isUUIDSession(session) {
   if (!session) return false;
   const dataVersion = session.get('dataVersion');
-  return dataVersion === DATA_VERSION_UUID || dataVersion === '4.0';
+  return dataVersion === DATA_VERSION_UUID || dataVersion === DATA_VERSION_DETERMINISTIC || 
+         dataVersion === '4.0' || dataVersion === '5.0';
+}
+
+/**
+ * Check if a session uses deterministic question IDs (v5.0+)
+ * @param {Y.Map} session - The session Y.Map
+ * @returns {boolean} True if session uses deterministic question IDs
+ */
+function isDeterministicSession(session) {
+  if (!session) return false;
+  const dataVersion = session.get('dataVersion');
+  return dataVersion === DATA_VERSION_DETERMINISTIC || dataVersion === '5.0';
+}
+
+/**
+ * Validate and repair the nextQuestionNumber counter.
+ * Called on session load to ensure counter is always >= max existing question number + 1.
+ * @param {Y.Map} session - The session Y.Map
+ */
+function validateQuestionCounter(session) {
+  if (!session || !isDeterministicSession(session)) return;
+  
+  const questionsById = session.get('questionsById');
+  if (!questionsById) return;
+  
+  // Find the maximum question number from existing questions
+  let maxNum = 0;
+  questionsById.forEach((q, id) => {
+    // Extract number from q-N format
+    const match = id.match(/^q-(\d+)$/);
+    if (match) {
+      const num = parseInt(match[1], 10);
+      if (!isNaN(num) && num > maxNum) {
+        maxNum = num;
+      }
+    }
+  });
+  
+  // Ensure counter is at least maxNum + 1
+  const currentCounter = session.get('nextQuestionNumber') || 1;
+  if (currentCounter <= maxNum) {
+    console.log(`Repairing question counter: was ${currentCounter}, setting to ${maxNum + 1}`);
+    session.set('nextQuestionNumber', maxNum + 1);
+  }
 }
 
 /**
@@ -181,7 +236,9 @@ function getOrderedTeams(session) {
 }
 
 /**
- * Get ordered questions from a UUID-based session, excluding deleted ones
+ * Get ordered questions from a UUID-based session, excluding deleted ones.
+ * For v5.0 (deterministic sessions): sorts by numeric part of ID (q-1, q-2, q-3...)
+ * For v4.0: uses questionOrder array
  * @param {Y.Map} session - The session Y.Map
  * @returns {Array<{id: string, data: Y.Map}>} Array of {id, data} objects in display order
  */
@@ -189,8 +246,31 @@ function getOrderedQuestions(session) {
   if (!session || !isUUIDSession(session)) return [];
   
   const questionsById = session.get('questionsById');
+  if (!questionsById) return [];
+  
+  // For deterministic sessions (v5.0+), sort by numeric ID
+  if (isDeterministicSession(session)) {
+    const result = [];
+    questionsById.forEach((question, questionId) => {
+      if (!isDeleted(question)) {
+        result.push({ id: questionId, data: question });
+      }
+    });
+    // Sort by numeric part of ID (q-1, q-2, q-3...)
+    result.sort((a, b) => {
+      const numA = parseInt(a.id.replace('q-', ''), 10);
+      const numB = parseInt(b.id.replace('q-', ''), 10);
+      // Handle non-numeric IDs (legacy) by putting them at the end
+      if (isNaN(numA)) return 1;
+      if (isNaN(numB)) return -1;
+      return numA - numB;
+    });
+    return result;
+  }
+  
+  // For v4.0 sessions, use questionOrder array
   const questionOrder = session.get('questionOrder');
-  if (!questionsById || !questionOrder) return [];
+  if (!questionOrder) return [];
   
   const result = [];
   for (let i = 0; i < questionOrder.length; i++) {
@@ -418,16 +498,18 @@ function createTeam(sessionDoc, session, name) {
 
 /**
  * Create a new question in a UUID-based session
+ * Uses deterministic question IDs (q-1, q-2, etc.) based on nextQuestionNumber counter
  * @param {Y.Doc} sessionDoc - The session Y.Doc
  * @param {Y.Map} session - The session Y.Map
  * @param {Object} options - Question options
  * @param {string} options.name - Question name (optional)
  * @param {number} options.score - Max points (default: 0)
  * @param {string} options.blockId - Block UUID (default: first block)
- * @returns {string} New question UUID
+ * @returns {string} New question ID (e.g., "q-1", "q-2")
  */
 function createQuestion(sessionDoc, session, options = {}) {
-  const questionId = generateQuestionId();
+  // Generate deterministic question ID using session counter
+  const questionId = generateQuestionId(session);
   const now = Date.now();
   
   sessionDoc.transact(() => {
@@ -454,7 +536,7 @@ function createQuestion(sessionDoc, session, options = {}) {
     question.set('ignoreUpdatedAt', now);
     question.set('createdAt', now);
     question.set('deleted', false);
-    question.set('sortOrder', questionOrder.length);
+    // Note: sortOrder removed in v5.0 - order determined by deterministic ID (q-1, q-2, etc.)
     
     // Initialize team scores for all teams
     const teamScores = new Y.Map();
@@ -532,7 +614,7 @@ function initializeUUIDSession(sessionDoc, options = {}) {
     // Set metadata
     session.set('name', options.name || t('defaults.session_name'));
     session.set('createdAt', now);
-    session.set('dataVersion', DATA_VERSION_UUID);
+    session.set('dataVersion', DATA_VERSION_DETERMINISTIC);
     
     // Config
     const config = new Y.Map();
@@ -547,6 +629,9 @@ function initializeUUIDSession(sessionDoc, options = {}) {
     session.set('questionOrder', new Y.Array());
     session.set('blocksById', new Y.Map());
     session.set('blockOrder', new Y.Array());
+    
+    // Question counter for deterministic IDs (q-1, q-2, etc.)
+    session.set('nextQuestionNumber', 1);
     
     // History log
     session.set('historyLog', new Y.Array());
@@ -586,7 +671,7 @@ function createNewSessionV4(sessionDoc, options = {}) {
     session.set('name', options.name || t('defaults.session_name'));
     session.set('createdAt', now);
     session.set('lastModified', now);
-    session.set('dataVersion', DATA_VERSION_UUID);
+    session.set('dataVersion', DATA_VERSION_DETERMINISTIC);
     
     // Config
     const config = new Y.Map();
@@ -601,6 +686,9 @@ function createNewSessionV4(sessionDoc, options = {}) {
     session.set('questionOrder', new Y.Array());
     session.set('blocksById', new Y.Map());
     session.set('blockOrder', new Y.Array());
+    
+    // Question counter for deterministic IDs (q-1, q-2, etc.)
+    session.set('nextQuestionNumber', 1);
     
     // History log
     session.set('historyLog', new Y.Array());

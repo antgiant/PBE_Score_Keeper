@@ -15,12 +15,13 @@ test('generateTeamId creates prefixed UUID', () => {
   assert.ok(teamId.length > 10, 'Team ID should have sufficient length');
 });
 
-test('generateQuestionId creates prefixed UUID', () => {
+test('generateQuestionId creates prefixed UUID when no session provided', () => {
   const { context } = loadApp(createYjsDoc({ currentSession: 1, sessions: [] }));
   
+  // Without session parameter, falls back to UUID
   const questionId = context.generateQuestionId();
   assert.ok(questionId.startsWith('q-'), 'Question ID should start with q-');
-  assert.ok(questionId.length > 10, 'Question ID should have sufficient length');
+  assert.ok(questionId.length > 10, 'Question ID should have sufficient length (UUID fallback)');
 });
 
 test('generateBlockId creates prefixed UUID', () => {
@@ -1026,10 +1027,13 @@ test('createNewSessionV4 creates proper v4 session structure', () => {
     blockNames: ['No Block', 'Block A', 'Block B']
   });
   
-  // Check metadata
+  // Check metadata (now uses v5.0 with deterministic question IDs)
   assert.equal(session.get('name'), 'V4 Test Session');
-  assert.equal(session.get('dataVersion'), '4.0');
+  assert.equal(session.get('dataVersion'), '5.0');
   assert.ok(session.get('createdAt'), 'Should have createdAt');
+  
+  // Check question counter for deterministic IDs
+  assert.ok(session.get('nextQuestionNumber') >= 1, 'Should have nextQuestionNumber counter');
   
   // Check config
   const config = session.get('config');
@@ -1189,4 +1193,149 @@ test('detectImportFormat identifies v4 JSON format', () => {
     sessions: [null, { teams: [], blocks: [], questions: [] }]
   };
   assert.equal(context.detectImportFormat(v3Data), 'json-v3');
+});
+
+// ============================================================================
+// DETERMINISTIC QUESTION ID TESTS (v5.0)
+// ============================================================================
+
+test('generateQuestionId creates deterministic IDs when session is provided', () => {
+  const { context } = loadApp(createYjsDoc({ currentSession: 1, sessions: [] }));
+  
+  // Create a mock session Y.Map with nextQuestionNumber
+  const mockSession = new context.Y.Doc().getMap('session');
+  mockSession.set('nextQuestionNumber', 1);
+  
+  // Generate first question ID
+  const q1 = context.generateQuestionId(mockSession);
+  assert.equal(q1, 'q-1', 'First question should be q-1');
+  assert.equal(mockSession.get('nextQuestionNumber'), 2, 'Counter should increment to 2');
+  
+  // Generate second question ID
+  const q2 = context.generateQuestionId(mockSession);
+  assert.equal(q2, 'q-2', 'Second question should be q-2');
+  assert.equal(mockSession.get('nextQuestionNumber'), 3, 'Counter should increment to 3');
+  
+  // Generate third question ID
+  const q3 = context.generateQuestionId(mockSession);
+  assert.equal(q3, 'q-3', 'Third question should be q-3');
+});
+
+test('generateQuestionId falls back to UUID when no session provided', () => {
+  const { context } = loadApp(createYjsDoc({ currentSession: 1, sessions: [] }));
+  
+  // Call without session (legacy fallback)
+  const questionId = context.generateQuestionId();
+  assert.ok(questionId.startsWith('q-'), 'Question ID should start with q-');
+  assert.ok(questionId.length > 10, 'Fallback should use UUID (long string)');
+});
+
+test('createQuestion uses deterministic IDs from session counter', () => {
+  const { context } = loadApp(createYjsDoc({ currentSession: 1, sessions: [] }));
+  
+  const testDoc = new context.Y.Doc();
+  const session = context.initializeUUIDSession(testDoc, {
+    name: 'Test Session',
+    maxPointsPerQuestion: 4,
+    rounding: false
+  });
+  
+  // Initial question is q-1, counter should be 2
+  assert.equal(session.get('nextQuestionNumber'), 2, 'Counter should be 2 after initial question');
+  
+  // Create another question
+  const q2Id = context.createQuestion(testDoc, session, { score: 4 });
+  assert.equal(q2Id, 'q-2', 'Second question should be q-2');
+  assert.equal(session.get('nextQuestionNumber'), 3, 'Counter should be 3 after second question');
+  
+  // Create a third question
+  const q3Id = context.createQuestion(testDoc, session, { score: 4 });
+  assert.equal(q3Id, 'q-3', 'Third question should be q-3');
+});
+
+test('isDeterministicSession correctly identifies v5.0 sessions', () => {
+  const { context } = loadApp(createYjsDoc({ currentSession: 1, sessions: [] }));
+  
+  // v5.0 session should be deterministic
+  const v5Doc = new context.Y.Doc();
+  const v5Session = v5Doc.getMap('session');
+  v5Session.set('dataVersion', '5.0');
+  assert.equal(context.isDeterministicSession(v5Session), true, 'v5.0 should be deterministic');
+  
+  // v4.0 session should NOT be deterministic
+  const v4Doc = new context.Y.Doc();
+  const v4Session = v4Doc.getMap('session');
+  v4Session.set('dataVersion', '4.0');
+  assert.equal(context.isDeterministicSession(v4Session), false, 'v4.0 should not be deterministic');
+  
+  // v3.0 session should NOT be deterministic
+  const v3Doc = new context.Y.Doc();
+  const v3Session = v3Doc.getMap('session');
+  v3Session.set('dataVersion', 3.0);
+  assert.equal(context.isDeterministicSession(v3Session), false, 'v3.0 should not be deterministic');
+});
+
+test('validateQuestionCounter repairs out-of-sync counter', () => {
+  const { context } = loadApp(createYjsDoc({ currentSession: 1, sessions: [] }));
+  
+  const testDoc = new context.Y.Doc();
+  const session = testDoc.getMap('session');
+  session.set('dataVersion', '5.0');
+  session.set('nextQuestionNumber', 1);  // Set counter too low
+  
+  // Create questionsById with existing questions
+  const questionsById = new context.Y.Map();
+  const q5 = new context.Y.Map();
+  q5.set('id', 'q-5');
+  questionsById.set('q-5', q5);
+  
+  const q10 = new context.Y.Map();
+  q10.set('id', 'q-10');
+  questionsById.set('q-10', q10);
+  
+  session.set('questionsById', questionsById);
+  
+  // Validate should repair counter to 11 (max existing + 1)
+  context.validateQuestionCounter(session);
+  assert.equal(session.get('nextQuestionNumber'), 11, 'Counter should be repaired to 11');
+});
+
+test('validateQuestionCounter does nothing for valid counter', () => {
+  const { context } = loadApp(createYjsDoc({ currentSession: 1, sessions: [] }));
+  
+  const testDoc = new context.Y.Doc();
+  const session = testDoc.getMap('session');
+  session.set('dataVersion', '5.0');
+  session.set('nextQuestionNumber', 15);  // Counter is already higher
+  
+  // Create questionsById with existing questions
+  const questionsById = new context.Y.Map();
+  const q5 = new context.Y.Map();
+  q5.set('id', 'q-5');
+  questionsById.set('q-5', q5);
+  session.set('questionsById', questionsById);
+  
+  // Validate should not change counter since it's already high enough
+  context.validateQuestionCounter(session);
+  assert.equal(session.get('nextQuestionNumber'), 15, 'Counter should remain 15');
+});
+
+test('validateQuestionCounter ignores non-deterministic question IDs', () => {
+  const { context } = loadApp(createYjsDoc({ currentSession: 1, sessions: [] }));
+  
+  const testDoc = new context.Y.Doc();
+  const session = testDoc.getMap('session');
+  session.set('dataVersion', '5.0');
+  session.set('nextQuestionNumber', 1);
+  
+  // Create questionsById with UUID-style question IDs (from v4 migration)
+  const questionsById = new context.Y.Map();
+  const qUuid = new context.Y.Map();
+  qUuid.set('id', 'q-abc123-def456');  // Not a deterministic ID
+  questionsById.set('q-abc123-def456', qUuid);
+  session.set('questionsById', questionsById);
+  
+  // Validate should not change counter since no deterministic IDs found
+  context.validateQuestionCounter(session);
+  assert.equal(session.get('nextQuestionNumber'), 1, 'Counter should remain 1 for non-deterministic IDs');
 });
