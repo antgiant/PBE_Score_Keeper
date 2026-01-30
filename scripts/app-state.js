@@ -852,6 +852,7 @@ function updateSessionLastModified(sessionId) {
 
 /**
  * Extract session data for comparison (teams, blocks, questions names)
+ * Supports both v3 (index-based) and v4 (UUID-based) session structures.
  * @param {string} sessionId - Session UUID
  * @returns {Promise<Object>} Data object with teams, blocks, questions arrays
  */
@@ -875,30 +876,47 @@ async function extractSessionDataForMerge(sessionId) {
     questions: [null] // Index 0 is always null
   };
 
-  // Extract team names
-  const teams = session.get('teams');
-  if (teams) {
-    for (let i = 1; i < teams.length; i++) {
-      const team = teams.get(i);
-      result.teams.push(team ? team.get('name') : null);
+  // Check if v4 (UUID-based) or v3 (index-based)
+  if (typeof isUUIDSession === 'function' && isUUIDSession(session)) {
+    // V4: Use ordered getter functions
+    const orderedTeams = getOrderedTeams(session);
+    for (const team of orderedTeams) {
+      result.teams.push(team.data.get('name') || null);
     }
-  }
 
-  // Extract block names
-  const blocks = session.get('blocks');
-  if (blocks) {
-    for (let i = 1; i < blocks.length; i++) {
-      const block = blocks.get(i);
-      result.blocks.push(block ? block.get('name') : null);
+    const orderedBlocks = getOrderedBlocks(session);
+    for (const block of orderedBlocks) {
+      result.blocks.push(block.data.get('name') || null);
     }
-  }
 
-  // Extract question names
-  const questions = session.get('questions');
-  if (questions) {
-    for (let i = 1; i < questions.length; i++) {
-      const question = questions.get(i);
-      result.questions.push(question ? question.get('name') : null);
+    const orderedQuestions = getOrderedQuestions(session);
+    for (const question of orderedQuestions) {
+      result.questions.push(question.data.get('name') || null);
+    }
+  } else {
+    // V3: Extract from index-based arrays
+    const teams = session.get('teams');
+    if (teams) {
+      for (let i = 1; i < teams.length; i++) {
+        const team = teams.get(i);
+        result.teams.push(team ? team.get('name') : null);
+      }
+    }
+
+    const blocks = session.get('blocks');
+    if (blocks) {
+      for (let i = 1; i < blocks.length; i++) {
+        const block = blocks.get(i);
+        result.blocks.push(block ? block.get('name') : null);
+      }
+    }
+
+    const questions = session.get('questions');
+    if (questions) {
+      for (let i = 1; i < questions.length; i++) {
+        const question = questions.get(i);
+        result.questions.push(question ? question.get('name') : null);
+      }
     }
   }
 

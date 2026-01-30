@@ -806,6 +806,7 @@ async function handleMergeAfterSync() {
 
 /**
  * Capture current session data for merge (before connecting to room)
+ * Supports both v3 (index-based) and v4 (UUID-based) sessions.
  * @returns {Object|null} Captured data or null if session is empty
  */
 function captureSessionDataForMerge() {
@@ -815,6 +816,28 @@ function captureSessionDataForMerge() {
   var session = sessionDoc.getMap('session');
   if (!session) return null;
   
+  // Check if v4 (UUID-based) session
+  if (typeof isUUIDSession === 'function' && isUUIDSession(session)) {
+    var orderedTeams = getOrderedTeams(session);
+    var orderedBlocks = getOrderedBlocks(session);
+    var orderedQuestions = getOrderedQuestions(session);
+    
+    var hasTeams = orderedTeams.length > 0;
+    var hasQuestions = orderedQuestions.length > 0;
+    
+    if (!hasTeams && !hasQuestions) {
+      return null;
+    }
+    
+    return {
+      isV4: true,
+      teams: orderedTeams,
+      blocks: orderedBlocks,
+      questions: orderedQuestions
+    };
+  }
+  
+  // V3 (index-based) session
   var teams = session.get('teams');
   var blocks = session.get('blocks');
   var questions = session.get('questions');
@@ -828,6 +851,7 @@ function captureSessionDataForMerge() {
   }
   
   return {
+    isV4: false,
     teams: teams ? teams.toArray() : [],
     blocks: blocks ? blocks.toArray() : [],
     questions: questions ? questions.toArray() : []
@@ -837,6 +861,7 @@ function captureSessionDataForMerge() {
 /**
  * Perform safe additive merge - adds only unmatched items from local to synced session
  * Creates backup before merging and shows preview dialog
+ * Supports both v3 (index-based) and v4 (UUID-based) sessions.
  * @param {Object} localData - Captured local data (teams, blocks, questions)
  * @returns {Promise<boolean>} True if merge completed
  */
@@ -858,50 +883,94 @@ async function performSafeAdditiveMerge(localData) {
   var sessionDoc = getActiveSessionDoc();
   var session = sessionDoc.getMap('session');
   
+  // Check if current session is v4 (UUID-based)
+  var isCurrentSessionV4 = typeof isUUIDSession === 'function' && isUUIDSession(session);
+  
   // Step 2: Compare names to find unmatched items
-  var remoteTeams = session.get('teams');
-  var remoteBlocks = session.get('blocks');
-  
-  // Build sets of existing names (case-insensitive)
   var existingTeamNames = new Set();
-  if (remoteTeams) {
-    for (var i = 1; i < remoteTeams.length; i++) {
-      var t = remoteTeams.get(i);
-      if (t && t.get('name')) {
-        existingTeamNames.add(t.get('name').toLowerCase());
-      }
-    }
-  }
-  
   var existingBlockNames = new Set();
-  if (remoteBlocks) {
-    for (var i = 0; i < remoteBlocks.length; i++) {
-      var b = remoteBlocks.get(i);
-      if (b && b.get('name')) {
-        existingBlockNames.add(b.get('name').toLowerCase());
+  
+  if (isCurrentSessionV4) {
+    // V4: Use ordered getter functions
+    var orderedTeams = getOrderedTeams(session);
+    for (var i = 0; i < orderedTeams.length; i++) {
+      var teamName = orderedTeams[i].data.get('name');
+      if (teamName) {
+        existingTeamNames.add(teamName.toLowerCase());
+      }
+    }
+    
+    var orderedBlocks = getOrderedBlocks(session);
+    for (var i = 0; i < orderedBlocks.length; i++) {
+      var blockName = orderedBlocks[i].data.get('name');
+      if (blockName) {
+        existingBlockNames.add(blockName.toLowerCase());
+      }
+    }
+  } else {
+    // V3: Use index-based arrays
+    var remoteTeams = session.get('teams');
+    var remoteBlocks = session.get('blocks');
+    
+    if (remoteTeams) {
+      for (var i = 1; i < remoteTeams.length; i++) {
+        var t = remoteTeams.get(i);
+        if (t && t.get('name')) {
+          existingTeamNames.add(t.get('name').toLowerCase());
+        }
+      }
+    }
+    
+    if (remoteBlocks) {
+      for (var i = 0; i < remoteBlocks.length; i++) {
+        var b = remoteBlocks.get(i);
+        if (b && b.get('name')) {
+          existingBlockNames.add(b.get('name').toLowerCase());
+        }
       }
     }
   }
   
-  // Find unmatched local items
+  // Find unmatched local items (handle both v4 and v3 local data)
   var unmatchedTeams = [];
-  for (var i = 1; i < localData.teams.length; i++) {
-    var team = localData.teams[i];
-    if (team && team.get && team.get('name')) {
-      var name = team.get('name');
-      if (!existingTeamNames.has(name.toLowerCase())) {
-        unmatchedTeams.push({ index: i, name: name, data: team });
+  var unmatchedBlocks = [];
+  
+  if (localData.isV4) {
+    // V4 local data: teams is array of {id, data} objects
+    for (var i = 0; i < localData.teams.length; i++) {
+      var team = localData.teams[i];
+      var name = team.data.get('name');
+      if (name && !existingTeamNames.has(name.toLowerCase())) {
+        unmatchedTeams.push({ index: i, name: name, data: team.data, id: team.id });
       }
     }
-  }
-  
-  var unmatchedBlocks = [];
-  for (var i = 0; i < localData.blocks.length; i++) {
-    var block = localData.blocks[i];
-    if (block && block.get && block.get('name')) {
-      var name = block.get('name');
-      if (!existingBlockNames.has(name.toLowerCase())) {
-        unmatchedBlocks.push({ index: i, name: name, data: block });
+    
+    for (var i = 0; i < localData.blocks.length; i++) {
+      var block = localData.blocks[i];
+      var name = block.data.get('name');
+      if (name && !existingBlockNames.has(name.toLowerCase())) {
+        unmatchedBlocks.push({ index: i, name: name, data: block.data, id: block.id });
+      }
+    }
+  } else {
+    // V3 local data: teams is array of Y.Maps
+    for (var i = 1; i < localData.teams.length; i++) {
+      var team = localData.teams[i];
+      if (team && team.get && team.get('name')) {
+        var name = team.get('name');
+        if (!existingTeamNames.has(name.toLowerCase())) {
+          unmatchedTeams.push({ index: i, name: name, data: team });
+        }
+      }
+    }
+    
+    for (var i = 0; i < localData.blocks.length; i++) {
+      var block = localData.blocks[i];
+      if (block && block.get && block.get('name')) {
+        var name = block.get('name');
+        if (!existingBlockNames.has(name.toLowerCase())) {
+          unmatchedBlocks.push({ index: i, name: name, data: block });
+        }
       }
     }
   }
@@ -925,28 +994,65 @@ async function performSafeAdditiveMerge(localData) {
   
   // Step 4: Apply the merge (add unmatched items)
   sessionDoc.transact(function() {
-    // Add unmatched teams
-    for (var i = 0; i < unmatchedTeams.length; i++) {
-      var teamData = unmatchedTeams[i].data;
-      var newTeam = new Y.Map();
-      if (teamData.forEach) {
-        teamData.forEach(function(value, key) {
-          newTeam.set(key, value);
-        });
+    if (isCurrentSessionV4) {
+      // V4: Add to teamsById/blocksById and order arrays
+      var teamsById = session.get('teamsById');
+      var teamOrder = session.get('teamOrder');
+      var blocksById = session.get('blocksById');
+      var blockOrder = session.get('blockOrder');
+      
+      for (var i = 0; i < unmatchedTeams.length; i++) {
+        var teamData = unmatchedTeams[i].data;
+        var teamId = generateTeamId();
+        var newTeam = new Y.Map();
+        newTeam.set('id', teamId);
+        newTeam.set('name', teamData.get ? teamData.get('name') : teamData.name);
+        newTeam.set('createdAt', Date.now());
+        newTeam.set('deleted', false);
+        newTeam.set('sortOrder', teamOrder.length);
+        teamsById.set(teamId, newTeam);
+        teamOrder.push([teamId]);
       }
-      remoteTeams.push([newTeam]);
-    }
-    
-    // Add unmatched blocks
-    for (var i = 0; i < unmatchedBlocks.length; i++) {
-      var blockData = unmatchedBlocks[i].data;
-      var newBlock = new Y.Map();
-      if (blockData.forEach) {
-        blockData.forEach(function(value, key) {
-          newBlock.set(key, value);
-        });
+      
+      for (var i = 0; i < unmatchedBlocks.length; i++) {
+        var blockData = unmatchedBlocks[i].data;
+        var blockId = generateBlockId();
+        var newBlock = new Y.Map();
+        newBlock.set('id', blockId);
+        newBlock.set('name', blockData.get ? blockData.get('name') : blockData.name);
+        newBlock.set('isDefault', false);
+        newBlock.set('createdAt', Date.now());
+        newBlock.set('deleted', false);
+        newBlock.set('sortOrder', blockOrder.length);
+        blocksById.set(blockId, newBlock);
+        blockOrder.push([blockId]);
       }
-      remoteBlocks.push([newBlock]);
+    } else {
+      // V3: Add to arrays
+      var remoteTeams = session.get('teams');
+      var remoteBlocks = session.get('blocks');
+      
+      for (var i = 0; i < unmatchedTeams.length; i++) {
+        var teamData = unmatchedTeams[i].data;
+        var newTeam = new Y.Map();
+        if (teamData.forEach) {
+          teamData.forEach(function(value, key) {
+            newTeam.set(key, value);
+          });
+        }
+        remoteTeams.push([newTeam]);
+      }
+      
+      for (var i = 0; i < unmatchedBlocks.length; i++) {
+        var blockData = unmatchedBlocks[i].data;
+        var newBlock = new Y.Map();
+        if (blockData.forEach) {
+          blockData.forEach(function(value, key) {
+            newBlock.set(key, value);
+          });
+        }
+        remoteBlocks.push([newBlock]);
+      }
     }
   }, 'local');
   
