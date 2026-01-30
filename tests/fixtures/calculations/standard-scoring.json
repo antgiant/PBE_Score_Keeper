@@ -1,0 +1,29 @@
+{
+  "meta": {
+    "fixtureVersion": 1,
+    "description": "Standard scoring test case - basic percentage calculations without rounding",
+    "testType": "calculation-regression",
+    "createdAt": "2025-01-01T00:00:00.000Z"
+  },
+  "input": {
+    "rounding": false,
+    "teams": ["Team A", "Team B", "Team C"],
+    "blocks": ["No Block", "Block 1"],
+    "questions": [
+      { "score": 10, "block": 0, "ignore": false, "teamScores": [8, 6, 10] },
+      { "score": 10, "block": 0, "ignore": false, "teamScores": [7, 9, 5] },
+      { "score": 10, "block": 1, "ignore": false, "teamScores": [10, 8, 9] }
+    ]
+  },
+  "expected": {
+    "teamScores": [
+      { "team": "Team A", "earned": 25, "total": 30, "percent": 0.8333, "placement": "Second Place" },
+      { "team": "Team B", "earned": 23, "total": 30, "percent": 0.7667, "placement": "Third Place" },
+      { "team": "Team C", "earned": 24, "total": 30, "percent": 0.8000, "placement": "Second Place" }
+    ],
+    "blockScores": [
+      { "block": "No Block", "earned": 45, "total": 60, "percent": 0.7500 },
+      { "block": "Block 1", "earned": 27, "total": 30, "percent": 0.9000 }
+    ]
+  }
+}

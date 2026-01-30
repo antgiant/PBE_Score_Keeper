@@ -1,0 +1,37 @@
+{
+  "meta": {
+    "fixtureVersion": 1,
+    "description": "Rounding mode test case - placement based on highest team score (excluding extra credit)",
+    "testType": "calculation-regression",
+    "createdAt": "2025-01-01T00:00:00.000Z"
+  },
+  "input": {
+    "rounding": true,
+    "teams": ["Team A", "Team B", "Team C"],
+    "blocks": ["No Block"],
+    "questions": [
+      { "score": 10, "block": 0, "ignore": false, "teamScores": [{ "score": 10, "extraCredit": 0 }, { "score": 8, "extraCredit": 2 }, { "score": 7, "extraCredit": 0 }] },
+      { "score": 10, "block": 0, "ignore": false, "teamScores": [{ "score": 9, "extraCredit": 0 }, { "score": 10, "extraCredit": 0 }, { "score": 8, "extraCredit": 0 }] }
+    ]
+  },
+  "expected": {
+    "standardMode": {
+      "description": "Without rounding - percentages based on total possible points (20)",
+      "teamScores": [
+        { "team": "Team A", "earned": 19, "total": 20, "percent": 0.9500, "placement": "First Place" },
+        { "team": "Team B", "earned": 20, "total": 20, "percent": 1.0000, "placement": "First Place" },
+        { "team": "Team C", "earned": 15, "total": 20, "percent": 0.7500, "placement": "Third Place" }
+      ]
+    },
+    "roundingMode": {
+      "description": "With rounding - percentages based on highest team score without extra credit (19)",
+      "highestTeamScoreWithoutExtraCredit": 19,
+      "teamScores": [
+        { "team": "Team A", "earned": 19, "roundingTotal": 19, "percent": 1.0000, "placementRounded": "First Place" },
+        { "team": "Team B", "earned": 20, "roundingTotal": 19, "percent": 1.0526, "placementRounded": "First Place" },
+        { "team": "Team C", "earned": 15, "roundingTotal": 19, "percent": 0.7895, "placementRounded": "Third Place" }
+      ],
+      "notes": "Team A scored 19 (highest without EC). Team B scored 18+2EC=20. Rounding uses 19 as denominator."
+    }
+  }
+}

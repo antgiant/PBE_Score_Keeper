@@ -1,0 +1,40 @@
+{
+  "meta": {
+    "fixtureVersion": 1,
+    "description": "Block-specific scoring test case - each block should have independent totals",
+    "testType": "calculation-regression",
+    "createdAt": "2025-01-01T00:00:00.000Z"
+  },
+  "input": {
+    "rounding": false,
+    "teams": ["Team A", "Team B"],
+    "blocks": ["No Block", "Genesis", "Exodus"],
+    "questions": [
+      { "score": 10, "block": 0, "ignore": false, "teamScores": [10, 8] },
+      { "score": 10, "block": 1, "ignore": false, "teamScores": [9, 10] },
+      { "score": 10, "block": 1, "ignore": false, "teamScores": [8, 7] },
+      { "score": 10, "block": 2, "ignore": false, "teamScores": [10, 10] },
+      { "score": 10, "block": 2, "ignore": true, "teamScores": [5, 5] }
+    ]
+  },
+  "expected": {
+    "teamScores": [
+      { "team": "Team A", "earned": 37, "total": 40, "percent": 0.9250, "placement": "1st" },
+      { "team": "Team B", "earned": 35, "total": 40, "percent": 0.8750, "placement": "2nd" }
+    ],
+    "blockScores": [
+      { "block": "No Block", "earned": 18, "total": 20, "percent": 0.9000 },
+      { "block": "Genesis", "earned": 34, "total": 40, "percent": 0.8500 },
+      { "block": "Exodus", "earned": 20, "total": 20, "percent": 1.0000 }
+    ],
+    "teamBlockScores": [
+      { "team": "Team A", "block": "No Block", "earned": 10, "total": 10, "percent": 1.0000 },
+      { "team": "Team A", "block": "Genesis", "earned": 17, "total": 20, "percent": 0.8500 },
+      { "team": "Team A", "block": "Exodus", "earned": 10, "total": 10, "percent": 1.0000 },
+      { "team": "Team B", "block": "No Block", "earned": 8, "total": 10, "percent": 0.8000 },
+      { "team": "Team B", "block": "Genesis", "earned": 17, "total": 20, "percent": 0.8500 },
+      { "team": "Team B", "block": "Exodus", "earned": 10, "total": 10, "percent": 1.0000 }
+    ],
+    "notes": "Question 5 in Exodus is ignored, so Exodus only has 1 question (Q4) counting toward totals."
+  }
+}

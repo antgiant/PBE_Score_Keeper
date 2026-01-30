@@ -1,0 +1,27 @@
+{
+  "meta": {
+    "fixtureVersion": 1,
+    "description": "Extra credit test case - scores can exceed 100% with extra credit",
+    "testType": "calculation-regression",
+    "createdAt": "2025-01-01T00:00:00.000Z"
+  },
+  "input": {
+    "rounding": false,
+    "teams": ["Team A", "Team B"],
+    "blocks": ["No Block"],
+    "questions": [
+      { "score": 10, "block": 0, "ignore": false, "teamScores": [{ "score": 10, "extraCredit": 2 }, { "score": 8, "extraCredit": 0 }] },
+      { "score": 10, "block": 0, "ignore": false, "teamScores": [{ "score": 10, "extraCredit": 0 }, { "score": 10, "extraCredit": 1 }] }
+    ]
+  },
+  "expected": {
+    "teamScores": [
+      { "team": "Team A", "earned": 22, "total": 20, "percent": 1.1000, "placement": "First Place" },
+      { "team": "Team B", "earned": 19, "total": 20, "percent": 0.9500, "placement": "First Place" }
+    ],
+    "blockScores": [
+      { "block": "No Block", "earned": 41, "total": 40, "percent": 1.0250 }
+    ],
+    "notes": "Extra credit allows scores above 100%. Placement is based on percentage thresholds (>=90% = 1st)"
+  }
+}

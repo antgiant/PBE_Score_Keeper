@@ -1,0 +1,183 @@
+{
+  "meta": {
+    "fixtureVersion": 1,
+    "description": "Complex session with 5 teams, 3 blocks, 10 questions, mixed ignore states, extra credits, and rounding enabled",
+    "createdAt": "2025-01-01T00:00:00.000Z",
+    "dataVersion": "3.0"
+  },
+  "raw": {
+    "teams": [
+      { "index": 0, "name": "" },
+      { "index": 1, "name": "Lions" },
+      { "index": 2, "name": "Tigers" },
+      { "index": 3, "name": "Bears" },
+      { "index": 4, "name": "Wolves" },
+      { "index": 5, "name": "Eagles" }
+    ],
+    "blocks": [
+      { "index": 0, "name": "No Block" },
+      { "index": 1, "name": "Old Testament" },
+      { "index": 2, "name": "New Testament" }
+    ],
+    "questions": [
+      { "index": 0, "score": 0, "block": 0, "ignore": false, "teamScores": [] },
+      {
+        "index": 1,
+        "score": 10,
+        "block": 1,
+        "ignore": false,
+        "teamScores": [
+          { "teamIndex": 0, "score": 0, "extraCredit": 0 },
+          { "teamIndex": 1, "score": 10, "extraCredit": 0 },
+          { "teamIndex": 2, "score": 8, "extraCredit": 0 },
+          { "teamIndex": 3, "score": 7, "extraCredit": 0 },
+          { "teamIndex": 4, "score": 9, "extraCredit": 0 },
+          { "teamIndex": 5, "score": 6, "extraCredit": 0 }
+        ]
+      },
+      {
+        "index": 2,
+        "score": 10,
+        "block": 1,
+        "ignore": false,
+        "teamScores": [
+          { "teamIndex": 0, "score": 0, "extraCredit": 0 },
+          { "teamIndex": 1, "score": 9, "extraCredit": 1 },
+          { "teamIndex": 2, "score": 10, "extraCredit": 0 },
+          { "teamIndex": 3, "score": 8, "extraCredit": 2 },
+          { "teamIndex": 4, "score": 7, "extraCredit": 0 },
+          { "teamIndex": 5, "score": 10, "extraCredit": 0 }
+        ]
+      },
+      {
+        "index": 3,
+        "score": 10,
+        "block": 2,
+        "ignore": false,
+        "teamScores": [
+          { "teamIndex": 0, "score": 0, "extraCredit": 0 },
+          { "teamIndex": 1, "score": 8, "extraCredit": 0 },
+          { "teamIndex": 2, "score": 9, "extraCredit": 0 },
+          { "teamIndex": 3, "score": 10, "extraCredit": 0 },
+          { "teamIndex": 4, "score": 6, "extraCredit": 0 },
+          { "teamIndex": 5, "score": 7, "extraCredit": 0 }
+        ]
+      },
+      {
+        "index": 4,
+        "score": 10,
+        "block": 2,
+        "ignore": true,
+        "teamScores": [
+          { "teamIndex": 0, "score": 0, "extraCredit": 0 },
+          { "teamIndex": 1, "score": 5, "extraCredit": 0 },
+          { "teamIndex": 2, "score": 5, "extraCredit": 0 },
+          { "teamIndex": 3, "score": 5, "extraCredit": 0 },
+          { "teamIndex": 4, "score": 5, "extraCredit": 0 },
+          { "teamIndex": 5, "score": 5, "extraCredit": 0 }
+        ]
+      },
+      {
+        "index": 5,
+        "score": 10,
+        "block": 0,
+        "ignore": false,
+        "teamScores": [
+          { "teamIndex": 0, "score": 0, "extraCredit": 0 },
+          { "teamIndex": 1, "score": 10, "extraCredit": 0 },
+          { "teamIndex": 2, "score": 10, "extraCredit": 0 },
+          { "teamIndex": 3, "score": 9, "extraCredit": 0 },
+          { "teamIndex": 4, "score": 8, "extraCredit": 0 },
+          { "teamIndex": 5, "score": 10, "extraCredit": 0 }
+        ]
+      },
+      {
+        "index": 6,
+        "score": 10,
+        "block": 1,
+        "ignore": false,
+        "teamScores": [
+          { "teamIndex": 0, "score": 0, "extraCredit": 0 },
+          { "teamIndex": 1, "score": 7, "extraCredit": 0 },
+          { "teamIndex": 2, "score": 6, "extraCredit": 0 },
+          { "teamIndex": 3, "score": 8, "extraCredit": 0 },
+          { "teamIndex": 4, "score": 9, "extraCredit": 0 },
+          { "teamIndex": 5, "score": 5, "extraCredit": 0 }
+        ]
+      },
+      {
+        "index": 7,
+        "score": 10,
+        "block": 2,
+        "ignore": false,
+        "teamScores": [
+          { "teamIndex": 0, "score": 0, "extraCredit": 0 },
+          { "teamIndex": 1, "score": 10, "extraCredit": 0 },
+          { "teamIndex": 2, "score": 8, "extraCredit": 0 },
+          { "teamIndex": 3, "score": 7, "extraCredit": 0 },
+          { "teamIndex": 4, "score": 9, "extraCredit": 0 },
+          { "teamIndex": 5, "score": 8, "extraCredit": 0 }
+        ]
+      },
+      {
+        "index": 8,
+        "score": 10,
+        "block": 0,
+        "ignore": false,
+        "teamScores": [
+          { "teamIndex": 0, "score": 0, "extraCredit": 0 },
+          { "teamIndex": 1, "score": 9, "extraCredit": 0 },
+          { "teamIndex": 2, "score": 8, "extraCredit": 1 },
+          { "teamIndex": 3, "score": 10, "extraCredit": 0 },
+          { "teamIndex": 4, "score": 7, "extraCredit": 0 },
+          { "teamIndex": 5, "score": 9, "extraCredit": 0 }
+        ]
+      },
+      {
+        "index": 9,
+        "score": 10,
+        "block": 1,
+        "ignore": false,
+        "teamScores": [
+          { "teamIndex": 0, "score": 0, "extraCredit": 0 },
+          { "teamIndex": 1, "score": 8, "extraCredit": 0 },
+          { "teamIndex": 2, "score": 9, "extraCredit": 0 },
+          { "teamIndex": 3, "score": 6, "extraCredit": 0 },
+          { "teamIndex": 4, "score": 10, "extraCredit": 0 },
+          { "teamIndex": 5, "score": 7, "extraCredit": 0 }
+        ]
+      },
+      {
+        "index": 10,
+        "score": 10,
+        "block": 2,
+        "ignore": false,
+        "teamScores": [
+          { "teamIndex": 0, "score": 0, "extraCredit": 0 },
+          { "teamIndex": 1, "score": 10, "extraCredit": 0 },
+          { "teamIndex": 2, "score": 7, "extraCredit": 0 },
+          { "teamIndex": 3, "score": 9, "extraCredit": 0 },
+          { "teamIndex": 4, "score": 8, "extraCredit": 0 },
+          { "teamIndex": 5, "score": 10, "extraCredit": 0 }
+        ]
+      }
+    ],
+    "config": {
+      "rounding": true
+    },
+    "history": []
+  },
+  "calculated": {
+    "description": "Expected values with rounding enabled - scores normalized to highest team without extra credit",
+    "teamScoreSummary": "To be computed dynamically during test",
+    "blockScoreSummary": "To be computed dynamically during test"
+  },
+  "display": {
+    "teamNames": ["", "Lions", "Tigers", "Bears", "Wolves", "Eagles"],
+    "blockNames": ["No Block", "Old Testament", "New Testament"],
+    "questionNames": ["", "Q1", "Q2", "Q3", "Q4", "Q5", "Q6", "Q7", "Q8", "Q9", "Q10"],
+    "teamCount": 5,
+    "blockCount": 2,
+    "questionCount": 10
+  }
+}

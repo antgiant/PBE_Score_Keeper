@@ -1,0 +1,79 @@
+{
+  "meta": {
+    "fixtureVersion": 1,
+    "description": "Basic session with 2 teams, 2 blocks, 3 questions for migration validation",
+    "createdAt": "2025-01-01T00:00:00.000Z",
+    "dataVersion": "3.0"
+  },
+  "raw": {
+    "teams": [
+      { "index": 0, "name": "" },
+      { "index": 1, "name": "Alpha Team" },
+      { "index": 2, "name": "Beta Team" }
+    ],
+    "blocks": [
+      { "index": 0, "name": "No Block" },
+      { "index": 1, "name": "Genesis" }
+    ],
+    "questions": [
+      { "index": 0, "score": 0, "block": 0, "ignore": false, "teamScores": [] },
+      {
+        "index": 1,
+        "score": 10,
+        "block": 0,
+        "ignore": false,
+        "teamScores": [
+          { "teamIndex": 0, "score": 0, "extraCredit": 0 },
+          { "teamIndex": 1, "score": 8, "extraCredit": 2 },
+          { "teamIndex": 2, "score": 6, "extraCredit": 0 }
+        ]
+      },
+      {
+        "index": 2,
+        "score": 10,
+        "block": 1,
+        "ignore": false,
+        "teamScores": [
+          { "teamIndex": 0, "score": 0, "extraCredit": 0 },
+          { "teamIndex": 1, "score": 10, "extraCredit": 0 },
+          { "teamIndex": 2, "score": 9, "extraCredit": 1 }
+        ]
+      },
+      {
+        "index": 3,
+        "score": 10,
+        "block": 1,
+        "ignore": true,
+        "teamScores": [
+          { "teamIndex": 0, "score": 0, "extraCredit": 0 },
+          { "teamIndex": 1, "score": 5, "extraCredit": 0 },
+          { "teamIndex": 2, "score": 5, "extraCredit": 0 }
+        ]
+      }
+    ],
+    "config": {
+      "rounding": false
+    },
+    "history": []
+  },
+  "calculated": {
+    "teamScoreSummary": [
+      ["Team", "Percent", "Score", "Placement", "Earned", "Total", "TotalRounded", "PercentRounded", "ScoreRounded", "PlacementRounded"],
+      ["Alpha Team", "100%", "20/20", "1st", 20, 20, 20, "100%", "20/20", "1st"],
+      ["Beta Team", "80%", "16/20", "2nd", 16, 20, 20, "80%", "16/20", "2nd"]
+    ],
+    "blockScoreSummary": [
+      ["Block", "Percent", "Score", "Earned", "Total"],
+      ["No Block", "70%", "14/20", 14, 20],
+      ["Genesis", "95%", "19/20", 19, 20]
+    ]
+  },
+  "display": {
+    "teamNames": ["", "Alpha Team", "Beta Team"],
+    "blockNames": ["No Block", "Genesis"],
+    "questionNames": ["", "Q1", "Q2", "Q3"],
+    "teamCount": 2,
+    "blockCount": 1,
+    "questionCount": 3
+  }
+}
