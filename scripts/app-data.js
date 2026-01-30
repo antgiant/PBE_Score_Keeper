@@ -657,6 +657,50 @@ function reorder_teams(order) {
   const session = get_current_session();
   if (!session) return;
 
+  const sessionDoc = getActiveSessionDoc();
+  if (!sessionDoc) return;
+
+  // v4.0 UUID-based structure: just reorder the teamOrder array
+  if (isUUIDSession(session)) {
+    const teamOrder = session.get('teamOrder');
+    if (!teamOrder) return;
+    
+    const teamCount = teamOrder.length;
+    if (order.length !== teamCount) return;
+    
+    // Build description of reorder for history
+    const orderedTeams = getOrderedTeams(session);
+    let oldNames = orderedTeams.map(t => t.data.get('name'));
+    let newNames = order.map(idx => oldNames[Number(idx) - 1]);
+    
+    sessionDoc.transact(() => {
+      // Build new order of UUIDs
+      const oldUUIDs = [];
+      for (let i = 0; i < teamOrder.length; i++) {
+        oldUUIDs.push(teamOrder.get(i));
+      }
+      
+      const newUUIDs = order.map(idx => oldUUIDs[Number(idx) - 1]);
+      
+      // Clear and repopulate teamOrder (CRDT-safe: just array reorder)
+      teamOrder.delete(0, teamOrder.length);
+      teamOrder.push(newUUIDs);
+      
+      // Update sortOrder on each team
+      for (let i = 0; i < newUUIDs.length; i++) {
+        const team = getTeamById(session, newUUIDs[i]);
+        if (team) {
+          team.set('sortOrder', i);
+        }
+      }
+      
+      add_history_entry('edit_log.actions.reorder_teams', 'edit_log.details_templates.new_order', { order: newNames.join(', ') });
+    }, 'local');
+    
+    return;
+  }
+
+  // v3.0 index-based structure (legacy)
   const teams = session.get('teams');
   let team_count = teams.length - 1;
   if (order.length !== team_count) {
@@ -676,7 +720,7 @@ function reorder_teams(order) {
     newOrder.push(oldOrder[index - 1]);
   }
 
-  const sessionDoc = getActiveSessionDoc();
+  // sessionDoc already declared above for v4 check
   if (sessionDoc) {
     sessionDoc.transact(() => {
       // Collect team data in new order
@@ -740,6 +784,55 @@ function reorder_blocks(order) {
   const session = get_current_session();
   if (!session) return;
 
+  const sessionDoc = getActiveSessionDoc();
+  if (!sessionDoc) return;
+
+  // v4.0 UUID-based structure: just reorder the blockOrder array
+  if (isUUIDSession(session)) {
+    const blockOrder = session.get('blockOrder');
+    if (!blockOrder) return;
+    
+    // Note: order is 1-based from UI but blockOrder is 0-based
+    // Need to account for block 0 ("No Block") being at index 0
+    // The UI reorder only affects blocks 1+ (non-default blocks)
+    const blockCount = blockOrder.length - 1;  // Exclude default block
+    if (order.length !== blockCount) return;
+    
+    // Build description of reorder for history
+    const orderedBlocks = getOrderedBlocks(session);
+    let oldNames = orderedBlocks.slice(1).map(b => b.data.get('name'));  // Skip default block
+    let newNames = order.map(idx => oldNames[Number(idx) - 1]);
+    
+    sessionDoc.transact(() => {
+      // Get current UUIDs (skip first one which is default block)
+      const defaultBlockId = blockOrder.get(0);
+      const oldUUIDs = [];
+      for (let i = 1; i < blockOrder.length; i++) {
+        oldUUIDs.push(blockOrder.get(i));
+      }
+      
+      const newUUIDs = order.map(idx => oldUUIDs[Number(idx) - 1]);
+      
+      // Clear and repopulate blockOrder (keep default block first)
+      blockOrder.delete(0, blockOrder.length);
+      blockOrder.push([defaultBlockId]);
+      blockOrder.push(newUUIDs);
+      
+      // Update sortOrder on each block
+      for (let i = 0; i < blockOrder.length; i++) {
+        const block = getBlockById(session, blockOrder.get(i));
+        if (block) {
+          block.set('sortOrder', i);
+        }
+      }
+      
+      add_history_entry('edit_log.actions.reorder_blocks', 'edit_log.details_templates.new_order', { order: newNames.join(', ') });
+    }, 'local');
+    
+    return;
+  }
+
+  // v3.0 index-based structure (legacy)
   const blocks = session.get('blocks');
   let block_count = blocks.length - 1;
   if (order.length !== block_count) {
@@ -759,7 +852,7 @@ function reorder_blocks(order) {
     newOrder.push(oldOrder[index - 1]);
   }
 
-  const sessionDoc = getActiveSessionDoc();
+  // sessionDoc already declared above for v4 check
   if (sessionDoc) {
     sessionDoc.transact(() => {
       // Collect block data in new order

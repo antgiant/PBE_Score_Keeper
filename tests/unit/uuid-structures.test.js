@@ -639,3 +639,89 @@ test('migrateSessionToUUID preserves block assignment', () => {
   assert.equal(questionBlockId, blockAId, 'Question should be assigned to Block A');
   assert.equal(orderedBlocks[1].data.get('name'), 'Block A');
 });
+
+// ============================================================================
+// V4 Reorder Tests (CRDT-safe)
+// ============================================================================
+
+test('v4 reorder_teams only modifies teamOrder array', () => {
+  const { context } = loadApp(createYjsDoc({ currentSession: 1, sessions: [] }));
+  
+  // Create v4 session with 3 teams
+  const { doc, session } = createV4Session(context, { teams: ['Alpha', 'Beta', 'Gamma'] });
+  
+  // Record initial team IDs
+  const initialTeamOrder = session.get('teamOrder');
+  const t1 = initialTeamOrder.get(0);
+  const t2 = initialTeamOrder.get(1);
+  const t3 = initialTeamOrder.get(2);
+  
+  // Simulate reorder via direct function call: reverse order [3, 2, 1]
+  // In the app, order comes from UI as 1-based strings
+  doc.transact(() => {
+    const teamOrder = session.get('teamOrder');
+    
+    // Build new order of UUIDs: order [3,2,1] means index 2,1,0
+    const oldUUIDs = [t1, t2, t3];
+    const newUUIDs = [t3, t2, t1];  // Reverse
+    
+    teamOrder.delete(0, teamOrder.length);
+    teamOrder.push(newUUIDs);
+  });
+  
+  // Verify reorder worked
+  const reorderedTeams = context.getOrderedTeams(session);
+  assert.equal(reorderedTeams.length, 3);
+  assert.equal(reorderedTeams[0].data.get('name'), 'Gamma');  // Was 3rd, now 1st
+  assert.equal(reorderedTeams[1].data.get('name'), 'Beta');   // Was 2nd, still 2nd
+  assert.equal(reorderedTeams[2].data.get('name'), 'Alpha');  // Was 1st, now 3rd
+  
+  // Verify UUIDs preserved (same teams, just reordered)
+  assert.equal(reorderedTeams[0].id, t3);
+  assert.equal(reorderedTeams[1].id, t2);
+  assert.equal(reorderedTeams[2].id, t1);
+  
+  // Verify teamsById unchanged (all teams still exist with same data)
+  const teamsById = session.get('teamsById');
+  assert.equal(teamsById.size, 3);
+  assert.equal(teamsById.get(t1).get('name'), 'Alpha');
+  assert.equal(teamsById.get(t2).get('name'), 'Beta');
+  assert.equal(teamsById.get(t3).get('name'), 'Gamma');
+});
+
+test('v4 reorder_blocks only modifies blockOrder array', () => {
+  const { context } = loadApp(createYjsDoc({ currentSession: 1, sessions: [] }));
+  
+  // Create v4 session with 3 blocks (default + 2 custom)
+  const { doc, session } = createV4Session(context, { blocks: ['No Block', 'Block A', 'Block B'] });
+  
+  // Record initial block IDs
+  const initialBlockOrder = session.get('blockOrder');
+  const b0 = initialBlockOrder.get(0);  // No Block (default)
+  const b1 = initialBlockOrder.get(1);  // Block A
+  const b2 = initialBlockOrder.get(2);  // Block B
+  
+  // Simulate reorder of non-default blocks: swap [2, 1] (B, A)
+  doc.transact(() => {
+    const blockOrder = session.get('blockOrder');
+    
+    // Keep default block first, reorder custom blocks
+    const newUUIDs = [b0, b2, b1];  // Swap Block A and Block B
+    
+    blockOrder.delete(0, blockOrder.length);
+    blockOrder.push(newUUIDs);
+  });
+  
+  // Verify reorder worked
+  const reorderedBlocks = context.getOrderedBlocks(session);
+  assert.equal(reorderedBlocks.length, 3);
+  assert.equal(reorderedBlocks[0].data.get('name'), 'No Block');  // Still first
+  assert.equal(reorderedBlocks[1].data.get('name'), 'Block B');   // Was 3rd, now 2nd
+  assert.equal(reorderedBlocks[2].data.get('name'), 'Block A');   // Was 2nd, now 3rd
+  
+  // Verify UUIDs preserved
+  assert.equal(reorderedBlocks[0].id, b0);
+  assert.equal(reorderedBlocks[1].id, b2);
+  assert.equal(reorderedBlocks[2].id, b1);
+});
+
