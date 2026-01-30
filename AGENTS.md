@@ -171,13 +171,54 @@ If you need to update the Yjs libraries or rebuild the bundle:
 
 The bundle exposes `window.Y` and `window.IndexeddbPersistence` globally and dispatches a `yjsModulesLoaded` event when ready.
 
-## Multi-Doc Yjs Architecture (v3.0+)
+## Multi-Doc Yjs Architecture (v4.0+)
 
 ### Architecture Overview
 
 The application is a multi-doc architecture where:
 - **Global metadata Y.Doc** (`pbe-score-keeper-global`): Stores only session list metadata and current session tracking
 - **Per-session Y.Docs**: Each session is a separate Y.Doc for conflict-free import/export and session isolation
+
+### Session Data Structure (v4.0 - UUID-based)
+
+Sessions use UUID-keyed maps for teams, questions, and blocks to enable conflict-free CRDT merging:
+
+```
+Y.Doc (per session)
+├── dataVersion: 4.0
+├── teamsById (Y.Map)
+│   ├── "t-{uuid}": { id, name, deleted }
+│   └── ...
+├── teamOrder (Y.Array) → ["t-{uuid1}", "t-{uuid2}", ...]
+├── questionsById (Y.Map)
+│   ├── "q-{uuid}": { id, teamScores: {teamId: score}, ignore, deleted }
+│   └── ...
+├── questionOrder (Y.Array) → ["q-{uuid1}", "q-{uuid2}", ...]
+├── blocksById (Y.Map)
+│   ├── "b-{uuid}": { id, name, afterQuestion, deleted }
+│   └── ...
+├── blockOrder (Y.Array) → ["b-{uuid1}", "b-{uuid2}", ...]
+└── settings (Y.Map)
+    ├── maxPointsPerQuestion
+    ├── roundingEnabled
+    └── ...
+```
+
+**UUID Formats:**
+- Teams: `t-{uuid}` (e.g., `t-a1b2c3d4-...`)
+- Questions: `q-{uuid}` (e.g., `q-e5f6g7h8-...`)
+- Blocks: `b-{uuid}` (e.g., `b-i9j0k1l2-...`)
+
+**Soft-Delete Pattern:**
+All entity types use a `deleted: true` field instead of physical removal from maps. This prevents tombstone conflicts in CRDT merging. Deleted items are filtered out by the ordered getter functions.
+
+**Ordered Getter Functions:**
+- `getOrderedTeams()` - Returns non-deleted teams in `teamOrder` sequence
+- `getOrderedQuestions()` - Returns non-deleted questions in `questionOrder` sequence  
+- `getOrderedBlocks()` - Returns non-deleted blocks in `blockOrder` sequence
+
+**Legacy v3 Support:**
+Sessions with `dataVersion < 4.0` use the old array-based structure (`teams`, `questions`, `blocks`). The system auto-migrates v3 sessions to v4 on load when `AUTO_MIGRATE_TO_V4` is true.
 
 ### DocManager Abstraction
 
@@ -186,6 +227,7 @@ All Y.Doc access goes through the `DocManager` object in `app-yjs.js`:
 - `getActiveSessionDoc()` - Returns current session's doc
 - `getSessionDoc(sessionId)` - Returns specific session doc by ID
 - `get_current_session_index()` - Returns 1-based session index (replaces legacy `current_session` global)
+- `isUUIDSession(sessionDoc)` - Check if session uses v4 UUID structure
 
 ### Session Management Functions
 
@@ -352,21 +394,21 @@ Available in `app-state.js`:
 
 ### Testing
 
-- **Total Tests**: 196
-- **Passing**: 196
+- **Total Tests**: 300
+- **Passing**: 300
 - **Failed**: 0
 - **Skipped**: 0
 - **Test Files**:
-  - UI tests: blocks, cross-tab-sync, exports, extra-credit, ignore-question, max-points, reorder, rounding, score-summaries, session-manager, sessions, sync-accessibility, sync-dialog, sync-indicator, teams
+  - UI tests: blocks, cross-tab-sync, exports, extra-credit, ignore-question, max-points, reorder, rounding, score-summaries, session-manager, session-question-jump, sessions, sync-accessibility, sync-dialog, sync-focus, sync-indicator, teams
   - Unit tests: core, i18n, multi-doc, no-duplicates, repair-cache, sync-core, sync-matching, sync-presence, sync-sessions
 
 ### Notes for Maintainers
 
 - All functions fully documented with JSDoc comments
 - No breaking changes to existing API
-- Full backward compatibility maintained
-- Session data structure unchanged
-- IndexedDB naming ready for multi-doc phase
+- Full backward compatibility maintained (v3 sessions auto-migrate to v4)
+- IndexedDB naming: `pbe-score-keeper-global` and `pbe-score-keeper-session-{id}`
 - Tests provide comprehensive coverage of new architecture
+- Always use ordered getter functions (`getOrderedTeams()`, etc.) not raw maps
 
 
