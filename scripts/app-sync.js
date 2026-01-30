@@ -69,10 +69,7 @@ var SyncManager = {
     
     // Room prefixes
     roomPrefix: 'pbe-sync-',         // P2P rooms
-    roomPrefixLarge: 'pbe-ws-',      // Large event rooms (server-based)
-    
-    reconnectInterval: 5000,
-    maxReconnectAttempts: 10
+    roomPrefixLarge: 'pbe-ws-'       // Large event rooms (server-based)
   }
 };
 
@@ -612,6 +609,17 @@ async function startSync(displayName, roomCode, password, joinChoice) {
       console.log('WebRTC peers changed:', event.webrtcPeers);
       updatePeersFromAwareness();
       updateSyncUI();
+      
+      // Detect when all WebRTC peers disconnect and proactively trigger reconnection
+      // This handles cases where peers disconnect but signaling is still connected
+      if (event.webrtcPeers && event.webrtcPeers.length === 0 && 
+          SyncManager.state === 'connected' && SyncManager.roomCode) {
+        console.log('All WebRTC peers disconnected, triggering reconnection');
+        // Don't fully disconnect - just trigger reconnection attempt
+        // to re-announce ourselves to the signaling server
+        clearRetryTimeout();
+        retryConnection(0);
+      }
     });
     
     // Wait for initial connection (with timeout)
@@ -829,36 +837,28 @@ function clearRetryTimeout() {
 
 /**
  * Retry connection with exponential backoff
+ * Retries forever (at least every 30 seconds) until connection succeeds
  * @param {number} attempt - Current attempt number
  */
 async function retryConnection(attempt) {
-  var maxAttempts = SyncManager.config.maxReconnectAttempts;
-  
-  if (attempt >= maxAttempts) {
-    console.log('Max reconnection attempts reached');
-    SyncManager.state = 'error';
-    SyncManager.retryAttempt = 0;
-    updateSyncUI();
-    showToast(t('sync.reconnect_failed'));
-    announceToScreenReader(t('sync.reconnect_failed'), 'assertive');
-    return;
-  }
-  
-  // Calculate delay with exponential backoff (max 30 seconds)
+  // Calculate delay with exponential backoff, capped at 30 seconds
+  // After 5 attempts (1s, 2s, 4s, 8s, 16s), stays at 30s forever
   var delay = Math.min(1000 * Math.pow(2, attempt), 30000);
   console.log('Retry attempt ' + (attempt + 1) + ' in ' + delay + 'ms');
   
   SyncManager.retryAttempt = attempt;
+  SyncManager.state = 'error';
+  updateSyncUI();
   
-  // Show reconnecting status
-  if (attempt > 0) {
+  // Show reconnecting status periodically (not every attempt to avoid spam)
+  if (attempt === 0 || attempt % 5 === 0) {
     showToast(t('sync.reconnecting'));
     announceToScreenReader(t('sync.reconnecting'));
   }
   
   SyncManager.retryTimeout = setTimeout(async function() {
     try {
-      // Check if we're still offline
+      // Check if we're still offline - keep retrying at 30s intervals
       if (!navigator.onLine) {
         retryConnection(attempt + 1);
         return;

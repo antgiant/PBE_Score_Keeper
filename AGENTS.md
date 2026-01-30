@@ -299,8 +299,9 @@ All history entries include `user` field:
 ### Error Handling
 
 - `handleSyncError(error, context)` - Graceful error handling with i18n messages
-- `retryConnection(attempt)` - Exponential backoff (max 30s, 10 attempts)
+- `retryConnection(attempt)` - Exponential backoff (max 30s), retries forever
 - Network offline/online events trigger automatic reconnection
+- Peer disconnect detection triggers proactive reconnection
 - Session deletion while synced triggers disconnect with notification
 
 ### Accessibility
