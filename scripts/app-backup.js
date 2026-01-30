@@ -551,3 +551,237 @@ function getBackupReasonText(reason) {
   // If translation not found, return the reason code
   return translated === key ? reason : translated;
 }
+
+/**
+ * Show the backup browser dialog for current session
+ */
+async function showBackupBrowserDialog() {
+  var sessionId = typeof get_current_session_id === 'function' ? get_current_session_id() : null;
+  if (!sessionId) {
+    console.error('showBackupBrowserDialog: No current session');
+    return;
+  }
+
+  var sessionName = '';
+  var sessionDoc = typeof getActiveSessionDoc === 'function' ? getActiveSessionDoc() : null;
+  if (sessionDoc) {
+    var session = sessionDoc.getMap('session');
+    sessionName = session ? session.get('name') : '';
+  }
+
+  // Get backups for current session
+  var backups = await getBackupsForSession(sessionId);
+
+  // Create dialog HTML
+  var html = createBackupBrowserDialogHTML(backups, sessionName);
+
+  // Remove any existing dialog
+  var existing = document.getElementById('backup-browser-overlay');
+  if (existing) existing.remove();
+
+  var overlay = document.createElement('div');
+  overlay.id = 'backup-browser-overlay';
+  overlay.className = 'sync-dialog-overlay';
+  overlay.style.display = 'flex';
+  overlay.innerHTML = html;
+
+  document.body.appendChild(overlay);
+
+  // Set up event listeners
+  setupBackupBrowserListeners(overlay, sessionId);
+}
+
+/**
+ * Create HTML for backup browser dialog
+ * @param {Array} backups - Array of backup entries
+ * @param {string} sessionName - Current session name
+ * @returns {string} HTML string
+ */
+function createBackupBrowserDialogHTML(backups, sessionName) {
+  var noBackupsMessage = '';
+  var backupRows = '';
+
+  if (backups.length === 0) {
+    noBackupsMessage = '<tr><td colspan="5" class="backup-empty-message">' + 
+      t('backup.no_backups') + '</td></tr>';
+  } else {
+    for (var i = 0; i < backups.length; i++) {
+      var backup = backups[i];
+      var reasonText = getBackupReasonText(backup.reason);
+      var dateText = formatBackupDate(backup.timestamp);
+      var summary = backup.summary || {};
+      var summaryText = t('backup.summary_format', {
+        teams: summary.teamCount || 0,
+        questions: summary.questionCount || 0,
+        blocks: summary.blockCount || 0
+      });
+      var pinnedClass = backup.pinned ? ' pinned' : '';
+      var pinnedIcon = backup.pinned ? '📌' : '';
+
+      backupRows += '<tr class="backup-row' + pinnedClass + '" data-backup-id="' + backup.id + '">' +
+        '<td class="backup-date">' + pinnedIcon + ' ' + dateText + '</td>' +
+        '<td class="backup-reason">' + reasonText + '</td>' +
+        '<td class="backup-summary">' + summaryText + '</td>' +
+        '<td class="backup-actions">' +
+          '<button class="backup-restore-btn" data-backup-id="' + backup.id + '" title="' + t('backup.restore_title') + '">' + t('backup.restore_button') + '</button>' +
+          '<button class="backup-export-btn" data-backup-id="' + backup.id + '" title="' + t('backup.export_title') + '">' + t('backup.export_button') + '</button>' +
+          '<button class="backup-pin-btn" data-backup-id="' + backup.id + '" title="' + (backup.pinned ? t('backup.unpin_title') : t('backup.pin_title')) + '">' + (backup.pinned ? '📌' : '📍') + '</button>' +
+          '<button class="backup-delete-btn" data-backup-id="' + backup.id + '" title="' + t('backup.delete_title') + '">🗑️</button>' +
+        '</td>' +
+      '</tr>';
+    }
+  }
+
+  return '<div class="sync-dialog backup-browser-dialog" role="dialog" aria-labelledby="backup-browser-title" aria-modal="true">' +
+    '<h2 id="backup-browser-title">' + t('backup.browser_title') + '</h2>' +
+    '<p class="backup-browser-description">' + t('backup.browser_description', { session: sessionName }) + '</p>' +
+    '<div class="backup-table-container">' +
+      '<table class="backup-table">' +
+        '<thead>' +
+          '<tr>' +
+            '<th>' + t('backup.column_date') + '</th>' +
+            '<th>' + t('backup.column_reason') + '</th>' +
+            '<th>' + t('backup.column_summary') + '</th>' +
+            '<th>' + t('backup.column_actions') + '</th>' +
+          '</tr>' +
+        '</thead>' +
+        '<tbody>' + (noBackupsMessage || backupRows) + '</tbody>' +
+      '</table>' +
+    '</div>' +
+    '<div class="button-row">' +
+      '<button type="button" class="backup-create-btn">' + t('backup.create_manual') + '</button>' +
+      '<button type="button" class="close-btn primary">' + t('backup.close_button') + '</button>' +
+    '</div>' +
+  '</div>';
+}
+
+/**
+ * Set up event listeners for backup browser dialog
+ * @param {HTMLElement} overlay - Dialog overlay element
+ * @param {string} sessionId - Current session ID
+ */
+function setupBackupBrowserListeners(overlay, sessionId) {
+  // Close button
+  overlay.querySelector('.close-btn').addEventListener('click', function() {
+    overlay.remove();
+  });
+
+  // Overlay click to close
+  overlay.addEventListener('click', function(e) {
+    if (e.target === overlay) {
+      overlay.remove();
+    }
+  });
+
+  // Escape key to close
+  function onBackupBrowserEscape(e) {
+    if (e.key === 'Escape') {
+      document.removeEventListener('keydown', onBackupBrowserEscape);
+      overlay.remove();
+    }
+  }
+  document.addEventListener('keydown', onBackupBrowserEscape);
+
+  // Create manual backup button
+  overlay.querySelector('.backup-create-btn').addEventListener('click', async function() {
+    var backup = await createSessionBackup(sessionId, BackupReason.MANUAL);
+    if (backup) {
+      if (typeof showToast === 'function') {
+        showToast(t('backup.created_success'));
+      }
+      // Refresh the dialog
+      overlay.remove();
+      showBackupBrowserDialog();
+    }
+  });
+
+  // Restore buttons
+  overlay.querySelectorAll('.backup-restore-btn').forEach(function(btn) {
+    btn.addEventListener('click', async function() {
+      var backupId = this.getAttribute('data-backup-id');
+      if (window.confirm(t('backup.confirm_restore'))) {
+        var success = await restoreFromBackup(backupId);
+        if (success) {
+          overlay.remove();
+        }
+      }
+    });
+  });
+
+  // Export buttons
+  overlay.querySelectorAll('.backup-export-btn').forEach(function(btn) {
+    btn.addEventListener('click', async function() {
+      var backupId = this.getAttribute('data-backup-id');
+      await exportBackup(backupId);
+    });
+  });
+
+  // Pin/Unpin buttons
+  overlay.querySelectorAll('.backup-pin-btn').forEach(function(btn) {
+    btn.addEventListener('click', async function() {
+      var backupId = this.getAttribute('data-backup-id');
+      await toggleBackupPinned(backupId);
+      // Refresh the dialog
+      overlay.remove();
+      showBackupBrowserDialog();
+    });
+  });
+
+  // Delete buttons
+  overlay.querySelectorAll('.backup-delete-btn').forEach(function(btn) {
+    btn.addEventListener('click', async function() {
+      var backupId = this.getAttribute('data-backup-id');
+      if (window.confirm(t('backup.confirm_delete'))) {
+        await deleteBackup(backupId);
+        // Refresh the dialog
+        overlay.remove();
+        showBackupBrowserDialog();
+      }
+    });
+  });
+
+  // Focus first focusable element
+  var firstBtn = overlay.querySelector('button');
+  if (firstBtn) firstBtn.focus();
+}
+
+/**
+ * Export a backup as a downloadable .yjs file
+ * @param {string} backupId - Backup ID to export
+ */
+async function exportBackup(backupId) {
+  var backup = await getBackupById(backupId);
+  if (!backup) {
+    console.error('exportBackup: Backup not found:', backupId);
+    return;
+  }
+
+  // Convert base64 to Uint8Array
+  var binaryData = backupBase64ToUint8(backup.state);
+
+  // Create filename with date
+  var date = new Date(backup.timestamp);
+  var dateStr = date.toISOString().split('T')[0];
+  var sessionName = (backup.sessionName || 'backup').replace(/[^a-zA-Z0-9]/g, '_');
+  var filename = 'pbe-backup-' + sessionName + '-' + dateStr + '.yjs';
+
+  // Download the file
+  if (typeof downloadBinaryExport === 'function') {
+    downloadBinaryExport(binaryData, filename);
+  } else {
+    // Fallback download
+    var blob = new Blob([binaryData], { type: 'application/octet-stream' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  if (typeof showToast === 'function') {
+    showToast(t('backup.exported_success'));
+  }
+}

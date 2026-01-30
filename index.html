@@ -192,7 +192,10 @@
       <h3 data-i18n="edit_log.title">Change Log</h3>
       <div>
         <div data-role="history" id="history_viewer">
-          <h4 data-i18n="edit_log.change_log">Change Log</h4>
+          <div class="history-header-row">
+            <h4 data-i18n="edit_log.change_log">Change Log</h4>
+            <button id="view_backups_btn" class="config-add-btn" onclick="showBackupBrowserDialog()" data-i18n="backup.view_backups">View Backups</button>
+          </div>
           <table id="history_table">
             <thead>
               <tr>
@@ -246,7 +249,7 @@
       </div>
     </div>
     <footer><p><span data-i18n="footer.feedback">Have an idea to make this better?</span> <a target="_blank" href="https://github.com/antgiant/PBE_Score_Keeper/issues" data-i18n="footer.let_me_know">Let me know</a>.</p>
-    <p><center>v 2.7.1</center></p></footer>
+    <p><center>v 2.7.2</center></p></footer>
 </body>
 
 </html>
