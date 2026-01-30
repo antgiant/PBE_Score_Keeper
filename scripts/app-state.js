@@ -377,10 +377,24 @@ async function createNewSession(name) {
   const currentSession = get_current_session();
   if (!currentSession) return null;
 
+  // Support both v3 (questions array) and v4/v5 (questionsById map)
   const questions = currentSession.get('questions');
-  let question_count = questions.length - 1;
-  if (questions.get(question_count).get('score') === 0) {
-    question_count--;
+  const questionsById = currentSession.get('questionsById');
+  let question_count = 0;
+  
+  if (questionsById && questionsById.size > 0) {
+    // V4/V5: Use ordered questions
+    const orderedQuestions = getOrderedQuestions(currentSession);
+    question_count = orderedQuestions.length;
+    if (question_count > 0 && orderedQuestions[question_count - 1].data.get('score') === 0) {
+      question_count--;
+    }
+  } else if (questions && questions.length > 0) {
+    // V3: Use questions array
+    question_count = questions.length - 1;
+    if (questions.get(question_count) && questions.get(question_count).get('score') === 0) {
+      question_count--;
+    }
   }
 
   // Only allow new session if current has some data

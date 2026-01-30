@@ -392,14 +392,14 @@ function sync_data_to_display() {
   } else {
     // V3: Use index-based structures
     const questions = session.get('questions');
-    if (questions.get(question_count).get('score') == 0) {
+    if (questions && questions.length > 0 && questions.get(question_count) && questions.get(question_count).get('score') == 0) {
       question_count--;
     }
-    currentQuestionObj = questions.get(current_question);
-    currentQuestionTeams = currentQuestionObj.get('teams');
-    current_selected_block = currentQuestionObj.get('block');
-    question_max_points = currentQuestionObj.get('score');
-    ignore_question = currentQuestionObj.get('ignore');
+    currentQuestionObj = questions && questions.get(current_question);
+    currentQuestionTeams = currentQuestionObj ? currentQuestionObj.get('teams') : null;
+    current_selected_block = currentQuestionObj ? currentQuestionObj.get('block') : 0;
+    question_max_points = currentQuestionObj ? currentQuestionObj.get('score') : 0;
+    ignore_question = currentQuestionObj ? currentQuestionObj.get('ignore') : false;
   }
   
   // Helper function to get team score for current question (works with v3 and v4)

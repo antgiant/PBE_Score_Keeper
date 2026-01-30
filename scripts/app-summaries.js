@@ -339,7 +339,7 @@ function get_question_log(temp_question_count = -1) {
   } else {
     const questions = session.get('questions');
     question_count = temp_question_count === -1 ? question_names.length - 1 : temp_question_count;
-    if (questions.get(question_count).get('score') == 0) {
+    if (questions && questions.length > 0 && questions.get(question_count) && questions.get(question_count).get('score') == 0) {
       question_count--;
     }
     team_names = get_team_names();
