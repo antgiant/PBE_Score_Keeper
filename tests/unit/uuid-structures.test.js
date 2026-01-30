@@ -435,3 +435,207 @@ test('getDisplayIndexByBlockId returns correct index for v4 session', () => {
   assert.equal(context.getDisplayIndexByBlockId(session, 'b-test-1'), 1);
   assert.equal(context.getDisplayIndexByBlockId(session, 'b-fake'), -1);
 });
+
+// ============================================================================
+// Migration Function Tests
+// ============================================================================
+
+test('migrateSessionToUUID migrates teams correctly', () => {
+  const { context } = loadApp(createYjsDoc({ currentSession: 1, sessions: [] }));
+  
+  // Create a v3 session manually
+  const testDoc = new context.Y.Doc();
+  const session = testDoc.getMap('session');
+  
+  testDoc.transact(() => {
+    session.set('name', 'V3 Test Session');
+    
+    // v3 teams (1-indexed with null at 0)
+    const teams = new context.Y.Array();
+    teams.push([null]);
+    
+    const team1 = new context.Y.Map();
+    team1.set('name', 'Alpha');
+    teams.push([team1]);
+    
+    const team2 = new context.Y.Map();
+    team2.set('name', 'Beta');
+    teams.push([team2]);
+    
+    session.set('teams', teams);
+    
+    // v3 blocks (0-indexed)
+    const blocks = new context.Y.Array();
+    const block0 = new context.Y.Map();
+    block0.set('name', 'No Block');
+    blocks.push([block0]);
+    session.set('blocks', blocks);
+    
+    // v3 questions (1-indexed with null at 0)
+    const questions = new context.Y.Array();
+    questions.push([null]);
+    session.set('questions', questions);
+  });
+  
+  // Run migration
+  const result = context.migrateSessionToUUID(testDoc);
+  
+  assert.equal(result.success, true, 'Migration should succeed');
+  assert.equal(result.stats.teams, 2, 'Should migrate 2 teams');
+  
+  // Verify v4 structure
+  assert.equal(context.isUUIDSession(session), true, 'Session should now be UUID-based');
+  assert.equal(session.get('dataVersion'), '4.0');
+  
+  // Verify teams
+  const orderedTeams = context.getOrderedTeams(session);
+  assert.equal(orderedTeams.length, 2);
+  assert.equal(orderedTeams[0].data.get('name'), 'Alpha');
+  assert.equal(orderedTeams[1].data.get('name'), 'Beta');
+  
+  // Verify old structure removed
+  assert.equal(session.get('teams'), undefined, 'Old teams array should be removed');
+});
+
+test('migrateSessionToUUID migrates questions with team scores', () => {
+  const { context } = loadApp(createYjsDoc({ currentSession: 1, sessions: [] }));
+  
+  // Create a v3 session with questions
+  const testDoc = new context.Y.Doc();
+  const session = testDoc.getMap('session');
+  
+  testDoc.transact(() => {
+    session.set('name', 'V3 Questions Test');
+    
+    // Teams
+    const teams = new context.Y.Array();
+    teams.push([null]);
+    const team1 = new context.Y.Map();
+    team1.set('name', 'Team 1');
+    teams.push([team1]);
+    session.set('teams', teams);
+    
+    // Blocks
+    const blocks = new context.Y.Array();
+    const block0 = new context.Y.Map();
+    block0.set('name', 'No Block');
+    blocks.push([block0]);
+    session.set('blocks', blocks);
+    
+    // Questions with scores
+    const questions = new context.Y.Array();
+    questions.push([null]);
+    
+    const q1 = new context.Y.Map();
+    q1.set('name', 'Question 1');
+    q1.set('score', 10);
+    q1.set('block', 0);
+    q1.set('ignore', false);
+    
+    // Team scores
+    const qTeams = new context.Y.Array();
+    qTeams.push([null]);
+    const teamScore = new context.Y.Map();
+    teamScore.set('score', 7);
+    teamScore.set('extraCredit', 2);
+    qTeams.push([teamScore]);
+    q1.set('teams', qTeams);
+    
+    questions.push([q1]);
+    session.set('questions', questions);
+  });
+  
+  // Run migration
+  const result = context.migrateSessionToUUID(testDoc);
+  
+  assert.equal(result.success, true);
+  assert.equal(result.stats.questions, 1);
+  assert.equal(result.stats.teamScores, 1);
+  
+  // Verify question migrated
+  const orderedQuestions = context.getOrderedQuestions(session);
+  assert.equal(orderedQuestions.length, 1);
+  assert.equal(orderedQuestions[0].data.get('name'), 'Question 1');
+  assert.equal(orderedQuestions[0].data.get('score'), 10);
+  
+  // Verify team scores migrated
+  const teamScores = orderedQuestions[0].data.get('teamScores');
+  assert.ok(teamScores, 'Question should have teamScores');
+  
+  // Get the team ID from the order
+  const orderedTeams = context.getOrderedTeams(session);
+  const teamId = orderedTeams[0].id;
+  const scoreData = teamScores.get(teamId);
+  
+  assert.ok(scoreData, 'Team score should exist');
+  assert.equal(scoreData.get('score'), 7);
+  assert.equal(scoreData.get('extraCredit'), 2);
+});
+
+test('migrateSessionToUUID skips already-migrated sessions', () => {
+  const { context } = loadApp(createYjsDoc({ currentSession: 1, sessions: [] }));
+  
+  // Create a v4 session
+  const { doc, session } = createV4Session(context);
+  
+  // Try to migrate
+  const result = context.migrateSessionToUUID(doc);
+  
+  assert.equal(result.skipped, true);
+  assert.equal(result.reason, 'already-migrated');
+});
+
+test('migrateSessionToUUID preserves block assignment', () => {
+  const { context } = loadApp(createYjsDoc({ currentSession: 1, sessions: [] }));
+  
+  const testDoc = new context.Y.Doc();
+  const session = testDoc.getMap('session');
+  
+  testDoc.transact(() => {
+    session.set('name', 'Block Test');
+    
+    // Teams
+    const teams = new context.Y.Array();
+    teams.push([null]);
+    const team1 = new context.Y.Map();
+    team1.set('name', 'Team 1');
+    teams.push([team1]);
+    session.set('teams', teams);
+    
+    // Multiple blocks
+    const blocks = new context.Y.Array();
+    const block0 = new context.Y.Map();
+    block0.set('name', 'No Block');
+    blocks.push([block0]);
+    const block1 = new context.Y.Map();
+    block1.set('name', 'Block A');
+    blocks.push([block1]);
+    session.set('blocks', blocks);
+    
+    // Question assigned to block 1
+    const questions = new context.Y.Array();
+    questions.push([null]);
+    const q1 = new context.Y.Map();
+    q1.set('name', 'Q in Block A');
+    q1.set('score', 5);
+    q1.set('block', 1);  // v3 block index
+    q1.set('ignore', false);
+    q1.set('teams', new context.Y.Array());
+    questions.push([q1]);
+    session.set('questions', questions);
+  });
+  
+  // Run migration
+  const result = context.migrateSessionToUUID(testDoc);
+  assert.equal(result.success, true);
+  
+  // Verify block assignment preserved
+  const orderedQuestions = context.getOrderedQuestions(session);
+  const orderedBlocks = context.getOrderedBlocks(session);
+  
+  const questionBlockId = orderedQuestions[0].data.get('blockId');
+  const blockAId = orderedBlocks[1].id;
+  
+  assert.equal(questionBlockId, blockAId, 'Question should be assigned to Block A');
+  assert.equal(orderedBlocks[1].data.get('name'), 'Block A');
+});

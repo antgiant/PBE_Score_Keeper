@@ -551,6 +551,269 @@ function initializeUUIDSession(sessionDoc, options = {}) {
   return session;
 }
 
+// ============================================================================
+// MIGRATION FUNCTIONS (v3.0 → v4.0)
+// ============================================================================
+
+/**
+ * Migrate a session from v3.0 (index-based) to v4.0 (UUID-based) structure
+ * This is a one-time migration that converts the data model.
+ * 
+ * @param {Y.Doc} sessionDoc - The session Y.Doc to migrate
+ * @returns {Object} Migration result with stats and any errors
+ */
+function migrateSessionToUUID(sessionDoc) {
+  const session = sessionDoc.getMap('session');
+  
+  // Skip if already migrated
+  if (isUUIDSession(session)) {
+    return { 
+      skipped: true, 
+      reason: 'already-migrated',
+      message: 'Session is already v4.0 format'
+    };
+  }
+  
+  const sessionName = session.get('name') || 'Unnamed';
+  console.log(`Migrating session "${sessionName}" from v3.0 to v4.0...`);
+  
+  // Build index→UUID mappings
+  const teamIndexToUUID = new Map();  // 1-based index → UUID
+  const blockIndexToUUID = new Map(); // 0-based index → UUID
+  const questionIndexToUUID = new Map(); // 1-based index → UUID
+  
+  const stats = {
+    teams: 0,
+    blocks: 0,
+    questions: 0,
+    teamScores: 0
+  };
+  
+  try {
+    sessionDoc.transact(() => {
+      const now = Date.now();
+      
+      // 1. Create new UUID structures
+      const teamsById = new Y.Map();
+      const teamOrder = new Y.Array();
+      const blocksById = new Y.Map();
+      const blockOrder = new Y.Array();
+      const questionsById = new Y.Map();
+      const questionOrder = new Y.Array();
+      
+      // 2. Migrate teams (1-indexed with null at 0)
+      const oldTeams = session.get('teams');
+      if (oldTeams) {
+        for (let i = 1; i < oldTeams.length; i++) {
+          const oldTeam = oldTeams.get(i);
+          if (!oldTeam) continue;
+          
+          const teamId = generateTeamId();
+          teamIndexToUUID.set(i, teamId);
+          
+          const newTeam = new Y.Map();
+          newTeam.set('id', teamId);
+          newTeam.set('name', oldTeam.get('name') || `Team ${i}`);
+          newTeam.set('createdAt', now);
+          newTeam.set('deleted', false);
+          newTeam.set('sortOrder', i - 1);
+          
+          teamsById.set(teamId, newTeam);
+          teamOrder.push([teamId]);
+          stats.teams++;
+        }
+      }
+      
+      // 3. Migrate blocks (0-indexed)
+      const oldBlocks = session.get('blocks');
+      if (oldBlocks) {
+        for (let i = 0; i < oldBlocks.length; i++) {
+          const oldBlock = oldBlocks.get(i);
+          if (!oldBlock) continue;
+          
+          const blockId = generateBlockId();
+          blockIndexToUUID.set(i, blockId);
+          
+          const newBlock = new Y.Map();
+          newBlock.set('id', blockId);
+          newBlock.set('name', oldBlock.get('name') || `Block ${i}`);
+          newBlock.set('isDefault', i === 0);
+          newBlock.set('createdAt', now);
+          newBlock.set('deleted', false);
+          newBlock.set('sortOrder', i);
+          
+          blocksById.set(blockId, newBlock);
+          blockOrder.push([blockId]);
+          stats.blocks++;
+        }
+      }
+      
+      // 4. Migrate questions (1-indexed with null at 0)
+      const oldQuestions = session.get('questions');
+      if (oldQuestions) {
+        for (let i = 1; i < oldQuestions.length; i++) {
+          const oldQuestion = oldQuestions.get(i);
+          if (!oldQuestion) continue;
+          
+          const questionId = generateQuestionId();
+          questionIndexToUUID.set(i, questionId);
+          
+          const newQuestion = new Y.Map();
+          newQuestion.set('id', questionId);
+          newQuestion.set('name', oldQuestion.get('name') || '');
+          newQuestion.set('nameUpdatedAt', oldQuestion.get('nameUpdatedAt') || now);
+          newQuestion.set('score', oldQuestion.get('score') || 0);
+          newQuestion.set('scoreUpdatedAt', oldQuestion.get('scoreUpdatedAt') || now);
+          
+          // Convert block index to UUID
+          const oldBlockIndex = oldQuestion.get('block') || 0;
+          const blockId = blockIndexToUUID.get(oldBlockIndex) || blockOrder.get(0);
+          newQuestion.set('blockId', blockId);
+          newQuestion.set('blockUpdatedAt', oldQuestion.get('blockUpdatedAt') || now);
+          
+          newQuestion.set('ignore', oldQuestion.get('ignore') || false);
+          newQuestion.set('ignoreUpdatedAt', oldQuestion.get('ignoreUpdatedAt') || now);
+          newQuestion.set('createdAt', now);
+          newQuestion.set('deleted', false);
+          newQuestion.set('sortOrder', i - 1);
+          
+          // 5. Migrate team scores for this question (1-indexed)
+          const oldTeamScores = oldQuestion.get('teams');
+          const newTeamScores = new Y.Map();
+          
+          if (oldTeamScores) {
+            for (let j = 1; j < oldTeamScores.length; j++) {
+              const oldScore = oldTeamScores.get(j);
+              if (!oldScore) continue;
+              
+              const teamId = teamIndexToUUID.get(j);
+              if (!teamId) continue;
+              
+              const newScoreData = new Y.Map();
+              newScoreData.set('score', oldScore.get('score') || 0);
+              newScoreData.set('scoreUpdatedAt', oldScore.get('scoreUpdatedAt') || now);
+              newScoreData.set('extraCredit', oldScore.get('extraCredit') || 0);
+              newScoreData.set('extraCreditUpdatedAt', oldScore.get('extraCreditUpdatedAt') || now);
+              
+              newTeamScores.set(teamId, newScoreData);
+              stats.teamScores++;
+            }
+          }
+          newQuestion.set('teamScores', newTeamScores);
+          
+          questionsById.set(questionId, newQuestion);
+          questionOrder.push([questionId]);
+          stats.questions++;
+        }
+      }
+      
+      // 6. Set all new structures on the session
+      session.set('teamsById', teamsById);
+      session.set('teamOrder', teamOrder);
+      session.set('blocksById', blocksById);
+      session.set('blockOrder', blockOrder);
+      session.set('questionsById', questionsById);
+      session.set('questionOrder', questionOrder);
+      
+      // 7. Remove old arrays
+      session.delete('teams');
+      session.delete('blocks');
+      session.delete('questions');
+      
+      // 8. Set dataVersion
+      session.set('dataVersion', DATA_VERSION_UUID);
+      
+    }, 'migration');
+    
+    console.log(`Migration complete: ${stats.teams} teams, ${stats.blocks} blocks, ${stats.questions} questions, ${stats.teamScores} team scores`);
+    
+    return {
+      success: true,
+      sessionName,
+      stats
+    };
+    
+  } catch (error) {
+    console.error(`Migration failed for session "${sessionName}":`, error);
+    return {
+      success: false,
+      sessionName,
+      error: error.message,
+      stats
+    };
+  }
+}
+
+/**
+ * Migrate all sessions from v3.0 to v4.0
+ * Should be called once on app startup, after Yjs is ready
+ * 
+ * @returns {Object} Results of migration for all sessions
+ */
+async function migrateAllSessions() {
+  const globalDoc = getGlobalDoc();
+  if (!globalDoc) {
+    console.error('Cannot migrate: globalDoc not available');
+    return { success: false, error: 'No global doc' };
+  }
+  
+  const meta = globalDoc.getMap('meta');
+  const sessionOrder = meta.get('sessionOrder');
+  
+  if (!sessionOrder || sessionOrder.length === 0) {
+    console.log('No sessions to migrate');
+    return { success: true, results: [], message: 'No sessions to migrate' };
+  }
+  
+  const results = [];
+  let migrated = 0;
+  let skipped = 0;
+  let failed = 0;
+  
+  for (let i = 0; i < sessionOrder.length; i++) {
+    const sessionId = sessionOrder.get(i);
+    
+    try {
+      // Get or load the session doc
+      let sessionDoc = DocManager.sessionDocs.get(sessionId);
+      
+      if (!sessionDoc) {
+        // Session doc not loaded yet - create and wait for persistence
+        sessionDoc = new Y.Doc();
+        DocManager.sessionDocs.set(sessionId, sessionDoc);
+        
+        // Wait briefly for IndexedDB to sync if available
+        // In real app, this would use the IndexedDB provider
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+      
+      const result = migrateSessionToUUID(sessionDoc);
+      results.push({ sessionId, ...result });
+      
+      if (result.skipped) {
+        skipped++;
+      } else if (result.success) {
+        migrated++;
+      } else {
+        failed++;
+      }
+      
+    } catch (error) {
+      console.error(`Error accessing session ${sessionId}:`, error);
+      results.push({ sessionId, success: false, error: error.message });
+      failed++;
+    }
+  }
+  
+  console.log(`Migration summary: ${migrated} migrated, ${skipped} skipped, ${failed} failed`);
+  
+  return {
+    success: failed === 0,
+    results,
+    summary: { migrated, skipped, failed }
+  };
+}
+
 // Legacy global variables - kept for compatibility during transition
 var ydoc;
 var yProvider;
