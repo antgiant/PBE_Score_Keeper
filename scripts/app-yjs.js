@@ -2027,8 +2027,16 @@ async function load_from_yjs() {
   const sessionDoc = DocManager.getActiveSessionDoc();
   const session = sessionDoc ? sessionDoc.getMap('session') : null;
   if (session) {
+    // Support both v3 (questions array) and v4/v5 (questionsById map)
     const questions = session.get('questions');
-    const lastQuestionIndex = Math.max(1, questions.length - 1);
+    const questionsById = session.get('questionsById');
+    let questionCount = 0;
+    if (questions && questions.length) {
+      questionCount = questions.length;
+    } else if (questionsById) {
+      questionCount = questionsById.size;
+    }
+    const lastQuestionIndex = Math.max(1, questionCount - 1);
     current_question_index = lastQuestionIndex;
   }
   
