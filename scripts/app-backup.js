@@ -25,6 +25,7 @@ var BackupReason = {
   PRE_MERGE: 'pre-merge',         // Before merging data from another peer
   PRE_RESTORE: 'pre-restore',     // Before restoring from a backup (safety net)
   PRE_IMPORT: 'pre-import',       // Before importing data
+  PRE_MIGRATION: 'pre-migration', // Before database version migration
   MANUAL: 'manual',               // User-initiated backup
   AUTO: 'auto'                    // Automatic periodic backup
 };

@@ -436,6 +436,7 @@ register_i18n_language('en', {
       "reason_pre_merge": "Before Merge",
       "reason_pre_restore": "Before Restore",
       "reason_pre_import": "Before Import",
+      "reason_pre-migration": "Before Upgrade",
       "reason_manual": "Manual Backup",
       "reason_auto": "Auto Backup",
       "restored_success": "Session restored from backup",

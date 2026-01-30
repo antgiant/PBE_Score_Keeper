@@ -665,6 +665,23 @@ async function switchSession(sessionIdOrIndex) {
   const sessionDoc = getActiveSessionDoc();
   const session = get_current_session();
   if (sessionDoc && session && typeof migrateV4ToV5 === 'function') {
+    // Check if migration is needed before creating backup
+    const dataVersion = session.get('dataVersion');
+    const needsMigration = (dataVersion === '4.0' || dataVersion === DATA_VERSION_UUID) && 
+                           typeof isDeterministicSession === 'function' && 
+                           !isDeterministicSession(session);
+    
+    if (needsMigration && typeof createSessionBackup === 'function' && typeof BackupReason !== 'undefined') {
+      // Create a backup before migration
+      try {
+        await createSessionBackup(sessionId, BackupReason.PRE_MIGRATION);
+        console.log('Created pre-migration backup for session:', sessionId);
+      } catch (e) {
+        console.warn('Failed to create pre-migration backup:', e);
+        // Continue with migration even if backup fails
+      }
+    }
+    
     migrateV4ToV5(sessionDoc, session);
   }
 

@@ -431,6 +431,7 @@ register_i18n_language('pig', {
       "reason_pre_merge": "Efore-Bay Erge-May",
       "reason_pre_restore": "Efore-Bay Estore-Ray",
       "reason_pre_import": "Efore-Bay Import-ay",
+      "reason_pre-migration": "Efore-Bay Upgrade-ay",
       "reason_manual": "Anual-May Ackup-Bay",
       "reason_auto": "Auto-ay Ackup-Bay",
       "restored_success": "Ession-Say estored-ray om-fray ackup-bay",

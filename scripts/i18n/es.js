@@ -435,6 +435,7 @@ register_i18n_language('es', {
       "reason_pre_merge": "Antes de Fusionar",
       "reason_pre_restore": "Antes de Restaurar",
       "reason_pre_import": "Antes de Importar",
+      "reason_pre-migration": "Antes de Actualizar",
       "reason_manual": "Copia Manual",
       "reason_auto": "Copia Automática",
       "restored_success": "Sesión restaurada desde copia de seguridad",
