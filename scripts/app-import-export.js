@@ -599,7 +599,7 @@ async function import_yjs_from_json_v4(data, mode) {
             scoreEntry.set('extraCredit', scoreData.extraCredit || 0);
             scoresMap.set(teamId, scoreEntry);
           }
-          questionMap.set('scores', scoresMap);
+          questionMap.set('teamScores', scoresMap);
         }
         
         questionsById.set(questionId, questionMap);

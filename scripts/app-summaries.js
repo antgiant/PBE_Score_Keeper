@@ -157,7 +157,7 @@ function get_block_score_summary(temp_question_count = -1) {
         const questionBlockId = questionMap.get('blockId');
         const questionIgnore = questionMap.get('ignore');
         if (questionBlockId === blockId && questionIgnore === false) {
-          const questionMaxScore = questionMap.get('maxScore') || 0;
+          const questionMaxScore = questionMap.get('score') || 0;
           for (let k=0; k < team_count; k++) {
             const teamId = orderedTeams[k]?.id;
             if (!teamId) continue;
@@ -266,7 +266,7 @@ function get_team_and_block_score_summary(temp_question_count = -1) {
           const teamScore = getTeamScore(session, questionId, teamId);
           team_and_block_score_summary[temp_row_number][4] += teamScore.score || 0;
           team_and_block_score_summary[temp_row_number][4] += teamScore.extraCredit || 0;
-          team_and_block_score_summary[temp_row_number][5] += questionMap.get('maxScore') || 0;
+          team_and_block_score_summary[temp_row_number][5] += questionMap.get('score') || 0;
           team_and_block_score_summary[temp_row_number][2] = format_percent(team_and_block_score_summary[temp_row_number][4]/team_and_block_score_summary[temp_row_number][5], 2);
           team_and_block_score_summary[temp_row_number][3] = format_score(team_and_block_score_summary[temp_row_number][4], team_and_block_score_summary[temp_row_number][5]);
         }
@@ -329,7 +329,7 @@ function get_question_log(temp_question_count = -1) {
       const lastQId = orderedQuestions[question_count - 1]?.id;
       if (lastQId) {
         const lastQMap = getQuestionById(session, lastQId);
-        if (lastQMap && lastQMap.get('maxScore') === 0) {
+        if (lastQMap && lastQMap.get('score') === 0) {
           question_count--;
         }
       }
@@ -382,7 +382,7 @@ function get_question_log(temp_question_count = -1) {
       // Find block name from blockId
       const blockIndex = orderedBlocks.findIndex(b => b.id === questionMap.get('blockId'));
       temp_row.push(block_names[blockIndex >= 0 ? blockIndex : 0]);
-      temp_row.push(questionMap.get('maxScore') || 0);
+      temp_row.push(questionMap.get('score') || 0);
       temp_row.push(questionMap.get('ignore'));
       
       for (let j=0; j < team_count; j++) {

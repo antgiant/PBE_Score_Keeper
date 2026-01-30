@@ -31,12 +31,12 @@ test('detectAndMergeDuplicateQuestions: detects questions with matching names as
   const q1 = new Y.Map();
   q1.set('name', 'Question 1');
   q1.set('nameUpdatedAt', now - 1000);
-  q1.set('scores', new Y.Map());
+  q1.set('teamScores', new Y.Map());
   
   const q2 = new Y.Map();
   q2.set('name', 'Question 1');
   q2.set('nameUpdatedAt', now);
-  q2.set('scores', new Y.Map());
+  q2.set('teamScores', new Y.Map());
   
   questions.push([q1, q2]);
   
@@ -81,12 +81,12 @@ test('detectAndMergeDuplicateQuestions: does not flag questions with different n
   const q1 = new Y.Map();
   q1.set('name', 'Question 1');
   q1.set('nameUpdatedAt', now);
-  q1.set('scores', new Y.Map());
+  q1.set('teamScores', new Y.Map());
   
   const q2 = new Y.Map();
   q2.set('name', 'Question 2');
   q2.set('nameUpdatedAt', now);
-  q2.set('scores', new Y.Map());
+  q2.set('teamScores', new Y.Map());
   
   questions.push([q1, q2]);
   
