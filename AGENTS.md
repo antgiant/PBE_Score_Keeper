@@ -185,40 +185,50 @@ Sessions use UUID-keyed maps for teams, questions, and blocks to enable conflict
 
 ```
 Y.Doc (per session)
-├── dataVersion: 4.0
+├── dataVersion: 5.0
+├── nextQuestionNumber: N (counter for deterministic question IDs)
 ├── teamsById (Y.Map)
 │   ├── "t-{uuid}": { id, name, deleted }
 │   └── ...
 ├── teamOrder (Y.Array) → ["t-{uuid1}", "t-{uuid2}", ...]
 ├── questionsById (Y.Map)
-│   ├── "q-{uuid}": { id, teamScores: {teamId: score}, ignore, deleted }
+│   ├── "q-1": { id, name, score, blockId, ignore, teamScores: {teamId: {score, extraCredit}} }
+│   ├── "q-2": { ... }
 │   └── ...
-├── questionOrder (Y.Array) → ["q-{uuid1}", "q-{uuid2}", ...]
+├── questionOrder (Y.Array) → ["q-1", "q-2", ...] (kept for v4 compatibility)
 ├── blocksById (Y.Map)
-│   ├── "b-{uuid}": { id, name, afterQuestion, deleted }
+│   ├── "b-{uuid}": { id, name, isDefault, deleted }
 │   └── ...
 ├── blockOrder (Y.Array) → ["b-{uuid1}", "b-{uuid2}", ...]
-└── settings (Y.Map)
+└── config (Y.Map)
     ├── maxPointsPerQuestion
-    ├── roundingEnabled
+    ├── rounding
     └── ...
 ```
 
-**UUID Formats:**
-- Teams: `t-{uuid}` (e.g., `t-a1b2c3d4-...`)
-- Questions: `q-{uuid}` (e.g., `q-e5f6g7h8-...`)
-- Blocks: `b-{uuid}` (e.g., `b-i9j0k1l2-...`)
+**ID Formats:**
+- Teams: `t-{uuid}` (e.g., `t-a1b2c3d4-...`) - Random UUID
+- Questions: `q-{N}` (e.g., `q-1`, `q-2`, `q-3`) - Deterministic sequential numbers
+- Blocks: `b-{uuid}` (e.g., `b-i9j0k1l2-...`) - Random UUID
+
+**Deterministic Question IDs (v5.0):**
+Questions use deterministic sequential IDs (`q-1`, `q-2`, `q-3`, ...) instead of random UUIDs.
+This eliminates duplicate detection complexity and enables natural ordering by ID number.
+The `nextQuestionNumber` counter tracks the next ID to assign.
 
 **Soft-Delete Pattern:**
-All entity types use a `deleted: true` field instead of physical removal from maps. This prevents tombstone conflicts in CRDT merging. Deleted items are filtered out by the ordered getter functions.
+Teams and blocks use `deleted: true` field instead of physical removal from maps. 
+Questions are never deleted - use `ignore: true` flag for scoring exclusion instead.
 
 **Ordered Getter Functions:**
 - `getOrderedTeams()` - Returns non-deleted teams in `teamOrder` sequence
-- `getOrderedQuestions()` - Returns non-deleted questions in `questionOrder` sequence  
+- `getOrderedQuestions()` - Returns questions sorted by numeric ID (q-1, q-2, q-3...)
 - `getOrderedBlocks()` - Returns non-deleted blocks in `blockOrder` sequence
 
-**Legacy v3 Support:**
-Sessions with `dataVersion < 4.0` use the old array-based structure (`teams`, `questions`, `blocks`). The system auto-migrates v3 sessions to v4 on load when `AUTO_MIGRATE_TO_V4` is true.
+**Legacy v3/v4 Support:**
+- Sessions with `dataVersion < 4.0` use the old array-based structure (`teams`, `questions`, `blocks`)
+- Sessions with `dataVersion == 4.0` use random UUID question IDs and `questionOrder` array
+- The system auto-migrates v3 sessions to v4 on load when `AUTO_MIGRATE_TO_V4` is true
 
 ### DocManager Abstraction
 
@@ -227,7 +237,8 @@ All Y.Doc access goes through the `DocManager` object in `app-yjs.js`:
 - `getActiveSessionDoc()` - Returns current session's doc
 - `getSessionDoc(sessionId)` - Returns specific session doc by ID
 - `get_current_session_index()` - Returns 1-based session index (replaces legacy `current_session` global)
-- `isUUIDSession(sessionDoc)` - Check if session uses v4 UUID structure
+- `isUUIDSession(session)` - Check if session uses v4/v5 UUID structure
+- `isDeterministicSession(session)` - Check if session uses v5.0 deterministic question IDs
 
 ### Session Management Functions
 

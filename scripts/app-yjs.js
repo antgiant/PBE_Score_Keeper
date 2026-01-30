@@ -483,9 +483,7 @@ function createTeam(sessionDoc, session, name) {
           if (teamScores) {
             const scoreData = new Y.Map();
             scoreData.set('score', 0);
-            scoreData.set('scoreUpdatedAt', now);
             scoreData.set('extraCredit', 0);
-            scoreData.set('extraCreditUpdatedAt', now);
             teamScores.set(teamId, scoreData);
           }
         }
@@ -527,16 +525,15 @@ function createQuestion(sessionDoc, session, options = {}) {
     const question = new Y.Map();
     question.set('id', questionId);
     question.set('name', options.name || '');
-    question.set('nameUpdatedAt', now);
     question.set('score', options.score || 0);
-    question.set('scoreUpdatedAt', now);
     question.set('blockId', blockId);
-    question.set('blockUpdatedAt', now);
     question.set('ignore', false);
-    question.set('ignoreUpdatedAt', now);
     question.set('createdAt', now);
-    question.set('deleted', false);
-    // Note: sortOrder removed in v5.0 - order determined by deterministic ID (q-1, q-2, etc.)
+    // Note: 'deleted' field removed in v5.0 - questions are permanent
+    // Use 'ignore' flag for scoring exclusion
+    // sortOrder and *UpdatedAt fields also removed in v5.0
+    // Order is determined by deterministic ID (q-1, q-2, etc.)
+    // Timestamp conflicts are resolved by Yjs CRDT at the property level
     
     // Initialize team scores for all teams
     const teamScores = new Y.Map();
@@ -549,9 +546,7 @@ function createQuestion(sessionDoc, session, options = {}) {
         if (team && !isDeleted(team)) {
           const scoreData = new Y.Map();
           scoreData.set('score', 0);
-          scoreData.set('scoreUpdatedAt', now);
           scoreData.set('extraCredit', 0);
-          scoreData.set('extraCreditUpdatedAt', now);
           teamScores.set(teamId, scoreData);
         }
       }
@@ -737,26 +732,9 @@ function softDeleteTeam(sessionDoc, session, teamId) {
   return true;
 }
 
-/**
- * Soft-delete a question by UUID
- * @param {Y.Doc} sessionDoc - The session Y.Doc
- * @param {Y.Map} session - The session Y.Map
- * @param {string} questionId - Question UUID to delete
- * @returns {boolean} True if deleted, false if not found
- */
-function softDeleteQuestion(sessionDoc, session, questionId) {
-  if (!isUUIDSession(session)) return false;
-  
-  const questionsById = session.get('questionsById');
-  const question = questionsById ? questionsById.get(questionId) : null;
-  if (!question || isDeleted(question)) return false;
-  
-  sessionDoc.transact(() => {
-    softDelete(question);
-  }, 'local');
-  
-  return true;
-}
+// Note: softDeleteQuestion() removed in v5.0
+// Questions are permanent once created - use 'ignore' flag for scoring exclusion
+// This prevents ID gaps in the deterministic q-1, q-2, q-N scheme
 
 /**
  * Soft-delete a block by UUID
@@ -798,7 +776,6 @@ function softDeleteBlock(sessionDoc, session, blockId) {
         const question = questionsById.get(qId);
         if (question && !isDeleted(question) && question.get('blockId') === blockId) {
           question.set('blockId', defaultBlockId);
-          question.set('blockUpdatedAt', Date.now());
         }
       }
     }
@@ -833,11 +810,9 @@ function setTeamScore(sessionDoc, session, questionId, teamId, score) {
       // Create score entry if it doesn't exist
       scoreData = new Y.Map();
       scoreData.set('extraCredit', 0);
-      scoreData.set('extraCreditUpdatedAt', Date.now());
       teamScores.set(teamId, scoreData);
     }
     scoreData.set('score', score);
-    scoreData.set('scoreUpdatedAt', Date.now());
   }, 'local');
   
   return true;
@@ -867,11 +842,9 @@ function setTeamExtraCredit(sessionDoc, session, questionId, teamId, extraCredit
       // Create score entry if it doesn't exist
       scoreData = new Y.Map();
       scoreData.set('score', 0);
-      scoreData.set('scoreUpdatedAt', Date.now());
       teamScores.set(teamId, scoreData);
     }
     scoreData.set('extraCredit', extraCredit);
-    scoreData.set('extraCreditUpdatedAt', Date.now());
   }, 'local');
   
   return true;
@@ -935,7 +908,6 @@ function updateQuestionScore(sessionDoc, session, questionId, score) {
   
   sessionDoc.transact(() => {
     question.set('score', score);
-    question.set('scoreUpdatedAt', Date.now());
   }, 'local');
   
   return true;
@@ -961,7 +933,6 @@ function updateQuestionBlock(sessionDoc, session, questionId, blockId) {
   
   sessionDoc.transact(() => {
     question.set('blockId', blockId);
-    question.set('blockUpdatedAt', Date.now());
   }, 'local');
   
   return true;
@@ -983,7 +954,6 @@ function updateQuestionIgnore(sessionDoc, session, questionId, ignore) {
   
   sessionDoc.transact(() => {
     question.set('ignore', ignore);
-    question.set('ignoreUpdatedAt', Date.now());
   }, 'local');
   
   return true;

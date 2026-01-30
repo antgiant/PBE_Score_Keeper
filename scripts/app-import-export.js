@@ -530,7 +530,7 @@ async function import_yjs_from_json_v4(data, mode) {
     sessionDoc.transact(() => {
       session.set('id', sessionId);
       session.set('name', sessionData.name);
-      session.set('dataVersion', DATA_VERSION_UUID);
+      session.set('dataVersion', DATA_VERSION_DETERMINISTIC);
 
       // Config
       const config = new Y.Map();
@@ -578,17 +578,25 @@ async function import_yjs_from_json_v4(data, mode) {
         teamOrder.push([teamId]);
       }
 
-      // Import questions (with scores)
-      for (const questionId of sessionData.questionOrder) {
-        const questionData = sessionData.questionsById[questionId];
+      // Import questions with deterministic IDs (v5.0 format)
+      // Convert any format to q-1, q-2, q-3... based on import order
+      let questionNumber = 1;
+      for (const originalQuestionId of sessionData.questionOrder) {
+        const questionData = sessionData.questionsById[originalQuestionId];
         if (!questionData) continue;
         
+        // Generate deterministic question ID
+        const newQuestionId = `q-${questionNumber}`;
+        questionNumber++;
+        
         const questionMap = new Y.Map();
+        questionMap.set('id', newQuestionId);
         questionMap.set('name', questionData.name);
         questionMap.set('score', questionData.score);
         questionMap.set('blockId', questionData.blockId);
         questionMap.set('ignore', questionData.ignore || false);
         questionMap.set('createdAt', questionData.createdAt || Date.now());
+        // Note: 'deleted' field removed in v5.0 - questions are permanent
         
         // Import scores for each team
         if (questionData.scores) {
@@ -602,9 +610,12 @@ async function import_yjs_from_json_v4(data, mode) {
           questionMap.set('teamScores', scoresMap);
         }
         
-        questionsById.set(questionId, questionMap);
-        questionOrder.push([questionId]);
+        questionsById.set(newQuestionId, questionMap);
+        questionOrder.push([newQuestionId]);
       }
+      
+      // Set next question number counter for deterministic ID generation
+      session.set('nextQuestionNumber', questionNumber);
 
       // Initialize history
       session.set('historyLog', new Y.Array());

@@ -158,8 +158,7 @@ register_i18n_language('fr', {
         "reorder_teams": "Réorganiser les Équipes",
         "reorder_blocks": "Réorganiser les Blocs",
         "merge": "Fusionner les Sessions",
-        "restore_backup": "Restaurer la Sauvegarde",
-        "merge_duplicate_question": "Fusionner Question en Double"
+        "restore_backup": "Restaurer la Sauvegarde"
       },
       "details_templates": {
         "renamed": "Renommé \"{{old}}\" en \"{{new}}\"",
@@ -189,8 +188,7 @@ register_i18n_language('fr', {
         "new_order": "Nouvel ordre : {{order}}",
         "merged_sessions": "Fusionné \"{{source}}\" dans \"{{target}}\"",
         "merged_items": "{{teams}} équipe(s), {{blocks}} bloc(s) fusionnés depuis les données locales",
-        "restored_backup": "Restauré depuis la sauvegarde ({{date}}, {{reason}})",
-        "merged_duplicate_question": "{{count}} doublon(s) de \"{{name}}\" fusionné(s)"
+        "restored_backup": "Restauré depuis la sauvegarde ({{date}}, {{reason}})"
       }
     },
     "advanced": {

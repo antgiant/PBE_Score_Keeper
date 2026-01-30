@@ -1001,7 +1001,7 @@ test('write operations return false for v3 sessions', () => {
   // All operations should return false for v3 session
   assert.equal(context.softDeleteTeam(doc, session, 'fake-id'), false);
   assert.equal(context.softDeleteBlock(doc, session, 'fake-id'), false);
-  assert.equal(context.softDeleteQuestion(doc, session, 'fake-id'), false);
+  // Note: softDeleteQuestion removed in v5.0 - questions are permanent
   assert.equal(context.setTeamScore(doc, session, 'q-id', 't-id', 5), false);
   assert.equal(context.setTeamExtraCredit(doc, session, 'q-id', 't-id', 1), false);
   assert.equal(context.updateTeamName(doc, session, 't-id', 'New'), false);
