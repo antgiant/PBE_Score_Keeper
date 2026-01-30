@@ -361,6 +361,7 @@ register_i18n_language('fr', {
       "matching_skip": "Ignorer (Ne pas Synchroniser)",
       "history_local_user": "(local)",
       "history_unknown_user": "(inconnu)",
+      "version_mismatch_warning": "Avertissement : {{peers}} utilise peut-être une ancienne version (nécessite v{{minVersion}}+). Les données peuvent ne pas se synchroniser correctement.",
       "copy_code": "Copier le Code",
       "code_copied": "Code de salle copié dans le presse-papiers",
       "error_timeout": "Délai de connexion dépassé. Veuillez réessayer.",

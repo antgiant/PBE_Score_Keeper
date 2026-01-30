@@ -2238,16 +2238,25 @@ function updateSyncUI() {
 function setupAwareness(awareness) {
   SyncManager.awareness = awareness;
   
-  // Set local state
+  // Get current data version (v4.0 for UUID-based, v3.0 for legacy)
+  var currentDataVersion = (typeof DATA_VERSION_CURRENT !== 'undefined') ? DATA_VERSION_CURRENT : '3.0';
+  var session = get_current_session();
+  if (session && typeof isUUIDSession === 'function' && isUUIDSession(session)) {
+    currentDataVersion = (typeof DATA_VERSION_UUID !== 'undefined') ? DATA_VERSION_UUID : '4.0';
+  }
+  
+  // Set local state with data version
   awareness.setLocalState({
     displayName: SyncManager.displayName,
     color: generateUserColor(SyncManager.displayName),
-    lastSeen: Date.now()
+    lastSeen: Date.now(),
+    dataVersion: currentDataVersion
   });
   
   // Listen for changes
   awareness.on('change', function() {
     updatePeersFromAwareness();
+    checkDataVersionCompatibility();
     checkDisplayNameCollision();
     updateSyncUI();
     
@@ -2373,10 +2382,67 @@ function updatePeersFromAwareness() {
       SyncManager.peers.set(clientId, {
         displayName: state.displayName,
         color: state.color || '#888',
-        lastSeen: state.lastSeen || Date.now()
+        lastSeen: state.lastSeen || Date.now(),
+        dataVersion: state.dataVersion || '3.0'
       });
     }
   });
+}
+
+/**
+ * Check data version compatibility with connected peers
+ * Shows warning if peers have incompatible versions
+ */
+function checkDataVersionCompatibility() {
+  if (!SyncManager.awareness || SyncManager.state !== 'connected') return;
+  
+  // Get our version
+  var localState = SyncManager.awareness.getLocalState();
+  var localVersion = localState ? localState.dataVersion : '3.0';
+  
+  // Check peer versions
+  var incompatiblePeers = [];
+  
+  SyncManager.peers.forEach(function(peer, clientId) {
+    var peerVersion = peer.dataVersion || '3.0';
+    
+    // Version compatibility: v3.0 and v4.0 can sync during migration
+    // After full migration, update MIN_SYNC_VERSION to '4.0' to block v3 clients
+    var minVersion = (typeof MIN_SYNC_VERSION !== 'undefined') ? MIN_SYNC_VERSION : '3.0';
+    
+    // Check if peer meets minimum version
+    if (parseFloat(peerVersion) < parseFloat(minVersion)) {
+      incompatiblePeers.push({
+        name: peer.displayName,
+        version: peerVersion,
+        clientId: clientId
+      });
+    }
+  });
+  
+  // Show warning if incompatible peers found
+  if (incompatiblePeers.length > 0 && !SyncManager._versionWarningShown) {
+    SyncManager._versionWarningShown = true;
+    
+    // Build warning message
+    var peerNames = incompatiblePeers.map(function(p) { return p.name; }).join(', ');
+    var message = t('sync.version_mismatch_warning', { 
+      peers: peerNames,
+      minVersion: (typeof MIN_SYNC_VERSION !== 'undefined') ? MIN_SYNC_VERSION : '3.0'
+    });
+    
+    // Show toast notification
+    if (typeof showToast === 'function') {
+      showToast(message, 'warning');
+    } else {
+      console.warn('Sync version mismatch:', message);
+    }
+  }
+  
+  // Reset warning flag when no incompatible peers
+  if (incompatiblePeers.length === 0) {
+    SyncManager._versionWarningShown = false;
+  }
 }
 
 /**

@@ -362,6 +362,7 @@ register_i18n_language('en', {
       "matching_skip": "Skip (Don't Sync)",
       "history_local_user": "(local)",
       "history_unknown_user": "(unknown)",
+      "version_mismatch_warning": "Warning: {{peers}} may be using an older version (requires v{{minVersion}}+). Data may not sync correctly.",
       "copy_code": "Copy Code",
       "code_copied": "Room code copied to clipboard",
       "error_timeout": "Connection timed out. Please try again.",

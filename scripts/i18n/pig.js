@@ -357,6 +357,7 @@ register_i18n_language('pig', {
       "matching_skip": "Ip-Skay (On't-Day Ync-Say)",
       "history_local_user": "(ocal-lay)",
       "history_unknown_user": "(unknown-ay)",
+      "version_mismatch_warning": "Arning-Way: {{peers}} ay-may e-bay using-ay an-ay older-ay ersion-vay (equires-ray v{{minVersion}}+). Ata-Day ay-may ot-nay ync-say orrectly-cay.",
       "copy_code": "Opy-Cay Ode-Cay",
       "code_copied": "Oom-Ray ode-cay opied-cay o-tay ipboard-clay",
       "error_timeout": "Onnection-Cay imed-tay out-ay. Ease-Play y-tray again-ay.",

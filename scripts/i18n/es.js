@@ -361,6 +361,7 @@ register_i18n_language('es', {
       "matching_skip": "Omitir (No Sincronizar)",
       "history_local_user": "(local)",
       "history_unknown_user": "(desconocido)",
+      "version_mismatch_warning": "Advertencia: {{peers}} puede estar usando una versión antigua (requiere v{{minVersion}}+). Los datos pueden no sincronizarse correctamente.",
       "copy_code": "Copiar Código",
       "code_copied": "Código de sala copiado al portapapeles",
       "error_timeout": "Tiempo de conexión agotado. Por favor intenta de nuevo.",
