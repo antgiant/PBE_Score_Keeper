@@ -707,6 +707,11 @@ async function deleteSession(sessionIdOrIndex, skipConfirm, mergeContext) {
     return false;
   }
 
+  // Create backup before deletion (for undo capability)
+  if (typeof createSessionBackup === 'function') {
+    await createSessionBackup(sessionId, BackupReason.PRE_MERGE);
+  }
+
   // Determine new current session
   const currentSessionId = meta.get('currentSession');
   let newCurrentId;
@@ -1603,6 +1608,12 @@ function createMergeDialogHTML(sessions) {
  */
 async function performSessionMerge(sourceId, targetId) {
   try {
+    // Create backups before merge (for undo capability)
+    if (typeof createSessionBackup === 'function') {
+      await createSessionBackup(sourceId, BackupReason.PRE_MERGE);
+      await createSessionBackup(targetId, BackupReason.PRE_MERGE);
+    }
+
     // Extract data from both sessions
     const sourceData = extractSessionDataForMerge(sourceId);
     const targetData = extractSessionDataForMerge(targetId);
@@ -1760,6 +1771,12 @@ async function autoMergeDuplicateSessions() {
           console.log('Session no longer exists, skipping:', source.name);
           mergeFailures.push({ source: source.name, target: target.name, reason: 'Session not found' });
           continue;
+        }
+
+        // Create backups before auto-merge (for undo capability)
+        if (typeof createSessionBackup === 'function') {
+          await createSessionBackup(source.id, BackupReason.PRE_MERGE);
+          await createSessionBackup(target.id, BackupReason.PRE_MERGE);
         }
 
         // Check if source session has data before trying to merge

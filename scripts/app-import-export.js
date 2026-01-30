@@ -880,6 +880,10 @@ async function importSessionData(data) {
             }
             
             if (sessionDoc) {
+              // Create backup before merging into existing session (for undo capability)
+              if (typeof createSessionBackup === 'function' && typeof BackupReason !== 'undefined') {
+                await createSessionBackup(sessionId, BackupReason.PRE_IMPORT);
+              }
               // Merge into existing session doc (CRDT merge)
               Y.applyUpdate(sessionDoc, sessionData, 'import');
             } else {
@@ -969,6 +973,10 @@ async function importSessionData(data) {
         }
         
         if (sessionDoc) {
+          // Create backup before merging into existing session (for undo capability)
+          if (typeof createSessionBackup === 'function' && typeof BackupReason !== 'undefined') {
+            await createSessionBackup(sessionId, BackupReason.PRE_IMPORT);
+          }
           // Merge into existing session doc (CRDT merge)
           Y.applyUpdate(sessionDoc, data, 'import');
           // Destroy the temp doc since we used the existing one
