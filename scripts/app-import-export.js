@@ -300,9 +300,13 @@ async function import_yjs_from_json(data, mode) {
         const questionData = sessionData.questions[q];
         const questionMap = new Y.Map();
         questionMap.set('name', questionData.name);
+        questionMap.set('nameUpdatedAt', questionData.nameUpdatedAt || 0);
         questionMap.set('score', questionData.score);
+        questionMap.set('scoreUpdatedAt', questionData.scoreUpdatedAt || 0);
         questionMap.set('block', questionData.block);
+        questionMap.set('blockUpdatedAt', questionData.blockUpdatedAt || 0);
         questionMap.set('ignore', questionData.ignore);
+        questionMap.set('ignoreUpdatedAt', questionData.ignoreUpdatedAt || 0);
 
         const questionTeams = new Y.Array();
         for (let qt = 0; qt < questionData.teams.length; qt++) {
@@ -311,7 +315,9 @@ async function import_yjs_from_json(data, mode) {
           } else {
             const teamScoreMap = new Y.Map();
             teamScoreMap.set('score', questionData.teams[qt].score);
+            teamScoreMap.set('scoreUpdatedAt', questionData.teams[qt].scoreUpdatedAt || 0);
             teamScoreMap.set('extraCredit', questionData.teams[qt].extraCredit || 0);
+            teamScoreMap.set('extraCreditUpdatedAt', questionData.teams[qt].extraCreditUpdatedAt || 0);
             questionTeams.push([teamScoreMap]);
           }
         }

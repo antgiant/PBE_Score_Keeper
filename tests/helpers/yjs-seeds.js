@@ -122,11 +122,16 @@ function buildSession(config, Y) {
  * @returns {Y.Map} Question map
  */
 function buildQuestion(config, teamCount, Y) {
+  const now = Date.now();
   const question = new Y.Map();
   question.set('name', config.name || 'Question 1');
+  question.set('nameUpdatedAt', config.nameUpdatedAt || now);
   question.set('score', config.score || 0);
+  question.set('scoreUpdatedAt', config.scoreUpdatedAt || now);
   question.set('block', config.block || 0);
+  question.set('blockUpdatedAt', config.blockUpdatedAt || now);
   question.set('ignore', config.ignore || false);
+  question.set('ignoreUpdatedAt', config.ignoreUpdatedAt || now);
 
   // Build question teams array (1-indexed with null placeholder)
   const questionTeams = new Y.Array();
@@ -136,7 +141,9 @@ function buildQuestion(config, teamCount, Y) {
     const teamScore = new Y.Map();
     const scoreData = config.teamScores && config.teamScores[i] ? config.teamScores[i] : {};
     teamScore.set('score', scoreData.score || 0);
+    teamScore.set('scoreUpdatedAt', scoreData.scoreUpdatedAt || now);
     teamScore.set('extraCredit', scoreData.extraCredit || 0);
+    teamScore.set('extraCreditUpdatedAt', scoreData.extraCreditUpdatedAt || now);
     questionTeams.push([teamScore]);
   }
   question.set('teams', questionTeams);

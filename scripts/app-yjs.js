@@ -118,6 +118,9 @@ async function initSessionDoc(sessionId) {
             setupSessionHistoryListener(sessionId);
           }
           
+          // Set up duplicate question detection observer
+          setupDuplicateQuestionObserver(sessionId);
+          
           resolve(sessionDoc);
         });
       } else {
@@ -147,6 +150,38 @@ async function initSessionDoc(sessionId) {
 
   DocManager.pendingSessionLoads.set(sessionId, loadPromise);
   return loadPromise;
+}
+
+/**
+ * Set up observer for duplicate question detection on a session doc.
+ * This is called when a session doc is loaded or synced.
+ * @param {string} sessionId - The session ID
+ */
+function setupDuplicateQuestionObserver(sessionId) {
+  const sessionDoc = DocManager.sessionDocs.get(sessionId);
+  if (!sessionDoc) return;
+  
+  const session = sessionDoc.getMap('session');
+  if (!session) return;
+  
+  let debounceTimer = null;
+  
+  sessionDoc.on('update', (update, origin) => {
+    // Only run for remote updates (not local)
+    if (origin === 'local' || origin === 'init' || origin === 'import' || origin === 'merge' || origin === 'test') {
+      return;
+    }
+    
+    // Debounce to batch rapid sync updates
+    if (debounceTimer) {
+      clearTimeout(debounceTimer);
+    }
+    debounceTimer = setTimeout(() => {
+      if (typeof detectAndMergeDuplicateQuestions === 'function') {
+        detectAndMergeDuplicateQuestions(session, sessionDoc);
+      }
+    }, 200);
+  });
 }
 
 /**
@@ -461,17 +496,24 @@ async function initialize_new_yjs_state() {
     const questions = new Y.Array();
     questions.push([null]); // Placeholder at index 0
 
+    const initNow = Date.now();
     const question1 = new Y.Map();
     question1.set('name', (typeof t === 'function') ? t('defaults.question_name', { number: 1 }) : 'Question 1');
+    question1.set('nameUpdatedAt', initNow);
     question1.set('score', 0);
+    question1.set('scoreUpdatedAt', initNow);
     question1.set('block', 0);
+    question1.set('blockUpdatedAt', initNow);
     question1.set('ignore', false);
+    question1.set('ignoreUpdatedAt', initNow);
 
     const questionTeams = new Y.Array();
     questionTeams.push([null]); // Placeholder at index 0
     const team1Score = new Y.Map();
     team1Score.set('score', 0);
+    team1Score.set('scoreUpdatedAt', initNow);
     team1Score.set('extraCredit', 0);
+    team1Score.set('extraCreditUpdatedAt', initNow);
     questionTeams.push([team1Score]);
     question1.set('teams', questionTeams);
 

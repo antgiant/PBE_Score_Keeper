@@ -157,7 +157,8 @@ register_i18n_language('en', {
         "reorder_teams": "Reorder Teams",
         "reorder_blocks": "Reorder Blocks",
         "merge": "Merge Sessions",
-        "restore_backup": "Restore Backup"
+        "restore_backup": "Restore Backup",
+        "merge_duplicate_question": "Merge Duplicate Question"
       },
       "details_templates": {
         "renamed": "Renamed \"{{old}}\" to \"{{new}}\"",
@@ -187,7 +188,8 @@ register_i18n_language('en', {
         "new_order": "New order: {{order}}",
         "merged_sessions": "Merged \"{{source}}\" into \"{{target}}\"",
         "merged_items": "Merged {{teams}} team(s), {{blocks}} block(s) from local data",
-        "restored_backup": "Restored from backup ({{date}}, {{reason}})"
+        "restored_backup": "Restored from backup ({{date}}, {{reason}})",
+        "merged_duplicate_question": "Merged {{count}} duplicate(s) of \"{{name}}\""
       }
     },
     "advanced": {

@@ -154,7 +154,8 @@ register_i18n_language('pig', {
         "reorder_teams": "Eorder-Ray Eams-Tay",
         "reorder_blocks": "Eorder-Ray Ocks-Blay",
         "merge": "Erge-May Essions-Say",
-        "restore_backup": "Estore-Ray Ackup-Bay"
+        "restore_backup": "Estore-Ray Ackup-Bay",
+        "merge_duplicate_question": "Erge-May Uplicate-Day Uestion-Qay"
       },
       "details_templates": {
         "renamed": "Enamed-Ray \"{{old}}\" o-tay \"{{new}}\"",
@@ -184,7 +185,8 @@ register_i18n_language('pig', {
         "new_order": "Ew-Nay order-ay: {{order}}",
         "merged_sessions": "Erged-May \"{{source}}\" into-ay \"{{target}}\"",
         "merged_items": "Erged-May {{teams}} eam(s)-tay, {{blocks}} ock(s)-blay om-fray ocal-lay ata-day",
-        "restored_backup": "Estored-Ray om-fray ackup-bay ({{date}}, {{reason}})"
+        "restored_backup": "Estored-Ray om-fray ackup-bay ({{date}}, {{reason}})",
+        "merged_duplicate_question": "Erged-May {{count}} uplicate(s)-day of-ay \"{{name}}\""
       }
     },
     "advanced": {

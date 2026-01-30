@@ -73,12 +73,15 @@ function update_data_element(updated_id, new_value) {
         teams.push([newTeam]);
 
         // Add placeholder scores for all existing questions
+        const addTeamNow = Date.now();
         for (let i = 1; i < questions.length; i++) {
           const question = questions.get(i);
           const questionTeams = question.get('teams');
           const teamScore = new Y.Map();
           teamScore.set('score', 0);
+          teamScore.set('scoreUpdatedAt', addTeamNow);
           teamScore.set('extraCredit', 0);
+          teamScore.set('extraCreditUpdatedAt', addTeamNow);
           questionTeams.push([teamScore]);
         }
 
@@ -305,20 +308,7 @@ function update_data_element(updated_id, new_value) {
       }
     }
   }
-  //Update Question Title
-  else if (updated_id == "current_question_title") {
-    let new_value = $("#current_question_title").text();
-    const questions = session.get('questions');
-    const oldName = questions.get(current_question).get('name');
-    const sessionDoc = getActiveSessionDoc();
-    if (sessionDoc) {
-      sessionDoc.transact(() => {
-        questions.get(current_question).set('name', new_value);
-        add_history_entry('edit_log.actions.rename_question', 'edit_log.details_templates.renamed', { old: oldName, new: new_value });
-      }, 'local');
-    }
-    $("#question_quick_nav").focus();
-  }
+
   //Update Rounding Status to Yes
   else if (updated_id == "rounding_yes") {
     const sessionDoc = getActiveSessionDoc();
@@ -348,6 +338,7 @@ function update_data_element(updated_id, new_value) {
     if (sessionDoc) {
       sessionDoc.transact(() => {
         questions.get(current_question).set('ignore', temp);
+        questions.get(current_question).set('ignoreUpdatedAt', Date.now());
         if (temp) {
           add_history_entry('edit_log.actions.ignore_question', 'edit_log.details_templates.set_ignored', { name: questionName });
         } else {
@@ -387,8 +378,10 @@ function update_data_element(updated_id, new_value) {
         const sessionDoc = getActiveSessionDoc();
         if (sessionDoc) {
           sessionDoc.transact(() => {
+            const clearNow = Date.now();
             for (let i = 1; i <= team_count; i++) {
               questionTeams.get(i).set('extraCredit', 0);
+              questionTeams.get(i).set('extraCreditUpdatedAt', clearNow);
             }
             add_history_entry('edit_log.actions.clear_extra_credit', 'edit_log.details_templates.cleared_extra_credit', { name: questionName });
           }, 'local');
@@ -417,6 +410,7 @@ function update_data_element(updated_id, new_value) {
       sessionDoc.transact(() => {
         let team_extra_credit = questionTeams.get(team_number).get('extraCredit');
         questionTeams.get(team_number).set('extraCredit', team_extra_credit + 1);
+        questionTeams.get(team_number).set('extraCreditUpdatedAt', Date.now());
         add_history_entry('edit_log.actions.extra_credit', 'edit_log.details_templates.increased_extra_credit', { team: teamName, question: questionName, value: team_extra_credit + 1 });
       }, 'local');
     }
@@ -435,6 +429,7 @@ function update_data_element(updated_id, new_value) {
       if (sessionDoc) {
         sessionDoc.transact(() => {
           questionTeams.get(team_number).set('extraCredit', team_extra_credit - 1);
+          questionTeams.get(team_number).set('extraCreditUpdatedAt', Date.now());
           add_history_entry('edit_log.actions.extra_credit', 'edit_log.details_templates.decreased_extra_credit', { team: teamName, question: questionName, value: team_extra_credit - 1 });
         }, 'local');
       }
@@ -460,6 +455,7 @@ function update_data_element(updated_id, new_value) {
       if (sessionDoc) {
         sessionDoc.transact(() => {
           questions.get(current_question).set('score', Number(new_value));
+          questions.get(current_question).set('scoreUpdatedAt', Date.now());
           add_history_entry('edit_log.actions.set_question_points', 'edit_log.details_templates.set_question_points', { name: questionName, old: oldScore, new: new_value });
         }, 'local');
       }
@@ -477,6 +473,7 @@ function update_data_element(updated_id, new_value) {
     if (sessionDoc) {
       sessionDoc.transact(() => {
         questions.get(current_question).set('block', Number(new_value));
+        questions.get(current_question).set('blockUpdatedAt', Date.now());
         add_history_entry('edit_log.actions.change_question_block', 'edit_log.details_templates.changed_block', { question: questionName, old: oldBlockName, new: newBlockName });
       }, 'local');
     }
@@ -493,6 +490,7 @@ function update_data_element(updated_id, new_value) {
     if (sessionDoc) {
       sessionDoc.transact(() => {
         questions.get(current_question).get('teams').get(team_number).set('score', Number(new_value));
+        questions.get(current_question).get('teams').get(team_number).set('scoreUpdatedAt', Date.now());
         add_history_entry('edit_log.actions.score_change', 'edit_log.details_templates.score_changed', { team: teamName, question: questionName, old: oldScore, new: new_value });
       }, 'local');
     }
@@ -516,11 +514,16 @@ function update_data_element(updated_id, new_value) {
             current_question_index = current_question + 1;
 
             //Create new question
+            const now = Date.now();
             const newQuestion = new Y.Map();
             newQuestion.set('name', t('defaults.question_name', { number: current_question + 1 }));
+            newQuestion.set('nameUpdatedAt', now);
             newQuestion.set('score', 0);
+            newQuestion.set('scoreUpdatedAt', now);
             newQuestion.set('block', 0);
+            newQuestion.set('blockUpdatedAt', now);
             newQuestion.set('ignore', false);
+            newQuestion.set('ignoreUpdatedAt', now);
 
             //Set default score for all teams on this question to 0
             const newQuestionTeams = new Y.Array();
@@ -528,7 +531,9 @@ function update_data_element(updated_id, new_value) {
             for (let i = 1; i <= team_count; i++) {
               const teamScore = new Y.Map();
               teamScore.set('score', 0);
+              teamScore.set('scoreUpdatedAt', now);
               teamScore.set('extraCredit', 0);
+              teamScore.set('extraCreditUpdatedAt', now);
               newQuestionTeams.push([teamScore]);
             }
             newQuestion.set('teams', newQuestionTeams);
@@ -714,10 +719,13 @@ function reorder_teams(order) {
         questionTeams.delete(1, questionTeams.length - 1);
 
         // Create new score objects in new order
+        const reorderNow = Date.now();
         for (let j = 0; j < temp_score_data.length; j++) {
           const newScore = new Y.Map();
           newScore.set('score', temp_score_data[j].score);
+          newScore.set('scoreUpdatedAt', reorderNow);
           newScore.set('extraCredit', temp_score_data[j].extraCredit);
+          newScore.set('extraCreditUpdatedAt', reorderNow);
           questionTeams.push([newScore]);
         }
       }
@@ -789,4 +797,132 @@ function reorder_blocks(order) {
       add_history_entry('edit_log.actions.reorder_blocks', 'edit_log.details_templates.new_order', { order: newOrder.join(', ') });
     }, 'local');
   }
+}
+
+/**
+ * Detect and merge duplicate questions based on matching names.
+ * When two peers concurrently create the same question, both entries
+ * are preserved by Yjs. This function detects duplicates and merges
+ * them, keeping the most recent value for each property.
+ * @param {Y.Map} session - The session Y.Map
+ * @param {Y.Doc} sessionDoc - The session Y.Doc for transactions
+ */
+function detectAndMergeDuplicateQuestions(session, sessionDoc) {
+  if (!session || !sessionDoc) return;
+  
+  const questions = session.get('questions');
+  if (!questions || questions.length <= 2) return; // Need at least 2 questions (index 0 is null)
+  
+  // Build map of name -> indices
+  const byName = new Map();
+  for (let i = 1; i < questions.length; i++) {
+    const q = questions.get(i);
+    if (!q) continue;
+    const name = q.get('name') || '';
+    if (!byName.has(name)) {
+      byName.set(name, []);
+    }
+    byName.get(name).push(i);
+  }
+  
+  // Find and merge duplicates
+  for (const [name, indices] of byName) {
+    if (indices.length > 1) {
+      mergeQuestionDuplicates(questions, indices, sessionDoc, name);
+    }
+  }
+}
+
+/**
+ * Merge duplicate question entries, keeping the most recent value for each property.
+ * @param {Y.Array} questions - The questions Y.Array
+ * @param {Array<number>} indices - Array of indices with duplicate names
+ * @param {Y.Doc} sessionDoc - The session Y.Doc for transactions
+ * @param {string} questionName - The question name for logging
+ */
+function mergeQuestionDuplicates(questions, indices, sessionDoc, questionName) {
+  if (indices.length < 2) return;
+  
+  sessionDoc.transact(() => {
+    // Keep the first one, merge data from others into it
+    const keepIndex = indices[0];
+    const keepQuestion = questions.get(keepIndex);
+    
+    // Track which indices to delete (in reverse order to maintain indices)
+    const toDelete = [];
+    
+    for (let i = 1; i < indices.length; i++) {
+      const removeIndex = indices[i];
+      const removeQuestion = questions.get(removeIndex);
+      if (!removeQuestion) continue;
+      
+      // Merge each property using updatedAt timestamps
+      
+      // Merge 'score' (max points)
+      const keepScoreTime = keepQuestion.get('scoreUpdatedAt') || 0;
+      const removeScoreTime = removeQuestion.get('scoreUpdatedAt') || 0;
+      if (removeScoreTime > keepScoreTime) {
+        keepQuestion.set('score', removeQuestion.get('score'));
+        keepQuestion.set('scoreUpdatedAt', removeScoreTime);
+      }
+      
+      // Merge 'block'
+      const keepBlockTime = keepQuestion.get('blockUpdatedAt') || 0;
+      const removeBlockTime = removeQuestion.get('blockUpdatedAt') || 0;
+      if (removeBlockTime > keepBlockTime) {
+        keepQuestion.set('block', removeQuestion.get('block'));
+        keepQuestion.set('blockUpdatedAt', removeBlockTime);
+      }
+      
+      // Merge 'ignore'
+      const keepIgnoreTime = keepQuestion.get('ignoreUpdatedAt') || 0;
+      const removeIgnoreTime = removeQuestion.get('ignoreUpdatedAt') || 0;
+      if (removeIgnoreTime > keepIgnoreTime) {
+        keepQuestion.set('ignore', removeQuestion.get('ignore'));
+        keepQuestion.set('ignoreUpdatedAt', removeIgnoreTime);
+      }
+      
+      // Merge team scores
+      const keepTeams = keepQuestion.get('teams');
+      const removeTeams = removeQuestion.get('teams');
+      if (keepTeams && removeTeams) {
+        const maxTeams = Math.max(keepTeams.length, removeTeams.length);
+        for (let t = 1; t < maxTeams; t++) {
+          const keepTeamScore = keepTeams.get(t);
+          const removeTeamScore = removeTeams.get(t);
+          
+          if (!keepTeamScore || !removeTeamScore) continue;
+          
+          // Merge score
+          const keepTeamScoreTime = keepTeamScore.get('scoreUpdatedAt') || 0;
+          const removeTeamScoreTime = removeTeamScore.get('scoreUpdatedAt') || 0;
+          if (removeTeamScoreTime > keepTeamScoreTime) {
+            keepTeamScore.set('score', removeTeamScore.get('score'));
+            keepTeamScore.set('scoreUpdatedAt', removeTeamScoreTime);
+          }
+          
+          // Merge extraCredit
+          const keepExtraCreditTime = keepTeamScore.get('extraCreditUpdatedAt') || 0;
+          const removeExtraCreditTime = removeTeamScore.get('extraCreditUpdatedAt') || 0;
+          if (removeExtraCreditTime > keepExtraCreditTime) {
+            keepTeamScore.set('extraCredit', removeTeamScore.get('extraCredit'));
+            keepTeamScore.set('extraCreditUpdatedAt', removeExtraCreditTime);
+          }
+        }
+      }
+      
+      toDelete.push(removeIndex);
+    }
+    
+    // Delete duplicates in reverse order to maintain correct indices
+    toDelete.sort((a, b) => b - a);
+    for (const idx of toDelete) {
+      questions.delete(idx, 1);
+    }
+    
+    // Log merge in history
+    if (typeof add_history_entry === 'function') {
+      add_history_entry('edit_log.actions.merge_duplicate_question', 'edit_log.details_templates.merged_duplicate_question', { name: questionName, count: toDelete.length + 1 });
+    }
+  }, 'merge');
 }
