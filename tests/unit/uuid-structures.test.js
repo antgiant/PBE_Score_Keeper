@@ -1009,3 +1009,69 @@ test('write operations return false for v3 sessions', () => {
   assert.equal(context.updateQuestionBlock(doc, session, 'q-id', 'b-id'), false);
   assert.equal(context.updateQuestionIgnore(doc, session, 'q-id', true), false);
 });
+
+// ============================================================================
+// V4 SESSION CREATION TESTS
+// ============================================================================
+
+test('createNewSessionV4 creates proper v4 session structure', () => {
+  const { context } = loadApp(createYjsDoc({ currentSession: 1, sessions: [] }));
+  
+  const testDoc = new context.Y.Doc();
+  const session = context.createNewSessionV4(testDoc, {
+    name: 'V4 Test Session',
+    maxPointsPerQuestion: 5,
+    rounding: true,
+    teamNames: ['Alpha', 'Beta', 'Gamma'],
+    blockNames: ['No Block', 'Block A', 'Block B']
+  });
+  
+  // Check metadata
+  assert.equal(session.get('name'), 'V4 Test Session');
+  assert.equal(session.get('dataVersion'), '4.0');
+  assert.ok(session.get('createdAt'), 'Should have createdAt');
+  
+  // Check config
+  const config = session.get('config');
+  assert.equal(config.get('maxPointsPerQuestion'), 5);
+  assert.equal(config.get('rounding'), true);
+  
+  // Check UUID structures exist
+  assert.ok(session.get('teamsById'), 'Should have teamsById');
+  assert.ok(session.get('teamOrder'), 'Should have teamOrder');
+  assert.ok(session.get('blocksById'), 'Should have blocksById');
+  assert.ok(session.get('blockOrder'), 'Should have blockOrder');
+  assert.ok(session.get('questionsById'), 'Should have questionsById');
+  assert.ok(session.get('questionOrder'), 'Should have questionOrder');
+  
+  // Check teams were created
+  const teams = context.getOrderedTeams(session);
+  assert.equal(teams.length, 3);
+  assert.equal(teams[0].data.get('name'), 'Alpha');
+  assert.equal(teams[1].data.get('name'), 'Beta');
+  assert.equal(teams[2].data.get('name'), 'Gamma');
+  
+  // Check blocks were created with first as default
+  const blocks = context.getOrderedBlocks(session);
+  assert.equal(blocks.length, 3);
+  assert.equal(blocks[0].data.get('name'), 'No Block');
+  assert.equal(blocks[0].data.get('isDefault'), true);
+  assert.equal(blocks[1].data.get('name'), 'Block A');
+  assert.equal(blocks[1].data.get('isDefault'), false);
+  
+  // Check initial question was created
+  const questions = context.getOrderedQuestions(session);
+  assert.equal(questions.length, 1);
+  assert.equal(questions[0].data.get('score'), 0);
+  
+  // Check question has team scores for all teams
+  const teamScores = questions[0].data.get('teamScores');
+  assert.equal(teamScores.size, 3, 'Question should have scores for all 3 teams');
+});
+
+test('USE_UUID_FOR_NEW_SESSIONS flag exists and defaults to false', () => {
+  const { context } = loadApp(createYjsDoc({ currentSession: 1, sessions: [] }));
+  
+  assert.equal(typeof context.USE_UUID_FOR_NEW_SESSIONS, 'boolean', 'Flag should be defined');
+  assert.equal(context.USE_UUID_FOR_NEW_SESSIONS, false, 'Flag should default to false');
+});

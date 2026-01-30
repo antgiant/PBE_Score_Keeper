@@ -413,12 +413,24 @@ async function createNewSession(name) {
   // Create new session doc
   const sessionDoc = await initSessionDoc(sessionId);
 
-  sessionDoc.transact(function() {
-    const session = sessionDoc.getMap('session');
-    session.set('id', sessionId);
-    session.set('name', sessionName);
-    session.set('createdAt', Date.now());
-    session.set('lastModified', Date.now());
+  // Check if we should use v4 UUID-based format
+  if (typeof USE_UUID_FOR_NEW_SESSIONS !== 'undefined' && USE_UUID_FOR_NEW_SESSIONS) {
+    // Create v4 session using UUID helpers
+    createNewSessionV4(sessionDoc, {
+      name: sessionName,
+      maxPointsPerQuestion: temp_max_points,
+      rounding: temp_rounding,
+      teamNames: temp_team_names.slice(1), // Remove null at index 0
+      blockNames: temp_block_names
+    });
+  } else {
+    // Create v3 session (index-based)
+    sessionDoc.transact(function() {
+      const session = sessionDoc.getMap('session');
+      session.set('id', sessionId);
+      session.set('name', sessionName);
+      session.set('createdAt', Date.now());
+      session.set('lastModified', Date.now());
 
     // Copy config
     const newConfig = new Y.Map();
@@ -472,7 +484,8 @@ async function createNewSession(name) {
     // Empty history log
     const historyLog = new Y.Array();
     session.set('historyLog', historyLog);
-  }, 'local');
+    }, 'local');
+  } // End of else block for v3 session creation
 
   // Update global doc
   const meta = getGlobalDoc().getMap('meta');

@@ -56,6 +56,13 @@ var DATA_VERSION_CURRENT = '3.0';
 var DATA_VERSION_UUID = '4.0';
 
 /**
+ * Whether to create new sessions using UUID-based v4.0 format.
+ * Set to true to enable v4 sessions for new session creation.
+ * Existing v3 sessions continue to work; migration happens separately.
+ */
+var USE_UUID_FOR_NEW_SESSIONS = false;
+
+/**
  * Minimum sync version - clients must have at least this version to sync.
  * After migration, set to '4.0' to prevent v3 clients from syncing with v4.
  */
@@ -544,6 +551,66 @@ function initializeUUIDSession(sessionDoc, options = {}) {
   
   // Create default team
   createTeam(sessionDoc, session, t('defaults.team_name', { number: 1 }));
+  
+  // Create initial placeholder question (question 1 with 0 points)
+  createQuestion(sessionDoc, session, { score: 0 });
+  
+  return session;
+}
+
+/**
+ * Create a new v4 session with copied settings from previous session.
+ * This is called from createNewSession when USE_UUID_FOR_NEW_SESSIONS is true.
+ * @param {Y.Doc} sessionDoc - The session Y.Doc (already initialized)
+ * @param {Object} options - Session options
+ * @param {string} options.name - Session name
+ * @param {number} options.maxPointsPerQuestion - Max points setting
+ * @param {boolean} options.rounding - Rounding mode setting
+ * @param {Array<string>} options.teamNames - Team names to copy (without null placeholder)
+ * @param {Array<string>} options.blockNames - Block names to copy
+ * @returns {Y.Map} The session Y.Map
+ */
+function createNewSessionV4(sessionDoc, options = {}) {
+  const session = sessionDoc.getMap('session');
+  const now = Date.now();
+  
+  sessionDoc.transact(() => {
+    // Set metadata
+    session.set('id', options.id || generateSessionId());
+    session.set('name', options.name || t('defaults.session_name'));
+    session.set('createdAt', now);
+    session.set('lastModified', now);
+    session.set('dataVersion', DATA_VERSION_UUID);
+    
+    // Config
+    const config = new Y.Map();
+    config.set('maxPointsPerQuestion', options.maxPointsPerQuestion || 4);
+    config.set('rounding', options.rounding || false);
+    session.set('config', config);
+    
+    // Initialize UUID structures
+    session.set('teamsById', new Y.Map());
+    session.set('teamOrder', new Y.Array());
+    session.set('questionsById', new Y.Map());
+    session.set('questionOrder', new Y.Array());
+    session.set('blocksById', new Y.Map());
+    session.set('blockOrder', new Y.Array());
+    
+    // History log
+    session.set('historyLog', new Y.Array());
+  }, 'init');
+  
+  // Create blocks from provided names
+  const blockNames = options.blockNames || [t('defaults.no_block')];
+  for (let i = 0; i < blockNames.length; i++) {
+    createBlock(sessionDoc, session, blockNames[i], i === 0);
+  }
+  
+  // Create teams from provided names
+  const teamNames = options.teamNames || [t('defaults.team_name', { number: 1 })];
+  for (let i = 0; i < teamNames.length; i++) {
+    createTeam(sessionDoc, session, teamNames[i]);
+  }
   
   // Create initial placeholder question (question 1 with 0 points)
   createQuestion(sessionDoc, session, { score: 0 });
