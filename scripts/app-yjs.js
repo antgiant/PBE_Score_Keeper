@@ -43,6 +43,514 @@ var DocManager = {
   }
 };
 
+// ============================================================================
+// DATA VERSION CONSTANTS
+// ============================================================================
+
+/**
+ * Current data version for sessions.
+ * v3.0 = multi-doc architecture with index-based arrays
+ * v4.0 = UUID-keyed Y.Maps with order arrays (migration target)
+ */
+var DATA_VERSION_CURRENT = '3.0';
+var DATA_VERSION_UUID = '4.0';
+
+/**
+ * Minimum sync version - clients must have at least this version to sync.
+ * After migration, set to '4.0' to prevent v3 clients from syncing with v4.
+ */
+var MIN_SYNC_VERSION = '3.0';
+
+// ============================================================================
+// UUID GENERATION FUNCTIONS
+// ============================================================================
+
+/**
+ * Generate a UUID for a new team
+ * Uses 't-' prefix for easy identification in debugging
+ * @returns {string} New team UUID (e.g., "t-abc123...")
+ */
+function generateTeamId() {
+  return 't-' + generateUUID();
+}
+
+/**
+ * Generate a UUID for a new question
+ * Uses 'q-' prefix for easy identification in debugging
+ * @returns {string} New question UUID (e.g., "q-abc123...")
+ */
+function generateQuestionId() {
+  return 'q-' + generateUUID();
+}
+
+/**
+ * Generate a UUID for a new block
+ * Uses 'b-' prefix for easy identification in debugging
+ * @returns {string} New block UUID (e.g., "b-abc123...")
+ */
+function generateBlockId() {
+  return 'b-' + generateUUID();
+}
+
+/**
+ * Generate a raw UUID (no prefix)
+ * @returns {string} New UUID
+ */
+function generateUUID() {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+  // Fallback UUID generation
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0;
+    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+}
+
+// ============================================================================
+// UUID STRUCTURE HELPERS
+// ============================================================================
+
+/**
+ * Check if a session uses the new UUID-based structure (v4.0)
+ * @param {Y.Map} session - The session Y.Map
+ * @returns {boolean} True if session uses UUID structure
+ */
+function isUUIDSession(session) {
+  if (!session) return false;
+  const dataVersion = session.get('dataVersion');
+  return dataVersion === DATA_VERSION_UUID || dataVersion === '4.0';
+}
+
+/**
+ * Check if an item is soft-deleted
+ * @param {Y.Map} item - Team, question, or block Y.Map
+ * @returns {boolean} True if item is deleted
+ */
+function isDeleted(item) {
+  if (!item) return true;
+  return item.get('deleted') === true;
+}
+
+/**
+ * Soft-delete an item (team, question, or block)
+ * Sets deleted=true and deletedAt=timestamp. Item remains in structure.
+ * @param {Y.Map} item - The item to soft-delete
+ */
+function softDelete(item) {
+  if (!item) return;
+  item.set('deleted', true);
+  item.set('deletedAt', Date.now());
+}
+
+/**
+ * Get ordered teams from a UUID-based session, excluding deleted ones
+ * @param {Y.Map} session - The session Y.Map
+ * @returns {Array<{id: string, data: Y.Map}>} Array of {id, data} objects in display order
+ */
+function getOrderedTeams(session) {
+  if (!session || !isUUIDSession(session)) return [];
+  
+  const teamsById = session.get('teamsById');
+  const teamOrder = session.get('teamOrder');
+  if (!teamsById || !teamOrder) return [];
+  
+  const result = [];
+  for (let i = 0; i < teamOrder.length; i++) {
+    const teamId = teamOrder.get(i);
+    const team = teamsById.get(teamId);
+    if (team && !isDeleted(team)) {
+      result.push({ id: teamId, data: team });
+    }
+  }
+  return result;
+}
+
+/**
+ * Get ordered questions from a UUID-based session, excluding deleted ones
+ * @param {Y.Map} session - The session Y.Map
+ * @returns {Array<{id: string, data: Y.Map}>} Array of {id, data} objects in display order
+ */
+function getOrderedQuestions(session) {
+  if (!session || !isUUIDSession(session)) return [];
+  
+  const questionsById = session.get('questionsById');
+  const questionOrder = session.get('questionOrder');
+  if (!questionsById || !questionOrder) return [];
+  
+  const result = [];
+  for (let i = 0; i < questionOrder.length; i++) {
+    const questionId = questionOrder.get(i);
+    const question = questionsById.get(questionId);
+    if (question && !isDeleted(question)) {
+      result.push({ id: questionId, data: question });
+    }
+  }
+  return result;
+}
+
+/**
+ * Get ordered blocks from a UUID-based session, excluding deleted ones
+ * @param {Y.Map} session - The session Y.Map
+ * @returns {Array<{id: string, data: Y.Map}>} Array of {id, data} objects in display order
+ */
+function getOrderedBlocks(session) {
+  if (!session || !isUUIDSession(session)) return [];
+  
+  const blocksById = session.get('blocksById');
+  const blockOrder = session.get('blockOrder');
+  if (!blocksById || !blockOrder) return [];
+  
+  const result = [];
+  for (let i = 0; i < blockOrder.length; i++) {
+    const blockId = blockOrder.get(i);
+    const block = blocksById.get(blockId);
+    if (block && !isDeleted(block)) {
+      result.push({ id: blockId, data: block });
+    }
+  }
+  return result;
+}
+
+/**
+ * Get a team by ID from a UUID-based session
+ * @param {Y.Map} session - The session Y.Map
+ * @param {string} teamId - Team UUID
+ * @returns {Y.Map|null} Team Y.Map or null
+ */
+function getTeamById(session, teamId) {
+  if (!session || !teamId) return null;
+  const teamsById = session.get('teamsById');
+  if (!teamsById) return null;
+  return teamsById.get(teamId) || null;
+}
+
+/**
+ * Get a question by ID from a UUID-based session
+ * @param {Y.Map} session - The session Y.Map
+ * @param {string} questionId - Question UUID
+ * @returns {Y.Map|null} Question Y.Map or null
+ */
+function getQuestionById(session, questionId) {
+  if (!session || !questionId) return null;
+  const questionsById = session.get('questionsById');
+  if (!questionsById) return null;
+  return questionsById.get(questionId) || null;
+}
+
+/**
+ * Get a block by ID from a UUID-based session
+ * @param {Y.Map} session - The session Y.Map
+ * @param {string} blockId - Block UUID
+ * @returns {Y.Map|null} Block Y.Map or null
+ */
+function getBlockById(session, blockId) {
+  if (!session || !blockId) return null;
+  const blocksById = session.get('blocksById');
+  if (!blocksById) return null;
+  return blocksById.get(blockId) || null;
+}
+
+/**
+ * Get a team's score for a specific question
+ * @param {Y.Map} session - The session Y.Map
+ * @param {string} questionId - Question UUID
+ * @param {string} teamId - Team UUID
+ * @returns {{score: number, extraCredit: number}|null} Score data or null
+ */
+function getTeamScore(session, questionId, teamId) {
+  const question = getQuestionById(session, questionId);
+  if (!question) return null;
+  
+  const teamScores = question.get('teamScores');
+  if (!teamScores) return null;
+  
+  const scoreData = teamScores.get(teamId);
+  if (!scoreData) return null;
+  
+  return {
+    score: scoreData.get('score') || 0,
+    extraCredit: scoreData.get('extraCredit') || 0
+  };
+}
+
+/**
+ * Get team UUID by display index (1-based)
+ * @param {Y.Map} session - The session Y.Map
+ * @param {number} displayIndex - 1-based display index
+ * @returns {string|null} Team UUID or null
+ */
+function getTeamIdByDisplayIndex(session, displayIndex) {
+  const teams = getOrderedTeams(session);
+  if (displayIndex < 1 || displayIndex > teams.length) return null;
+  return teams[displayIndex - 1].id;
+}
+
+/**
+ * Get display index (1-based) for a team UUID
+ * @param {Y.Map} session - The session Y.Map
+ * @param {string} teamId - Team UUID
+ * @returns {number} 1-based display index or 0 if not found
+ */
+function getDisplayIndexByTeamId(session, teamId) {
+  const teams = getOrderedTeams(session);
+  for (let i = 0; i < teams.length; i++) {
+    if (teams[i].id === teamId) return i + 1;
+  }
+  return 0;
+}
+
+/**
+ * Get question UUID by display index (1-based)
+ * @param {Y.Map} session - The session Y.Map
+ * @param {number} displayIndex - 1-based display index
+ * @returns {string|null} Question UUID or null
+ */
+function getQuestionIdByDisplayIndex(session, displayIndex) {
+  const questions = getOrderedQuestions(session);
+  if (displayIndex < 1 || displayIndex > questions.length) return null;
+  return questions[displayIndex - 1].id;
+}
+
+/**
+ * Get display index (1-based) for a question UUID
+ * @param {Y.Map} session - The session Y.Map
+ * @param {string} questionId - Question UUID
+ * @returns {number} 1-based display index or 0 if not found
+ */
+function getDisplayIndexByQuestionId(session, questionId) {
+  const questions = getOrderedQuestions(session);
+  for (let i = 0; i < questions.length; i++) {
+    if (questions[i].id === questionId) return i + 1;
+  }
+  return 0;
+}
+
+/**
+ * Get block UUID by display index (0-based, since "No Block" is at index 0)
+ * @param {Y.Map} session - The session Y.Map
+ * @param {number} displayIndex - 0-based display index
+ * @returns {string|null} Block UUID or null
+ */
+function getBlockIdByDisplayIndex(session, displayIndex) {
+  const blocks = getOrderedBlocks(session);
+  if (displayIndex < 0 || displayIndex >= blocks.length) return null;
+  return blocks[displayIndex].id;
+}
+
+/**
+ * Get display index (0-based) for a block UUID
+ * @param {Y.Map} session - The session Y.Map
+ * @param {string} blockId - Block UUID
+ * @returns {number} 0-based display index or -1 if not found
+ */
+function getDisplayIndexByBlockId(session, blockId) {
+  const blocks = getOrderedBlocks(session);
+  for (let i = 0; i < blocks.length; i++) {
+    if (blocks[i].id === blockId) return i;
+  }
+  return -1;
+}
+
+/**
+ * Create a new team in a UUID-based session
+ * @param {Y.Doc} sessionDoc - The session Y.Doc
+ * @param {Y.Map} session - The session Y.Map
+ * @param {string} name - Team name
+ * @returns {string} New team UUID
+ */
+function createTeam(sessionDoc, session, name) {
+  const teamId = generateTeamId();
+  const now = Date.now();
+  
+  sessionDoc.transact(() => {
+    const teamsById = session.get('teamsById');
+    const teamOrder = session.get('teamOrder');
+    
+    const team = new Y.Map();
+    team.set('id', teamId);
+    team.set('name', name);
+    team.set('createdAt', now);
+    team.set('deleted', false);
+    team.set('sortOrder', teamOrder.length);
+    
+    teamsById.set(teamId, team);
+    teamOrder.push([teamId]);
+    
+    // Add empty team scores to all existing questions
+    const questionsById = session.get('questionsById');
+    const questionOrder = session.get('questionOrder');
+    if (questionsById && questionOrder) {
+      for (let i = 0; i < questionOrder.length; i++) {
+        const qId = questionOrder.get(i);
+        const question = questionsById.get(qId);
+        if (question && !isDeleted(question)) {
+          const teamScores = question.get('teamScores');
+          if (teamScores) {
+            const scoreData = new Y.Map();
+            scoreData.set('score', 0);
+            scoreData.set('scoreUpdatedAt', now);
+            scoreData.set('extraCredit', 0);
+            scoreData.set('extraCreditUpdatedAt', now);
+            teamScores.set(teamId, scoreData);
+          }
+        }
+      }
+    }
+  }, 'local');
+  
+  return teamId;
+}
+
+/**
+ * Create a new question in a UUID-based session
+ * @param {Y.Doc} sessionDoc - The session Y.Doc
+ * @param {Y.Map} session - The session Y.Map
+ * @param {Object} options - Question options
+ * @param {string} options.name - Question name (optional)
+ * @param {number} options.score - Max points (default: 0)
+ * @param {string} options.blockId - Block UUID (default: first block)
+ * @returns {string} New question UUID
+ */
+function createQuestion(sessionDoc, session, options = {}) {
+  const questionId = generateQuestionId();
+  const now = Date.now();
+  
+  sessionDoc.transact(() => {
+    const questionsById = session.get('questionsById');
+    const questionOrder = session.get('questionOrder');
+    const blocksById = session.get('blocksById');
+    const blockOrder = session.get('blockOrder');
+    
+    // Default to first block if not specified
+    let blockId = options.blockId;
+    if (!blockId && blockOrder && blockOrder.length > 0) {
+      blockId = blockOrder.get(0);
+    }
+    
+    const question = new Y.Map();
+    question.set('id', questionId);
+    question.set('name', options.name || '');
+    question.set('nameUpdatedAt', now);
+    question.set('score', options.score || 0);
+    question.set('scoreUpdatedAt', now);
+    question.set('blockId', blockId);
+    question.set('blockUpdatedAt', now);
+    question.set('ignore', false);
+    question.set('ignoreUpdatedAt', now);
+    question.set('createdAt', now);
+    question.set('deleted', false);
+    question.set('sortOrder', questionOrder.length);
+    
+    // Initialize team scores for all teams
+    const teamScores = new Y.Map();
+    const teamsById = session.get('teamsById');
+    const teamOrder = session.get('teamOrder');
+    if (teamsById && teamOrder) {
+      for (let i = 0; i < teamOrder.length; i++) {
+        const teamId = teamOrder.get(i);
+        const team = teamsById.get(teamId);
+        if (team && !isDeleted(team)) {
+          const scoreData = new Y.Map();
+          scoreData.set('score', 0);
+          scoreData.set('scoreUpdatedAt', now);
+          scoreData.set('extraCredit', 0);
+          scoreData.set('extraCreditUpdatedAt', now);
+          teamScores.set(teamId, scoreData);
+        }
+      }
+    }
+    question.set('teamScores', teamScores);
+    
+    questionsById.set(questionId, question);
+    questionOrder.push([questionId]);
+  }, 'local');
+  
+  return questionId;
+}
+
+/**
+ * Create a new block in a UUID-based session
+ * @param {Y.Doc} sessionDoc - The session Y.Doc
+ * @param {Y.Map} session - The session Y.Map
+ * @param {string} name - Block name
+ * @param {boolean} isDefault - Whether this is the default "No Block"
+ * @returns {string} New block UUID
+ */
+function createBlock(sessionDoc, session, name, isDefault = false) {
+  const blockId = generateBlockId();
+  const now = Date.now();
+  
+  sessionDoc.transact(() => {
+    const blocksById = session.get('blocksById');
+    const blockOrder = session.get('blockOrder');
+    
+    const block = new Y.Map();
+    block.set('id', blockId);
+    block.set('name', name);
+    block.set('isDefault', isDefault);
+    block.set('createdAt', now);
+    block.set('deleted', false);
+    block.set('sortOrder', blockOrder.length);
+    
+    blocksById.set(blockId, block);
+    blockOrder.push([blockId]);
+  }, 'local');
+  
+  return blockId;
+}
+
+/**
+ * Initialize a new UUID-based session structure
+ * Creates teamsById, teamOrder, questionsById, questionOrder, blocksById, blockOrder
+ * @param {Y.Doc} sessionDoc - The session Y.Doc
+ * @param {Object} options - Initialization options
+ * @param {string} options.name - Session name
+ * @param {number} options.maxPointsPerQuestion - Max points per question
+ * @param {boolean} options.rounding - Enable rounding mode
+ * @returns {Y.Map} The session Y.Map
+ */
+function initializeUUIDSession(sessionDoc, options = {}) {
+  const session = sessionDoc.getMap('session');
+  const now = Date.now();
+  
+  sessionDoc.transact(() => {
+    // Set metadata
+    session.set('name', options.name || t('defaults.session_name'));
+    session.set('createdAt', now);
+    session.set('dataVersion', DATA_VERSION_UUID);
+    
+    // Config
+    const config = new Y.Map();
+    config.set('maxPointsPerQuestion', options.maxPointsPerQuestion || 4);
+    config.set('rounding', options.rounding || false);
+    session.set('config', config);
+    
+    // Initialize UUID structures
+    session.set('teamsById', new Y.Map());
+    session.set('teamOrder', new Y.Array());
+    session.set('questionsById', new Y.Map());
+    session.set('questionOrder', new Y.Array());
+    session.set('blocksById', new Y.Map());
+    session.set('blockOrder', new Y.Array());
+    
+    // History log
+    session.set('historyLog', new Y.Array());
+  }, 'init');
+  
+  // Create default block ("No Block")
+  createBlock(sessionDoc, session, t('defaults.no_block'), true);
+  
+  // Create default team
+  createTeam(sessionDoc, session, t('defaults.team_name', { number: 1 }));
+  
+  // Create initial placeholder question (question 1 with 0 points)
+  createQuestion(sessionDoc, session, { score: 0 });
+  
+  return session;
+}
+
 // Legacy global variables - kept for compatibility during transition
 var ydoc;
 var yProvider;
