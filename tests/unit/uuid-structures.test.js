@@ -313,6 +313,39 @@ function createV4Session(context, config = {}) {
     // Create questionsById and questionOrder
     const questionsById = new context.Y.Map();
     const questionOrder = new context.Y.Array();
+    
+    // Create questions from config if provided
+    const questionConfigs = config.questions || [];
+    const defaultBlockId = blockOrder.length > 0 ? blockOrder.get(0) : null;
+    
+    questionConfigs.forEach((qConfig, i) => {
+      const questionId = `q-test-${i + 1}`;
+      const question = new context.Y.Map();
+      question.set('id', questionId);
+      question.set('name', qConfig.name || '');
+      question.set('score', qConfig.score || 0);
+      question.set('blockId', qConfig.blockId || defaultBlockId);
+      question.set('ignore', qConfig.ignore || false);
+      question.set('deleted', false);
+      question.set('createdAt', Date.now());
+      
+      // Initialize team scores for all teams
+      const teamScores = new context.Y.Map();
+      teamNames.forEach((_, ti) => {
+        const teamId = `t-test-${ti + 1}`;
+        const scoreData = new context.Y.Map();
+        scoreData.set('score', 0);
+        scoreData.set('scoreUpdatedAt', Date.now());
+        scoreData.set('extraCredit', 0);
+        scoreData.set('extraCreditUpdatedAt', Date.now());
+        teamScores.set(teamId, scoreData);
+      });
+      question.set('teamScores', teamScores);
+      
+      questionsById.set(questionId, question);
+      questionOrder.push([questionId]);
+    });
+    
     session.set('questionsById', questionsById);
     session.set('questionOrder', questionOrder);
   });
@@ -725,3 +758,254 @@ test('v4 reorder_blocks only modifies blockOrder array', () => {
   assert.equal(reorderedBlocks[2].id, b1);
 });
 
+// ============================================================================
+// WRITE OPERATIONS TESTS
+// ============================================================================
+
+test('softDeleteTeam marks team as deleted', () => {
+  const { context } = loadApp(createYjsDoc({ currentSession: 1, sessions: [] }));
+  
+  // Create v4 session with multiple teams
+  const { doc, session } = createV4Session(context, { teams: ['Team A', 'Team B', 'Team C'] });
+  
+  // Get team UUIDs
+  const teams = context.getOrderedTeams(session);
+  assert.equal(teams.length, 3);
+  const teamBId = teams[1].id;
+  
+  // Soft delete Team B
+  const result = context.softDeleteTeam(doc, session, teamBId);
+  assert.equal(result, true, 'Should return true on successful delete');
+  
+  // Verify team is excluded from ordered list
+  const remainingTeams = context.getOrderedTeams(session);
+  assert.equal(remainingTeams.length, 2, 'Should have 2 remaining teams');
+  assert.equal(remainingTeams[0].data.get('name'), 'Team A');
+  assert.equal(remainingTeams[1].data.get('name'), 'Team C');
+  
+  // Verify team still exists in teamsById but is deleted
+  const teamsById = session.get('teamsById');
+  const deletedTeam = teamsById.get(teamBId);
+  assert.ok(deletedTeam, 'Team should still exist in teamsById');
+  assert.equal(deletedTeam.get('deleted'), true, 'Team should be marked deleted');
+  assert.ok(deletedTeam.get('deletedAt'), 'Team should have deletedAt timestamp');
+});
+
+test('softDeleteBlock moves questions to default block', () => {
+  const { context } = loadApp(createYjsDoc({ currentSession: 1, sessions: [] }));
+  
+  // Create v4 session with blocks
+  const { doc, session } = createV4Session(context, { 
+    teams: ['Team A'], 
+    blocks: ['No Block', 'Block 1'],
+    questions: [{ score: 5 }, { score: 10 }]
+  });
+  
+  // Get block UUIDs
+  const blocks = context.getOrderedBlocks(session);
+  const defaultBlockId = blocks[0].id;
+  const block1Id = blocks[1].id;
+  
+  // Assign a question to Block 1
+  const questions = context.getOrderedQuestions(session);
+  doc.transact(() => {
+    questions[1].data.set('blockId', block1Id);
+  });
+  
+  // Verify question is in Block 1
+  assert.equal(questions[1].data.get('blockId'), block1Id);
+  
+  // Delete Block 1
+  const result = context.softDeleteBlock(doc, session, block1Id);
+  assert.equal(result, true, 'Should return true on successful delete');
+  
+  // Verify block is deleted
+  const remainingBlocks = context.getOrderedBlocks(session);
+  assert.equal(remainingBlocks.length, 1, 'Should have only default block');
+  
+  // Refresh question reference and verify it was moved to default block
+  const updatedQuestions = context.getOrderedQuestions(session);
+  assert.equal(updatedQuestions[1].data.get('blockId'), defaultBlockId, 'Question should be moved to default block');
+});
+
+test('softDeleteBlock cannot delete default block', () => {
+  const { context } = loadApp(createYjsDoc({ currentSession: 1, sessions: [] }));
+  
+  const { doc, session } = createV4Session(context, { blocks: ['No Block'] });
+  
+  const blocks = context.getOrderedBlocks(session);
+  const defaultBlockId = blocks[0].id;
+  
+  const result = context.softDeleteBlock(doc, session, defaultBlockId);
+  assert.equal(result, false, 'Should return false when trying to delete default block');
+  
+  // Verify block still exists
+  const remainingBlocks = context.getOrderedBlocks(session);
+  assert.equal(remainingBlocks.length, 1);
+});
+
+test('setTeamScore updates team score for question', () => {
+  const { context } = loadApp(createYjsDoc({ currentSession: 1, sessions: [] }));
+  
+  const { doc, session } = createV4Session(context, { 
+    teams: ['Team A', 'Team B'], 
+    questions: [{ score: 10 }]
+  });
+  
+  const teams = context.getOrderedTeams(session);
+  const questions = context.getOrderedQuestions(session);
+  const teamAId = teams[0].id;
+  const questionId = questions[0].id;
+  
+  // Set Team A's score to 8
+  const result = context.setTeamScore(doc, session, questionId, teamAId, 8);
+  assert.equal(result, true, 'Should return true on successful update');
+  
+  // Verify score was updated
+  const scoreData = context.getTeamScore(session, questionId, teamAId);
+  assert.equal(scoreData.score, 8, 'Score should be updated to 8');
+});
+
+test('setTeamExtraCredit updates team extra credit', () => {
+  const { context } = loadApp(createYjsDoc({ currentSession: 1, sessions: [] }));
+  
+  const { doc, session } = createV4Session(context, { 
+    teams: ['Team A'], 
+    questions: [{ score: 10 }]
+  });
+  
+  const teams = context.getOrderedTeams(session);
+  const questions = context.getOrderedQuestions(session);
+  const teamAId = teams[0].id;
+  const questionId = questions[0].id;
+  
+  // Set Team A's extra credit to 2
+  const result = context.setTeamExtraCredit(doc, session, questionId, teamAId, 2);
+  assert.equal(result, true, 'Should return true on successful update');
+  
+  // Verify extra credit was updated
+  const scoreData = context.getTeamScore(session, questionId, teamAId);
+  assert.equal(scoreData.extraCredit, 2, 'Extra credit should be updated to 2');
+});
+
+test('updateTeamName changes team name', () => {
+  const { context } = loadApp(createYjsDoc({ currentSession: 1, sessions: [] }));
+  
+  const { doc, session } = createV4Session(context, { teams: ['Team A'] });
+  
+  const teams = context.getOrderedTeams(session);
+  const teamId = teams[0].id;
+  
+  // Update name
+  const result = context.updateTeamName(doc, session, teamId, 'New Team Name');
+  assert.equal(result, true, 'Should return true on successful update');
+  
+  // Verify name changed
+  const team = context.getTeamById(session, teamId);
+  assert.equal(team.get('name'), 'New Team Name');
+});
+
+test('updateBlockName changes block name', () => {
+  const { context } = loadApp(createYjsDoc({ currentSession: 1, sessions: [] }));
+  
+  const { doc, session } = createV4Session(context, { blocks: ['No Block', 'Block 1'] });
+  
+  const blocks = context.getOrderedBlocks(session);
+  const block1Id = blocks[1].id;
+  
+  // Update name
+  const result = context.updateBlockName(doc, session, block1Id, 'Renamed Block');
+  assert.equal(result, true, 'Should return true on successful update');
+  
+  // Verify name changed
+  const block = context.getBlockById(session, block1Id);
+  assert.equal(block.get('name'), 'Renamed Block');
+});
+
+test('updateQuestionScore changes question max points', () => {
+  const { context } = loadApp(createYjsDoc({ currentSession: 1, sessions: [] }));
+  
+  const { doc, session } = createV4Session(context, { questions: [{ score: 5 }] });
+  
+  const questions = context.getOrderedQuestions(session);
+  const questionId = questions[0].id;
+  
+  // Update score
+  const result = context.updateQuestionScore(doc, session, questionId, 15);
+  assert.equal(result, true, 'Should return true on successful update');
+  
+  // Verify score changed
+  const question = context.getQuestionById(session, questionId);
+  assert.equal(question.get('score'), 15);
+});
+
+test('updateQuestionBlock changes question block assignment', () => {
+  const { context } = loadApp(createYjsDoc({ currentSession: 1, sessions: [] }));
+  
+  const { doc, session } = createV4Session(context, { 
+    blocks: ['No Block', 'Block 1'],
+    questions: [{ score: 5 }]
+  });
+  
+  const blocks = context.getOrderedBlocks(session);
+  const questions = context.getOrderedQuestions(session);
+  const block1Id = blocks[1].id;
+  const questionId = questions[0].id;
+  
+  // Update block assignment
+  const result = context.updateQuestionBlock(doc, session, questionId, block1Id);
+  assert.equal(result, true, 'Should return true on successful update');
+  
+  // Verify block changed
+  const question = context.getQuestionById(session, questionId);
+  assert.equal(question.get('blockId'), block1Id);
+});
+
+test('updateQuestionIgnore changes question ignore status', () => {
+  const { context } = loadApp(createYjsDoc({ currentSession: 1, sessions: [] }));
+  
+  const { doc, session } = createV4Session(context, { questions: [{ score: 5 }] });
+  
+  const questions = context.getOrderedQuestions(session);
+  const questionId = questions[0].id;
+  
+  // Question starts not ignored
+  assert.equal(context.getQuestionById(session, questionId).get('ignore'), false);
+  
+  // Set to ignored
+  let result = context.updateQuestionIgnore(doc, session, questionId, true);
+  assert.equal(result, true);
+  assert.equal(context.getQuestionById(session, questionId).get('ignore'), true);
+  
+  // Set back to not ignored
+  result = context.updateQuestionIgnore(doc, session, questionId, false);
+  assert.equal(result, true);
+  assert.equal(context.getQuestionById(session, questionId).get('ignore'), false);
+});
+
+test('write operations return false for v3 sessions', () => {
+  const { context } = loadApp(createYjsDoc({
+    currentSession: 1,
+    sessions: [{
+      name: 'Test Session',
+      teams: ['Team A'],
+      blocks: ['No Block'],
+      questions: [{ score: 5 }]
+    }]
+  }));
+  
+  const session = context.get_current_session();
+  const doc = context.getActiveSessionDoc();
+  
+  // All operations should return false for v3 session
+  assert.equal(context.softDeleteTeam(doc, session, 'fake-id'), false);
+  assert.equal(context.softDeleteBlock(doc, session, 'fake-id'), false);
+  assert.equal(context.softDeleteQuestion(doc, session, 'fake-id'), false);
+  assert.equal(context.setTeamScore(doc, session, 'q-id', 't-id', 5), false);
+  assert.equal(context.setTeamExtraCredit(doc, session, 'q-id', 't-id', 1), false);
+  assert.equal(context.updateTeamName(doc, session, 't-id', 'New'), false);
+  assert.equal(context.updateBlockName(doc, session, 'b-id', 'New'), false);
+  assert.equal(context.updateQuestionScore(doc, session, 'q-id', 10), false);
+  assert.equal(context.updateQuestionBlock(doc, session, 'q-id', 'b-id'), false);
+  assert.equal(context.updateQuestionIgnore(doc, session, 'q-id', true), false);
+});

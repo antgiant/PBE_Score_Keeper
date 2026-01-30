@@ -552,6 +552,283 @@ function initializeUUIDSession(sessionDoc, options = {}) {
 }
 
 // ============================================================================
+// UUID WRITE OPERATIONS
+// ============================================================================
+
+/**
+ * Soft-delete a team by UUID
+ * @param {Y.Doc} sessionDoc - The session Y.Doc
+ * @param {Y.Map} session - The session Y.Map
+ * @param {string} teamId - Team UUID to delete
+ * @returns {boolean} True if deleted, false if not found
+ */
+function softDeleteTeam(sessionDoc, session, teamId) {
+  if (!isUUIDSession(session)) return false;
+  
+  const teamsById = session.get('teamsById');
+  const team = teamsById ? teamsById.get(teamId) : null;
+  if (!team || isDeleted(team)) return false;
+  
+  sessionDoc.transact(() => {
+    softDelete(team);
+  }, 'local');
+  
+  return true;
+}
+
+/**
+ * Soft-delete a question by UUID
+ * @param {Y.Doc} sessionDoc - The session Y.Doc
+ * @param {Y.Map} session - The session Y.Map
+ * @param {string} questionId - Question UUID to delete
+ * @returns {boolean} True if deleted, false if not found
+ */
+function softDeleteQuestion(sessionDoc, session, questionId) {
+  if (!isUUIDSession(session)) return false;
+  
+  const questionsById = session.get('questionsById');
+  const question = questionsById ? questionsById.get(questionId) : null;
+  if (!question || isDeleted(question)) return false;
+  
+  sessionDoc.transact(() => {
+    softDelete(question);
+  }, 'local');
+  
+  return true;
+}
+
+/**
+ * Soft-delete a block by UUID
+ * Moves any questions in this block to the default block
+ * @param {Y.Doc} sessionDoc - The session Y.Doc
+ * @param {Y.Map} session - The session Y.Map
+ * @param {string} blockId - Block UUID to delete
+ * @returns {boolean} True if deleted, false if not found or is default block
+ */
+function softDeleteBlock(sessionDoc, session, blockId) {
+  if (!isUUIDSession(session)) return false;
+  
+  const blocksById = session.get('blocksById');
+  const block = blocksById ? blocksById.get(blockId) : null;
+  if (!block || isDeleted(block)) return false;
+  
+  // Can't delete the default block
+  if (block.get('isDefault')) return false;
+  
+  // Find the default block
+  const blockOrder = session.get('blockOrder');
+  let defaultBlockId = null;
+  for (let i = 0; i < blockOrder.length; i++) {
+    const bId = blockOrder.get(i);
+    const b = blocksById.get(bId);
+    if (b && !isDeleted(b) && b.get('isDefault')) {
+      defaultBlockId = bId;
+      break;
+    }
+  }
+  
+  sessionDoc.transact(() => {
+    // Move questions from this block to default block
+    if (defaultBlockId) {
+      const questionsById = session.get('questionsById');
+      const questionOrder = session.get('questionOrder');
+      for (let i = 0; i < questionOrder.length; i++) {
+        const qId = questionOrder.get(i);
+        const question = questionsById.get(qId);
+        if (question && !isDeleted(question) && question.get('blockId') === blockId) {
+          question.set('blockId', defaultBlockId);
+          question.set('blockUpdatedAt', Date.now());
+        }
+      }
+    }
+    
+    softDelete(block);
+  }, 'local');
+  
+  return true;
+}
+
+/**
+ * Set a team's score for a specific question
+ * @param {Y.Doc} sessionDoc - The session Y.Doc
+ * @param {Y.Map} session - The session Y.Map
+ * @param {string} questionId - Question UUID
+ * @param {string} teamId - Team UUID
+ * @param {number} score - New score value
+ * @returns {boolean} True if updated, false if not found
+ */
+function setTeamScore(sessionDoc, session, questionId, teamId, score) {
+  if (!isUUIDSession(session)) return false;
+  
+  const question = getQuestionById(session, questionId);
+  if (!question || isDeleted(question)) return false;
+  
+  const teamScores = question.get('teamScores');
+  if (!teamScores) return false;
+  
+  sessionDoc.transact(() => {
+    let scoreData = teamScores.get(teamId);
+    if (!scoreData) {
+      // Create score entry if it doesn't exist
+      scoreData = new Y.Map();
+      scoreData.set('extraCredit', 0);
+      scoreData.set('extraCreditUpdatedAt', Date.now());
+      teamScores.set(teamId, scoreData);
+    }
+    scoreData.set('score', score);
+    scoreData.set('scoreUpdatedAt', Date.now());
+  }, 'local');
+  
+  return true;
+}
+
+/**
+ * Set a team's extra credit for a specific question
+ * @param {Y.Doc} sessionDoc - The session Y.Doc
+ * @param {Y.Map} session - The session Y.Map
+ * @param {string} questionId - Question UUID
+ * @param {string} teamId - Team UUID
+ * @param {number} extraCredit - New extra credit value
+ * @returns {boolean} True if updated, false if not found
+ */
+function setTeamExtraCredit(sessionDoc, session, questionId, teamId, extraCredit) {
+  if (!isUUIDSession(session)) return false;
+  
+  const question = getQuestionById(session, questionId);
+  if (!question || isDeleted(question)) return false;
+  
+  const teamScores = question.get('teamScores');
+  if (!teamScores) return false;
+  
+  sessionDoc.transact(() => {
+    let scoreData = teamScores.get(teamId);
+    if (!scoreData) {
+      // Create score entry if it doesn't exist
+      scoreData = new Y.Map();
+      scoreData.set('score', 0);
+      scoreData.set('scoreUpdatedAt', Date.now());
+      teamScores.set(teamId, scoreData);
+    }
+    scoreData.set('extraCredit', extraCredit);
+    scoreData.set('extraCreditUpdatedAt', Date.now());
+  }, 'local');
+  
+  return true;
+}
+
+/**
+ * Update a team's name
+ * @param {Y.Doc} sessionDoc - The session Y.Doc
+ * @param {Y.Map} session - The session Y.Map
+ * @param {string} teamId - Team UUID
+ * @param {string} name - New name
+ * @returns {boolean} True if updated, false if not found
+ */
+function updateTeamName(sessionDoc, session, teamId, name) {
+  if (!isUUIDSession(session)) return false;
+  
+  const team = getTeamById(session, teamId);
+  if (!team || isDeleted(team)) return false;
+  
+  sessionDoc.transact(() => {
+    team.set('name', name);
+  }, 'local');
+  
+  return true;
+}
+
+/**
+ * Update a block's name
+ * @param {Y.Doc} sessionDoc - The session Y.Doc
+ * @param {Y.Map} session - The session Y.Map
+ * @param {string} blockId - Block UUID
+ * @param {string} name - New name
+ * @returns {boolean} True if updated, false if not found
+ */
+function updateBlockName(sessionDoc, session, blockId, name) {
+  if (!isUUIDSession(session)) return false;
+  
+  const block = getBlockById(session, blockId);
+  if (!block || isDeleted(block)) return false;
+  
+  sessionDoc.transact(() => {
+    block.set('name', name);
+  }, 'local');
+  
+  return true;
+}
+
+/**
+ * Update a question's max points
+ * @param {Y.Doc} sessionDoc - The session Y.Doc
+ * @param {Y.Map} session - The session Y.Map
+ * @param {string} questionId - Question UUID
+ * @param {number} score - New max points value
+ * @returns {boolean} True if updated, false if not found
+ */
+function updateQuestionScore(sessionDoc, session, questionId, score) {
+  if (!isUUIDSession(session)) return false;
+  
+  const question = getQuestionById(session, questionId);
+  if (!question || isDeleted(question)) return false;
+  
+  sessionDoc.transact(() => {
+    question.set('score', score);
+    question.set('scoreUpdatedAt', Date.now());
+  }, 'local');
+  
+  return true;
+}
+
+/**
+ * Update a question's block assignment
+ * @param {Y.Doc} sessionDoc - The session Y.Doc
+ * @param {Y.Map} session - The session Y.Map
+ * @param {string} questionId - Question UUID
+ * @param {string} blockId - New block UUID
+ * @returns {boolean} True if updated, false if not found
+ */
+function updateQuestionBlock(sessionDoc, session, questionId, blockId) {
+  if (!isUUIDSession(session)) return false;
+  
+  const question = getQuestionById(session, questionId);
+  if (!question || isDeleted(question)) return false;
+  
+  // Verify block exists
+  const block = getBlockById(session, blockId);
+  if (!block || isDeleted(block)) return false;
+  
+  sessionDoc.transact(() => {
+    question.set('blockId', blockId);
+    question.set('blockUpdatedAt', Date.now());
+  }, 'local');
+  
+  return true;
+}
+
+/**
+ * Update a question's ignore status
+ * @param {Y.Doc} sessionDoc - The session Y.Doc
+ * @param {Y.Map} session - The session Y.Map
+ * @param {string} questionId - Question UUID
+ * @param {boolean} ignore - Ignore status
+ * @returns {boolean} True if updated, false if not found
+ */
+function updateQuestionIgnore(sessionDoc, session, questionId, ignore) {
+  if (!isUUIDSession(session)) return false;
+  
+  const question = getQuestionById(session, questionId);
+  if (!question || isDeleted(question)) return false;
+  
+  sessionDoc.transact(() => {
+    question.set('ignore', ignore);
+    question.set('ignoreUpdatedAt', Date.now());
+  }, 'local');
+  
+  return true;
+}
+
+// ============================================================================
 // MIGRATION FUNCTIONS (v3.0 → v4.0)
 // ============================================================================
 
