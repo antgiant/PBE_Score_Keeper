@@ -1336,8 +1336,7 @@ async function initSessionDoc(sessionId) {
             setupSessionHistoryListener(sessionId);
           }
           
-          // Set up duplicate question detection observer
-          setupDuplicateQuestionObserver(sessionId);
+          // Note: Duplicate question detection removed in v5.0 - deterministic IDs prevent duplicates
           
           resolve(sessionDoc);
         });
@@ -1370,37 +1369,9 @@ async function initSessionDoc(sessionId) {
   return loadPromise;
 }
 
-/**
- * Set up observer for duplicate question detection on a session doc.
- * This is called when a session doc is loaded or synced.
- * @param {string} sessionId - The session ID
- */
-function setupDuplicateQuestionObserver(sessionId) {
-  const sessionDoc = DocManager.sessionDocs.get(sessionId);
-  if (!sessionDoc) return;
-  
-  const session = sessionDoc.getMap('session');
-  if (!session) return;
-  
-  let debounceTimer = null;
-  
-  sessionDoc.on('update', (update, origin) => {
-    // Only run for remote updates (not local)
-    if (origin === 'local' || origin === 'init' || origin === 'import' || origin === 'merge' || origin === 'test') {
-      return;
-    }
-    
-    // Debounce to batch rapid sync updates
-    if (debounceTimer) {
-      clearTimeout(debounceTimer);
-    }
-    debounceTimer = setTimeout(() => {
-      if (typeof detectAndMergeDuplicateQuestions === 'function') {
-        detectAndMergeDuplicateQuestions(session, sessionDoc);
-      }
-    }, 200);
-  });
-}
+// Note: setupDuplicateQuestionObserver removed in v5.0
+// With deterministic question IDs (q-1, q-2), duplicate questions cannot occur
+// because both peers will create the same ID and Yjs will merge at the CRDT level
 
 /**
  * Get a session doc, loading it if necessary
