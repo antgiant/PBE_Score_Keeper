@@ -21,6 +21,7 @@ function isValidUUID(str) {
 
 /**
  * Convert session from Y.Doc to plain JSON object (multi-doc architecture)
+ * Handles both v3.0 (index-based) and v4.0 (UUID-based) session formats
  * @param {string} sessionId - Session UUID to convert
  * @returns {Object} Plain object representation of session data
  */
@@ -31,9 +32,16 @@ function session_to_json(sessionId) {
   const session = sessionDoc.getMap('session');
   if (!session) return null;
 
+  // Check if this is a v4 (UUID-based) session
+  if (typeof isUUIDSession === 'function' && isUUIDSession(session)) {
+    return session_to_json_v4(sessionId, session);
+  }
+
+  // V3 export (index-based)
   const sessionObj = {
     id: sessionId,
     name: session.get('name'),
+    dataVersion: '3.0',
     config: {
       maxPointsPerQuestion: session.get('config').get('maxPointsPerQuestion'),
       rounding: session.get('config').get('rounding')
@@ -85,6 +93,82 @@ function session_to_json(sessionId) {
     }
 
     sessionObj.questions.push(questionObj);
+  }
+
+  return sessionObj;
+}
+
+/**
+ * Convert v4 (UUID-based) session from Y.Doc to plain JSON object
+ * @param {string} sessionId - Session UUID
+ * @param {Y.Map} session - The session Y.Map
+ * @returns {Object} Plain object representation of v4 session data
+ */
+function session_to_json_v4(sessionId, session) {
+  const sessionObj = {
+    id: sessionId,
+    name: session.get('name'),
+    dataVersion: '4.0',
+    config: {
+      maxPointsPerQuestion: session.get('config').get('maxPointsPerQuestion'),
+      rounding: session.get('config').get('rounding')
+    },
+    // UUID-keyed structures
+    teamsById: {},
+    teamOrder: [],
+    questionsById: {},
+    questionOrder: [],
+    blocksById: {},
+    blockOrder: [],
+    // Scores are stored in questionsById[qId].scores[teamId]
+  };
+
+  // Teams - use ordered teams (excludes soft-deleted)
+  const orderedTeams = getOrderedTeams(session);
+  for (const { id, data } of orderedTeams) {
+    sessionObj.teamsById[id] = {
+      name: data.get('name'),
+      createdAt: data.get('createdAt') || Date.now()
+    };
+    sessionObj.teamOrder.push(id);
+  }
+
+  // Blocks - use ordered blocks (excludes soft-deleted)
+  const orderedBlocks = getOrderedBlocks(session);
+  for (const { id, data } of orderedBlocks) {
+    sessionObj.blocksById[id] = {
+      name: data.get('name'),
+      isDefault: data.get('isDefault') || false,
+      createdAt: data.get('createdAt') || Date.now()
+    };
+    sessionObj.blockOrder.push(id);
+  }
+
+  // Questions - use ordered questions (excludes soft-deleted)
+  const orderedQuestions = getOrderedQuestions(session);
+  for (const { id, data } of orderedQuestions) {
+    const questionObj = {
+      name: data.get('name'),
+      score: data.get('score'),
+      blockId: data.get('blockId'),
+      ignore: data.get('ignore') || false,
+      createdAt: data.get('createdAt') || Date.now(),
+      scores: {}
+    };
+
+    // Get scores for each team on this question
+    for (const { id: teamId } of orderedTeams) {
+      const scoreData = getTeamScore(session, id, teamId);
+      if (scoreData) {
+        questionObj.scores[teamId] = {
+          score: scoreData.score,
+          extraCredit: scoreData.extraCredit
+        };
+      }
+    }
+
+    sessionObj.questionsById[id] = questionObj;
+    sessionObj.questionOrder.push(id);
   }
 
   return sessionObj;
@@ -326,6 +410,201 @@ async function import_yjs_from_json(data, mode) {
         questions.push([questionMap]);
       }
       session.set('questions', questions);
+
+      // Initialize history
+      session.set('historyLog', new Y.Array());
+    }, 'import');
+
+    // Store session doc if not already stored
+    if (!DocManager.sessionDocs.has(sessionId)) {
+      DocManager.sessionDocs.set(sessionId, sessionDoc);
+      
+      // Set up IndexedDB persistence and track provider
+      if (window.indexedDB && typeof IndexeddbPersistence !== 'undefined') {
+        const persistence = new IndexeddbPersistence('pbe-score-keeper-session-' + sessionId, sessionDoc);
+        DocManager.sessionProviders.set(sessionId, persistence);
+      }
+    }
+    
+    importedSessionIds.push(sessionId);
+  }
+
+  // Update global doc with imported sessions
+  getGlobalDoc().transact(() => {
+    const existingOrder = meta.get('sessionOrder') || [];
+    const newOrder = mode === 'replace' ? importedSessionIds : [...existingOrder, ...importedSessionIds];
+    meta.set('sessionOrder', newOrder);
+    
+    // Update session name cache
+    let sessionNames = meta.get('sessionNames');
+    if (!sessionNames) {
+      sessionNames = new Y.Map();
+      meta.set('sessionNames', sessionNames);
+    }
+    
+    const unnamedSessionText = (typeof t === 'function') ? t('defaults.unnamed_session') : 'Unnamed Session';
+    for (const sessionId of importedSessionIds) {
+      const sessionDoc = getSessionDoc(sessionId);
+      if (sessionDoc) {
+        const session = sessionDoc.getMap('session');
+        const name = session.get('name') || unnamedSessionText;
+        sessionNames.set(sessionId, name);
+      }
+    }
+    
+    // Set current session
+    const targetSessionId = mode === 'replace' 
+      ? (importedSessionIds.length > 0 ? importedSessionIds[0] : null)
+      : (importedSessionIds.length > 0 ? importedSessionIds[importedSessionIds.length - 1] : existingOrder[existingOrder.length - 1]);
+    
+    if (targetSessionId) {
+      meta.set('currentSession', targetSessionId);
+      DocManager.setActiveSession(targetSessionId);
+    }
+  }, 'import');
+
+  // Add import history entry
+  add_global_history_entry('history_global.actions.import', 'history_global.details_templates.imported_sessions', { count: importedSessionIds.length });
+}
+
+/**
+ * Import v4 JSON data (UUID-based sessions) into multi-doc architecture
+ * Creates new session Y.Docs for each imported session
+ * @param {Object} data - v4.0 format JSON data with UUID-keyed structures
+ * @param {string} mode - 'replace' or 'append'
+ */
+async function import_yjs_from_json_v4(data, mode) {
+  if (!getGlobalDoc()) return;
+
+  const meta = getGlobalDoc().getMap('meta');
+
+  if (mode === 'replace') {
+    // Clear existing sessions
+    const currentSessionOrder = meta.get('sessionOrder') || [];
+    
+    // Destroy existing session docs
+    for (const sessionId of currentSessionOrder) {
+      const existingDoc = getSessionDoc(sessionId);
+      if (existingDoc) {
+        existingDoc.destroy();
+      }
+      DocManager.sessionDocs.delete(sessionId);
+      // Clear from IndexedDB
+      try {
+        indexedDB.deleteDatabase('pbe-score-keeper-session-' + sessionId);
+      } catch (e) {
+        console.warn('Failed to delete session DB:', sessionId, e);
+      }
+    }
+
+    // Reset global doc
+    getGlobalDoc().transact(() => {
+      meta.set('dataVersion', '4.0');
+      meta.set('sessionOrder', []);
+      meta.set('currentSession', null);
+      // Clear session name cache
+      meta.set('sessionNames', new Y.Map());
+    }, 'import');
+  }
+
+  // Import sessions (skip index 0 placeholder)
+  const importedSessionIds = [];
+  for (let i = 1; i < data.sessions.length; i++) {
+    const sessionData = data.sessions[i];
+    if (!sessionData) continue;
+
+    // Preserve session ID if it's a valid UUID, otherwise generate new
+    const sessionId = (sessionData.id && isValidUUID(sessionData.id)) ? sessionData.id : generateSessionId();
+    
+    // Check if session already exists (for merge support)
+    let existingDoc = DocManager.sessionDocs.get(sessionId);
+    if (!existingDoc && window.indexedDB && typeof IndexeddbPersistence !== 'undefined') {
+      // Try to load from IndexedDB
+      existingDoc = await initSessionDoc(sessionId);
+    }
+    
+    // Create session doc or use existing
+    const sessionDoc = existingDoc || new Y.Doc();
+    const session = sessionDoc.getMap('session');
+    
+    sessionDoc.transact(() => {
+      session.set('id', sessionId);
+      session.set('name', sessionData.name);
+      session.set('dataVersion', DATA_VERSION_UUID);
+
+      // Config
+      const config = new Y.Map();
+      config.set('maxPointsPerQuestion', sessionData.config.maxPointsPerQuestion);
+      config.set('rounding', sessionData.config.rounding);
+      session.set('config', config);
+
+      // Initialize UUID structures
+      session.set('teamsById', new Y.Map());
+      session.set('teamOrder', new Y.Array());
+      session.set('questionsById', new Y.Map());
+      session.set('questionOrder', new Y.Array());
+      session.set('blocksById', new Y.Map());
+      session.set('blockOrder', new Y.Array());
+      
+      const teamsById = session.get('teamsById');
+      const teamOrder = session.get('teamOrder');
+      const questionsById = session.get('questionsById');
+      const questionOrder = session.get('questionOrder');
+      const blocksById = session.get('blocksById');
+      const blockOrder = session.get('blockOrder');
+
+      // Import blocks
+      for (const blockId of sessionData.blockOrder) {
+        const blockData = sessionData.blocksById[blockId];
+        if (!blockData) continue;
+        
+        const blockMap = new Y.Map();
+        blockMap.set('name', blockData.name);
+        blockMap.set('isDefault', blockData.isDefault || false);
+        blockMap.set('createdAt', blockData.createdAt || Date.now());
+        blocksById.set(blockId, blockMap);
+        blockOrder.push([blockId]);
+      }
+
+      // Import teams
+      for (const teamId of sessionData.teamOrder) {
+        const teamData = sessionData.teamsById[teamId];
+        if (!teamData) continue;
+        
+        const teamMap = new Y.Map();
+        teamMap.set('name', teamData.name);
+        teamMap.set('createdAt', teamData.createdAt || Date.now());
+        teamsById.set(teamId, teamMap);
+        teamOrder.push([teamId]);
+      }
+
+      // Import questions (with scores)
+      for (const questionId of sessionData.questionOrder) {
+        const questionData = sessionData.questionsById[questionId];
+        if (!questionData) continue;
+        
+        const questionMap = new Y.Map();
+        questionMap.set('name', questionData.name);
+        questionMap.set('score', questionData.score);
+        questionMap.set('blockId', questionData.blockId);
+        questionMap.set('ignore', questionData.ignore || false);
+        questionMap.set('createdAt', questionData.createdAt || Date.now());
+        
+        // Import scores for each team
+        if (questionData.scores) {
+          const scoresMap = new Y.Map();
+          for (const [teamId, scoreData] of Object.entries(questionData.scores)) {
+            const scoreEntry = new Y.Map();
+            scoreEntry.set('score', scoreData.score || 0);
+            scoreEntry.set('extraCredit', scoreData.extraCredit || 0);
+            scoresMap.set(teamId, scoreEntry);
+          }
+          questionMap.set('scores', scoresMap);
+        }
+        
+        questionsById.set(questionId, questionMap);
+        questionOrder.push([questionId]);
+      }
 
       // Initialize history
       session.set('historyLog', new Y.Array());
@@ -765,7 +1044,7 @@ function downloadBinaryExport(binary, filename) {
 /**
  * Detect import format (binary or JSON)
  * @param {any} data - Data to detect format of
- * @returns {string} Format: 'binary-single', 'binary-full', 'json-v3', 'json-legacy', or 'invalid'
+ * @returns {string} Format: 'binary-single', 'binary-full', 'json-v4', 'json-v3', 'json-legacy', or 'invalid'
  */
 function detectImportFormat(data) {
   // Check if binary (Uint8Array) - could be single session or multi-doc container
@@ -788,6 +1067,19 @@ function detectImportFormat(data) {
     // Check for multi-doc export container (has format marker)
     if (data.format === 'pbe-multi-doc' && data.global && data.sessions) {
       return 'binary-full';
+    }
+    // Check for v4.0 JSON format (UUID-based sessions)
+    // Can be detected by sessions having teamsById, questionsById, blocksById
+    if (data.dataVersion === 4.0 || data.dataVersion === '4.0') {
+      return 'json-v4';
+    }
+    if (data.sessions && Array.isArray(data.sessions)) {
+      for (let i = 1; i < data.sessions.length; i++) {
+        const s = data.sessions[i];
+        if (s && (s.dataVersion === '4.0' || s.teamsById)) {
+          return 'json-v4';
+        }
+      }
     }
     // Check for v3.0 JSON format
     if (data.dataVersion === 3.0 || (data.dataVersion === 2.0 && data.sessions)) {
@@ -1024,6 +1316,11 @@ async function importSessionData(data) {
         result.errors.push(t('alerts.failed_import_session', { error: error.message }));
       }
     } 
+    else if (format === 'json-v4') {
+      // Import v4 JSON format (UUID-based sessions)
+      await import_yjs_from_json_v4(data, 'append');
+      result.importedCount = data.sessions ? Math.max(0, data.sessions.length - 1) : 0;
+    }
     else if (format === 'json-v3' || format === 'json-legacy') {
       // Import JSON format (legacy save files)
       // Check if this is flat localStorage format (needs conversion)

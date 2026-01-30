@@ -1075,3 +1075,111 @@ test('USE_UUID_FOR_NEW_SESSIONS flag exists and defaults to false', () => {
   assert.equal(typeof context.USE_UUID_FOR_NEW_SESSIONS, 'boolean', 'Flag should be defined');
   assert.equal(context.USE_UUID_FOR_NEW_SESSIONS, false, 'Flag should default to false');
 });
+// ============================================================================
+// V4 EXPORT/IMPORT TESTS
+// ============================================================================
+
+test('session_to_json exports v4 session with UUID structures', () => {
+  const { context } = loadApp(createYjsDoc({ currentSession: 1, sessions: [] }));
+  
+  // Create a v4 session
+  const testDoc = new context.Y.Doc();
+  const session = context.createNewSessionV4(testDoc, {
+    id: 'test-session-uuid',
+    name: 'V4 Export Test',
+    maxPointsPerQuestion: 4,
+    rounding: false,
+    teamNames: ['Team Alpha', 'Team Beta'],
+    blockNames: ['No Block', 'Block X']
+  });
+  
+  // Store in DocManager
+  context.DocManager.sessionDocs.set('test-session-uuid', testDoc);
+  
+  // Export to JSON
+  const exported = context.session_to_json('test-session-uuid');
+  
+  // Verify structure
+  assert.equal(exported.id, 'test-session-uuid');
+  assert.equal(exported.name, 'V4 Export Test');
+  assert.equal(exported.dataVersion, '4.0');
+  assert.equal(exported.config.maxPointsPerQuestion, 4);
+  assert.equal(exported.config.rounding, false);
+  
+  // Check UUID structures
+  assert.ok(exported.teamsById, 'Should have teamsById');
+  assert.ok(exported.teamOrder, 'Should have teamOrder');
+  assert.ok(exported.blocksById, 'Should have blocksById');
+  assert.ok(exported.blockOrder, 'Should have blockOrder');
+  assert.ok(exported.questionsById, 'Should have questionsById');
+  assert.ok(exported.questionOrder, 'Should have questionOrder');
+  
+  // Check teams
+  assert.equal(exported.teamOrder.length, 2);
+  const team1Id = exported.teamOrder[0];
+  assert.equal(exported.teamsById[team1Id].name, 'Team Alpha');
+  
+  // Check blocks
+  assert.equal(exported.blockOrder.length, 2);
+  const block1Id = exported.blockOrder[0];
+  assert.equal(exported.blocksById[block1Id].name, 'No Block');
+  assert.equal(exported.blocksById[block1Id].isDefault, true);
+  
+  // Cleanup
+  context.DocManager.sessionDocs.delete('test-session-uuid');
+});
+
+test('session_to_json exports v3 session with index-based arrays', () => {
+  const { context } = loadApp(createYjsDoc({
+    currentSession: 1,
+    sessions: [{
+      name: 'V3 Export Test',
+      teams: ['Team A', 'Team B'],
+      blocks: ['No Block'],
+      questions: [{ score: 3, teams: [2, 1] }]
+    }]
+  }));
+  
+  // Get the session ID
+  const meta = context.getGlobalDoc().getMap('meta');
+  const sessionOrder = meta.get('sessionOrder') || [];
+  const sessionId = sessionOrder[0];
+  
+  // Export to JSON
+  const exported = context.session_to_json(sessionId);
+  
+  // Verify v3 structure (arrays, not UUID maps)
+  assert.equal(exported.name, 'V3 Export Test');
+  assert.equal(exported.dataVersion, '3.0');
+  assert.ok(Array.isArray(exported.teams), 'teams should be array for v3');
+  assert.ok(Array.isArray(exported.blocks), 'blocks should be array for v3');
+  assert.ok(Array.isArray(exported.questions), 'questions should be array for v3');
+  
+  // Should NOT have UUID structures
+  assert.equal(exported.teamsById, undefined, 'v3 should not have teamsById');
+  assert.equal(exported.teamOrder, undefined, 'v3 should not have teamOrder');
+});
+
+test('detectImportFormat identifies v4 JSON format', () => {
+  const { context } = loadApp(createYjsDoc({ currentSession: 1, sessions: [] }));
+  
+  // V4 format with dataVersion string
+  const v4Data = {
+    dataVersion: '4.0',
+    sessions: [null, { teamsById: {}, teamOrder: [] }]
+  };
+  assert.equal(context.detectImportFormat(v4Data), 'json-v4');
+  
+  // V4 format with teamsById in sessions
+  const v4Data2 = {
+    sessions: [null, { dataVersion: '4.0', teamsById: {}, teamOrder: [] }]
+  };
+  assert.equal(context.detectImportFormat(v4Data2), 'json-v4');
+  
+  // V3 format (should remain v3)
+  const v3Data = {
+    dataVersion: 3.0,
+    sessions: [null, { teams: [], blocks: [], questions: [] }]
+  };
+  assert.equal(context.detectImportFormat(v3Data), 'json-v3');
+});
