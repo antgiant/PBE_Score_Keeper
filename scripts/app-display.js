@@ -750,8 +750,10 @@ function sync_data_to_display() {
   else if (displayed_block_count > block_count) {
     //remove extra
     for (let i=displayed_block_count;i>block_count;i--) {
-      $("#block_names").children()[i - 1].remove();
-      $("#question_block").children()[i - 1].remove();
+      const blockChild = $("#block_names").children()[i - 1];
+      const questionBlockChild = $("#question_block").children()[i - 1];
+      if (blockChild) blockChild.remove();
+      if (questionBlockChild) questionBlockChild.remove();
     }
   } else {
     //Already have the right number do nothing
