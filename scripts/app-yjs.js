@@ -192,6 +192,112 @@ function validateQuestionCounter(session) {
 }
 
 /**
+ * Migrate a v4.0 session to v5.0 format (deterministic question IDs)
+ * Called automatically when loading a v4.0 session.
+ * 
+ * Note: This migration updates the internal 'id' field and cleans up obsolete fields,
+ * but preserves the original map keys for CRDT compatibility. The getOrderedQuestions()
+ * function handles both v4 (questionOrder-based) and v5 (numeric-sorted) sessions.
+ * 
+ * @param {Y.Doc} sessionDoc - The session Y.Doc
+ * @param {Y.Map} session - The session Y.Map
+ * @returns {boolean} True if migration was performed
+ */
+function migrateV4ToV5(sessionDoc, session) {
+  if (!session || !sessionDoc) return false;
+  
+  const dataVersion = session.get('dataVersion');
+  
+  // Only migrate v4.0 sessions (not v3 or already v5)
+  if (dataVersion !== DATA_VERSION_UUID && dataVersion !== '4.0') {
+    return false;
+  }
+  
+  // Already deterministic - no migration needed
+  if (isDeterministicSession(session)) {
+    return false;
+  }
+  
+  const questionsById = session.get('questionsById');
+  const questionOrder = session.get('questionOrder');
+  
+  if (!questionsById || !questionOrder) {
+    return false;
+  }
+  
+  console.log('Migrating v4.0 session to v5.0...');
+  
+  // Build ordered list of questions from questionOrder array
+  const orderedQuestions = [];
+  for (let i = 0; i < questionOrder.length; i++) {
+    const qId = questionOrder.get(i);
+    const question = questionsById.get(qId);
+    if (question && !isDeleted(question)) {
+      orderedQuestions.push({ oldId: qId, data: question, newId: `q-${orderedQuestions.length + 1}` });
+    }
+  }
+  
+  // Build old→new ID mapping for history updates
+  const idMapping = new Map();
+  orderedQuestions.forEach((q) => {
+    idMapping.set(q.oldId, q.newId);
+  });
+  
+  sessionDoc.transact(() => {
+    // Process each question: clean up obsolete fields
+    // Note: We keep the original map keys for CRDT compatibility
+    orderedQuestions.forEach((q) => {
+      const questionData = q.data;
+      
+      // Remove obsolete fields
+      if (questionData.has('sortOrder')) questionData.delete('sortOrder');
+      if (questionData.has('nameUpdatedAt')) questionData.delete('nameUpdatedAt');
+      if (questionData.has('scoreUpdatedAt')) questionData.delete('scoreUpdatedAt');
+      if (questionData.has('blockUpdatedAt')) questionData.delete('blockUpdatedAt');
+      if (questionData.has('ignoreUpdatedAt')) questionData.delete('ignoreUpdatedAt');
+      if (questionData.has('deleted')) questionData.delete('deleted');
+      if (questionData.has('deletedAt')) questionData.delete('deletedAt');
+      
+      // Clean up team scores
+      const teamScores = questionData.get('teamScores');
+      if (teamScores) {
+        teamScores.forEach((ts) => {
+          if (ts && ts.has) {
+            if (ts.has('scoreUpdatedAt')) ts.delete('scoreUpdatedAt');
+            if (ts.has('extraCreditUpdatedAt')) ts.delete('extraCreditUpdatedAt');
+          }
+        });
+      }
+    });
+    
+    // Set nextQuestionNumber counter based on number of questions
+    session.set('nextQuestionNumber', orderedQuestions.length + 1);
+    
+    // Update history entries with new question IDs
+    const historyLog = session.get('historyLog');
+    if (historyLog) {
+      for (let i = 0; i < historyLog.length; i++) {
+        const entry = historyLog.get(i);
+        if (entry && entry.get) {
+          const oldQId = entry.get('questionId');
+          if (oldQId && idMapping.has(oldQId)) {
+            entry.set('questionId', idMapping.get(oldQId));
+          }
+        }
+      }
+    }
+    
+    // Set data version to v5.0
+    // Note: The session will use questionOrder array for ordering (v4 compatibility path)
+    // until all questions have deterministic q-N IDs
+    session.set('dataVersion', DATA_VERSION_DETERMINISTIC);
+  }, 'v5-migration');
+  
+  console.log(`Migration complete: ${orderedQuestions.length} questions cleaned up`);
+  return true;
+}
+
+/**
  * Check if an item is soft-deleted
  * @param {Y.Map} item - Team, question, or block Y.Map
  * @returns {boolean} True if item is deleted

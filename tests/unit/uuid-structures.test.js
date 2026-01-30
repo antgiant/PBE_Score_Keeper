@@ -1339,3 +1339,173 @@ test('validateQuestionCounter ignores non-deterministic question IDs', () => {
   context.validateQuestionCounter(session);
   assert.equal(session.get('nextQuestionNumber'), 1, 'Counter should remain 1 for non-deterministic IDs');
 });
+
+// ============================================================================
+// V4 TO V5 MIGRATION TESTS
+// ============================================================================
+
+test('migrateV4ToV5 cleans up obsolete fields and sets version', () => {
+  const { context } = loadApp(createYjsDoc({ currentSession: 1, sessions: [] }));
+  
+  const testDoc = new context.Y.Doc();
+  const session = testDoc.getMap('session');
+  session.set('dataVersion', '4.0');  // v4.0 session
+  
+  // Create v4-style data with random UUID question IDs
+  const questionsById = new context.Y.Map();
+  const questionOrder = new context.Y.Array();
+  
+  const q1Id = 'q-abc123-uuid-1';
+  const q1 = new context.Y.Map();
+  q1.set('id', q1Id);
+  q1.set('name', 'Question 1');
+  q1.set('score', 10);
+  q1.set('sortOrder', 0);
+  q1.set('scoreUpdatedAt', Date.now());  // Obsolete field to be removed
+  questionsById.set(q1Id, q1);
+  questionOrder.push([q1Id]);
+  
+  const q2Id = 'q-def456-uuid-2';
+  const q2 = new context.Y.Map();
+  q2.set('id', q2Id);
+  q2.set('name', 'Question 2');
+  q2.set('score', 20);
+  q2.set('sortOrder', 1);
+  q2.set('blockUpdatedAt', Date.now());  // Obsolete field to be removed
+  questionsById.set(q2Id, q2);
+  questionOrder.push([q2Id]);
+  
+  session.set('questionsById', questionsById);
+  session.set('questionOrder', questionOrder);
+  session.set('historyLog', new context.Y.Array());
+  
+  // Run migration
+  const result = context.migrateV4ToV5(testDoc, session);
+  
+  assert.equal(result, true, 'Migration should return true');
+  assert.equal(session.get('dataVersion'), '5.0', 'Data version should be 5.0');
+  assert.equal(session.get('nextQuestionNumber'), 3, 'Next question number should be 3');
+  
+  // Check original question keys are preserved (CRDT compatibility)
+  const migratedQuestionsById = session.get('questionsById');
+  assert.ok(migratedQuestionsById.has(q1Id), 'Original q1 key should still exist');
+  assert.ok(migratedQuestionsById.has(q2Id), 'Original q2 key should still exist');
+  
+  // Check obsolete fields were removed
+  const migratedQ1 = migratedQuestionsById.get(q1Id);
+  assert.ok(!migratedQ1.has('sortOrder'), 'sortOrder should be removed');
+  assert.ok(!migratedQ1.has('scoreUpdatedAt'), 'scoreUpdatedAt should be removed');
+  
+  const migratedQ2 = migratedQuestionsById.get(q2Id);
+  assert.ok(!migratedQ2.has('sortOrder'), 'sortOrder should be removed');
+  assert.ok(!migratedQ2.has('blockUpdatedAt'), 'blockUpdatedAt should be removed');
+  
+  testDoc.destroy();
+});
+
+test('migrateV4ToV5 skips non-v4 sessions', () => {
+  const { context } = loadApp(createYjsDoc({ currentSession: 1, sessions: [] }));
+  
+  // Test v3 session
+  const testDocV3 = new context.Y.Doc();
+  const sessionV3 = testDocV3.getMap('session');
+  sessionV3.set('dataVersion', '3.0');
+  assert.equal(context.migrateV4ToV5(testDocV3, sessionV3), false, 'Should skip v3 session');
+  testDocV3.destroy();
+  
+  // Test v5 session  
+  const testDocV5 = new context.Y.Doc();
+  const sessionV5 = testDocV5.getMap('session');
+  sessionV5.set('dataVersion', '5.0');
+  assert.equal(context.migrateV4ToV5(testDocV5, sessionV5), false, 'Should skip v5 session');
+  testDocV5.destroy();
+});
+
+test('migrateV4ToV5 removes team score timestamp fields', () => {
+  const { context } = loadApp(createYjsDoc({ currentSession: 1, sessions: [] }));
+  
+  const testDoc = new context.Y.Doc();
+  const session = testDoc.getMap('session');
+  session.set('dataVersion', '4.0');
+  
+  // Create question with team scores that have timestamp fields
+  const questionsById = new context.Y.Map();
+  const questionOrder = new context.Y.Array();
+  
+  const q1Id = 'q-uuid-1';
+  const q1 = new context.Y.Map();
+  q1.set('id', q1Id);
+  q1.set('name', 'Question 1');
+  
+  const teamScores = new context.Y.Map();
+  const t1Score = new context.Y.Map();
+  t1Score.set('score', 5);
+  t1Score.set('scoreUpdatedAt', Date.now());
+  t1Score.set('extraCredit', 1);
+  t1Score.set('extraCreditUpdatedAt', Date.now());
+  teamScores.set('t-team1', t1Score);
+  q1.set('teamScores', teamScores);
+  
+  questionsById.set(q1Id, q1);
+  questionOrder.push([q1Id]);
+  session.set('questionsById', questionsById);
+  session.set('questionOrder', questionOrder);
+  session.set('historyLog', new context.Y.Array());
+  
+  // Run migration
+  context.migrateV4ToV5(testDoc, session);
+  
+  // Check team score timestamp fields were removed (original key preserved)
+  const migratedQ1 = session.get('questionsById').get(q1Id);
+  const migratedTeamScores = migratedQ1.get('teamScores');
+  const migratedT1Score = migratedTeamScores.get('t-team1');
+  
+  assert.ok(!migratedT1Score.has('scoreUpdatedAt'), 'scoreUpdatedAt should be removed from team score');
+  assert.ok(!migratedT1Score.has('extraCreditUpdatedAt'), 'extraCreditUpdatedAt should be removed from team score');
+  assert.equal(migratedT1Score.get('score'), 5, 'Score value should be preserved');
+  assert.equal(migratedT1Score.get('extraCredit'), 1, 'Extra credit value should be preserved');
+  
+  testDoc.destroy();
+});
+
+test('migrateV4ToV5 preserves questionOrder array with original keys', () => {
+  const { context } = loadApp(createYjsDoc({ currentSession: 1, sessions: [] }));
+  
+  const testDoc = new context.Y.Doc();
+  const session = testDoc.getMap('session');
+  session.set('dataVersion', '4.0');
+  
+  const questionsById = new context.Y.Map();
+  const questionOrder = new context.Y.Array();
+  
+  // Add 3 questions in order with random UUIDs
+  const qIds = ['q-uuid-1', 'q-uuid-2', 'q-uuid-3'];
+  for (let i = 0; i < 3; i++) {
+    const qId = qIds[i];
+    const q = new context.Y.Map();
+    q.set('id', qId);
+    q.set('name', `Question ${i + 1}`);
+    questionsById.set(qId, q);
+    questionOrder.push([qId]);
+  }
+  
+  session.set('questionsById', questionsById);
+  session.set('questionOrder', questionOrder);
+  session.set('historyLog', new context.Y.Array());
+  
+  // Run migration
+  context.migrateV4ToV5(testDoc, session);
+  
+  // Check questionOrder still uses original keys (for CRDT compatibility)
+  const migratedOrder = session.get('questionOrder');
+  assert.equal(migratedOrder.length, 3, 'Should have 3 entries in order');
+  assert.equal(migratedOrder.get(0), 'q-uuid-1', 'First should still be original key');
+  assert.equal(migratedOrder.get(1), 'q-uuid-2', 'Second should still be original key');
+  assert.equal(migratedOrder.get(2), 'q-uuid-3', 'Third should still be original key');
+  
+  // Verify data version is 5.0 and counter is set
+  assert.equal(session.get('dataVersion'), '5.0', 'Data version should be updated');
+  assert.equal(session.get('nextQuestionNumber'), 4, 'Next question number should be 4');
+  
+  testDoc.destroy();
+});

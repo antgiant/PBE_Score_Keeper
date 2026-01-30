@@ -647,8 +647,14 @@ async function switchSession(sessionIdOrIndex) {
   // Set active session
   DocManager.setActiveSession(sessionId);
 
-  // Validate question counter for deterministic sessions (v5.0+)
+  // Migrate v4.0 sessions to v5.0 (deterministic question IDs)
+  const sessionDoc = getActiveSessionDoc();
   const session = get_current_session();
+  if (sessionDoc && session && typeof migrateV4ToV5 === 'function') {
+    migrateV4ToV5(sessionDoc, session);
+  }
+
+  // Validate question counter for deterministic sessions (v5.0+)
   if (session && typeof validateQuestionCounter === 'function') {
     validateQuestionCounter(session);
   }
