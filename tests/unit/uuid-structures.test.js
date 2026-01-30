@@ -255,3 +255,183 @@ test('getDisplayIndexByTeamId returns 0 for v3 session', () => {
   const index = context.getDisplayIndexByTeamId(session, 't-fake');
   assert.equal(index, 0);
 });
+// ============================================================================
+// V4 UUID Session Tests
+// ============================================================================
+
+/**
+ * Helper to create a minimal v4 session structure for testing
+ */
+function createV4Session(context, config = {}) {
+  const testDoc = new context.Y.Doc();
+  const session = testDoc.getMap('session');
+  
+  testDoc.transact(() => {
+    // Mark as v4.0 session
+    session.set('dataVersion', '4.0');
+    session.set('id', 'test-v4-session');
+    session.set('name', config.name || 'V4 Test Session');
+    session.set('createdAt', Date.now());
+    
+    // Create teamsById and teamOrder
+    const teamsById = new context.Y.Map();
+    const teamOrder = new context.Y.Array();
+    
+    const teamNames = config.teams || ['Team A', 'Team B'];
+    teamNames.forEach((name, i) => {
+      const teamId = `t-test-${i + 1}`;
+      const team = new context.Y.Map();
+      team.set('id', teamId);
+      team.set('name', name);
+      team.set('deleted', false);
+      team.set('createdAt', Date.now());
+      teamsById.set(teamId, team);
+      teamOrder.push([teamId]);
+    });
+    session.set('teamsById', teamsById);
+    session.set('teamOrder', teamOrder);
+    
+    // Create blocksById and blockOrder
+    const blocksById = new context.Y.Map();
+    const blockOrder = new context.Y.Array();
+    
+    const blockNames = config.blocks || ['No Block'];
+    blockNames.forEach((name, i) => {
+      const blockId = `b-test-${i}`;
+      const block = new context.Y.Map();
+      block.set('id', blockId);
+      block.set('name', name);
+      block.set('deleted', false);
+      block.set('isDefault', i === 0);
+      block.set('createdAt', Date.now());
+      blocksById.set(blockId, block);
+      blockOrder.push([blockId]);
+    });
+    session.set('blocksById', blocksById);
+    session.set('blockOrder', blockOrder);
+    
+    // Create questionsById and questionOrder
+    const questionsById = new context.Y.Map();
+    const questionOrder = new context.Y.Array();
+    session.set('questionsById', questionsById);
+    session.set('questionOrder', questionOrder);
+  });
+  
+  return { doc: testDoc, session };
+}
+
+test('isUUIDSession returns true for v4.0 session', () => {
+  const { context } = loadApp(createYjsDoc({ currentSession: 1, sessions: [] }));
+  
+  const { session } = createV4Session(context);
+  assert.equal(context.isUUIDSession(session), true, 'v4.0 session should be detected as UUID session');
+});
+
+test('getOrderedTeams returns teams for v4 session', () => {
+  const { context } = loadApp(createYjsDoc({ currentSession: 1, sessions: [] }));
+  
+  const { session } = createV4Session(context, { teams: ['Alpha', 'Beta', 'Gamma'] });
+  const teams = context.getOrderedTeams(session);
+  
+  assert.equal(teams.length, 3);
+  assert.equal(teams[0].id, 't-test-1');
+  assert.equal(teams[0].data.get('name'), 'Alpha');
+  assert.equal(teams[1].id, 't-test-2');
+  assert.equal(teams[1].data.get('name'), 'Beta');
+  assert.equal(teams[2].id, 't-test-3');
+  assert.equal(teams[2].data.get('name'), 'Gamma');
+});
+
+test('getOrderedTeams excludes deleted teams', () => {
+  const { context } = loadApp(createYjsDoc({ currentSession: 1, sessions: [] }));
+  
+  const { doc, session } = createV4Session(context, { teams: ['Alpha', 'Beta', 'Gamma'] });
+  
+  // Soft-delete the middle team
+  doc.transact(() => {
+    const teamsById = session.get('teamsById');
+    const betaTeam = teamsById.get('t-test-2');
+    betaTeam.set('deleted', true);
+  });
+  
+  const teams = context.getOrderedTeams(session);
+  assert.equal(teams.length, 2, 'Should only return non-deleted teams');
+  assert.equal(teams[0].data.get('name'), 'Alpha');
+  assert.equal(teams[1].data.get('name'), 'Gamma');
+});
+
+test('getOrderedBlocks returns blocks for v4 session', () => {
+  const { context } = loadApp(createYjsDoc({ currentSession: 1, sessions: [] }));
+  
+  const { session } = createV4Session(context, { blocks: ['No Block', 'Block 1', 'Block 2'] });
+  const blocks = context.getOrderedBlocks(session);
+  
+  assert.equal(blocks.length, 3);
+  assert.equal(blocks[0].data.get('name'), 'No Block');
+  assert.equal(blocks[1].data.get('name'), 'Block 1');
+  assert.equal(blocks[2].data.get('name'), 'Block 2');
+});
+
+test('getTeamById returns team for v4 session', () => {
+  const { context } = loadApp(createYjsDoc({ currentSession: 1, sessions: [] }));
+  
+  const { session } = createV4Session(context, { teams: ['FindMe'] });
+  const team = context.getTeamById(session, 't-test-1');
+  
+  assert.ok(team, 'Team should be found');
+  assert.equal(team.get('name'), 'FindMe');
+});
+
+test('getBlockById returns block for v4 session', () => {
+  const { context } = loadApp(createYjsDoc({ currentSession: 1, sessions: [] }));
+  
+  const { session } = createV4Session(context, { blocks: ['Test Block'] });
+  const block = context.getBlockById(session, 'b-test-0');
+  
+  assert.ok(block, 'Block should be found');
+  assert.equal(block.get('name'), 'Test Block');
+});
+
+test('getTeamIdByDisplayIndex returns correct ID for v4 session', () => {
+  const { context } = loadApp(createYjsDoc({ currentSession: 1, sessions: [] }));
+  
+  const { session } = createV4Session(context, { teams: ['First', 'Second', 'Third'] });
+  
+  // 1-based index
+  assert.equal(context.getTeamIdByDisplayIndex(session, 1), 't-test-1');
+  assert.equal(context.getTeamIdByDisplayIndex(session, 2), 't-test-2');
+  assert.equal(context.getTeamIdByDisplayIndex(session, 3), 't-test-3');
+  assert.equal(context.getTeamIdByDisplayIndex(session, 4), null, 'Out of bounds should return null');
+});
+
+test('getDisplayIndexByTeamId returns correct index for v4 session', () => {
+  const { context } = loadApp(createYjsDoc({ currentSession: 1, sessions: [] }));
+  
+  const { session } = createV4Session(context, { teams: ['First', 'Second'] });
+  
+  // Returns 1-based index
+  assert.equal(context.getDisplayIndexByTeamId(session, 't-test-1'), 1);
+  assert.equal(context.getDisplayIndexByTeamId(session, 't-test-2'), 2);
+  assert.equal(context.getDisplayIndexByTeamId(session, 't-fake'), 0, 'Unknown ID should return 0');
+});
+
+test('getBlockIdByDisplayIndex returns correct ID for v4 session', () => {
+  const { context } = loadApp(createYjsDoc({ currentSession: 1, sessions: [] }));
+  
+  const { session } = createV4Session(context, { blocks: ['No Block', 'Block 1'] });
+  
+  // 0-based index for blocks
+  assert.equal(context.getBlockIdByDisplayIndex(session, 0), 'b-test-0');
+  assert.equal(context.getBlockIdByDisplayIndex(session, 1), 'b-test-1');
+  assert.equal(context.getBlockIdByDisplayIndex(session, 2), null);
+});
+
+test('getDisplayIndexByBlockId returns correct index for v4 session', () => {
+  const { context } = loadApp(createYjsDoc({ currentSession: 1, sessions: [] }));
+  
+  const { session } = createV4Session(context, { blocks: ['No Block', 'Block 1'] });
+  
+  assert.equal(context.getDisplayIndexByBlockId(session, 'b-test-0'), 0);
+  assert.equal(context.getDisplayIndexByBlockId(session, 'b-test-1'), 1);
+  assert.equal(context.getDisplayIndexByBlockId(session, 'b-fake'), -1);
+});

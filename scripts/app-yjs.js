@@ -1495,13 +1495,25 @@ async function repairSessionNamesCache() {
 
 /**
  * Get team names for current session
- * @returns {Array<string>} Array of team names (index 0 is empty string)
+ * Supports both v3.0 (index-based) and v4.0 (UUID-based) structures
+ * @returns {Array<string>} Array of team names (index 0 is empty string for v3 compatibility)
  */
 function get_team_names() {
   const team1Text = (typeof t === 'function') ? t('defaults.team_name', {number: 1}) : 'Team 1';
   const session = get_current_session();
   if (!session) return ['', team1Text];
   
+  // v4.0 UUID-based structure
+  if (isUUIDSession(session)) {
+    const orderedTeams = getOrderedTeams(session);
+    const names = [''];  // Index 0 placeholder for v3 compatibility
+    for (let i = 0; i < orderedTeams.length; i++) {
+      names.push(orderedTeams[i].data.get('name') || '');
+    }
+    return names;
+  }
+  
+  // v3.0 index-based structure
   const teams = session.get('teams');
   if (!teams) return ['', team1Text];
   
@@ -1515,6 +1527,7 @@ function get_team_names() {
 
 /**
  * Get block names for current session
+ * Supports both v3.0 (index-based) and v4.0 (UUID-based) structures
  * @returns {Array<string>} Array of block names
  */
 function get_block_names() {
@@ -1523,6 +1536,17 @@ function get_block_names() {
   const session = get_current_session();
   if (!session) return [noBlockText, block1Text];
   
+  // v4.0 UUID-based structure
+  if (isUUIDSession(session)) {
+    const orderedBlocks = getOrderedBlocks(session);
+    const names = [];
+    for (let i = 0; i < orderedBlocks.length; i++) {
+      names.push(orderedBlocks[i].data.get('name') || '');
+    }
+    return names;
+  }
+  
+  // v3.0 index-based structure
   const blocks = session.get('blocks');
   if (!blocks) return [noBlockText, block1Text];
   
@@ -1536,13 +1560,25 @@ function get_block_names() {
 
 /**
  * Get question names for current session
- * @returns {Array<string>} Array of question names (index 0 is empty string)
+ * Supports both v3.0 (index-based) and v4.0 (UUID-based) structures
+ * @returns {Array<string>} Array of question names (index 0 is empty string for v3 compatibility)
  */
 function get_question_names() {
   const question1Text = (typeof t === 'function') ? t('defaults.question_name', {number: 1}) : 'Question 1';
   const session = get_current_session();
   if (!session) return ['', question1Text];
   
+  // v4.0 UUID-based structure
+  if (isUUIDSession(session)) {
+    const orderedQuestions = getOrderedQuestions(session);
+    const names = [''];  // Index 0 placeholder for v3 compatibility
+    for (let i = 0; i < orderedQuestions.length; i++) {
+      names.push(orderedQuestions[i].data.get('name') || '');
+    }
+    return names;
+  }
+  
+  // v3.0 index-based structure
   const questions = session.get('questions');
   if (!questions) return ['', question1Text];
   
