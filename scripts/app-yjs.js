@@ -2024,7 +2024,8 @@ async function load_from_yjs() {
   DocManager.setActiveSession(currentSessionId);
   
   // Jump to last question for the current session
-  const session = DocManager.getActiveSession();
+  const sessionDoc = DocManager.getActiveSessionDoc();
+  const session = sessionDoc ? sessionDoc.getMap('session') : null;
   if (session) {
     const questions = session.get('questions');
     const lastQuestionIndex = Math.max(1, questions.length - 1);
