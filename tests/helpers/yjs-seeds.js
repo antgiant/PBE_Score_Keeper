@@ -103,7 +103,8 @@ function buildSession(config, Y) {
     questions.push([question]);
   });
   session.set('questions', questions);
-  session.set('currentQuestion', config.currentQuestion || 1);
+  // Note: currentQuestion is no longer stored in Yjs - it's tracked via current_question_index in app-globals.js
+  // The config.currentQuestion is still used by loadApp() to set current_question_index
 
   return session;
 }

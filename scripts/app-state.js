@@ -241,7 +241,7 @@ async function migrate_localStorage_to_v3(oldVersion) {
         }
 
         session.set('questions', questions);
-        session.set('currentQuestion', Number(JSON.parse(upgradedData['session_' + s + '_current_question'])));
+        // Note: currentQuestion is no longer stored in Yjs - it's transient app state
 
         // Empty history log
         const historyLog = new Y.Array();
@@ -467,7 +467,7 @@ async function createNewSession(name) {
 
     newQuestions.push([question1]);
     session.set('questions', newQuestions);
-    session.set('currentQuestion', 1);
+    // Note: currentQuestion is no longer stored in Yjs - it's transient app state
 
     // Empty history log
     const historyLog = new Y.Array();
@@ -495,6 +495,9 @@ async function createNewSession(name) {
 
   // Switch to new session
   DocManager.setActiveSession(sessionId);
+  
+  // Reset to first question for the new session
+  current_question_index = 1;
 
   // Log in global history
   add_global_history_entry('history_global.actions.create_session', 'history_global.details_templates.created_session', { name: sessionName });
@@ -550,8 +553,15 @@ async function switchSession(sessionIdOrIndex) {
   // Set active session
   DocManager.setActiveSession(sessionId);
 
-  // Log in global history
+  // Jump to last question for this session
   const session = get_current_session();
+  if (session) {
+    const questions = session.get('questions');
+    const lastQuestionIndex = Math.max(1, questions.length - 1);
+    current_question_index = lastQuestionIndex;
+  }
+  
+  // Log in global history
   const sessionName = session ? session.get('name') : 'Unknown';
   add_global_history_entry('history_global.actions.switch_session', 'history_global.details_templates.switched_session', { name: sessionName });
 

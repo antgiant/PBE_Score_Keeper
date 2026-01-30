@@ -26,7 +26,7 @@ function update_data_element(updated_id, new_value) {
 
   const session = get_current_session();
   if (!session) return;
-  var current_question = session.get('currentQuestion');
+  var current_question = current_question_index;
 
   //Goto next session
   if (updated_id == "new_session") {
@@ -513,7 +513,7 @@ function update_data_element(updated_id, new_value) {
         if (sessionDoc) {
           sessionDoc.transact(() => {
             //Move current Question forward one
-            session.set('currentQuestion', current_question + 1);
+            current_question_index = current_question + 1;
 
             //Create new question
             const newQuestion = new Y.Map();
@@ -542,7 +542,7 @@ function update_data_element(updated_id, new_value) {
       const sessionDoc = getActiveSessionDoc();
       if (sessionDoc) {
         sessionDoc.transact(() => {
-          session.set('currentQuestion', current_question + 1);
+          current_question_index = current_question + 1;
         }, 'local');
       }
     }
@@ -553,7 +553,7 @@ function update_data_element(updated_id, new_value) {
       const sessionDoc = getActiveSessionDoc();
       if (sessionDoc) {
         sessionDoc.transact(() => {
-          session.set('currentQuestion', current_question - 1);
+          current_question_index = current_question - 1;
         }, 'local');
       }
     }
@@ -563,7 +563,7 @@ function update_data_element(updated_id, new_value) {
     const sessionDoc = getActiveSessionDoc();
     if (sessionDoc) {
       sessionDoc.transact(() => {
-        session.set('currentQuestion', Number(new_value));
+        current_question_index = Number(new_value);
       }, 'local');
     }
   }

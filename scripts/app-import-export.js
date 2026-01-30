@@ -40,8 +40,8 @@ function session_to_json(sessionId) {
     },
     teams: [],
     blocks: [],
-    questions: [],
-    currentQuestion: session.get('currentQuestion')
+    questions: []
+    // Note: currentQuestion is no longer exported - it's transient app state
   };
 
   // Teams
@@ -259,7 +259,7 @@ async function import_yjs_from_json(data, mode) {
     sessionDoc.transact(() => {
       session.set('id', sessionId);
       session.set('name', sessionData.name);
-      session.set('currentQuestion', sessionData.currentQuestion || 1);
+      // Note: currentQuestion is no longer stored in Yjs - it's transient app state
 
       // Config
       const config = new Y.Map();
@@ -474,8 +474,8 @@ function convert_localStorage_to_v2(localStorageData) {
       },
       teams: [],
       blocks: [],
-      questions: [],
-      currentQuestion: Number(JSON.parse(localStorageData['session_' + s + '_current_question']))
+      questions: []
+      // Note: currentQuestion is no longer used - it's transient app state
     };
 
     // Teams

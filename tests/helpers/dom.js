@@ -452,7 +452,7 @@ function loadApp(seed = {}) {
                 questions.push([question]);
               });
               session.set('questions', questions);
-              session.set('currentQuestion', sessionConfig.currentQuestion || 1);
+              // Note: currentQuestion is no longer stored in Yjs - it's tracked via current_question_index
               
               // Initialize empty history for this session
               session.set('historyLog', new Y.Array());
@@ -478,6 +478,15 @@ function loadApp(seed = {}) {
           
           // Set active session in DocManager
           DocManager.activeSessionId = currentSessionId;
+          
+          // Set current_question_index from the current session's config
+          // (current_question_index is now transient app state, not stored in Yjs)
+          if (_seedConfig.sessions && _seedConfig.sessions.length > 0) {
+            const currentSessionConfig = _seedConfig.sessions[_seedConfig.currentSession - 1] || _seedConfig.sessions[0];
+            current_question_index = (currentSessionConfig && currentSessionConfig.currentQuestion) || 1;
+          } else {
+            current_question_index = 1;
+          }
           
           // Initialize global history array
           ydoc.getArray('globalHistory');

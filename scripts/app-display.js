@@ -326,7 +326,7 @@ function sync_data_to_display() {
   if (questions.get(question_count).get('score') == 0) {
     question_count--;
   }
-  var current_question = session.get('currentQuestion');
+  var current_question = current_question_index;
   const currentQuestionObj = questions.get(current_question);
   const currentQuestionTeams = currentQuestionObj.get('teams');
   var current_selected_block = currentQuestionObj.get('block');

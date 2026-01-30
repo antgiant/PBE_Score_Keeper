@@ -477,7 +477,8 @@ async function initialize_new_yjs_state() {
 
     questions.push([question1]);
     session.set('questions', questions);
-    session.set('currentQuestion', 1);
+    // Note: currentQuestion is NOT stored in Yjs - it's tracked in-memory via current_question_index
+    // This allows each tab to navigate independently without sync conflicts
 
     // Session-specific history log
     const historyLog = new Y.Array();
@@ -526,7 +527,7 @@ async function migrate_v2_to_v3() {
       teams: extractYArray(oldSession.get('teams')),
       blocks: extractYArray(oldSession.get('blocks')),
       questions: extractYArray(oldSession.get('questions')),
-      currentQuestion: oldSession.get('currentQuestion'),
+      // Note: currentQuestion is no longer used - it's transient app state
       historyLog: oldSession.get('historyLog') ? extractYArray(oldSession.get('historyLog')) : []
     });
   }
@@ -606,7 +607,7 @@ async function migrate_v2_to_v3() {
         }
       }
       session.set('questions', questions);
-      session.set('currentQuestion', sessionData.currentQuestion);
+      // Note: currentQuestion is no longer stored - it's transient app state
 
       // History log
       const historyLog = new Y.Array();
@@ -714,6 +715,15 @@ async function load_from_yjs() {
   // Ensure session doc is loaded
   await initSessionDoc(currentSessionId);
   DocManager.setActiveSession(currentSessionId);
+  
+  // Jump to last question for the current session
+  const session = DocManager.getActiveSession();
+  if (session) {
+    const questions = session.get('questions');
+    const lastQuestionIndex = Math.max(1, questions.length - 1);
+    current_question_index = lastQuestionIndex;
+  }
+  
   console.log('Loaded from Yjs v3.0, current session:', currentSessionId);
 }
 
