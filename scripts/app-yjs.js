@@ -60,7 +60,13 @@ var DATA_VERSION_UUID = '4.0';
  * Set to true to enable v4 sessions for new session creation.
  * Existing v3 sessions continue to work; migration happens separately.
  */
-var USE_UUID_FOR_NEW_SESSIONS = false;
+var USE_UUID_FOR_NEW_SESSIONS = true;
+
+/**
+ * Whether to auto-migrate v3 sessions to v4 when they are loaded.
+ * When true, sessions are migrated transparently without user interaction.
+ */
+var AUTO_MIGRATE_TO_V4 = true;
 
 /**
  * Minimum sync version - clients must have at least this version to sync.
@@ -1227,6 +1233,15 @@ async function initSessionDoc(sessionId) {
         provider.on('synced', function() {
           console.log('Session doc synced:', sessionId);
           DocManager.pendingSessionLoads.delete(sessionId);
+          
+          // Auto-migrate v3 sessions to v4 if enabled
+          if (AUTO_MIGRATE_TO_V4) {
+            const session = sessionDoc.getMap('session');
+            if (session && !isUUIDSession(session) && session.get('teams')) {
+              console.log('Auto-migrating session to v4:', sessionId);
+              migrateSessionToUUID(sessionDoc);
+            }
+          }
           
           // Set up history listener for this session
           if (typeof setupSessionHistoryListener === 'function') {

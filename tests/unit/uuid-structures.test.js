@@ -1069,11 +1069,18 @@ test('createNewSessionV4 creates proper v4 session structure', () => {
   assert.equal(teamScores.size, 3, 'Question should have scores for all 3 teams');
 });
 
-test('USE_UUID_FOR_NEW_SESSIONS flag exists and defaults to false', () => {
+test('USE_UUID_FOR_NEW_SESSIONS flag exists and is enabled', () => {
   const { context } = loadApp(createYjsDoc({ currentSession: 1, sessions: [] }));
   
   assert.equal(typeof context.USE_UUID_FOR_NEW_SESSIONS, 'boolean', 'Flag should be defined');
-  assert.equal(context.USE_UUID_FOR_NEW_SESSIONS, false, 'Flag should default to false');
+  assert.equal(context.USE_UUID_FOR_NEW_SESSIONS, true, 'Flag should be true for v4 migration');
+});
+
+test('AUTO_MIGRATE_TO_V4 flag exists and is enabled', () => {
+  const { context } = loadApp(createYjsDoc({ currentSession: 1, sessions: [] }));
+  
+  assert.equal(typeof context.AUTO_MIGRATE_TO_V4, 'boolean', 'Flag should be defined');
+  assert.equal(context.AUTO_MIGRATE_TO_V4, true, 'Auto-migration should be enabled');
 });
 // ============================================================================
 // V4 EXPORT/IMPORT TESTS

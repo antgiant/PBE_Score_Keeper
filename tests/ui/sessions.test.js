@@ -93,5 +93,15 @@ test('creating a new session works after scoring and writes to storage', async (
   // New session should have the right structure
   const newSessionDoc = context.DocManager.sessionDocs.get(currentSessionId);
   const newSession = newSessionDoc.getMap('session');
-  assert.equal(newSession.get('questions').length, 2, 'New session should have 2 questions (including placeholder)');
+  
+  // Check for v4 (UUID-based) or v3 (index-based) structure
+  const questionOrder = newSession.get('questionOrder');
+  if (questionOrder) {
+    // V4 structure: questionOrder is an array of question UUIDs
+    // V4 creates 1 placeholder question (question 1 with 0 points)
+    assert.equal(questionOrder.length, 1, 'New session should have 1 question in questionOrder (placeholder)');
+  } else {
+    // V3 structure: questions is a Y.Array with index 0 as placeholder
+    assert.equal(newSession.get('questions').length, 2, 'New session should have 2 questions (including placeholder)');
+  }
 });
