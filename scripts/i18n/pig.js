@@ -426,7 +426,10 @@ register_i18n_language('pig', {
       "merge_none": "(one-nay)",
       "merge_backup_note": "A-ay ackup-bay ill-way e-bay eated-cray efore-bay erging-may.",
       "merge_confirm_button": "Erge-May Items-ay",
-      "room_collision_error": "Etwork-Nay usy-bay. Y-Tray adding-ay a-ay assword-pay or-fay a-ay ivate-pray oom-ray."
+      "room_collision_error": "Etwork-Nay usy-bay. Y-Tray adding-ay a-ay assword-pay or-fay a-ay ivate-pray oom-ray.",
+      "registry_unavailable": "Unable-ay o-tay onnect-cay o-tay ync-say erver-say. Ease-Play y-tray again-ay, or-ay add-ay a-ay assword-pay o-tay eate-cray a-ay ivate-pray oom-ray.",
+      "room_not_found": "Oom-Ray ot-nay ound-fay. Eck-Chay e-thay ode-cay and-ay y-tray again-ay.",
+      "room_requires_password": "Is-Thay oom-ray equires-ray a-ay assword-pay. Ease-Play enter-ay e-thay assword-pay ared-shay y-bay e-thay oom-ray eator-cray."
     },
     "backup": {
       "reason_pre_merge": "Efore-Bay Erge-May",

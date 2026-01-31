@@ -48,6 +48,16 @@ var SyncManager = {
   previousFocus: null,
   sessionUpdateListener: null,  // Reference to session doc update listener
   
+  // Registry state (for room collision prevention)
+  registryProvider: null,       // WebSocket connection to registry
+  registryDoc: null,            // Y.Doc for registry
+  registryConnected: false,     // Whether registry is available
+  registryRetryTimer: null,     // Background retry timer
+  registrySynced: false,        // Whether registry has completed initial sync
+  effectivePassword: null,      // Actual password used (sessionId or user's)
+  isCreator: false,             // Did we create this room?
+  hasCustomPassword: false,     // Did user provide password?
+  
   // Peers tracking
   peers: new Map(),  // peerId -> { displayName, color, lastSeen }
   
@@ -75,9 +85,247 @@ var SyncManager = {
     
     // Room prefixes
     roomPrefix: 'pbe-sync-',         // P2P rooms
-    roomPrefixLarge: 'pbe-ws-'       // Large event rooms (server-based)
+    roomPrefixLarge: 'pbe-ws-',      // Large event rooms (server-based)
+    
+    // Registry configuration
+    registryRoom: 'pbe-registry',    // Registry room name
+    registryTimeout: 5000,           // Max time to wait for registry connection (ms)
+    registryRetryInterval: 30000,    // Background retry interval (ms)
+    roomExpiration: 12 * 60 * 60 * 1000  // 12 hours
   }
 };
+
+// ============================================================
+// Registry Connection Functions
+// ============================================================
+
+/**
+ * Connect to the room registry server
+ * The registry tracks room codes and their associated session IDs
+ * @returns {Promise<boolean>} True if connected and synced, false if failed
+ */
+async function connectToRegistry() {
+  if (SyncManager.registryConnected && SyncManager.registrySynced) {
+    return true;
+  }
+  
+  try {
+    // Create registry doc if not exists
+    if (!SyncManager.registryDoc) {
+      SyncManager.registryDoc = new Y.Doc();
+    }
+    
+    // Create WebSocket URL for registry
+    var wsUrl = SyncManager.config.syncServer + '/ws/' + SyncManager.config.registryRoom;
+    
+    // Create a simple WebSocket provider (no encryption for registry)
+    SyncManager.registryProvider = new WebsocketProvider(
+      SyncManager.config.syncServer + '/ws',
+      SyncManager.config.registryRoom,
+      SyncManager.registryDoc
+    );
+    
+    // Wait for connection with timeout
+    var connected = await Promise.race([
+      new Promise(function(resolve) {
+        SyncManager.registryProvider.on('status', function(event) {
+          if (event.status === 'connected') {
+            resolve(true);
+          }
+        });
+        // Check if already connected
+        if (SyncManager.registryProvider.wsconnected) {
+          resolve(true);
+        }
+      }),
+      new Promise(function(resolve) {
+        setTimeout(function() { resolve(false); }, SyncManager.config.registryTimeout);
+      })
+    ]);
+    
+    if (!connected) {
+      console.warn('Registry connection timeout');
+      disconnectFromRegistry();
+      return false;
+    }
+    
+    SyncManager.registryConnected = true;
+    
+    // Wait a bit for initial sync
+    await new Promise(function(resolve) { setTimeout(resolve, 500); });
+    SyncManager.registrySynced = true;
+    
+    console.log('Connected to registry');
+    return true;
+    
+  } catch (error) {
+    console.error('Failed to connect to registry:', error);
+    disconnectFromRegistry();
+    return false;
+  }
+}
+
+/**
+ * Disconnect from the registry
+ */
+function disconnectFromRegistry() {
+  if (SyncManager.registryProvider) {
+    try {
+      SyncManager.registryProvider.destroy();
+    } catch (e) {
+      console.warn('Error destroying registry provider:', e);
+    }
+    SyncManager.registryProvider = null;
+  }
+  SyncManager.registryConnected = false;
+  SyncManager.registrySynced = false;
+}
+
+/**
+ * Get the rooms map from the registry
+ * @returns {Y.Map|null} The rooms map or null if not connected
+ */
+function getRegistryRooms() {
+  if (!SyncManager.registryDoc) return null;
+  return SyncManager.registryDoc.getMap('rooms');
+}
+
+/**
+ * Clean up expired entries from the registry
+ */
+function cleanupExpiredRegistryEntries() {
+  var rooms = getRegistryRooms();
+  if (!rooms) return;
+  
+  var now = Date.now();
+  var expiration = SyncManager.config.roomExpiration;
+  var toDelete = [];
+  
+  rooms.forEach(function(entry, roomCode) {
+    if (entry && entry.createdAt && (now - entry.createdAt > expiration)) {
+      toDelete.push(roomCode);
+    }
+  });
+  
+  if (toDelete.length > 0) {
+    SyncManager.registryDoc.transact(function() {
+      toDelete.forEach(function(roomCode) {
+        rooms.delete(roomCode);
+        console.log('Cleaned up expired room:', roomCode);
+      });
+    });
+  }
+}
+
+/**
+ * Register a room in the registry
+ * @param {string} roomCode - Room code (e.g., 'ABC123' or 'L-ABC123')
+ * @param {string} sessionId - Session ID to use as password if no custom password
+ * @param {boolean} hasPassword - Whether user provided a custom password
+ * @returns {boolean} True if registration succeeded
+ */
+function registerRoom(roomCode, sessionId, hasPassword) {
+  var rooms = getRegistryRooms();
+  if (!rooms) return false;
+  
+  var entry = {
+    sessionId: sessionId,
+    createdAt: Date.now(),
+    hasPassword: hasPassword
+  };
+  
+  rooms.set(roomCode, entry);
+  console.log('Registered room:', roomCode, 'hasPassword:', hasPassword);
+  return true;
+}
+
+/**
+ * Look up a room in the registry
+ * @param {string} roomCode - Room code to look up
+ * @returns {Object|null} Room entry or null if not found/expired
+ */
+function lookupRoom(roomCode) {
+  var rooms = getRegistryRooms();
+  if (!rooms) return null;
+  
+  var entry = rooms.get(roomCode);
+  if (!entry) return null;
+  
+  // Check if expired
+  var now = Date.now();
+  if (entry.createdAt && (now - entry.createdAt > SyncManager.config.roomExpiration)) {
+    // Clean it up
+    rooms.delete(roomCode);
+    return null;
+  }
+  
+  return entry;
+}
+
+/**
+ * Verify room registration after write (for race condition detection)
+ * @param {string} roomCode - Room code to verify
+ * @param {string} expectedSessionId - Expected session ID
+ * @returns {boolean} True if our registration is still valid
+ */
+function verifyRoomRegistration(roomCode, expectedSessionId) {
+  var entry = lookupRoom(roomCode);
+  return entry && entry.sessionId === expectedSessionId;
+}
+
+/**
+ * Start background registry retry loop
+ * Keeps trying to register room if initial registration failed
+ */
+function startRegistryRetry() {
+  if (SyncManager.registryRetryTimer) return;
+  
+  SyncManager.registryRetryTimer = setInterval(async function() {
+    // Only retry if we're connected to a room but not to registry
+    if (SyncManager.state !== 'connected' || SyncManager.registryConnected) {
+      return;
+    }
+    
+    // Only creators need to register
+    if (!SyncManager.isCreator) {
+      return;
+    }
+    
+    console.log('Background registry retry...');
+    
+    var connected = await connectToRegistry();
+    if (connected) {
+      // Clean up expired entries
+      cleanupExpiredRegistryEntries();
+      
+      // Re-register our room
+      var roomCode = SyncManager.roomCode;
+      var sessionId = DocManager.getActiveSessionId();
+      var hasPassword = SyncManager.hasCustomPassword;
+      
+      if (roomCode && sessionId) {
+        // For large events, use L- prefix
+        var registryKey = SyncManager.connectionType === 'websocket' 
+          ? 'L-' + roomCode 
+          : roomCode;
+        registerRoom(registryKey, sessionId, hasPassword);
+      }
+      
+      // Stop retrying
+      stopRegistryRetry();
+    }
+  }, SyncManager.config.registryRetryInterval);
+}
+
+/**
+ * Stop background registry retry loop
+ */
+function stopRegistryRetry() {
+  if (SyncManager.registryRetryTimer) {
+    clearInterval(SyncManager.registryRetryTimer);
+    SyncManager.registryRetryTimer = null;
+  }
+}
 
 /**
  * Get saved display name from global Yjs doc
@@ -714,8 +962,157 @@ async function startSync(displayName, roomCode, password, joinChoice, options) {
     throw new Error('Invalid room code');
   }
   
+  // Determine if we're creating or joining
+  var isCreating = !roomCode || joinChoice === 'create';
+  var isJoining = !!roomCode && (joinChoice === 'join' || joinChoice === 'merge');
+  var hasCustomPassword = !!password;
+  
+  // Get session ID for use as default password
+  var sessionId = typeof get_current_session_id === 'function' ? get_current_session_id() : null;
+  
+  // =====================================================
+  // REGISTRY INTEGRATION
+  // =====================================================
+  
+  var registryConnected = false;
+  var effectivePassword = password || null;
+  var registryKey = null;
+  
+  // Only use registry for initial connections, not reconnects
+  if (!isReconnect) {
+    // Try to connect to registry
+    registryConnected = await connectToRegistry();
+    
+    if (registryConnected) {
+      // Clean up expired entries
+      cleanupExpiredRegistryEntries();
+    }
+    
+    if (isCreating) {
+      // CREATING A ROOM
+      if (!hasCustomPassword) {
+        // No password provided - REQUIRE registry
+        if (!registryConnected) {
+          throw new Error(t('sync.registry_unavailable'));
+        }
+        // Use sessionId as password
+        effectivePassword = sessionId;
+      } else {
+        // Password provided - registry optional, proceed if down
+        effectivePassword = password;
+        if (!registryConnected) {
+          // Start background retry to register later
+          SyncManager.isCreator = true;
+          SyncManager.hasCustomPassword = true;
+          startRegistryRetry();
+        }
+      }
+    } else if (isJoining) {
+      // JOINING A ROOM
+      if (!hasCustomPassword) {
+        // No password provided - REQUIRE registry to look up sessionId
+        if (!registryConnected) {
+          throw new Error(t('sync.registry_unavailable'));
+        }
+        
+        // Look up room in registry
+        registryKey = roomCode.toUpperCase();
+        var roomEntry = lookupRoom(registryKey);
+        
+        if (!roomEntry) {
+          throw new Error(t('sync.room_not_found'));
+        }
+        
+        if (roomEntry.hasPassword) {
+          // Room requires password - throw error to prompt user
+          throw new Error(t('sync.room_requires_password'));
+        }
+        
+        // Use discovered sessionId as password
+        effectivePassword = roomEntry.sessionId;
+      } else {
+        // Password provided - registry optional for validation
+        effectivePassword = password;
+        
+        if (registryConnected) {
+          // Validate room exists
+          registryKey = roomCode.toUpperCase();
+          var roomEntry = lookupRoom(registryKey);
+          
+          if (!roomEntry) {
+            throw new Error(t('sync.room_not_found'));
+          }
+          
+          // If room doesn't require password, use sessionId instead
+          if (!roomEntry.hasPassword) {
+            console.log('Room does not require password, using sessionId');
+            effectivePassword = roomEntry.sessionId;
+            hasCustomPassword = false;
+          }
+        }
+        // If registry not connected but password provided, proceed anyway
+      }
+    }
+  } else {
+    // Reconnect - use saved password from session config
+    effectivePassword = password || getSavedEffectivePassword();
+    hasCustomPassword = getSavedHasCustomPassword();
+    
+    // Try registry connection in background for validation
+    connectToRegistry().then(function(connected) {
+      if (connected && SyncManager.isCreator) {
+        // Re-register our room in case server restarted
+        var rKey = SyncManager.connectionType === 'websocket' 
+          ? 'L-' + SyncManager.roomCode 
+          : SyncManager.roomCode;
+        registerRoom(rKey, sessionId, hasCustomPassword);
+      }
+    });
+  }
+  
+  // Store effective password info
+  SyncManager.effectivePassword = effectivePassword;
+  SyncManager.hasCustomPassword = hasCustomPassword;
+  SyncManager.isCreator = isCreating;
+  
   // Generate room code if creating
   var finalRoomCode = roomCode ? roomCode.toUpperCase() : generateRoomCode();
+  
+  // If creating and registry connected, check for collision and register
+  if (isCreating && !isReconnect && registryConnected) {
+    registryKey = finalRoomCode;
+    var existingEntry = lookupRoom(registryKey);
+    
+    if (existingEntry) {
+      // Room code already exists - regenerate
+      if (retryCount >= MAX_ROOM_RETRIES) {
+        throw new Error(t('sync.room_collision_error'));
+      }
+      console.log('Room code exists in registry, regenerating...');
+      var newOptions = { isReconnect: isReconnect, _retryCount: retryCount + 1 };
+      return startSync(displayName, null, password, joinChoice, newOptions);
+    }
+    
+    // Register our room
+    registerRoom(registryKey, sessionId, hasCustomPassword);
+    
+    // Wait briefly for sync and verify
+    await new Promise(function(resolve) { setTimeout(resolve, 200); });
+    
+    if (!verifyRoomRegistration(registryKey, sessionId)) {
+      // Lost race condition - regenerate
+      if (retryCount >= MAX_ROOM_RETRIES) {
+        throw new Error(t('sync.room_collision_error'));
+      }
+      console.log('Lost registration race, regenerating...');
+      var newOptions = { isReconnect: isReconnect, _retryCount: retryCount + 1 };
+      return startSync(displayName, null, password, joinChoice, newOptions);
+    }
+  }
+
+  // =====================================================
+  // EXISTING SESSION SETUP LOGIC
+  // =====================================================
   
   // Handle join choice - determine which session doc to use
   var sessionDoc;
@@ -771,13 +1168,15 @@ async function startSync(displayName, roomCode, password, joinChoice, options) {
   // Persist display name to global Yjs doc
   saveDisplayName(displayName);
   
-  // Save room code to session doc for auto-reconnect
+  // Save room code and password info to session doc for auto-reconnect
   // SKIP on reconnect to avoid DEFENSE 1 clearing from other sessions
   // (the room code is already saved from the original sync)
   if (!isReconnect) {
     saveSessionSyncRoom(finalRoomCode);
     // Save join choice for reconnection
     saveSessionJoinChoice(joinChoice || 'create');
+    // Save effective password and flag for reconnect
+    saveEffectivePassword(effectivePassword, hasCustomPassword);
   }
   
   updateSyncUI();
@@ -794,7 +1193,7 @@ async function startSync(displayName, roomCode, password, joinChoice, options) {
     
     SyncManager.provider = new WebrtcProvider(roomName, sessionDoc, {
       signaling: SyncManager.config.signalingServers,
-      password: password || null,  // Used as encryption key if provided
+      password: effectivePassword || null,  // Use effective password (sessionId or user's password)
       maxConns: 20,
       filterBcConns: true,
       peerOpts: {}
@@ -1036,6 +1435,69 @@ function getSessionJoinChoice(sessionId) {
     return config.get('syncJoinChoice') || null;
   }
   return null;
+}
+
+/**
+ * Save effective password and hasCustomPassword flag to session doc for reconnection
+ * @param {string} effectivePassword - The password being used (sessionId or user's password)
+ * @param {boolean} hasCustomPassword - True if user provided a password
+ * @param {string} [sessionId] - Session UUID (optional, uses current if not provided)
+ */
+function saveEffectivePassword(effectivePassword, hasCustomPassword, sessionId) {
+  var doc = sessionId ? getSessionDoc(sessionId) : getActiveSessionDoc();
+  if (!doc) return;
+  
+  var session = doc.getMap('session');
+  if (!session) return;
+  
+  var config = session.get('config');
+  if (config) {
+    if (effectivePassword) {
+      config.set('syncEffectivePassword', effectivePassword);
+      config.set('syncHasCustomPassword', !!hasCustomPassword);
+    } else {
+      config.delete('syncEffectivePassword');
+      config.delete('syncHasCustomPassword');
+    }
+  }
+}
+
+/**
+ * Get saved effective password from session doc
+ * @param {string} [sessionId] - Session UUID (optional, uses current if not provided)
+ * @returns {string|null} Effective password or null
+ */
+function getSavedEffectivePassword(sessionId) {
+  var doc = sessionId ? getSessionDoc(sessionId) : getActiveSessionDoc();
+  if (!doc) return null;
+  
+  var session = doc.getMap('session');
+  if (!session) return null;
+  
+  var config = session.get('config');
+  if (config) {
+    return config.get('syncEffectivePassword') || null;
+  }
+  return null;
+}
+
+/**
+ * Get saved hasCustomPassword flag from session doc
+ * @param {string} [sessionId] - Session UUID (optional, uses current if not provided)
+ * @returns {boolean} True if user provided a password
+ */
+function getSavedHasCustomPassword(sessionId) {
+  var doc = sessionId ? getSessionDoc(sessionId) : getActiveSessionDoc();
+  if (!doc) return false;
+  
+  var session = doc.getMap('session');
+  if (!session) return false;
+  
+  var config = session.get('config');
+  if (config) {
+    return !!config.get('syncHasCustomPassword');
+  }
+  return false;
 }
 
 /**
@@ -2079,7 +2541,7 @@ async function handleLargeEventFormSubmit() {
   errorDiv.style.display = 'none';
   
   try {
-    await startWebsocketSync(displayName, roomCode, password);
+    await startWebsocketSync(displayName, roomCode, password, mode);
     closeLargeEventDialog();
     
     // Show room code toast for create mode
@@ -2110,8 +2572,9 @@ function showLargeEventError(message) {
  * @param {string} displayName - User's display name
  * @param {string} roomCode - 6-character room code (without L- prefix)
  * @param {string} password - Room password for encryption
+ * @param {string} mode - 'create' or 'join'
  */
-async function startWebsocketSync(displayName, roomCode, password) {
+async function startWebsocketSync(displayName, roomCode, password, mode) {
   // Stop any existing sync first
   if (SyncManager.state !== 'disconnected') {
     stopSync();
@@ -2121,6 +2584,55 @@ async function startWebsocketSync(displayName, roomCode, password) {
   if (!sessionDoc) {
     throw new Error(t('sync.error_no_session'));
   }
+  
+  var sessionId = typeof get_current_session_id === 'function' ? get_current_session_id() : null;
+  var isCreating = mode === 'create';
+  var registryKey = 'L-' + roomCode; // Large event rooms use L- prefix in registry
+  
+  // =====================================================
+  // REGISTRY INTEGRATION (required for large events)
+  // =====================================================
+  
+  // Try to connect to registry (required for large events - same server)
+  var registryConnected = await connectToRegistry();
+  
+  if (!registryConnected) {
+    throw new Error(t('sync.error_server_unavailable'));
+  }
+  
+  // Clean up expired entries
+  cleanupExpiredRegistryEntries();
+  
+  if (isCreating) {
+    // Check for collision
+    var existingEntry = lookupRoom(registryKey);
+    if (existingEntry) {
+      throw new Error(t('sync.error_room_exists'));
+    }
+    
+    // Register room with hasPassword=true (large events always require password)
+    registerRoom(registryKey, sessionId, true);
+    
+    // Wait briefly for sync and verify
+    await new Promise(function(resolve) { setTimeout(resolve, 200); });
+    
+    if (!verifyRoomRegistration(registryKey, sessionId)) {
+      throw new Error(t('sync.room_collision_error'));
+    }
+    
+    SyncManager.isCreator = true;
+  } else {
+    // Joining - verify room exists
+    var roomEntry = lookupRoom(registryKey);
+    if (!roomEntry) {
+      throw new Error(t('sync.error_room_not_found'));
+    }
+    
+    SyncManager.isCreator = false;
+  }
+  
+  SyncManager.hasCustomPassword = true; // Large events always use user password
+  SyncManager.effectivePassword = password;
   
   var fullRoomName = SyncManager.roomPrefixLarge + roomCode;
   

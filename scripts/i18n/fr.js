@@ -430,7 +430,10 @@ register_i18n_language('fr', {
       "merge_none": "(aucun)",
       "merge_backup_note": "Une sauvegarde sera créée avant la fusion.",
       "merge_confirm_button": "Fusionner les Éléments",
-      "room_collision_error": "Réseau occupé. Essayez d'ajouter un mot de passe pour une salle privée."
+      "room_collision_error": "Réseau occupé. Essayez d'ajouter un mot de passe pour une salle privée.",
+      "registry_unavailable": "Impossible de se connecter au serveur de synchronisation. Réessayez, ou ajoutez un mot de passe pour créer une salle privée.",
+      "room_not_found": "Salle non trouvée. Vérifiez le code et réessayez.",
+      "room_requires_password": "Cette salle nécessite un mot de passe. Veuillez entrer le mot de passe partagé par le créateur de la salle."
     },
     "backup": {
       "reason_pre_merge": "Avant Fusion",

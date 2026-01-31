@@ -431,7 +431,10 @@ register_i18n_language('en', {
       "merge_none": "(none)",
       "merge_backup_note": "A backup will be created before merging.",
       "merge_confirm_button": "Merge Items",
-      "room_collision_error": "Network busy. Try adding a password for a private room."
+      "room_collision_error": "Network busy. Try adding a password for a private room.",
+      "registry_unavailable": "Unable to connect to sync server. Please try again, or add a password to create a private room.",
+      "room_not_found": "Room not found. Check the code and try again.",
+      "room_requires_password": "This room requires a password. Please enter the password shared by the room creator."
     },
     "backup": {
       "reason_pre_merge": "Before Merge",

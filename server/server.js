@@ -140,6 +140,9 @@ const wsStats = {
   connections: 0
 };
 
+// Registry room - special room that persists and tracks all active sync rooms
+const REGISTRY_ROOM = 'pbe-registry';
+
 // Message types
 const messageSync = 0;
 const messageAwareness = 1;
@@ -233,11 +236,13 @@ function handleWebsocketSyncConnection(ws, req) {
     
     conns.delete(ws);
     
-    // Clean up empty rooms
-    if (conns.size === 0) {
+    // Clean up empty rooms (except registry room which persists)
+    if (conns.size === 0 && roomName !== REGISTRY_ROOM) {
       wsRooms.delete(roomName);
       wsStats.rooms--;
       console.log(`[WebSocket] Room deleted: ${roomName}`);
+    } else if (conns.size === 0 && roomName === REGISTRY_ROOM) {
+      console.log(`[WebSocket] Registry room empty but persisted`);
     }
     
     console.log(`[WebSocket] Connection closed. Active rooms: ${wsStats.rooms}`);
