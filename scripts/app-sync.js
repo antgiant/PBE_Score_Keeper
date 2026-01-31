@@ -383,7 +383,7 @@ function handleSessionIdCollision(expectedId, actualId, sessionDoc) {
   
   // The sync is already connected and working - just let it continue
   // The user is now effectively joining as a new participant in the remote session
-  showToast(t('sync.collision_auto_cleared'));
+  // Normal sync messages will be shown by the regular sync flow
 }
 
 /**

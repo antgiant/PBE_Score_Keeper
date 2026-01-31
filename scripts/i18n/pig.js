@@ -425,8 +425,7 @@ register_i18n_language('pig', {
       "merge_blocks_to_add": "Ocks-Blay o-tay add-ay ({{count}}):",
       "merge_none": "(one-nay)",
       "merge_backup_note": "A-ay ackup-bay ill-way e-bay eated-cray efore-bay erging-may.",
-      "merge_confirm_button": "Erge-May Items-ay",
-      "collision_auto_cleared": "Oom-Ray as-way eassigned-ray. Oined-Jay as-ay ew-nay articipant-pay."
+      "merge_confirm_button": "Erge-May Items-ay"
     },
     "backup": {
       "reason_pre_merge": "Efore-Bay Erge-May",

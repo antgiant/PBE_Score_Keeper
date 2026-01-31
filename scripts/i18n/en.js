@@ -430,8 +430,7 @@ register_i18n_language('en', {
       "merge_blocks_to_add": "Blocks to add ({{count}}):",
       "merge_none": "(none)",
       "merge_backup_note": "A backup will be created before merging.",
-      "merge_confirm_button": "Merge Items",
-      "collision_auto_cleared": "Room was reassigned. Joined as new participant."
+      "merge_confirm_button": "Merge Items"
     },
     "backup": {
       "reason_pre_merge": "Before Merge",
