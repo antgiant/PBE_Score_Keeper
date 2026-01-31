@@ -465,7 +465,11 @@ function sync_data_to_display() {
       }
       return false;
     } else {
-      return session.get('questions').get(questionIndex).get('ignore');
+      const questions = session.get('questions');
+      if (questions && questions.get(questionIndex)) {
+        return questions.get(questionIndex).get('ignore') || false;
+      }
+      return false;
     }
   }
   
@@ -478,7 +482,11 @@ function sync_data_to_display() {
       }
       return 0;
     } else {
-      return session.get('questions').get(questionIndex).get('score');
+      const questions = session.get('questions');
+      if (questions && questions.get(questionIndex)) {
+        return questions.get(questionIndex).get('score') || 0;
+      }
+      return 0;
     }
   }
 
