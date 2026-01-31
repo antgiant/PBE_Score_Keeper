@@ -430,7 +430,15 @@ register_i18n_language('en', {
       "merge_blocks_to_add": "Blocks to add ({{count}}):",
       "merge_none": "(none)",
       "merge_backup_note": "A backup will be created before merging.",
-      "merge_confirm_button": "Merge Items"
+      "merge_confirm_button": "Merge Items",
+      "collision_title": "Room Code Conflict",
+      "collision_message": "This room code is now being used by a different session. This can happen when the same code is randomly generated for different users.",
+      "collision_warning": "Connecting could cause data from two unrelated sessions to merge.",
+      "collision_clear_sync": "Clear My Sync",
+      "collision_merge": "Join as New User",
+      "collision_cancel": "Cancel",
+      "collision_cleared": "Sync code cleared. You can join a new room.",
+      "collision_use_join": "Use the sync dialog to join the room as a new user."
     },
     "backup": {
       "reason_pre_merge": "Before Merge",

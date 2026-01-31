@@ -429,7 +429,15 @@ register_i18n_language('es', {
       "merge_blocks_to_add": "Bloques a agregar ({{count}}):",
       "merge_none": "(ninguno)",
       "merge_backup_note": "Se creará una copia de seguridad antes de fusionar.",
-      "merge_confirm_button": "Fusionar Elementos"
+      "merge_confirm_button": "Fusionar Elementos",
+      "collision_title": "Conflicto de Código de Sala",
+      "collision_message": "Este código de sala ahora está siendo usado por una sesión diferente. Esto puede ocurrir cuando el mismo código se genera aleatoriamente para diferentes usuarios.",
+      "collision_warning": "Conectarse podría causar que datos de dos sesiones no relacionadas se fusionen.",
+      "collision_clear_sync": "Borrar Mi Sincronización",
+      "collision_merge": "Unirse como Nuevo Usuario",
+      "collision_cancel": "Cancelar",
+      "collision_cleared": "Código de sincronización borrado. Puedes unirte a una nueva sala.",
+      "collision_use_join": "Usa el diálogo de sincronización para unirte a la sala como nuevo usuario."
     },
     "backup": {
       "reason_pre_merge": "Antes de Fusionar",

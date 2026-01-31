@@ -8,6 +8,12 @@
 var MAX_DISPLAY_NAME_LENGTH = 30;
 
 /**
+ * Sync room expiration time in milliseconds (12 hours)
+ * Room codes older than this are automatically cleared on page load
+ */
+var SYNC_ROOM_EXPIRATION_MS = 12 * 60 * 60 * 1000;  // 12 hours
+
+/**
  * Error types for sync operations
  */
 var SyncError = {
@@ -214,8 +220,12 @@ function saveSessionSyncRoom(roomCode, sessionId) {
   if (config) {
     if (roomCode) {
       config.set('syncRoom', roomCode);
+      config.set('syncCreatedAt', Date.now());  // Track when sync was created for expiration
+      config.set('syncSessionId', effectiveSessionId);  // Store session ID for collision detection
     } else {
       config.delete('syncRoom');
+      config.delete('syncCreatedAt');
+      config.delete('syncSessionId');
     }
   }
   
@@ -312,9 +322,144 @@ function updateSessionSyncRoomCache(sessionId, roomCode) {
 }
 
 /**
+ * Check if a sync room has expired (older than SYNC_ROOM_EXPIRATION_MS)
+ * @param {number} createdAt - Timestamp when sync was created
+ * @returns {boolean} True if expired
+ */
+function isSyncRoomExpired(createdAt) {
+  if (!createdAt) return false;  // No timestamp = legacy, don't expire
+  var now = Date.now();
+  return (now - createdAt) > SYNC_ROOM_EXPIRATION_MS;
+}
+
+/**
+ * Get sync session ID stored with the room code
+ * @param {string} [sessionId] - Session to check (defaults to current)
+ * @returns {string|null} Session ID or null
+ */
+function getSyncSessionId(sessionId) {
+  var doc = sessionId ? getSessionDoc(sessionId) : getActiveSessionDoc();
+  if (!doc) return null;
+  
+  var session = doc.getMap('session');
+  if (!session) return null;
+  
+  var config = session.get('config');
+  if (config) {
+    return config.get('syncSessionId') || null;
+  }
+  return null;
+}
+
+/**
+ * Get the session ID from a Y.Doc (the 'id' field in the session map)
+ * This is the actual session UUID, different from syncSessionId which is what we expect
+ * @param {Y.Doc} doc - Session Y.Doc
+ * @returns {string|null} Session ID or null
+ */
+function getRemoteSessionIdFromDoc(doc) {
+  if (!doc) return null;
+  
+  var session = doc.getMap('session');
+  if (!session) return null;
+  
+  return session.get('id') || null;
+}
+
+/**
+ * Handle session ID collision - different user with same room code
+ * @param {string} expectedId - The session ID we expected
+ * @param {string} actualId - The session ID we received
+ * @param {Y.Doc} sessionDoc - The session doc that was synced
+ */
+function handleSessionIdCollision(expectedId, actualId, sessionDoc) {
+  console.warn('Session ID collision: expected', expectedId, 'but got', actualId);
+  
+  // Disconnect immediately to prevent further data corruption
+  if (SyncManager.provider) {
+    SyncManager.provider.destroy();
+    SyncManager.provider = null;
+  }
+  
+  SyncManager.state = 'offline';
+  updateSyncUI();
+  
+  // Show collision dialog
+  showSessionIdCollisionDialog(expectedId, actualId);
+}
+
+/**
+ * Show dialog when session ID collision is detected
+ * User can choose to: clear sync from their session, or go through merge
+ * @param {string} expectedId - The session ID we expected
+ * @param {string} actualId - The session ID from the room
+ */
+function showSessionIdCollisionDialog(expectedId, actualId) {
+  var dialog = document.getElementById('collision-dialog-overlay');
+  if (!dialog) {
+    // Create dialog if it doesn't exist
+    dialog = document.createElement('div');
+    dialog.id = 'collision-dialog-overlay';
+    dialog.className = 'sync-dialog-overlay';
+    document.body.appendChild(dialog);
+  }
+  
+  dialog.innerHTML = '<div class="sync-dialog" role="dialog" aria-labelledby="collision-title">' +
+    '<h2 id="collision-title">' + t('sync.collision_title') + '</h2>' +
+    '<p>' + t('sync.collision_message') + '</p>' +
+    '<p class="collision-warning" style="color: var(--warning-color); font-weight: bold;">' + 
+      t('sync.collision_warning') + '</p>' +
+    '<div class="button-row" style="flex-wrap: wrap; gap: 0.5rem;">' +
+      '<button id="collision-clear-sync" class="secondary">' + 
+        t('sync.collision_clear_sync') + '</button>' +
+      '<button id="collision-merge" class="primary">' + 
+        t('sync.collision_merge') + '</button>' +
+      '<button id="collision-cancel" class="secondary">' + 
+        t('sync.collision_cancel') + '</button>' +
+    '</div>' +
+  '</div>';
+  
+  dialog.style.display = 'flex';
+  
+  // Handle clear sync button
+  document.getElementById('collision-clear-sync').onclick = function() {
+    dialog.style.display = 'none';
+    // Clear sync room from our session
+    saveSessionSyncRoom(null);
+    showToast(t('sync.collision_cleared'));
+  };
+  
+  // Handle merge button
+  document.getElementById('collision-merge').onclick = function() {
+    dialog.style.display = 'none';
+    // Clear local sync data first
+    saveSessionSyncRoom(null);
+    // Show the sync dialog so user can join properly with merge
+    showToast(t('sync.collision_use_join'));
+    setTimeout(function() {
+      if (typeof showSyncDialog === 'function') {
+        showSyncDialog();
+      }
+    }, 500);
+  };
+  
+  // Handle cancel button
+  document.getElementById('collision-cancel').onclick = function() {
+    dialog.style.display = 'none';
+  };
+  
+  // Close on escape
+  dialog.onkeydown = function(e) {
+    if (e.key === 'Escape') {
+      dialog.style.display = 'none';
+    }
+  };
+}
+
+/**
  * Repair/build the sessionSyncRooms cache from individual session docs
  * Called during init to ensure cache is populated for dropdown display
- * DEFENSE: Also detects and cleans up duplicate room codes
+ * DEFENSE: Also detects and cleans up duplicate room codes and expired rooms
  * @returns {Promise<boolean>} True if repair was performed
  */
 async function repairSessionSyncRoomsCache() {
@@ -338,6 +483,7 @@ async function repairSessionSyncRoomsCache() {
   // DEFENSE: Track room codes to detect duplicates
   var roomToSessionMap = new Map(); // room code -> first session that had it
   var duplicatesToClean = []; // { sessionId, roomCode } entries to clean
+  var expiredToClean = []; // { sessionId, roomCode } entries to clean
   
   for (var i = 0; i < sessionOrder.length; i++) {
     var sessionId = sessionOrder[i];
@@ -353,14 +499,25 @@ async function repairSessionSyncRoomsCache() {
     if (!config) continue;
     
     var syncRoom = config.get('syncRoom');
+    var syncCreatedAt = config.get('syncCreatedAt');
+    
     if (syncRoom) {
+      // DEFENSE: Check if this room code has expired (12 hours)
+      if (isSyncRoomExpired(syncCreatedAt)) {
+        console.warn('DEFENSE: Detected expired room code "' + syncRoom + 
+                    '" in session ' + sessionId + ' (created ' + 
+                    Math.round((Date.now() - syncCreatedAt) / 3600000) + ' hours ago)');
+        expiredToClean.push({ sessionId: sessionId, roomCode: syncRoom, sessionDoc: sessionDoc, config: config });
+        continue; // Don't add to map
+      }
+      
       // DEFENSE: Check if this room code was already seen in another session
       if (roomToSessionMap.has(syncRoom)) {
         // This is a duplicate! Mark for cleanup
         console.warn('DEFENSE: Detected duplicate room code "' + syncRoom + 
                     '" in session ' + sessionId + ' (already in ' + 
                     roomToSessionMap.get(syncRoom) + ')');
-        duplicatesToClean.push({ sessionId: sessionId, roomCode: syncRoom, sessionDoc: sessionDoc });
+        duplicatesToClean.push({ sessionId: sessionId, roomCode: syncRoom, sessionDoc: sessionDoc, config: config });
       } else {
         // First occurrence - keep it
         roomToSessionMap.set(syncRoom, sessionId);
@@ -369,23 +526,31 @@ async function repairSessionSyncRoomsCache() {
     }
   }
   
+  // DEFENSE: Clean up expired rooms
+  if (expiredToClean.length > 0) {
+    console.warn('DEFENSE: Cleaning up ' + expiredToClean.length + ' expired room code(s)');
+    for (var k = 0; k < expiredToClean.length; k++) {
+      var exp = expiredToClean[k];
+      exp.config.delete('syncRoom');
+      exp.config.delete('syncCreatedAt');
+      exp.config.delete('syncSessionId');
+      console.log('Cleared expired room code from session ' + exp.sessionId);
+    }
+  }
+  
   // DEFENSE: Clean up duplicates
   if (duplicatesToClean.length > 0) {
     console.warn('DEFENSE: Cleaning up ' + duplicatesToClean.length + ' duplicate room code(s)');
     for (var j = 0; j < duplicatesToClean.length; j++) {
       var dup = duplicatesToClean[j];
-      var session = dup.sessionDoc.getMap('session');
-      if (session) {
-        var config = session.get('config');
-        if (config && config.get('syncRoom') === dup.roomCode) {
-          config.delete('syncRoom');
-          console.log('Cleared duplicate room code from session ' + dup.sessionId);
-        }
-      }
+      dup.config.delete('syncRoom');
+      dup.config.delete('syncCreatedAt');
+      dup.config.delete('syncSessionId');
+      console.log('Cleared duplicate room code from session ' + dup.sessionId);
     }
   }
   
-  // Update global doc with cache (only non-duplicate entries)
+  // Update global doc with cache (only non-duplicate, non-expired entries)
   if (syncRoomMap.size > 0 || sessionSyncRooms) {
     globalDoc.transact(function() {
       var newSessionSyncRooms = new Y.Map();
@@ -395,8 +560,9 @@ async function repairSessionSyncRoomsCache() {
       meta.set('sessionSyncRooms', newSessionSyncRooms);
     }, 'repair');
     
+    var cleanedCount = expiredToClean.length + duplicatesToClean.length;
     console.log('Built sessionSyncRooms cache with ' + syncRoomMap.size + ' entries' +
-               (duplicatesToClean.length > 0 ? ' (cleaned ' + duplicatesToClean.length + ' duplicates)' : ''));
+               (cleanedCount > 0 ? ' (cleaned ' + cleanedCount + ' expired/duplicates)' : ''));
   }
   
   return syncRoomMap.size > 0;
@@ -753,6 +919,20 @@ async function startSync(displayName, roomCode, password, joinChoice, options) {
         // Hide loading state
         if (typeof hideSyncLoadingState === 'function') {
           hideSyncLoadingState();
+        }
+        
+        // DEFENSE: Check for session ID collision (different user with same room code)
+        // Only check on reconnect (when we have a stored session ID to compare against)
+        if (isReconnect) {
+          var storedSessionId = getSyncSessionId();
+          var remoteSessionId = getRemoteSessionIdFromDoc(sessionDoc);
+          
+          if (storedSessionId && remoteSessionId && storedSessionId !== remoteSessionId) {
+            console.warn('DEFENSE: Session ID collision detected!',
+                        'Expected:', storedSessionId, 'Got:', remoteSessionId);
+            handleSessionIdCollision(storedSessionId, remoteSessionId, sessionDoc);
+            return; // Don't proceed with normal sync
+          }
         }
         
         // Handle merge if that was the join choice
