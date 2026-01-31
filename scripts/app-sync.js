@@ -4578,6 +4578,19 @@ if (typeof module !== 'undefined' && module.exports) {
     closeLargeEventDialog: closeLargeEventDialog,
     startWebsocketSync: startWebsocketSync,
     isLargeEventSyncExpired: isLargeEventSyncExpired,
-    clearExpiredLargeEventSync: clearExpiredLargeEventSync
+    clearExpiredLargeEventSync: clearExpiredLargeEventSync,
+    // Registry functions
+    connectToRegistry: connectToRegistry,
+    disconnectFromRegistry: disconnectFromRegistry,
+    getRegistryRooms: getRegistryRooms,
+    cleanupExpiredRegistryEntries: cleanupExpiredRegistryEntries,
+    registerRoom: registerRoom,
+    lookupRoom: lookupRoom,
+    verifyRoomRegistration: verifyRoomRegistration,
+    startRegistryRetry: startRegistryRetry,
+    stopRegistryRetry: stopRegistryRetry,
+    saveEffectivePassword: saveEffectivePassword,
+    getSavedEffectivePassword: getSavedEffectivePassword,
+    getSavedHasCustomPassword: getSavedHasCustomPassword
   };
 }
