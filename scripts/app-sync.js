@@ -57,6 +57,8 @@ var SyncManager = {
   effectivePassword: null,      // Actual password used (sessionId or user's)
   isCreator: false,             // Did we create this room?
   hasCustomPassword: false,     // Did user provide password?
+  registryHealthCheckTimer: null, // Periodic registry health check timer
+  joinedAt: null,               // Timestamp when we joined the room
   
   // Peers tracking
   peers: new Map(),  // peerId -> { displayName, color, lastSeen }
@@ -91,6 +93,7 @@ var SyncManager = {
     registryRoom: 'pbe-registry',    // Registry room name
     registryTimeout: 5000,           // Max time to wait for registry connection (ms)
     registryRetryInterval: 30000,    // Background retry interval (ms)
+    registryHealthCheckInterval: 30000, // How often oldest peer checks registry (ms)
     roomExpiration: 12 * 60 * 60 * 1000  // 12 hours
   }
 };
@@ -324,6 +327,112 @@ function stopRegistryRetry() {
   if (SyncManager.registryRetryTimer) {
     clearInterval(SyncManager.registryRetryTimer);
     SyncManager.registryRetryTimer = null;
+  }
+}
+
+/**
+ * Check if we are the oldest peer in the room (earliest joinedAt)
+ * Used to determine which peer is responsible for registry health checks
+ * @returns {boolean} True if we are the oldest peer
+ */
+function isOldestPeer() {
+  if (!SyncManager.awareness || !SyncManager.joinedAt) {
+    return false;
+  }
+  
+  var myJoinedAt = SyncManager.joinedAt;
+  var myClientId = SyncManager.awareness.clientID;
+  
+  // Get all awareness states
+  var states = SyncManager.awareness.getStates();
+  
+  var oldestTime = myJoinedAt;
+  var oldestClientId = myClientId;
+  
+  states.forEach(function(state, clientId) {
+    if (state && state.joinedAt) {
+      // Earlier timestamp wins; if same timestamp, lower clientId wins (deterministic)
+      if (state.joinedAt < oldestTime || 
+          (state.joinedAt === oldestTime && clientId < oldestClientId)) {
+        oldestTime = state.joinedAt;
+        oldestClientId = clientId;
+      }
+    }
+  });
+  
+  return oldestClientId === myClientId;
+}
+
+/**
+ * Start periodic registry health check
+ * Only the oldest peer checks and re-registers if needed
+ */
+function startRegistryHealthCheck() {
+  if (SyncManager.registryHealthCheckTimer) return;
+  
+  console.log('Starting registry health check (every ' + 
+    (SyncManager.config.registryHealthCheckInterval / 1000) + 's)');
+  
+  SyncManager.registryHealthCheckTimer = setInterval(async function() {
+    // Only run if connected
+    if (SyncManager.state !== 'connected') {
+      return;
+    }
+    
+    // Only the oldest peer does the health check
+    if (!isOldestPeer()) {
+      return;
+    }
+    
+    console.log('Registry health check (oldest peer)...');
+    
+    // Make sure we're connected to registry
+    if (!SyncManager.registryConnected) {
+      var connected = await connectToRegistry();
+      if (!connected) {
+        console.log('Registry still unavailable');
+        return;
+      }
+    }
+    
+    // Check if our room is registered
+    var roomCode = SyncManager.roomCode;
+    var sessionId = typeof get_current_session_id === 'function' ? get_current_session_id() : null;
+    
+    if (!roomCode || !sessionId) {
+      return;
+    }
+    
+    // Determine registry key (L- prefix for large events)
+    var registryKey = SyncManager.connectionType === 'websocket' 
+      ? 'L-' + roomCode 
+      : roomCode;
+    
+    var entry = lookupRoom(registryKey);
+    
+    if (!entry) {
+      // Room not in registry - re-register it
+      console.log('Room missing from registry, re-registering:', registryKey);
+      registerRoom(registryKey, sessionId, SyncManager.hasCustomPassword);
+    } else if (entry.sessionId !== sessionId) {
+      // Different session has same room code - this shouldn't happen in normal use
+      // But if it does, we have a collision. Log it but don't overwrite.
+      console.warn('Registry collision detected:', registryKey, 
+        'expected:', sessionId, 'found:', entry.sessionId);
+    }
+    // else: Room is correctly registered, nothing to do
+    
+  }, SyncManager.config.registryHealthCheckInterval);
+}
+
+/**
+ * Stop periodic registry health check
+ */
+function stopRegistryHealthCheck() {
+  if (SyncManager.registryHealthCheckTimer) {
+    clearInterval(SyncManager.registryHealthCheckTimer);
+    SyncManager.registryHealthCheckTimer = null;
+    console.log('Stopped registry health check');
   }
 }
 
@@ -1953,6 +2062,16 @@ function stopSync(clearSessionRoom) {
   
   // Clear awareness
   SyncManager.awareness = null;
+  SyncManager.joinedAt = null;
+  
+  // Stop registry health check
+  stopRegistryHealthCheck();
+  
+  // Disconnect from registry
+  disconnectFromRegistry();
+  
+  // Stop registry retry
+  stopRegistryRetry();
   
   // Reset state
   SyncManager.state = 'offline';
@@ -2674,9 +2793,14 @@ async function startWebsocketSync(displayName, roomCode, password, mode) {
   
   // Set up awareness
   var awareness = SyncManager.wsProvider.awareness;
+  
+  // Track when we joined for oldest-peer determination
+  SyncManager.joinedAt = Date.now();
+  
   awareness.setLocalStateField('user', {
     name: displayName,
-    color: getRandomColor()
+    color: getRandomColor(),
+    joinedAt: SyncManager.joinedAt
   });
   
   // Store connection info
@@ -2686,6 +2810,9 @@ async function startWebsocketSync(displayName, roomCode, password, mode) {
   SyncManager.displayName = displayName;
   SyncManager.awareness = awareness;
   SyncManager.sessionId = DocManager.getActiveSessionId();
+  
+  // Start registry health check (oldest peer will maintain registry)
+  startRegistryHealthCheck();
   
   // Set up awareness change listener
   awareness.on('change', function() {
@@ -3135,6 +3262,9 @@ function updateSyncUI() {
 function setupAwareness(awareness) {
   SyncManager.awareness = awareness;
   
+  // Track when we joined for oldest-peer determination
+  SyncManager.joinedAt = Date.now();
+  
   // Get current data version (v4.0 for UUID-based, v3.0 for legacy)
   var currentDataVersion = (typeof DATA_VERSION_CURRENT !== 'undefined') ? DATA_VERSION_CURRENT : '3.0';
   var session = get_current_session();
@@ -3142,13 +3272,17 @@ function setupAwareness(awareness) {
     currentDataVersion = (typeof DATA_VERSION_UUID !== 'undefined') ? DATA_VERSION_UUID : '4.0';
   }
   
-  // Set local state with data version
+  // Set local state with data version and joinedAt for registry health check
   awareness.setLocalState({
     displayName: SyncManager.displayName,
     color: generateUserColor(SyncManager.displayName),
     lastSeen: Date.now(),
+    joinedAt: SyncManager.joinedAt,
     dataVersion: currentDataVersion
   });
+  
+  // Start registry health check (oldest peer will maintain registry)
+  startRegistryHealthCheck();
   
   // Listen for changes
   awareness.on('change', function() {
@@ -4591,6 +4725,10 @@ if (typeof module !== 'undefined' && module.exports) {
     stopRegistryRetry: stopRegistryRetry,
     saveEffectivePassword: saveEffectivePassword,
     getSavedEffectivePassword: getSavedEffectivePassword,
-    getSavedHasCustomPassword: getSavedHasCustomPassword
+    getSavedHasCustomPassword: getSavedHasCustomPassword,
+    // Registry health check functions
+    isOldestPeer: isOldestPeer,
+    startRegistryHealthCheck: startRegistryHealthCheck,
+    stopRegistryHealthCheck: stopRegistryHealthCheck
   };
 }

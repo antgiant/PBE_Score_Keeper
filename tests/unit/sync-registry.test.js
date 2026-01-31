@@ -499,4 +499,184 @@ describe('Sync Registry', function() {
       syncModule.stopRegistryRetry();
     });
   });
+
+  describe('Registry Health Check', function() {
+    beforeEach(function() {
+      // Set up connected state with awareness mock
+      syncModule.SyncManager.state = 'connected';
+      syncModule.SyncManager.joinedAt = Date.now();
+      syncModule.SyncManager.roomCode = 'HEALTH';
+      syncModule.SyncManager.connectionType = 'webrtc';
+      syncModule.SyncManager.hasCustomPassword = false;
+      
+      // Mock awareness with getStates
+      syncModule.SyncManager.awareness = {
+        clientID: 1,
+        getStates: function() {
+          var map = new Map();
+          map.set(1, { joinedAt: syncModule.SyncManager.joinedAt });
+          return map;
+        }
+      };
+    });
+    
+    afterEach(function() {
+      syncModule.stopRegistryHealthCheck();
+      syncModule.SyncManager.awareness = null;
+      syncModule.SyncManager.joinedAt = null;
+    });
+    
+    it('should start health check timer', function() {
+      syncModule.startRegistryHealthCheck();
+      
+      assert.ok(syncModule.SyncManager.registryHealthCheckTimer !== null, 'Timer should be set');
+      
+      syncModule.stopRegistryHealthCheck();
+    });
+    
+    it('should stop health check timer', function() {
+      syncModule.SyncManager.registryHealthCheckTimer = setInterval(function() {}, 1000);
+      
+      syncModule.stopRegistryHealthCheck();
+      
+      assert.strictEqual(syncModule.SyncManager.registryHealthCheckTimer, null, 'Timer should be cleared');
+    });
+    
+    it('should not start duplicate health check timers', function() {
+      syncModule.startRegistryHealthCheck();
+      var firstTimer = syncModule.SyncManager.registryHealthCheckTimer;
+      
+      syncModule.startRegistryHealthCheck();
+      var secondTimer = syncModule.SyncManager.registryHealthCheckTimer;
+      
+      assert.strictEqual(firstTimer, secondTimer, 'Should be same timer');
+      
+      syncModule.stopRegistryHealthCheck();
+    });
+  });
+
+  describe('Oldest Peer Detection', function() {
+    afterEach(function() {
+      syncModule.SyncManager.awareness = null;
+      syncModule.SyncManager.joinedAt = null;
+    });
+    
+    it('should return false if no awareness', function() {
+      syncModule.SyncManager.awareness = null;
+      syncModule.SyncManager.joinedAt = Date.now();
+      
+      var result = syncModule.isOldestPeer();
+      assert.strictEqual(result, false);
+    });
+    
+    it('should return false if no joinedAt', function() {
+      syncModule.SyncManager.awareness = { clientID: 1, getStates: function() { return new Map(); } };
+      syncModule.SyncManager.joinedAt = null;
+      
+      var result = syncModule.isOldestPeer();
+      assert.strictEqual(result, false);
+    });
+    
+    it('should return true if only peer in room', function() {
+      var joinTime = Date.now();
+      syncModule.SyncManager.joinedAt = joinTime;
+      syncModule.SyncManager.awareness = {
+        clientID: 1,
+        getStates: function() {
+          var map = new Map();
+          map.set(1, { joinedAt: joinTime });
+          return map;
+        }
+      };
+      
+      var result = syncModule.isOldestPeer();
+      assert.strictEqual(result, true);
+    });
+    
+    it('should return true if oldest of multiple peers', function() {
+      var myJoinTime = 1000;
+      var otherJoinTime = 2000;
+      syncModule.SyncManager.joinedAt = myJoinTime;
+      syncModule.SyncManager.awareness = {
+        clientID: 1,
+        getStates: function() {
+          var map = new Map();
+          map.set(1, { joinedAt: myJoinTime });
+          map.set(2, { joinedAt: otherJoinTime });
+          return map;
+        }
+      };
+      
+      var result = syncModule.isOldestPeer();
+      assert.strictEqual(result, true, 'Should be oldest with earlier timestamp');
+    });
+    
+    it('should return false if not oldest of multiple peers', function() {
+      var myJoinTime = 2000;
+      var otherJoinTime = 1000;
+      syncModule.SyncManager.joinedAt = myJoinTime;
+      syncModule.SyncManager.awareness = {
+        clientID: 1,
+        getStates: function() {
+          var map = new Map();
+          map.set(1, { joinedAt: myJoinTime });
+          map.set(2, { joinedAt: otherJoinTime });
+          return map;
+        }
+      };
+      
+      var result = syncModule.isOldestPeer();
+      assert.strictEqual(result, false, 'Should not be oldest with later timestamp');
+    });
+    
+    it('should use clientID as tiebreaker for same timestamp', function() {
+      var sameJoinTime = 1000;
+      syncModule.SyncManager.joinedAt = sameJoinTime;
+      
+      // Test with lower clientID (should win)
+      syncModule.SyncManager.awareness = {
+        clientID: 1,
+        getStates: function() {
+          var map = new Map();
+          map.set(1, { joinedAt: sameJoinTime });
+          map.set(2, { joinedAt: sameJoinTime });
+          return map;
+        }
+      };
+      
+      var result1 = syncModule.isOldestPeer();
+      assert.strictEqual(result1, true, 'Lower clientID should win tiebreaker');
+      
+      // Test with higher clientID (should lose)
+      syncModule.SyncManager.awareness = {
+        clientID: 2,
+        getStates: function() {
+          var map = new Map();
+          map.set(1, { joinedAt: sameJoinTime });
+          map.set(2, { joinedAt: sameJoinTime });
+          return map;
+        }
+      };
+      
+      var result2 = syncModule.isOldestPeer();
+      assert.strictEqual(result2, false, 'Higher clientID should lose tiebreaker');
+    });
+    
+    it('should ignore peers without joinedAt', function() {
+      var myJoinTime = 2000;
+      syncModule.SyncManager.joinedAt = myJoinTime;
+      syncModule.SyncManager.awareness = {
+        clientID: 1,
+        getStates: function() {
+          var map = new Map();
+          map.set(1, { joinedAt: myJoinTime });
+          map.set(2, { displayName: 'No joinedAt' }); // Peer without joinedAt
+          return map;
+        }
+      };
+      
+      var result = syncModule.isOldestPeer();
+      assert.strictEqual(result, true, 'Should be oldest when other peer has no joinedAt');
+    });
+  });
 });
