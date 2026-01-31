@@ -142,3 +142,46 @@ test('get_question_log renders question rows with extra credit', () => {
   assert.equal(log[1][2], 4);
   assert.equal(log[1][3], false);  // Yjs stores booleans natively, not as 'false' string
 });
+
+test('has_yjs_data recognizes all current data version formats', () => {
+  const { context } = loadApp(createYjsDoc({ currentSession: 1, sessions: [] }));
+  
+  // These constants should match what's defined in app-yjs.js
+  const DATA_VERSION_CURRENT = context.DATA_VERSION_CURRENT || '3.0';
+  const DATA_VERSION_UUID = context.DATA_VERSION_UUID || '4.0';
+  const DATA_VERSION_DETERMINISTIC = context.DATA_VERSION_DETERMINISTIC || '5.0';
+  
+  // Get the validVersions array from has_yjs_data by checking what versions it accepts
+  // The function should recognize all current version formats
+  const allVersions = [DATA_VERSION_CURRENT, DATA_VERSION_UUID, DATA_VERSION_DETERMINISTIC];
+  
+  for (const version of allVersions) {
+    // Create a mock global doc with this version
+    const meta = context.getGlobalDoc().getMap('meta');
+    meta.set('dataVersion', version);
+    
+    assert.equal(
+      context.has_yjs_data(), 
+      true, 
+      `has_yjs_data() should return true for version ${version}`
+    );
+  }
+});
+
+test('is_multi_doc recognizes all multi-doc version formats', () => {
+  const { context } = loadApp(createYjsDoc({ currentSession: 1, sessions: [] }));
+  
+  // v3.0+ are all multi-doc
+  const multiDocVersions = ['3.0', '4.0', '5.0'];
+  
+  for (const version of multiDocVersions) {
+    const meta = context.getGlobalDoc().getMap('meta');
+    meta.set('dataVersion', version);
+    
+    assert.equal(
+      context.is_multi_doc(), 
+      true, 
+      `is_multi_doc() should return true for version ${version}`
+    );
+  }
+});
