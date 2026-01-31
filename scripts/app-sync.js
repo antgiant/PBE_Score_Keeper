@@ -275,6 +275,8 @@ function clearRoomCodeFromOtherSessions(roomCode, keepSessionId) {
           var config = session.get('config');
           if (config && config.get('syncRoom') === roomCode) {
             config.delete('syncRoom');
+            config.delete('syncCreatedAt');
+            config.delete('syncSessionId');
           }
         }
       }
