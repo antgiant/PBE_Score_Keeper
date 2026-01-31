@@ -1675,12 +1675,17 @@ function initialize_yjs() {
  * @returns {boolean} True if Yjs data exists
  */
 function has_yjs_data() {
-  if (!yjsReady || !getGlobalDoc()) return false;
+  if (!yjsReady || !getGlobalDoc()) {
+    console.log('has_yjs_data: not ready yet, yjsReady=', yjsReady, 'globalDoc=', !!getGlobalDoc());
+    return false;
+  }
   const meta = getGlobalDoc().getMap('meta');
   const version = meta.get('dataVersion');
   // Support all known versions: 2.0 (single-doc), 3.0 (multi-doc), 4.0 (UUID), 5.0 (deterministic)
   const validVersions = [2.0, 3.0, '3.0', '4.0', '5.0', DATA_VERSION_UUID, DATA_VERSION_DETERMINISTIC];
-  return meta.size > 0 && validVersions.includes(version);
+  const hasData = meta.size > 0 && validVersions.includes(version);
+  console.log('has_yjs_data: version=', version, 'type=', typeof version, 'meta.size=', meta.size, 'result=', hasData);
+  return hasData;
 }
 
 /**
