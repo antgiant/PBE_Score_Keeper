@@ -1671,24 +1671,29 @@ function initialize_yjs() {
 }
 
 /**
- * Check if Yjs has data (v2.0 single-doc or v3.0 multi-doc)
+ * Check if Yjs has data (v2.0 single-doc or v3.0+ multi-doc)
  * @returns {boolean} True if Yjs data exists
  */
 function has_yjs_data() {
   if (!yjsReady || !getGlobalDoc()) return false;
   const meta = getGlobalDoc().getMap('meta');
   const version = meta.get('dataVersion');
-  return meta.size > 0 && (version === 2.0 || version === 3.0);
+  // Support all known versions: 2.0 (single-doc), 3.0 (multi-doc), 4.0 (UUID), 5.0 (deterministic)
+  const validVersions = [2.0, 3.0, '3.0', '4.0', '5.0', DATA_VERSION_UUID, DATA_VERSION_DETERMINISTIC];
+  return meta.size > 0 && validVersions.includes(version);
 }
 
 /**
- * Check if using multi-doc architecture (v3.0)
+ * Check if using multi-doc architecture (v3.0+)
  * @returns {boolean} True if multi-doc mode
  */
 function is_multi_doc() {
   if (!getGlobalDoc()) return false;
   const meta = getGlobalDoc().getMap('meta');
-  return meta.get('dataVersion') === 3.0;
+  const version = meta.get('dataVersion');
+  // v3.0+ are all multi-doc (3.0, 4.0, 5.0)
+  return version === 3.0 || version === '3.0' || version === '4.0' || version === '5.0' ||
+         version === DATA_VERSION_UUID || version === DATA_VERSION_DETERMINISTIC;
 }
 
 /**
