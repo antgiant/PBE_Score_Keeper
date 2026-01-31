@@ -423,17 +423,22 @@ function initSyncManager() {
     console.log('Cleared expired large event sync metadata');
   }
   
-  // Build sync rooms cache for dropdown display (async, don't wait)
+  // Build sync rooms cache for dropdown display
+  // IMPORTANT: Wait for this to complete before auto-reconnect
+  // This ensures duplicate room codes are cleaned up first (DEFENSE 2)
   repairSessionSyncRoomsCache().then(function(wasBuilt) {
     if (wasBuilt && typeof sync_data_to_display === 'function') {
       sync_data_to_display(); // Refresh display to show sync icons
     }
+    
+    // Attempt auto-reconnect AFTER cache repair completes
+    // This ensures DEFENSE 2 has cleaned up duplicates first
+    waitForSessionDocAndReconnect();
   }).catch(function(err) {
     console.error('Error building sessionSyncRooms cache:', err);
+    // Still try to auto-reconnect even if cache repair failed
+    waitForSessionDocAndReconnect();
   });
-  
-  // Attempt auto-reconnect after ensuring session doc is ready
-  waitForSessionDocAndReconnect();
   
   console.log('SyncManager initialized');
 }
@@ -510,7 +515,8 @@ async function tryAutoReconnectForCurrentSession() {
     // Use 'create' join choice since this session already has the synced data
     // 'create' uses the current session as-is (no new session creation)
     // 'merge' would incorrectly create a new empty session
-    await startSync(savedName, sessionRoom, null, 'create');
+    // Pass isReconnect: true to skip saving room code (avoids clearing from other sessions)
+    await startSync(savedName, sessionRoom, null, 'create', { isReconnect: true });
     showToast(t('sync.auto_reconnected', { code: sessionRoom }));
     return true;
   } catch (error) {
@@ -588,9 +594,12 @@ function getSyncPeerCount() {
  * @param {string} [roomCode] - Room to join, or null to create new
  * @param {string} [password] - Optional room password for encryption
  * @param {string} [joinChoice] - 'create' | 'join' | 'merge' (how to handle joining)
+ * @param {Object} [options] - Additional options
+ * @param {boolean} [options.isReconnect] - True if this is an auto-reconnect (skip saving room code)
  * @returns {Promise<string>} Room code on success
  */
-async function startSync(displayName, roomCode, password, joinChoice) {
+async function startSync(displayName, roomCode, password, joinChoice, options) {
+  var isReconnect = options && options.isReconnect;
   if (!displayName || displayName.trim().length === 0) {
     throw new Error('Display name is required');
   }
@@ -659,10 +668,15 @@ async function startSync(displayName, roomCode, password, joinChoice) {
   
   // Persist display name to global Yjs doc
   saveDisplayName(displayName);
+  
   // Save room code to session doc for auto-reconnect
-  saveSessionSyncRoom(finalRoomCode);
-  // Save join choice for reconnection
-  saveSessionJoinChoice(joinChoice || 'create');
+  // SKIP on reconnect to avoid DEFENSE 1 clearing from other sessions
+  // (the room code is already saved from the original sync)
+  if (!isReconnect) {
+    saveSessionSyncRoom(finalRoomCode);
+    // Save join choice for reconnection
+    saveSessionJoinChoice(joinChoice || 'create');
+  }
   
   updateSyncUI();
   
