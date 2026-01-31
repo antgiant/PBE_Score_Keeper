@@ -6,6 +6,17 @@ Una herramienta para ayudar a llevar el registro de las puntuaciones de la Exper
 ## Nota sobre Almacenamiento de Datos
 Los datos se almacenan solo en su dispositivo y no se comparten de ninguna manera con ningún servidor. Esto significa que estos datos solo están en su dispositivo actual, y que debe usar las opciones de Exportar Datos en Importar/Exportar si necesita guardar copias de estos datos.
 
+## Nota sobre Sincronización en Tiempo Real
+La función de Sincronización en Tiempo Real permite que múltiples dispositivos colaboren en la misma sesión usando comunicación entre pares. Aunque el sistema de sincronización incluye múltiples protecciones contra la pérdida de datos, existe un escenario extremadamente raro que podría resultar en una fusión inesperada de datos:
+
+**Condiciones requeridas (todas deben ocurrir simultáneamente):**
+1. El servidor de sincronización no está disponible temporalmente
+2. Dos usuarios crean salas exactamente al mismo tiempo
+3. Ambos generan aleatoriamente el mismo código de sala de 6 caracteres (probabilidad de 1 en 1.073.741.824)
+4. Ambos usuarios ingresan la misma contraseña
+
+Si las cuatro condiciones se alinean, las dos sesiones separadas fusionarían sus datos. Este escenario es astronómicamente improbable en la práctica, pero se documenta aquí para completar la información. Usar la función de sincronización sin contraseña (el valor predeterminado) previene este problema por completo cuando el servidor está disponible.
+
 ## Contribuir una Traducción
 
 ¿Quiere ayudar a traducir PBE Marcador a su idioma? ¡Nos encantaría su ayuda!
