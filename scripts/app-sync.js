@@ -414,8 +414,10 @@ async function tryAutoReconnectForCurrentSession() {
   console.log('Auto-reconnecting to room from session:', sessionRoom);
   
   try {
-    // Use 'merge' join choice since this is the original session
-    await startSync(savedName, sessionRoom, null, 'merge');
+    // Use 'create' join choice since this session already has the synced data
+    // 'create' uses the current session as-is (no new session creation)
+    // 'merge' would incorrectly create a new empty session
+    await startSync(savedName, sessionRoom, null, 'create');
     showToast(t('sync.auto_reconnected', { code: sessionRoom }));
     return true;
   } catch (error) {
