@@ -310,6 +310,16 @@ function checkAndShowContinueOrNewDialog() {
 }
 
 function sync_data_to_display() {
+  // Hide any sync loading overlay since we're now displaying data
+  // (Check for document to avoid errors in test environment)
+  if (typeof hideSyncLoadingState === 'function' && typeof document !== 'undefined') {
+    try {
+      hideSyncLoadingState();
+    } catch (e) {
+      // Ignore errors in test environment
+    }
+  }
+  
   // Save focus state before any DOM updates to preserve user's editing position
   var focusState = getActiveFocusState();
   
