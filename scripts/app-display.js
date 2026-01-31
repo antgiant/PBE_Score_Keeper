@@ -898,6 +898,20 @@ function sync_data_to_display() {
     }
   }
 
+  // Auto-repair: if max_points is below the highest question score (can happen after sync),
+  // automatically raise it to match the highest score
+  if (max_points < smallest_valid_max_points) {
+    const sessionDoc = getActiveSessionDoc();
+    if (sessionDoc) {
+      const oldMaxPoints = max_points;
+      sessionDoc.transact(() => {
+        config.set('maxPointsPerQuestion', smallest_valid_max_points);
+        add_history_entry('edit_log.actions.change_max_points', 'edit_log.details_templates.auto_increased_max_points', { old: oldMaxPoints, new: smallest_valid_max_points });
+      }, 'local');
+      max_points = smallest_valid_max_points;
+    }
+  }
+
   //Show max points count
   $("#max_points").text(format_number(max_points));
   if (max_points <= smallest_valid_max_points) {

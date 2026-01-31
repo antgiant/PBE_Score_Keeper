@@ -165,6 +165,7 @@ register_i18n_language('fr', {
         "added": "Ajouté \"{{name}}\"",
         "deleted": "Supprimé \"{{name}}\"",
         "increased_max_points": "Points maximum augmentés de {{old}} à {{new}}",
+        "auto_increased_max_points": "Points maximum augmentés automatiquement de {{old}} à {{new}} (score dépassait la limite)",
         "decreased_max_points": "Points maximum réduits de {{old}} à {{new}}",
         "set_max_points": "Points maximum définis de {{old}} à {{new}}",
         "enabled_rounding": "Arrondi au total de la meilleure équipe activé",
