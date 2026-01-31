@@ -429,7 +429,8 @@ register_i18n_language('es', {
       "merge_blocks_to_add": "Bloques a agregar ({{count}}):",
       "merge_none": "(ninguno)",
       "merge_backup_note": "Se creará una copia de seguridad antes de fusionar.",
-      "merge_confirm_button": "Fusionar Elementos"
+      "merge_confirm_button": "Fusionar Elementos",
+      "room_collision_warning": "Advertencia: La sala puede tener usuarios existentes. Considera usar una contraseña."
     },
     "backup": {
       "reason_pre_merge": "Antes de Fusionar",

@@ -694,10 +694,14 @@ function getSyncPeerCount() {
  * @param {string} [joinChoice] - 'create' | 'join' | 'merge' (how to handle joining)
  * @param {Object} [options] - Additional options
  * @param {boolean} [options.isReconnect] - True if this is an auto-reconnect (skip saving room code)
+ * @param {number} [options._retryCount] - Internal: number of room code regeneration attempts
  * @returns {Promise<string>} Room code on success
  */
 async function startSync(displayName, roomCode, password, joinChoice, options) {
   var isReconnect = options && options.isReconnect;
+  var retryCount = (options && options._retryCount) || 0;
+  var MAX_ROOM_RETRIES = 5;  // Max attempts to find an unused room code
+  
   if (!displayName || displayName.trim().length === 0) {
     throw new Error('Display name is required');
   }
@@ -898,6 +902,39 @@ async function startSync(displayName, roomCode, password, joinChoice, options) {
     
     // Wait for initial connection (with timeout)
     await waitForConnection(10000);
+    
+    // DEFENSE 3: Check for room code collision when CREATING a room
+    // If we're creating (not joining) and find other peers, the room code is already in use
+    // Regenerate a new code and try again
+    var isCreating = !roomCode && (joinChoice === 'create' || !joinChoice);
+    if (isCreating && !isReconnect) {
+      // Wait a brief moment for peer discovery
+      await new Promise(function(resolve) { setTimeout(resolve, 500); });
+      
+      // Check if there are other peers in the room (excluding ourselves)
+      var otherPeersCount = SyncManager.peers.size;
+      if (otherPeersCount > 0) {
+        console.warn('DEFENSE 3: Room code collision! Found', otherPeersCount, 
+                    'existing peer(s) in room', finalRoomCode);
+        
+        if (retryCount >= MAX_ROOM_RETRIES) {
+          console.error('DEFENSE 3: Max retries reached, using room anyway');
+          showToast(t('sync.room_collision_warning'));
+        } else {
+          console.log('DEFENSE 3: Regenerating room code, attempt', retryCount + 1);
+          
+          // Disconnect from this room
+          if (SyncManager.provider) {
+            SyncManager.provider.destroy();
+            SyncManager.provider = null;
+          }
+          
+          // Generate a new room code and try again
+          var newOptions = { isReconnect: isReconnect, _retryCount: retryCount + 1 };
+          return startSync(displayName, null, password, joinChoice, newOptions);
+        }
+      }
+    }
     
     SyncManager.state = 'connected';
     updateSyncUI();
