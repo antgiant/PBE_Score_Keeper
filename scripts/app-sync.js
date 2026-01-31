@@ -189,6 +189,7 @@ function getSessionSyncStatuses() {
 
 /**
  * Save sync room code to session doc and global cache
+ * CRITICAL: Enforces uniqueness - only ONE session can have a given room code
  * @param {string} roomCode - Room code to save (null to clear)
  * @param {string} sessionId - Session UUID (optional, uses current if not provided)
  */
@@ -196,6 +197,12 @@ function saveSessionSyncRoom(roomCode, sessionId) {
   var effectiveSessionId = sessionId || (typeof get_current_session_id === 'function' ? get_current_session_id() : null);
   var doc = sessionId ? getSessionDoc(sessionId) : getActiveSessionDoc();
   if (!doc) return;
+  
+  // DEFENSE: If setting a room code, first remove it from ALL other sessions
+  // This ensures exactly one session can have a given room code
+  if (roomCode) {
+    clearRoomCodeFromOtherSessions(roomCode, effectiveSessionId);
+  }
   
   // Config is nested inside session map, not at doc root
   var session = doc.getMap('session');
@@ -214,6 +221,60 @@ function saveSessionSyncRoom(roomCode, sessionId) {
   
   // Also update global cache for sync status display
   updateSessionSyncRoomCache(effectiveSessionId, roomCode);
+}
+
+/**
+ * DEFENSE: Clear a room code from all sessions EXCEPT the specified one
+ * Ensures room code uniqueness across all sessions
+ * @param {string} roomCode - Room code to clear from other sessions
+ * @param {string} keepSessionId - Session that should keep the room code
+ */
+function clearRoomCodeFromOtherSessions(roomCode, keepSessionId) {
+  if (!roomCode) return;
+  
+  var globalDoc = typeof getGlobalDoc === 'function' ? getGlobalDoc() : null;
+  if (!globalDoc) return;
+  
+  var meta = globalDoc.getMap('meta');
+  var sessionSyncRooms = meta.get('sessionSyncRooms');
+  
+  if (!sessionSyncRooms) return;
+  
+  var sessionsToClean = [];
+  
+  // Find all sessions with this room code (except the one we're keeping)
+  sessionSyncRooms.forEach(function(room, sessionId) {
+    if (room === roomCode && sessionId !== keepSessionId) {
+      sessionsToClean.push(sessionId);
+    }
+  });
+  
+  // Clear the room code from those sessions
+  if (sessionsToClean.length > 0) {
+    console.warn('DEFENSE: Clearing duplicate room code "' + roomCode + '" from ' + 
+                 sessionsToClean.length + ' other session(s)');
+    
+    for (var i = 0; i < sessionsToClean.length; i++) {
+      var sessionId = sessionsToClean[i];
+      
+      // Clear from session doc
+      var sessionDoc = typeof getSessionDoc === 'function' ? getSessionDoc(sessionId) : null;
+      if (sessionDoc) {
+        var session = sessionDoc.getMap('session');
+        if (session) {
+          var config = session.get('config');
+          if (config && config.get('syncRoom') === roomCode) {
+            config.delete('syncRoom');
+          }
+        }
+      }
+      
+      // Clear from cache
+      globalDoc.transact(function() {
+        sessionSyncRooms.delete(sessionId);
+      }, 'local');
+    }
+  }
 }
 
 /**
@@ -253,6 +314,7 @@ function updateSessionSyncRoomCache(sessionId, roomCode) {
 /**
  * Repair/build the sessionSyncRooms cache from individual session docs
  * Called during init to ensure cache is populated for dropdown display
+ * DEFENSE: Also detects and cleans up duplicate room codes
  * @returns {Promise<boolean>} True if repair was performed
  */
 async function repairSessionSyncRoomsCache() {
@@ -273,6 +335,9 @@ async function repairSessionSyncRoomsCache() {
   console.log('Building sessionSyncRooms cache...');
   
   var syncRoomMap = new Map();
+  // DEFENSE: Track room codes to detect duplicates
+  var roomToSessionMap = new Map(); // room code -> first session that had it
+  var duplicatesToClean = []; // { sessionId, roomCode } entries to clean
   
   for (var i = 0; i < sessionOrder.length; i++) {
     var sessionId = sessionOrder[i];
@@ -289,11 +354,38 @@ async function repairSessionSyncRoomsCache() {
     
     var syncRoom = config.get('syncRoom');
     if (syncRoom) {
-      syncRoomMap.set(sessionId, syncRoom);
+      // DEFENSE: Check if this room code was already seen in another session
+      if (roomToSessionMap.has(syncRoom)) {
+        // This is a duplicate! Mark for cleanup
+        console.warn('DEFENSE: Detected duplicate room code "' + syncRoom + 
+                    '" in session ' + sessionId + ' (already in ' + 
+                    roomToSessionMap.get(syncRoom) + ')');
+        duplicatesToClean.push({ sessionId: sessionId, roomCode: syncRoom, sessionDoc: sessionDoc });
+      } else {
+        // First occurrence - keep it
+        roomToSessionMap.set(syncRoom, sessionId);
+        syncRoomMap.set(sessionId, syncRoom);
+      }
     }
   }
   
-  // Update global doc with cache
+  // DEFENSE: Clean up duplicates
+  if (duplicatesToClean.length > 0) {
+    console.warn('DEFENSE: Cleaning up ' + duplicatesToClean.length + ' duplicate room code(s)');
+    for (var j = 0; j < duplicatesToClean.length; j++) {
+      var dup = duplicatesToClean[j];
+      var session = dup.sessionDoc.getMap('session');
+      if (session) {
+        var config = session.get('config');
+        if (config && config.get('syncRoom') === dup.roomCode) {
+          config.delete('syncRoom');
+          console.log('Cleared duplicate room code from session ' + dup.sessionId);
+        }
+      }
+    }
+  }
+  
+  // Update global doc with cache (only non-duplicate entries)
   if (syncRoomMap.size > 0 || sessionSyncRooms) {
     globalDoc.transact(function() {
       var newSessionSyncRooms = new Y.Map();
@@ -303,7 +395,8 @@ async function repairSessionSyncRoomsCache() {
       meta.set('sessionSyncRooms', newSessionSyncRooms);
     }, 'repair');
     
-    console.log('Built sessionSyncRooms cache with ' + syncRoomMap.size + ' entries');
+    console.log('Built sessionSyncRooms cache with ' + syncRoomMap.size + ' entries' +
+               (duplicatesToClean.length > 0 ? ' (cleaned ' + duplicatesToClean.length + ' duplicates)' : ''));
   }
   
   return syncRoomMap.size > 0;
