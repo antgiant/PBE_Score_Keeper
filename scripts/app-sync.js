@@ -918,8 +918,29 @@ async function startSync(displayName, roomCode, password, joinChoice, options) {
                     'existing peer(s) in room', finalRoomCode);
         
         if (retryCount >= MAX_ROOM_RETRIES) {
-          console.error('DEFENSE 3: Max retries reached, using room anyway');
-          showToast(t('sync.room_collision_warning'));
+          console.error('DEFENSE 3: Max retries reached, aborting connection');
+          
+          // Disconnect from this room
+          if (SyncManager.provider) {
+            SyncManager.provider.destroy();
+            SyncManager.provider = null;
+          }
+          
+          SyncManager.state = 'disconnected';
+          SyncManager.roomCode = null;
+          
+          // Hide loading state
+          if (typeof hideSyncLoadingState === 'function') {
+            hideSyncLoadingState();
+          }
+          
+          updateSyncUI();
+          
+          // Show error message and return user to sync dialog
+          showToast(t('sync.room_collision_error'), 'error');
+          showSyncDialog();
+          
+          return null;
         } else {
           console.log('DEFENSE 3: Regenerating room code, attempt', retryCount + 1);
           

@@ -430,7 +430,7 @@ register_i18n_language('fr', {
       "merge_none": "(aucun)",
       "merge_backup_note": "Une sauvegarde sera créée avant la fusion.",
       "merge_confirm_button": "Fusionner les Éléments",
-      "room_collision_warning": "Attention: La salle peut avoir des utilisateurs existants. Pensez à utiliser un mot de passe."
+      "room_collision_error": "Réseau occupé. Essayez d'ajouter un mot de passe pour une salle privée."
     },
     "backup": {
       "reason_pre_merge": "Avant Fusion",
