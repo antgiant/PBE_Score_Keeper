@@ -368,92 +368,22 @@ function getRemoteSessionIdFromDoc(doc) {
 
 /**
  * Handle session ID collision - different user with same room code
+ * Automatically clears the stored room code and allows the sync to proceed normally
  * @param {string} expectedId - The session ID we expected
  * @param {string} actualId - The session ID we received
  * @param {Y.Doc} sessionDoc - The session doc that was synced
  */
 function handleSessionIdCollision(expectedId, actualId, sessionDoc) {
-  console.warn('Session ID collision: expected', expectedId, 'but got', actualId);
+  console.warn('Session ID collision detected: expected', expectedId, 'but got', actualId);
+  console.log('Auto-clearing stored room code and proceeding with sync');
   
-  // Disconnect immediately to prevent further data corruption
-  if (SyncManager.provider) {
-    SyncManager.provider.destroy();
-    SyncManager.provider = null;
-  }
+  // Clear the stored room code since this room now belongs to a different session
+  // This prevents future auto-reconnect attempts from detecting the collision again
+  saveSessionSyncRoom(null);
   
-  SyncManager.state = 'offline';
-  updateSyncUI();
-  
-  // Show collision dialog
-  showSessionIdCollisionDialog(expectedId, actualId);
-}
-
-/**
- * Show dialog when session ID collision is detected
- * User can choose to: clear sync from their session, or go through merge
- * @param {string} expectedId - The session ID we expected
- * @param {string} actualId - The session ID from the room
- */
-function showSessionIdCollisionDialog(expectedId, actualId) {
-  var dialog = document.getElementById('collision-dialog-overlay');
-  if (!dialog) {
-    // Create dialog if it doesn't exist
-    dialog = document.createElement('div');
-    dialog.id = 'collision-dialog-overlay';
-    dialog.className = 'sync-dialog-overlay';
-    document.body.appendChild(dialog);
-  }
-  
-  dialog.innerHTML = '<div class="sync-dialog" role="dialog" aria-labelledby="collision-title">' +
-    '<h2 id="collision-title">' + t('sync.collision_title') + '</h2>' +
-    '<p>' + t('sync.collision_message') + '</p>' +
-    '<p class="collision-warning" style="color: var(--warning-color); font-weight: bold;">' + 
-      t('sync.collision_warning') + '</p>' +
-    '<div class="button-row" style="flex-wrap: wrap; gap: 0.5rem;">' +
-      '<button id="collision-clear-sync" class="secondary">' + 
-        t('sync.collision_clear_sync') + '</button>' +
-      '<button id="collision-merge" class="primary">' + 
-        t('sync.collision_merge') + '</button>' +
-      '<button id="collision-cancel" class="secondary">' + 
-        t('sync.collision_cancel') + '</button>' +
-    '</div>' +
-  '</div>';
-  
-  dialog.style.display = 'flex';
-  
-  // Handle clear sync button
-  document.getElementById('collision-clear-sync').onclick = function() {
-    dialog.style.display = 'none';
-    // Clear sync room from our session
-    saveSessionSyncRoom(null);
-    showToast(t('sync.collision_cleared'));
-  };
-  
-  // Handle merge button
-  document.getElementById('collision-merge').onclick = function() {
-    dialog.style.display = 'none';
-    // Clear local sync data first
-    saveSessionSyncRoom(null);
-    // Show the sync dialog so user can join properly with merge
-    showToast(t('sync.collision_use_join'));
-    setTimeout(function() {
-      if (typeof showSyncDialog === 'function') {
-        showSyncDialog();
-      }
-    }, 500);
-  };
-  
-  // Handle cancel button
-  document.getElementById('collision-cancel').onclick = function() {
-    dialog.style.display = 'none';
-  };
-  
-  // Close on escape
-  dialog.onkeydown = function(e) {
-    if (e.key === 'Escape') {
-      dialog.style.display = 'none';
-    }
-  };
+  // The sync is already connected and working - just let it continue
+  // The user is now effectively joining as a new participant in the remote session
+  showToast(t('sync.collision_auto_cleared'));
 }
 
 /**
@@ -931,7 +861,7 @@ async function startSync(displayName, roomCode, password, joinChoice, options) {
             console.warn('DEFENSE: Session ID collision detected!',
                         'Expected:', storedSessionId, 'Got:', remoteSessionId);
             handleSessionIdCollision(storedSessionId, remoteSessionId, sessionDoc);
-            return; // Don't proceed with normal sync
+            // Continue with sync - handleSessionIdCollision just clears the stored room code
           }
         }
         

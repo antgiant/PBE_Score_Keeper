@@ -426,14 +426,7 @@ register_i18n_language('pig', {
       "merge_none": "(one-nay)",
       "merge_backup_note": "A-ay ackup-bay ill-way e-bay eated-cray efore-bay erging-may.",
       "merge_confirm_button": "Erge-May Items-ay",
-      "collision_title": "Oom-Ray Ode-Cay Onflict-Cay",
-      "collision_message": "Is-Thay oom-ray ode-cay is-ay ow-nay eing-bay used-ay y-bay a-ay ifferent-day ession-say. Is-Thay an-cay appen-hay en-whay e-thay ame-say ode-cay is-ay andomly-ray enerated-gay or-fay ifferent-day users-ay.",
-      "collision_warning": "Onnecting-Cay ould-cay ause-cay ata-day om-fray o-tway unrelated-ay essions-say o-tay erge-may.",
-      "collision_clear_sync": "Ear-Clay Y-May Ync-Say",
-      "collision_merge": "Oin-Jay as-ay Ew-Nay User-ay",
-      "collision_cancel": "Ancel-Cay",
-      "collision_cleared": "Ync-Say ode-cay eared-clay. Ou-Yay an-cay oin-jay a-ay ew-nay oom-ray.",
-      "collision_use_join": "Use-ay e-thay ync-say ialog-day o-tay oin-jay e-thay oom-ray as-ay a-ay ew-nay user-ay."
+      "collision_auto_cleared": "Oom-Ray as-way eassigned-ray. Oined-Jay as-ay ew-nay articipant-pay."
     },
     "backup": {
       "reason_pre_merge": "Efore-Bay Erge-May",
