@@ -686,7 +686,7 @@ function updateSessionSyncRoomCache(sessionId, roomCode) {
  * @returns {boolean} True if expired
  */
 function isSyncRoomExpired(createdAt) {
-  if (!createdAt) return false;  // No timestamp = legacy, don't expire
+  if (!createdAt) return false;  // No timestamp = legacy room, will get timestamp assigned
   var now = Date.now();
   return (now - createdAt) > SYNC_ROOM_EXPIRATION_MS;
 }
@@ -791,6 +791,14 @@ async function repairSessionSyncRoomsCache() {
     var syncCreatedAt = config.get('syncCreatedAt');
     
     if (syncRoom) {
+      // MIGRATION: Legacy rooms without syncCreatedAt get timestamp set to now
+      // This gives them the full 12-hour window before expiring
+      if (!syncCreatedAt) {
+        console.log('MIGRATION: Setting syncCreatedAt for legacy room "' + syncRoom + '" in session ' + sessionId);
+        config.set('syncCreatedAt', Date.now());
+        syncCreatedAt = config.get('syncCreatedAt');
+      }
+      
       // DEFENSE: Check if this room code has expired (12 hours)
       if (isSyncRoomExpired(syncCreatedAt)) {
         console.warn('DEFENSE: Detected expired room code "' + syncRoom + 
