@@ -593,6 +593,38 @@ tr:nth-child(even){
   background: var(--control-bg);
 }
 
+/* jQuery UI button overrides for sync dialog (used in session switch warning) */
+.sync-dialog .ui-button {
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background: var(--control-bg);
+  color: var(--text-color);
+  cursor: pointer;
+  font-size: 0.95rem;
+}
+
+.sync-dialog .ui-button:hover {
+  background: var(--row-alt);
+  color: var(--text-color);
+}
+
+.sync-dialog .ui-button:focus {
+  outline: 2px solid var(--link-color);
+  outline-offset: 2px;
+}
+
+.sync-dialog .ui-button-primary {
+  background: var(--link-color);
+  color: #fff;
+  border-color: var(--link-color);
+}
+
+.sync-dialog .ui-button-primary:hover {
+  opacity: 0.9;
+  color: #fff;
+}
+
 /* Sync info link */
 .sync-info-link {
   font-size: 0.9em;
