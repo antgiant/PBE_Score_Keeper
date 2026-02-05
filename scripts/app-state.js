@@ -28,8 +28,11 @@ async function initialize_state() {
       if (is_multi_doc()) {
         const wasRepaired = await repairSessionNamesCache();
         
-        // If cache was repaired, sync display to show corrected session
-        if (wasRepaired && typeof sync_data_to_display === 'function') {
+        // Prune empty sessions (no teams and no blocks)
+        const prunedCount = await pruneEmptySessions();
+        
+        // If cache was repaired or sessions pruned, sync display to show corrected session
+        if ((wasRepaired || prunedCount > 0) && typeof sync_data_to_display === 'function') {
           sync_data_to_display();
         }
       }

@@ -2267,6 +2267,138 @@ async function repairSessionNamesCache() {
 }
 
 /**
+ * Prune completely empty sessions (no teams and no blocks)
+ * Called during initialization to clean up orphaned/corrupted sessions
+ * @returns {Promise<number>} Number of sessions pruned
+ */
+async function pruneEmptySessions() {
+  const globalDoc = getGlobalDoc();
+  if (!globalDoc) return 0;
+  
+  const meta = globalDoc.getMap('meta');
+  const sessionOrder = meta.get('sessionOrder');
+  
+  if (!sessionOrder || sessionOrder.length <= 1) {
+    return 0; // No sessions to prune, or only one session (don't delete the last one)
+  }
+  
+  const currentSessionId = meta.get('currentSession');
+  const emptySessionIds = [];
+  
+  for (let i = 0; i < sessionOrder.length; i++) {
+    const sessionId = sessionOrder[i];
+    
+    // Never prune the current session
+    if (sessionId === currentSessionId) continue;
+    
+    // Load the session doc
+    const sessionDoc = await initSessionDoc(sessionId);
+    if (!sessionDoc) {
+      // Can't load session doc - consider it empty/corrupted
+      emptySessionIds.push(sessionId);
+      continue;
+    }
+    
+    const session = sessionDoc.getMap('session');
+    if (!session) {
+      emptySessionIds.push(sessionId);
+      continue;
+    }
+    
+    // Check if session is empty (no teams and no blocks)
+    let teamCount = 0;
+    let blockCount = 0;
+    
+    if (isUUIDSession(session)) {
+      // v4/v5 UUID-based structure
+      const orderedTeams = getOrderedTeams(session);
+      const orderedBlocks = getOrderedBlocks(session);
+      teamCount = orderedTeams.length;
+      blockCount = orderedBlocks.length;
+    } else {
+      // v3 index-based structure
+      const teams = session.get('teams');
+      const blocks = session.get('blocks');
+      teamCount = teams ? teams.length : 0;
+      blockCount = blocks ? blocks.length : 0;
+    }
+    
+    if (teamCount === 0 && blockCount === 0) {
+      emptySessionIds.push(sessionId);
+    }
+  }
+  
+  // Don't delete if it would leave us with no sessions
+  if (emptySessionIds.length >= sessionOrder.length) {
+    console.log('pruneEmptySessions: Would delete all sessions, keeping one');
+    emptySessionIds.pop(); // Keep at least one
+  }
+  
+  if (emptySessionIds.length === 0) {
+    return 0;
+  }
+  
+  console.log(`Pruning ${emptySessionIds.length} empty session(s):`, emptySessionIds);
+  
+  // Remove empty sessions from global doc
+  globalDoc.transact(function() {
+    const newOrder = [];
+    for (let i = 0; i < sessionOrder.length; i++) {
+      if (!emptySessionIds.includes(sessionOrder[i])) {
+        newOrder.push(sessionOrder[i]);
+      }
+    }
+    meta.set('sessionOrder', newOrder);
+    
+    // Remove from session name cache
+    const sessionNames = meta.get('sessionNames');
+    if (sessionNames) {
+      for (const sessionId of emptySessionIds) {
+        sessionNames.delete(sessionId);
+      }
+    }
+    
+    // Remove from sync room cache
+    const sessionSyncRooms = meta.get('sessionSyncRooms');
+    if (sessionSyncRooms) {
+      for (const sessionId of emptySessionIds) {
+        sessionSyncRooms.delete(sessionId);
+      }
+    }
+  }, 'prune');
+  
+  // Clean up IndexedDB for deleted sessions
+  for (const sessionId of emptySessionIds) {
+    // Dispose the provider if it exists
+    if (DocManager.sessionProviders && DocManager.sessionProviders.has(sessionId)) {
+      const provider = DocManager.sessionProviders.get(sessionId);
+      if (provider && typeof provider.destroy === 'function') {
+        provider.destroy();
+      }
+      DocManager.sessionProviders.delete(sessionId);
+    }
+    
+    // Remove from session docs map
+    if (DocManager.sessionDocs && DocManager.sessionDocs.has(sessionId)) {
+      DocManager.sessionDocs.delete(sessionId);
+    }
+    
+    // Try to delete from IndexedDB (best effort)
+    try {
+      const dbName = `pbe-score-keeper-session-${sessionId}`;
+      if (typeof indexedDB !== 'undefined') {
+        indexedDB.deleteDatabase(dbName);
+      }
+    } catch (e) {
+      console.warn('Could not delete IndexedDB for session:', sessionId, e);
+    }
+  }
+  
+  console.log(`Pruned ${emptySessionIds.length} empty session(s)`);
+  return emptySessionIds.length;
+}
+
+/**
  * Get team names for current session
  * Supports both v3.0 (index-based) and v4.0 (UUID-based) structures
  * @returns {Array<string>} Array of team names (index 0 is empty string for v3 compatibility)

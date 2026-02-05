@@ -220,7 +220,7 @@ function get_team_and_block_score_summary(temp_question_count = -1) {
     orderedTeams = getOrderedTeams(session);
     orderedBlocks = getOrderedBlocks(session);
     question_count = temp_question_count === -1 ? orderedQuestions.length : temp_question_count;
-    team_names = orderedTeams.map(t => t.name);
+    team_names = orderedTeams.map(t => t.data.get('name') || '');
     team_count = orderedTeams.length;
   } else {
     const questions = session.get('questions');
@@ -334,7 +334,7 @@ function get_question_log(temp_question_count = -1) {
         }
       }
     }
-    team_names = orderedTeams.map(t => t.name);
+    team_names = orderedTeams.map(t => t.data.get('name') || '');
     team_count = orderedTeams.length;
   } else {
     const questions = session.get('questions');
