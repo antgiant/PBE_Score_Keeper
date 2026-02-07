@@ -72,6 +72,7 @@ register_i18n_language('es', {
       "count_other": "{{count}} puntos",
       "point": "punto",
       "points": "puntos",
+      "edit_max_points": "Haga clic para editar los puntos máximos",
       "possible": "Puntos Posibles para la Pregunta",
       "minimum_notice": "No puede ser menor debido a las puntuaciones ya ingresadas"
     },
@@ -236,7 +237,8 @@ register_i18n_language('es', {
     },
     "footer": {
       "feedback": "¿Tiene una idea para mejorar esto?",
-      "let_me_know": "Házmelo saber"
+      "let_me_know": "Házmelo saber",
+      "version": "v {{version}}"
     },
     "placeholders": {
       "team_scores": "Las Puntuaciones del Equipo Van Aquí",
@@ -361,6 +363,7 @@ register_i18n_language('es', {
       "history_local_user": "(local)",
       "history_unknown_user": "(desconocido)",
       "version_mismatch_warning": "Advertencia: {{peers}} puede estar usando una versión antigua (requiere v{{minVersion}}+). Los datos pueden no sincronizarse correctamente.",
+      "version_mismatch_disconnect": "Desconectado: {{peers}} están usando una versión antigua (requiere v{{minVersion}}+).",
       "copy_code": "Copiar Código",
       "code_copied": "Código de sala copiado al portapapeles",
       "error_timeout": "Tiempo de conexión agotado. Por favor intenta de nuevo.",

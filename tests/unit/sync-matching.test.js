@@ -1,5 +1,6 @@
-const { describe, it, beforeEach } = require('node:test');
+const { describe, it, beforeEach, afterEach } = require('node:test');
 const assert = require('node:assert');
+const { cleanupSyncModule } = require('../helpers/sync-cleanup');
 
 // Mock browser globals
 global.localStorage = {
@@ -48,6 +49,10 @@ describe('Sync Matching', () => {
     global.localStorage.clear();
     delete require.cache[require.resolve('../../scripts/app-sync.js')];
     syncModule = require('../../scripts/app-sync.js');
+  });
+  
+  afterEach(() => {
+    cleanupSyncModule(syncModule);
   });
 
   describe('compareArrays', () => {

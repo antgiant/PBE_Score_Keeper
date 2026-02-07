@@ -29,20 +29,32 @@ function captureSessionSnapshot(sessionId) {
     return null;
   }
 
-  const snapshot = {
-    meta: {
-      capturedAt: new Date().toISOString(),
-      snapshotVersion: 1,
-      sessionId: sessionId,
-      sessionName: session.get('name') || '',
-      dataVersion: session.get('dataVersion') || 'unknown'
-    },
-    raw: captureRawData(session),
-    calculated: captureCalculatedValues(sessionId),
-    display: captureDisplayValues(session)
-  };
+  const canSetActive = typeof DocManager !== 'undefined' && DocManager && typeof DocManager.setActiveSession === 'function';
+  const previousSessionId = canSetActive ? DocManager.activeSessionId : null;
+  const shouldRestore = canSetActive && sessionId && sessionId !== previousSessionId;
 
-  return snapshot;
+  if (shouldRestore) {
+    DocManager.setActiveSession(sessionId);
+  }
+
+  try {
+    return {
+      meta: {
+        capturedAt: new Date().toISOString(),
+        snapshotVersion: 1,
+        sessionId: sessionId,
+        sessionName: session.get('name') || '',
+        dataVersion: session.get('dataVersion') || 'unknown'
+      },
+      raw: captureRawData(session),
+      calculated: captureCalculatedValues(sessionId),
+      display: captureDisplayValues(session)
+    };
+  } finally {
+    if (shouldRestore) {
+      DocManager.setActiveSession(previousSessionId);
+    }
+  }
 }
 
 /**
@@ -147,8 +159,10 @@ function captureRawData(session) {
   // Capture config
   const config = session.get('config');
   if (config) {
+    const maxPoints = config.get('maxPointsPerQuestion');
     raw.config = {
-      rounding: config.get('rounding') || false
+      rounding: config.get('rounding') || false,
+      maxPointsPerQuestion: maxPoints == null ? null : maxPoints
     };
   }
 
@@ -296,7 +310,7 @@ function compareSnapshots(before, after, options = {}) {
   }
 
   // Compare raw data
-  compareRawData(before.raw, after.raw, result, ignoreTimestamps);
+  compareRawData(before.raw, after.raw, result, ignoreTimestamps, ignoreHistoryOrder);
 
   // Compare calculated values (most critical for user experience)
   compareCalculatedValues(before.calculated, after.calculated, result);
@@ -316,7 +330,7 @@ function compareSnapshots(before, after, options = {}) {
 /**
  * Compares raw data between snapshots.
  */
-function compareRawData(before, after, result, ignoreTimestamps) {
+function compareRawData(before, after, result, ignoreTimestamps, ignoreHistoryOrder) {
   if (!before || !after) {
     result.differences.push({
       type: 'error',
@@ -359,12 +373,12 @@ function compareRawData(before, after, result, ignoreTimestamps) {
         });
       }
 
-      if (qBefore.block !== qAfter.block) {
+      if (qBefore.blockId !== qAfter.blockId) {
         result.differences.push({
           type: 'value',
-          path: `raw.questions[${i}].block`,
-          before: qBefore.block,
-          after: qAfter.block
+          path: `raw.questions[${i}].blockId`,
+          before: qBefore.blockId,
+          after: qAfter.blockId
         });
       }
 
@@ -421,6 +435,17 @@ function compareRawData(before, after, result, ignoreTimestamps) {
       after: after.config.rounding
     });
   }
+
+  if (before.config.maxPointsPerQuestion !== after.config.maxPointsPerQuestion) {
+    result.differences.push({
+      type: 'value',
+      path: 'raw.config.maxPointsPerQuestion',
+      before: before.config.maxPointsPerQuestion,
+      after: after.config.maxPointsPerQuestion
+    });
+  }
+
+  compareHistory(before.history, after.history, result, ignoreTimestamps, ignoreHistoryOrder);
 }
 
 /**
@@ -494,6 +519,7 @@ function compareDisplayValues(before, after, result) {
   // Compare name arrays
   snapshotCompareArrays(before.teamNames, after.teamNames, 'display.teamNames', result, (a, b) => a === b);
   snapshotCompareArrays(before.blockNames, after.blockNames, 'display.blockNames', result, (a, b) => a === b);
+  snapshotCompareArrays(before.questionNames, after.questionNames, 'display.questionNames', result, (a, b) => a === b);
 }
 
 /**
@@ -527,6 +553,66 @@ function snapshotCompareArrays(before, after, path, result, equalsFn) {
         path: `${path}[${i}]`,
         before: before[i],
         after: after[i]
+      });
+    }
+  }
+}
+
+function compareHistory(before, after, result, ignoreTimestamps, ignoreHistoryOrder) {
+  if (!before || !after) {
+    result.differences.push({
+      type: 'error',
+      path: 'raw.history',
+      message: 'History missing from one or both snapshots'
+    });
+    return;
+  }
+
+  if (before.length !== after.length) {
+    result.differences.push({
+      type: 'count',
+      path: 'raw.history',
+      before: before.length,
+      after: after.length,
+      message: `History entry count changed: ${before.length} → ${after.length}`
+    });
+    if (ignoreHistoryOrder) return;
+  }
+
+  const normalize = (entry) => ({
+    action: entry.action || '',
+    details: entry.details || '',
+    user: entry.user || null,
+    timestamp: ignoreTimestamps ? null : (entry.timestamp || 0)
+  });
+
+  if (ignoreHistoryOrder) {
+    const beforeNormalized = before.map(normalize).map((entry) => JSON.stringify(entry)).sort();
+    const afterNormalized = after.map(normalize).map((entry) => JSON.stringify(entry)).sort();
+    const length = Math.min(beforeNormalized.length, afterNormalized.length);
+    for (let i = 0; i < length; i++) {
+      if (beforeNormalized[i] !== afterNormalized[i]) {
+        result.differences.push({
+          type: 'value',
+          path: 'raw.history',
+          before: JSON.parse(beforeNormalized[i]),
+          after: JSON.parse(afterNormalized[i])
+        });
+        break;
+      }
+    }
+    return;
+  }
+
+  for (let i = 0; i < before.length; i++) {
+    const beforeEntry = normalize(before[i]);
+    const afterEntry = normalize(after[i]);
+    if (JSON.stringify(beforeEntry) !== JSON.stringify(afterEntry)) {
+      result.differences.push({
+        type: 'value',
+        path: `raw.history[${i}]`,
+        before: beforeEntry,
+        after: afterEntry
       });
     }
   }

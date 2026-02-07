@@ -321,7 +321,9 @@ function startRegistryRetry() {
       
       // Re-register our room
       var roomCode = SyncManager.roomCode;
-      var sessionId = DocManager.getActiveSessionId();
+      var sessionId = typeof get_current_session_id === 'function'
+        ? get_current_session_id()
+        : (DocManager ? DocManager.activeSessionId : null);
       var hasPassword = SyncManager.hasCustomPassword;
       
       if (roomCode && sessionId) {
@@ -982,6 +984,17 @@ async function tryAutoReconnectForCurrentSession() {
     return false;
   }
   
+  // Check for large event sync metadata first
+  var currentDoc = (typeof DocManager !== 'undefined' && DocManager.getActiveSessionDoc)
+    ? DocManager.getActiveSessionDoc()
+    : (typeof getActiveSessionDoc === 'function' ? getActiveSessionDoc() : null);
+  if (currentDoc) {
+    var meta = currentDoc.getMap('meta');
+    if (meta && meta.get('syncType') === 'websocket') {
+      return tryAutoReconnectLargeEvent(currentDoc, savedName);
+    }
+  }
+  
   // Check current session for sync room
   var sessionRoom = getSessionSyncRoom();
   console.log('tryAutoReconnectForCurrentSession - sessionRoom:', sessionRoom);
@@ -1002,6 +1015,51 @@ async function tryAutoReconnectForCurrentSession() {
     return true;
   } catch (error) {
     console.warn('Auto-reconnect failed:', error);
+    return false;
+  }
+}
+
+/**
+ * Try to auto-reconnect for large event sessions
+ * @param {Y.Doc} [sessionDoc] - Session document (optional)
+ * @param {string} [displayName] - Saved display name (optional)
+ * @returns {Promise<boolean>} True if reconnection successful
+ */
+async function tryAutoReconnectLargeEvent(sessionDoc, displayName) {
+  var savedName = displayName || getSavedDisplayName();
+  console.log('tryAutoReconnectLargeEvent - savedName:', savedName);
+  if (!savedName) {
+    return false;
+  }
+  
+  var doc = sessionDoc || (typeof DocManager !== 'undefined' && DocManager.getActiveSessionDoc
+    ? DocManager.getActiveSessionDoc()
+    : (typeof getActiveSessionDoc === 'function' ? getActiveSessionDoc() : null));
+  if (!doc) return false;
+  
+  if (isLargeEventSyncExpired()) {
+    clearExpiredLargeEventSync();
+    return false;
+  }
+  
+  var meta = doc.getMap('meta');
+  var roomCode = meta ? meta.get('syncRoomCode') : null;
+  if (!roomCode) {
+    return false;
+  }
+  
+  var password = getSavedEffectivePassword();
+  if (!password) {
+    console.warn('No saved password for large event sync, skipping auto-reconnect');
+    return false;
+  }
+  
+  try {
+    await startWebsocketSync(savedName, roomCode, password, 'join', { isReconnect: true });
+    showToast(t('sync.auto_reconnected', { code: 'L-' + roomCode }));
+    return true;
+  } catch (error) {
+    console.warn('Large event auto-reconnect failed:', error);
     return false;
   }
 }
@@ -2627,9 +2685,9 @@ function showLargeEventError(message) {
  * @param {string} password - Room password for encryption
  * @param {string} mode - 'create' or 'join'
  */
-async function startWebsocketSync(displayName, roomCode, password, mode) {
+async function startWebsocketSync(displayName, roomCode, password, mode, options) {
   // Stop any existing sync first
-  if (SyncManager.state !== 'disconnected') {
+  if (SyncManager.state !== 'offline') {
     stopSync();
   }
   
@@ -2687,7 +2745,19 @@ async function startWebsocketSync(displayName, roomCode, password, mode) {
   SyncManager.hasCustomPassword = true; // Large events always use user password
   SyncManager.effectivePassword = password;
   
-  var fullRoomName = SyncManager.roomPrefixLarge + roomCode;
+  var fullRoomName = SyncManager.config.roomPrefixLarge + roomCode;
+  
+  // Update state
+  SyncManager.state = 'connecting';
+  SyncManager.connectionType = 'websocket';
+  SyncManager.displayName = displayName;
+  SyncManager.roomCode = roomCode;
+  SyncManager.password = password;
+  SyncManager.syncedSessionId = sessionId;
+  
+  // Persist display name and password for auto-reconnect
+  saveDisplayName(displayName);
+  saveEffectivePassword(password, true);
   
   // Store sync metadata in session
   var meta = sessionDoc.getMap('meta');
@@ -2697,7 +2767,7 @@ async function startWebsocketSync(displayName, roomCode, password, mode) {
   
   // Create encrypted websocket provider
   SyncManager.wsProvider = new EncryptedWebsocketProvider(
-    SyncManager.syncServer,
+    SyncManager.config.syncServer,
     fullRoomName,
     sessionDoc,
     password,
@@ -2725,37 +2795,14 @@ async function startWebsocketSync(displayName, roomCode, password, mode) {
     });
   });
   
-  // Set up awareness
-  var awareness = SyncManager.wsProvider.awareness;
-  
-  // Track when we joined for oldest-peer determination
-  SyncManager.joinedAt = Date.now();
-  
-  awareness.setLocalStateField('user', {
-    name: displayName,
-    color: getRandomColor(),
-    joinedAt: SyncManager.joinedAt
-  });
+  // Set up awareness (presence + version checks)
+  setupAwareness(SyncManager.wsProvider.awareness);
   
   // Store connection info
   SyncManager.state = 'connected';
-  SyncManager.connectionType = 'websocket';
-  SyncManager.roomCode = roomCode;
-  SyncManager.displayName = displayName;
-  SyncManager.awareness = awareness;
-  SyncManager.sessionId = DocManager.getActiveSessionId();
   
-  // Start registry health check (oldest peer will maintain registry)
-  startRegistryHealthCheck();
-  
-  // Set up awareness change listener
-  awareness.on('change', function() {
-    updateSyncIndicator();
-    updatePeerList();
-  });
-  
-  updateSyncIndicator();
-  announceForScreenReader(t('sync.connected_announcement', { code: 'L-' + roomCode }));
+  updateSyncUI();
+  announceToScreenReader(t('sync.connected_announcement', { code: 'L-' + roomCode }));
 }
 
 /**
@@ -3190,16 +3237,10 @@ function updateSyncUI() {
 }
 
 /**
- * Set up awareness handlers for presence
- * @param {Object} awareness - Yjs awareness instance
+ * Resolve the current data version for awareness state
+ * @returns {string} Current data version
  */
-function setupAwareness(awareness) {
-  SyncManager.awareness = awareness;
-  
-  // Track when we joined for oldest-peer determination
-  SyncManager.joinedAt = Date.now();
-  
-  // Get current data version (v5.0 deterministic)
+function getCurrentDataVersion() {
   var currentDataVersion = (typeof DATA_VERSION_CURRENT !== 'undefined') ? DATA_VERSION_CURRENT : '5.0';
   var session = get_current_session();
   if (session && typeof isDeterministicSession === 'function' && isDeterministicSession(session)) {
@@ -3207,15 +3248,41 @@ function setupAwareness(awareness) {
   } else if (session && typeof isUUIDSession === 'function' && isUUIDSession(session)) {
     currentDataVersion = (typeof DATA_VERSION_UUID !== 'undefined') ? DATA_VERSION_UUID : '4.0';
   }
+  return currentDataVersion;
+}
+
+/**
+ * Build local awareness state payload
+ * @param {string} displayName - Display name to set
+ * @returns {Object} Awareness state
+ */
+function buildLocalAwarenessState(displayName) {
+  if (!SyncManager.joinedAt) {
+    SyncManager.joinedAt = Date.now();
+  }
   
-  // Set local state with data version and joinedAt for registry health check
-  awareness.setLocalState({
-    displayName: SyncManager.displayName,
-    color: generateUserColor(SyncManager.displayName),
+  return {
+    displayName: displayName,
+    color: generateUserColor(displayName),
     lastSeen: Date.now(),
     joinedAt: SyncManager.joinedAt,
-    dataVersion: currentDataVersion
-  });
+    dataVersion: getCurrentDataVersion()
+  };
+}
+
+/**
+ * Set up awareness handlers for presence
+ * @param {Object} awareness - Yjs awareness instance
+ */
+function setupAwareness(awareness) {
+  SyncManager.awareness = awareness;
+  SyncManager._versionMismatchDisconnect = false;
+  
+  // Track when we joined for oldest-peer determination
+  SyncManager.joinedAt = Date.now();
+  
+  // Set local state with data version and joinedAt for registry health check
+  awareness.setLocalState(buildLocalAwarenessState(SyncManager.displayName));
   
   // Start registry health check (oldest peer will maintain registry)
   startRegistryHealthCheck();
@@ -3255,11 +3322,7 @@ function changeDisplayName(newName) {
   
   // Update awareness if connected
   if (SyncManager.awareness) {
-    SyncManager.awareness.setLocalState({
-      displayName: uniqueName,
-      color: generateUserColor(uniqueName),
-      lastSeen: Date.now()
-    });
+    SyncManager.awareness.setLocalState(buildLocalAwarenessState(uniqueName));
   }
   
   // Persist to global doc
@@ -3365,9 +3428,7 @@ function checkDataVersionCompatibility() {
   if (!SyncManager.awareness || SyncManager.state !== 'connected') return;
   
   // Get our version
-  var localState = SyncManager.awareness.getLocalState();
   var defaultDataVersion = (typeof DATA_VERSION_DETERMINISTIC !== 'undefined') ? DATA_VERSION_DETERMINISTIC : '5.0';
-  var localVersion = localState ? localState.dataVersion : defaultDataVersion;
   
   // Check peer versions
   var incompatiblePeers = [];
@@ -3388,28 +3449,33 @@ function checkDataVersionCompatibility() {
     }
   });
   
-  // Show warning if incompatible peers found
-  if (incompatiblePeers.length > 0 && !SyncManager._versionWarningShown) {
-    SyncManager._versionWarningShown = true;
+  if (incompatiblePeers.length > 0 && !SyncManager._versionMismatchDisconnect) {
+    SyncManager._versionMismatchDisconnect = true;
     
-    // Build warning message
+    // Build disconnect message
     var peerNames = incompatiblePeers.map(function(p) { return p.name; }).join(', ');
-    var message = t('sync.version_mismatch_warning', { 
+    var message = t('sync.version_mismatch_disconnect', {
       peers: peerNames,
       minVersion: (typeof MIN_SYNC_VERSION !== 'undefined') ? MIN_SYNC_VERSION : defaultDataVersion
     });
     
-    // Show toast notification
     if (typeof showToast === 'function') {
-      showToast(message, 'warning');
+      showToast(message);
     } else {
       console.warn('Sync version mismatch:', message);
     }
+    
+    if (typeof announceToScreenReader === 'function') {
+      announceToScreenReader(message, 'assertive');
+    }
+    
+    // Disconnect to prevent mixed-version sync
+    stopSync(false);
   }
   
-  // Reset warning flag when no incompatible peers
+  // Reset flag when no incompatible peers
   if (incompatiblePeers.length === 0) {
-    SyncManager._versionWarningShown = false;
+    SyncManager._versionMismatchDisconnect = false;
   }
 }
 
@@ -3505,11 +3571,7 @@ function checkDisplayNameCollision() {
     SyncManager.displayName = uniqueName;
     
     // Update awareness with new name
-    SyncManager.awareness.setLocalState({
-      displayName: uniqueName,
-      color: generateUserColor(uniqueName),
-      lastSeen: Date.now()
-    });
+    SyncManager.awareness.setLocalState(buildLocalAwarenessState(uniqueName));
     
     // Persist new name
     saveDisplayName(uniqueName);
@@ -4620,6 +4682,8 @@ if (typeof module !== 'undefined' && module.exports) {
     showSyncDialog: showSyncDialog,
     showNameMatchingDialog: showNameMatchingDialog,
     updateSyncUI: updateSyncUI,
+    tryAutoReconnectForCurrentSession: tryAutoReconnectForCurrentSession,
+    tryAutoReconnectLargeEvent: tryAutoReconnectLargeEvent,
     generateUserColor: generateUserColor,
     getUniqueDisplayName: getUniqueDisplayName,
     handleSessionSwitch: handleSessionSwitch,
@@ -4650,6 +4714,8 @@ if (typeof module !== 'undefined' && module.exports) {
     startWebsocketSync: startWebsocketSync,
     isLargeEventSyncExpired: isLargeEventSyncExpired,
     clearExpiredLargeEventSync: clearExpiredLargeEventSync,
+    isSyncRoomExpired: isSyncRoomExpired,
+    repairSessionSyncRoomsCache: repairSessionSyncRoomsCache,
     // Registry functions
     connectToRegistry: connectToRegistry,
     disconnectFromRegistry: disconnectFromRegistry,

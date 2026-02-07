@@ -62,6 +62,7 @@ test('compareSnapshots returns match=true for identical snapshots', () => {
     display: {
       teamNames: ['', 'Team A'],
       blockNames: [''],
+      questionNames: [''],
       teamCount: 1,
       blockCount: 0,
       questionCount: 0
@@ -81,10 +82,11 @@ test('compareSnapshots detects team name differences', () => {
       teams: [{ index: 0, name: '' }, { index: 1, name: 'Team A' }],
       questions: [],
       blocks: [],
-      config: { rounding: false }
+      config: { rounding: false },
+      history: []
     },
     calculated: {},
-    display: { teamNames: ['', 'Team A'], blockNames: [''], teamCount: 1, blockCount: 0, questionCount: 0 }
+    display: { teamNames: ['', 'Team A'], blockNames: [''], questionNames: [''], teamCount: 1, blockCount: 0, questionCount: 0 }
   };
 
   const after = {
@@ -92,10 +94,11 @@ test('compareSnapshots detects team name differences', () => {
       teams: [{ index: 0, name: '' }, { index: 1, name: 'Team B' }],
       questions: [],
       blocks: [],
-      config: { rounding: false }
+      config: { rounding: false },
+      history: []
     },
     calculated: {},
-    display: { teamNames: ['', 'Team B'], blockNames: [''], teamCount: 1, blockCount: 0, questionCount: 0 }
+    display: { teamNames: ['', 'Team B'], blockNames: [''], questionNames: [''], teamCount: 1, blockCount: 0, questionCount: 0 }
   };
 
   const result = context.compareSnapshots(before, after);
@@ -111,10 +114,11 @@ test('compareSnapshots detects team count differences', () => {
       teams: [{ index: 0, name: '' }, { index: 1, name: 'Team A' }],
       questions: [],
       blocks: [],
-      config: { rounding: false }
+      config: { rounding: false },
+      history: []
     },
     calculated: {},
-    display: { teamNames: ['', 'Team A'], blockNames: [''], teamCount: 1, blockCount: 0, questionCount: 0 }
+    display: { teamNames: ['', 'Team A'], blockNames: [''], questionNames: [''], teamCount: 1, blockCount: 0, questionCount: 0 }
   };
 
   const after = {
@@ -122,15 +126,48 @@ test('compareSnapshots detects team count differences', () => {
       teams: [{ index: 0, name: '' }, { index: 1, name: 'Team A' }, { index: 2, name: 'Team B' }],
       questions: [],
       blocks: [],
-      config: { rounding: false }
+      config: { rounding: false },
+      history: []
     },
     calculated: {},
-    display: { teamNames: ['', 'Team A', 'Team B'], blockNames: [''], teamCount: 2, blockCount: 0, questionCount: 0 }
+    display: { teamNames: ['', 'Team A', 'Team B'], blockNames: [''], questionNames: [''], teamCount: 2, blockCount: 0, questionCount: 0 }
   };
 
   const result = context.compareSnapshots(before, after);
   assert.equal(result.match, false);
   assert.ok(result.differences.some(d => d.type === 'count'));
+});
+
+test('compareSnapshots detects question name differences', () => {
+  const { context } = loadApp(createYjsDoc({ currentSession: 1, sessions: [] }));
+
+  const before = {
+    raw: {
+      teams: [],
+      questions: [],
+      blocks: [],
+      config: { rounding: false },
+      history: []
+    },
+    calculated: {},
+    display: { teamNames: [], blockNames: [], questionNames: ['', 'Question 1'], teamCount: 0, blockCount: 0, questionCount: 1 }
+  };
+
+  const after = {
+    raw: {
+      teams: [],
+      questions: [],
+      blocks: [],
+      config: { rounding: false },
+      history: []
+    },
+    calculated: {},
+    display: { teamNames: [], blockNames: [], questionNames: ['', 'Question X'], teamCount: 0, blockCount: 0, questionCount: 1 }
+  };
+
+  const result = context.compareSnapshots(before, after);
+  assert.equal(result.match, false);
+  assert.ok(result.differences.some(d => d.path.includes('display.questionNames')));
 });
 
 test('compareSnapshots detects score differences in questions', () => {
@@ -142,15 +179,16 @@ test('compareSnapshots detects score differences in questions', () => {
       questions: [{
         index: 1,
         score: 10,
-        block: 0,
+        blockId: 'b-1',
         ignore: false,
         teamScores: [{ teamIndex: 0, score: 0, extraCredit: 0 }, { teamIndex: 1, score: 5, extraCredit: 0 }]
       }],
       blocks: [],
-      config: { rounding: false }
+      config: { rounding: false },
+      history: []
     },
     calculated: {},
-    display: { teamNames: ['', 'Team A'], blockNames: [''], teamCount: 1, blockCount: 0, questionCount: 1 }
+    display: { teamNames: ['', 'Team A'], blockNames: [''], questionNames: ['', 'Question 1'], teamCount: 1, blockCount: 0, questionCount: 1 }
   };
 
   const after = {
@@ -159,20 +197,52 @@ test('compareSnapshots detects score differences in questions', () => {
       questions: [{
         index: 1,
         score: 10,
-        block: 0,
+        blockId: 'b-1',
         ignore: false,
         teamScores: [{ teamIndex: 0, score: 0, extraCredit: 0 }, { teamIndex: 1, score: 8, extraCredit: 0 }]
       }],
       blocks: [],
-      config: { rounding: false }
+      config: { rounding: false },
+      history: []
     },
     calculated: {},
-    display: { teamNames: ['', 'Team A'], blockNames: [''], teamCount: 1, blockCount: 0, questionCount: 1 }
+    display: { teamNames: ['', 'Team A'], blockNames: [''], questionNames: ['', 'Question 1'], teamCount: 1, blockCount: 0, questionCount: 1 }
   };
 
   const result = context.compareSnapshots(before, after);
   assert.equal(result.match, false);
   assert.ok(result.differences.some(d => d.path.includes('teamScores') && d.path.includes('score')));
+});
+
+test('compareSnapshots ignores history timestamp differences by default', () => {
+  const { context } = loadApp(createYjsDoc({ currentSession: 1, sessions: [] }));
+
+  const before = {
+    raw: {
+      teams: [],
+      questions: [],
+      blocks: [],
+      config: { rounding: false },
+      history: [{ action: 'test', details: 'a', timestamp: 100, user: null }]
+    },
+    calculated: {},
+    display: { teamNames: [], blockNames: [], questionNames: [], teamCount: 0, blockCount: 0, questionCount: 0 }
+  };
+
+  const after = {
+    raw: {
+      teams: [],
+      questions: [],
+      blocks: [],
+      config: { rounding: false },
+      history: [{ action: 'test', details: 'a', timestamp: 200, user: null }]
+    },
+    calculated: {},
+    display: { teamNames: [], blockNames: [], questionNames: [], teamCount: 0, blockCount: 0, questionCount: 0 }
+  };
+
+  const result = context.compareSnapshots(before, after);
+  assert.equal(result.match, true);
 });
 
 test('compareSnapshots detects config differences', () => {
@@ -183,10 +253,11 @@ test('compareSnapshots detects config differences', () => {
       teams: [],
       questions: [],
       blocks: [],
-      config: { rounding: false }
+      config: { rounding: false },
+      history: []
     },
     calculated: {},
-    display: { teamNames: [], blockNames: [], teamCount: 0, blockCount: 0, questionCount: 0 }
+    display: { teamNames: [], blockNames: [], questionNames: [], teamCount: 0, blockCount: 0, questionCount: 0 }
   };
 
   const after = {
@@ -194,10 +265,11 @@ test('compareSnapshots detects config differences', () => {
       teams: [],
       questions: [],
       blocks: [],
-      config: { rounding: true }
+      config: { rounding: true },
+      history: []
     },
     calculated: {},
-    display: { teamNames: [], blockNames: [], teamCount: 0, blockCount: 0, questionCount: 0 }
+    display: { teamNames: [], blockNames: [], questionNames: [], teamCount: 0, blockCount: 0, questionCount: 0 }
   };
 
   const result = context.compareSnapshots(before, after);
@@ -221,7 +293,7 @@ test('compareSnapshots detects differences in team score summary', () => {
   const { context } = loadApp(createYjsDoc({ currentSession: 1, sessions: [] }));
   
   const before = {
-    raw: { teams: [], questions: [], blocks: [], config: { rounding: false } },
+    raw: { teams: [], questions: [], blocks: [], config: { rounding: false }, history: [] },
     calculated: {
       teamScoreSummary: [
         ['Team', 'Score'],
@@ -231,11 +303,11 @@ test('compareSnapshots detects differences in team score summary', () => {
       teamAndBlockScoreSummary: null,
       questionLog: null
     },
-    display: { teamNames: [], blockNames: [], teamCount: 0, blockCount: 0, questionCount: 0 }
+    display: { teamNames: [], blockNames: [], questionNames: [], teamCount: 0, blockCount: 0, questionCount: 0 }
   };
 
   const after = {
-    raw: { teams: [], questions: [], blocks: [], config: { rounding: false } },
+    raw: { teams: [], questions: [], blocks: [], config: { rounding: false }, history: [] },
     calculated: {
       teamScoreSummary: [
         ['Team', 'Score'],
@@ -245,7 +317,7 @@ test('compareSnapshots detects differences in team score summary', () => {
       teamAndBlockScoreSummary: null,
       questionLog: null
     },
-    display: { teamNames: [], blockNames: [], teamCount: 0, blockCount: 0, questionCount: 0 }
+    display: { teamNames: [], blockNames: [], questionNames: [], teamCount: 0, blockCount: 0, questionCount: 0 }
   };
 
   const result = context.compareSnapshots(before, after);
@@ -257,25 +329,25 @@ test('compareSnapshots tolerates floating point differences within threshold', (
   const { context } = loadApp(createYjsDoc({ currentSession: 1, sessions: [] }));
   
   const before = {
-    raw: { teams: [], questions: [], blocks: [], config: { rounding: false } },
+    raw: { teams: [], questions: [], blocks: [], config: { rounding: false }, history: [] },
     calculated: {
       teamScoreSummary: [
         ['Team', 'Percent'],
         ['Team A', 0.9000001]
       ]
     },
-    display: { teamNames: [], blockNames: [], teamCount: 0, blockCount: 0, questionCount: 0 }
+    display: { teamNames: [], blockNames: [], questionNames: [], teamCount: 0, blockCount: 0, questionCount: 0 }
   };
 
   const after = {
-    raw: { teams: [], questions: [], blocks: [], config: { rounding: false } },
+    raw: { teams: [], questions: [], blocks: [], config: { rounding: false }, history: [] },
     calculated: {
       teamScoreSummary: [
         ['Team', 'Percent'],
         ['Team A', 0.9]
       ]
     },
-    display: { teamNames: [], blockNames: [], teamCount: 0, blockCount: 0, questionCount: 0 }
+    display: { teamNames: [], blockNames: [], questionNames: [], teamCount: 0, blockCount: 0, questionCount: 0 }
   };
 
   const result = context.compareSnapshots(before, after);

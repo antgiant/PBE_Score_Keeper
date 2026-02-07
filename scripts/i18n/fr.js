@@ -72,6 +72,7 @@ register_i18n_language('fr', {
       "count_other": "{{count}} points",
       "point": "point",
       "points": "points",
+      "edit_max_points": "Cliquez pour modifier les points maximum",
       "possible": "Points Possibles pour la Question",
       "minimum_notice": "Ne peut pas être inférieur en raison des scores déjà saisis"
     },
@@ -236,7 +237,8 @@ register_i18n_language('fr', {
     },
     "footer": {
       "feedback": "Vous avez une idée pour améliorer ceci ?",
-      "let_me_know": "Faites-le moi savoir"
+      "let_me_know": "Faites-le moi savoir",
+      "version": "v {{version}}"
     },
     "placeholders": {
       "team_scores": "Les Scores des Équipes Vont Ici",
@@ -361,6 +363,7 @@ register_i18n_language('fr', {
       "history_local_user": "(local)",
       "history_unknown_user": "(inconnu)",
       "version_mismatch_warning": "Avertissement : {{peers}} utilise peut-être une ancienne version (nécessite v{{minVersion}}+). Les données peuvent ne pas se synchroniser correctement.",
+      "version_mismatch_disconnect": "Déconnecté : {{peers}} utilisent une ancienne version (nécessite v{{minVersion}}+).",
       "copy_code": "Copier le Code",
       "code_copied": "Code de salle copié dans le presse-papiers",
       "error_timeout": "Délai de connexion dépassé. Veuillez réessayer.",

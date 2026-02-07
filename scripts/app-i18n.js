@@ -474,6 +474,26 @@ function translate_page() {
     return;
   }
   
+  var reservedParams = {
+    'data-i18n-target': true,
+    'data-i18n-title': true,
+    'data-i18n-placeholder': true,
+    'data-i18n-aria-label': true
+  };
+  
+  function collectParams(element) {
+    var params = {};
+    var attrs = element.attributes;
+    for (var i = 0; i < attrs.length; i++) {
+      var attr = attrs[i];
+      if (attr.name.indexOf('data-i18n-') === 0 && attr.name !== 'data-i18n' && !reservedParams[attr.name]) {
+        var paramName = attr.name.replace('data-i18n-', '');
+        params[paramName] = attr.value;
+      }
+    }
+    return params;
+  }
+  
   // Update document title
   if (typeof document !== 'undefined') {
     document.title = t('app.title');
@@ -482,17 +502,7 @@ function translate_page() {
   $('[data-i18n]').each(function() {
     var $el = $(this);
     var key = $el.attr('data-i18n');
-    var params = {};
-    
-    // Get any data-i18n-* attributes for params
-    var attrs = this.attributes;
-    for (var i = 0; i < attrs.length; i++) {
-      var attr = attrs[i];
-      if (attr.name.indexOf('data-i18n-') === 0 && attr.name !== 'data-i18n') {
-        var paramName = attr.name.replace('data-i18n-', '');
-        params[paramName] = attr.value;
-      }
-    }
+    var params = collectParams(this);
     
     var translated = t(key, params);
     
@@ -507,6 +517,27 @@ function translate_page() {
     } else {
       $el.text(translated);
     }
+  });
+  
+  $('[data-i18n-title]').each(function() {
+    var $el = $(this);
+    var key = $el.attr('data-i18n-title');
+    var params = collectParams(this);
+    $el.attr('title', t(key, params));
+  });
+  
+  $('[data-i18n-placeholder]').each(function() {
+    var $el = $(this);
+    var key = $el.attr('data-i18n-placeholder');
+    var params = collectParams(this);
+    $el.attr('placeholder', t(key, params));
+  });
+  
+  $('[data-i18n-aria-label]').each(function() {
+    var $el = $(this);
+    var key = $el.attr('data-i18n-aria-label');
+    var params = collectParams(this);
+    $el.attr('aria-label', t(key, params));
   });
 }
 

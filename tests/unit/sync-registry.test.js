@@ -1,5 +1,6 @@
 const { describe, it, beforeEach, afterEach } = require('node:test');
 const assert = require('node:assert');
+const { cleanupSyncModule } = require('../helpers/sync-cleanup');
 
 // Mock Y.Doc for registry
 class MockYMap {
@@ -132,7 +133,7 @@ describe('Sync Registry', function() {
   
   afterEach(function() {
     // Clean up any timers
-    syncModule.stopRegistryRetry();
+    cleanupSyncModule(syncModule);
     syncModule.SyncManager.registryDoc = null;
     syncModule.SyncManager.registryConnected = false;
     syncModule.SyncManager.registrySynced = false;

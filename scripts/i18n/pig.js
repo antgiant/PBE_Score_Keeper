@@ -68,6 +68,7 @@ register_i18n_language('pig', {
       "count_other": "{{count}} oints-pay",
       "point": "oint-pay",
       "points": "oints-pay",
+      "edit_max_points": "Ick-Clay o-tay edit-ay aximum-may oints-pay",
       "possible": "Ossible-Pay Oints-Pay or-fay Uestion-Qay",
       "minimum_notice": "Annot-cay e-bay ower-lay ue-day o-tay already-ay entered-ay ores-scay"
     },
@@ -232,7 +233,8 @@ register_i18n_language('pig', {
     },
     "footer": {
       "feedback": "Ave-Hay an-ay idea-ay o-tay ake-may is-thay etter-bay?",
-      "let_me_know": "Et-Lay e-may ow-knay"
+      "let_me_know": "Et-Lay e-may ow-knay",
+      "version": "v {{version}}"
     },
     "placeholders": {
       "team_scores": "Eam-Tay Ores-Scay O-Gay Ere-Hay",
@@ -357,6 +359,7 @@ register_i18n_language('pig', {
       "history_local_user": "(ocal-lay)",
       "history_unknown_user": "(unknown-ay)",
       "version_mismatch_warning": "Arning-Way: {{peers}} ay-may e-bay using-ay an-ay older-ay ersion-vay (equires-ray v{{minVersion}}+). Ata-Day ay-may ot-nay ync-say orrectly-cay.",
+      "version_mismatch_disconnect": "Isconnected-Day: {{peers}} are-ay using-ay an-ay older-ay ersion-vay (equires-ray v{{minVersion}}+).",
       "copy_code": "Opy-Cay Ode-Cay",
       "code_copied": "Oom-Ray ode-cay opied-cay o-tay ipboard-clay",
       "error_timeout": "Onnection-Cay imed-tay out-ay. Ease-Play y-tray again-ay.",

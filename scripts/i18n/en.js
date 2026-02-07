@@ -71,6 +71,7 @@ register_i18n_language('en', {
       "count_other": "{{count}} points",
       "point": "point",
       "points": "points",
+      "edit_max_points": "Click to edit maximum points",
       "possible": "Possible Points for Question",
       "minimum_notice": "Cannot be lower due to already entered scores"
     },
@@ -235,7 +236,8 @@ register_i18n_language('en', {
     },
     "footer": {
       "feedback": "Have an idea to make this better?",
-      "let_me_know": "Let me know"
+      "let_me_know": "Let me know",
+      "version": "v {{version}}"
     },
     "placeholders": {
       "team_scores": "Team Scores Go Here",
@@ -362,6 +364,7 @@ register_i18n_language('en', {
       "history_local_user": "(local)",
       "history_unknown_user": "(unknown)",
       "version_mismatch_warning": "Warning: {{peers}} may be using an older version (requires v{{minVersion}}+). Data may not sync correctly.",
+      "version_mismatch_disconnect": "Disconnected: {{peers}} are using an older version (requires v{{minVersion}}+).",
       "copy_code": "Copy Code",
       "code_copied": "Room code copied to clipboard",
       "error_timeout": "Connection timed out. Please try again.",
