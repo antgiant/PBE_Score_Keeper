@@ -366,8 +366,9 @@ function loadApp(seed = {}) {
       // Pass the config to the VM and create the doc there
       context._seedConfig = seed;
 
-      // Create Y.Doc using the Y instance in the VM - multi-doc v3.0 architecture
+      // Create Y.Doc using the Y instance in the VM - all sessions use v5 (UUID-based) structure
       const buildScript = `
+        // V5 SESSION STRUCTURE (UUID-based with deterministic question IDs)
         // Initialize global doc
         setYdoc(new Y.Doc());
         
@@ -393,11 +394,12 @@ function loadApp(seed = {}) {
               const sessionDoc = new Y.Doc();
               const session = sessionDoc.getMap('session');
               
-              // Store session ID in the session doc
+              // Store session ID and metadata
               session.set('id', sessionId);
               session.set('name', sessionConfig.name || 'Test Session');
               session.set('createdAt', Date.now());
               session.set('lastModified', Date.now());
+              session.set('dataVersion', '5.0');
 
               // Config
               const configMap = new Y.Map();
@@ -405,54 +407,93 @@ function loadApp(seed = {}) {
               configMap.set('rounding', sessionConfig.rounding || false);
               session.set('config', configMap);
 
-              // Teams (1-indexed)
-              const teams = new Y.Array();
-              teams.push([null]);
-              const teamNames = sessionConfig.teams || ['Team 1'];
-              teamNames.forEach(teamName => {
-                const team = new Y.Map();
-                team.set('name', teamName);
-                teams.push([team]);
-              });
-              session.set('teams', teams);
+              // Initialize UUID structures
+              const teamsById = new Y.Map();
+              const teamOrder = new Y.Array();
+              const questionsById = new Y.Map();
+              const questionOrder = new Y.Array();
+              const blocksById = new Y.Map();
+              const blockOrder = new Y.Array();
+              
+              session.set('teamsById', teamsById);
+              session.set('teamOrder', teamOrder);
+              session.set('questionsById', questionsById);
+              session.set('questionOrder', questionOrder);
+              session.set('blocksById', blocksById);
+              session.set('blockOrder', blockOrder);
+              
+              // Track question numbers for deterministic IDs
+              let nextQuestionNumber = 1;
 
-              // Blocks (0-indexed, no placeholder)
-              const blocks = new Y.Array();
+              // Create blocks (0-indexed in config)
               const blockNames = sessionConfig.blocks || ['No Block/Group'];
-              blockNames.forEach(blockName => {
+              const blockIdMap = {}; // Map block index to block ID
+              blockNames.forEach((blockName, blockIndex) => {
+                const blockId = 'b-test-' + (index + 1) + '-' + (blockIndex + 1);
+                blockIdMap[blockIndex] = blockId;
+                
                 const block = new Y.Map();
+                block.set('id', blockId);
                 block.set('name', blockName);
-                blocks.push([block]);
+                block.set('isDefault', blockIndex === 0);
+                block.set('createdAt', Date.now());
+                block.set('deleted', false);
+                block.set('sortOrder', blockIndex);
+                
+                blocksById.set(blockId, block);
+                blockOrder.push([blockId]);
               });
-              session.set('blocks', blocks);
 
-              // Questions (1-indexed)
-              const questions = new Y.Array();
-              questions.push([null]);
+              // Create teams
+              const teamNames = sessionConfig.teams || ['Team 1'];
+              const teamIdMap = {}; // Map team index to team ID
+              teamNames.forEach((teamName, teamIndex) => {
+                const teamId = 't-test-' + (index + 1) + '-' + (teamIndex + 1);
+                teamIdMap[teamIndex] = teamId;
+                
+                const team = new Y.Map();
+                team.set('id', teamId);
+                team.set('name', teamName);
+                team.set('createdAt', Date.now());
+                team.set('deleted', false);
+                team.set('sortOrder', teamIndex);
+                
+                teamsById.set(teamId, team);
+                teamOrder.push([teamId]);
+              });
+
+              // Create questions
               const questionConfigs = sessionConfig.questions || [];
-              questionConfigs.forEach(qConfig => {
+              questionConfigs.forEach((qConfig, qIndex) => {
+                const questionId = 'q-' + nextQuestionNumber;
+                nextQuestionNumber++;
+                
                 const question = new Y.Map();
-                question.set('name', qConfig.name || 'Question 1');
+                question.set('id', questionId);
+                question.set('name', qConfig.name || '');
                 question.set('score', qConfig.score || 0);
-                question.set('block', qConfig.block || 0);
+                question.set('blockId', blockIdMap[qConfig.block || 0] || blockIdMap[0]);
                 question.set('ignore', qConfig.ignore || false);
-
-                // Question teams (1-indexed)
-                const questionTeams = new Y.Array();
-                questionTeams.push([null]);
-                for (let i = 0; i < teamNames.length; i++) {
-                  const teamScore = new Y.Map();
-                  const scoreData = qConfig.teamScores && qConfig.teamScores[i] ? qConfig.teamScores[i] : {};
-                  teamScore.set('score', scoreData.score || 0);
-                  teamScore.set('extraCredit', scoreData.extraCredit || 0);
-                  questionTeams.push([teamScore]);
-                }
-                question.set('teams', questionTeams);
-
-                questions.push([question]);
+                question.set('createdAt', Date.now());
+                
+                // Initialize team scores
+                const teamScores = new Y.Map();
+                teamNames.forEach((teamName, teamIndex) => {
+                  const teamId = teamIdMap[teamIndex];
+                  const scoreData = new Y.Map();
+                  const qTeamScore = qConfig.teamScores && qConfig.teamScores[teamIndex] ? qConfig.teamScores[teamIndex] : {};
+                  scoreData.set('score', qTeamScore.score || 0);
+                  scoreData.set('extraCredit', qTeamScore.extraCredit || 0);
+                  teamScores.set(teamId, scoreData);
+                });
+                question.set('teamScores', teamScores);
+                
+                questionsById.set(questionId, question);
+                questionOrder.push([questionId]);
               });
-              session.set('questions', questions);
-              // Note: currentQuestion is no longer stored in Yjs - it's tracked via current_question_index
+              
+              // Store nextQuestionNumber
+              session.set('nextQuestionNumber', nextQuestionNumber);
               
               // Initialize empty history for this session
               session.set('historyLog', new Y.Array());
@@ -480,7 +521,6 @@ function loadApp(seed = {}) {
           DocManager.activeSessionId = currentSessionId;
           
           // Set current_question_index from the current session's config
-          // (current_question_index is now transient app state, not stored in Yjs)
           if (_seedConfig.sessions && _seedConfig.sessions.length > 0) {
             const currentSessionConfig = _seedConfig.sessions[_seedConfig.currentSession - 1] || _seedConfig.sessions[0];
             current_question_index = (currentSessionConfig && currentSessionConfig.currentQuestion) || 1;

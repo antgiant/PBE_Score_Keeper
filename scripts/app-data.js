@@ -366,15 +366,14 @@ function update_data_element(updated_id, new_value) {
   //Decrease Max Points per Question
   else if (updated_id == "max_points_decrease") {
     const config = session.get('config');
-    const questions = session.get('questions');
 
     //Find largest actual max points and prevent max per question from going below that number
-    let question_count = questions.length - 1;
     let smallest_valid_max_points = 1;
-    for (let i = 1; i <= question_count; i++) {
-      let temp_max_points = questions.get(i).get('score');
-      if (smallest_valid_max_points < temp_max_points) {
-        smallest_valid_max_points = temp_max_points;
+    const orderedQuestions = getOrderedQuestions(session);
+    for (const q of orderedQuestions) {
+      const score = q.data.get('score') || 0;
+      if (smallest_valid_max_points < score) {
+        smallest_valid_max_points = score;
       }
     }
     let max_points = config.get('maxPointsPerQuestion');
@@ -391,16 +390,15 @@ function update_data_element(updated_id, new_value) {
   //Set Max Points per Question directly (from click-to-edit)
   else if (updated_id == "max_points_direct") {
     const config = session.get('config');
-    const questions = session.get('questions');
     const oldValue = config.get('maxPointsPerQuestion');
     
     //Find largest actual max points - cannot go below this number
-    let question_count = questions.length - 1;
     let smallest_valid_max_points = 1;
-    for (let i = 1; i <= question_count; i++) {
-      let temp_max_points = questions.get(i).get('score');
-      if (smallest_valid_max_points < temp_max_points) {
-        smallest_valid_max_points = temp_max_points;
+    const orderedQuestions = getOrderedQuestions(session);
+    for (const q of orderedQuestions) {
+      const score = q.data.get('score') || 0;
+      if (smallest_valid_max_points < score) {
+        smallest_valid_max_points = score;
       }
     }
     

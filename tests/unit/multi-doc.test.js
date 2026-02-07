@@ -59,6 +59,7 @@ test('Session Management - deleteSession requires minimum 2 sessions', (t) => {
 });
 
 test('Session Isolation - Each session has independent question data', (t) => {
+  // Uses v5 sessions with UUID structures
   const { context } = loadApp(buildMultiSessionSeed(2));
   
   const meta = context.getGlobalDoc().getMap('meta');
@@ -70,11 +71,12 @@ test('Session Isolation - Each session has independent question data', (t) => {
   const session1 = sessionDoc1.getMap('session');
   const session2 = sessionDoc2.getMap('session');
   
-  const questions1 = session1.get('questions');
-  const questions2 = session2.get('questions');
+  // v5 uses questionsById (Y.Map) not questions array
+  const questionsById1 = session1.get('questionsById');
+  const questionsById2 = session2.get('questionsById');
   
-  assert.notStrictEqual(questions1, questions2, 'Sessions should have different question arrays');
-  assert.strictEqual(questions1.length, questions2.length, 'But should have same number of questions');
+  assert.notStrictEqual(questionsById1, questionsById2, 'Sessions should have different question maps');
+  assert.strictEqual(questionsById1.size, questionsById2.size, 'But should have same number of questions');
 });
 
 test('Session Isolation - Each session has independent team data', (t) => {
@@ -89,11 +91,12 @@ test('Session Isolation - Each session has independent team data', (t) => {
   const session1 = sessionDoc1.getMap('session');
   const session2 = sessionDoc2.getMap('session');
   
-  const teams1 = session1.get('teams');
-  const teams2 = session2.get('teams');
+  // v5 uses teamsById (Y.Map) not teams array
+  const teamsById1 = session1.get('teamsById');
+  const teamsById2 = session2.get('teamsById');
   
-  assert.notStrictEqual(teams1, teams2, 'Sessions should have different team arrays');
-  assert.strictEqual(teams1.length, teams2.length, 'But should have same number of teams');
+  assert.notStrictEqual(teamsById1, teamsById2, 'Sessions should have different team maps');
+  assert.strictEqual(teamsById1.size, teamsById2.size, 'But should have same number of teams');
 });
 
 test('Format Detection - Identifies JSON v2.0/v3.0 format', (t) => {
@@ -171,9 +174,13 @@ test('SessionDocs - Each session is a separate Y.Doc in DocManager', (t) => {
     const session = sessionDoc.getMap('session');
     assert.ok(session.get('name'), 'Session should have name');
     assert.ok(session.get('config'), 'Session should have config');
-    assert.ok(session.get('teams'), 'Session should have teams');
-    assert.ok(session.get('blocks'), 'Session should have blocks');
-    assert.ok(session.get('questions'), 'Session should have questions');
+    // v5 uses UUID-based structures
+    assert.ok(session.get('teamsById'), 'Session should have teamsById');
+    assert.ok(session.get('teamOrder'), 'Session should have teamOrder');
+    assert.ok(session.get('blocksById'), 'Session should have blocksById');
+    assert.ok(session.get('blockOrder'), 'Session should have blockOrder');
+    assert.ok(session.get('questionsById'), 'Session should have questionsById');
+    assert.ok(session.get('questionOrder'), 'Session should have questionOrder');
   });
 });
 

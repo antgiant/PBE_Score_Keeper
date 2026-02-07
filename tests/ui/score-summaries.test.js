@@ -102,15 +102,16 @@ test('score summary seed data loads correctly', () => {
   }
 });
 
-// Test that question log seed data is correct (v3.0 multi-doc)
+// Test that question log seed data is correct (v5.0 multi-doc)
 test('question log seed data is valid', () => {
   const { context, ydoc } = loadApp(buildScoreSummarySeed());
   const meta = ydoc.getMap('meta');
   const sessionOrder = meta.get('sessionOrder');
   const sessionDoc = context.DocManager.sessionDocs.get(sessionOrder[0]);
   const session = sessionDoc.getMap('session');
-  const questions = session.get('questions');
-  if (!questions || questions.length < 2) {
+  // v5 uses questionsById (Y.Map) instead of questions array
+  const questionsById = session.get('questionsById');
+  if (!questionsById || questionsById.size < 2) {
     throw new Error('Questions not properly loaded');
   }
 });

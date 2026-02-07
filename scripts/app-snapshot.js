@@ -48,6 +48,7 @@ function captureSessionSnapshot(sessionId) {
 /**
  * Captures the raw CRDT data from a session.
  * This includes teams, questions, blocks, config, and history.
+ * Uses v5 UUID-based session structure.
  * 
  * @param {Y.Map} session - The session Y.Map
  * @returns {Object} Raw data extracted from Y.Maps/Y.Arrays
@@ -61,65 +62,86 @@ function captureRawData(session) {
     history: []
   };
 
-  // Capture teams
-  const teams = session.get('teams');
-  if (teams && teams.length) {
-    for (let i = 0; i < teams.length; i++) {
-      const team = teams.get(i);
-      if (team) {
+  const teamsById = session.get('teamsById');
+  const teamOrder = session.get('teamOrder');
+  
+  // Capture teams (using order array)
+  if (teamsById && teamOrder) {
+    for (let i = 0; i < teamOrder.length; i++) {
+      const teamId = teamOrder.get(i);
+      const team = teamsById.get(teamId);
+      if (team && !team.get('deleted')) {
         raw.teams.push({
           index: i,
+          id: teamId,
           name: team.get('name') || ''
         });
       }
     }
   }
-
+  
   // Capture blocks
-  const blocks = session.get('blocks');
-  if (blocks && blocks.length) {
-    for (let i = 0; i < blocks.length; i++) {
-      const block = blocks.get(i);
-      if (block) {
+  const blocksById = session.get('blocksById');
+  const blockOrder = session.get('blockOrder');
+  if (blocksById && blockOrder) {
+    for (let i = 0; i < blockOrder.length; i++) {
+      const blockId = blockOrder.get(i);
+      const block = blocksById.get(blockId);
+      if (block && !block.get('deleted')) {
         raw.blocks.push({
           index: i,
+          id: blockId,
           name: block.get('name') || ''
         });
       }
     }
   }
-
-  // Capture questions with their team scores
-  const questions = session.get('questions');
-  if (questions && questions.length) {
-    for (let i = 0; i < questions.length; i++) {
-      const question = questions.get(i);
+  
+  // Capture questions - sorted by numeric ID
+  const questionsById = session.get('questionsById');
+  if (questionsById && questionsById.size > 0) {
+    // Get question IDs and sort by numeric part
+    const questionIds = Array.from(questionsById.keys()).sort((a, b) => {
+      const numA = parseInt(a.replace('q-', ''), 10) || 0;
+      const numB = parseInt(b.replace('q-', ''), 10) || 0;
+      return numA - numB;
+    });
+    
+    questionIds.forEach((questionId, idx) => {
+      const question = questionsById.get(questionId);
       if (question) {
         const questionData = {
-          index: i,
+          index: idx,
+          id: questionId,
           score: question.get('score') || 0,
-          block: question.get('block') || 0,
+          blockId: question.get('blockId') || '',
           ignore: question.get('ignore') || false,
           teamScores: []
         };
-
-        const questionTeams = question.get('teams');
-        if (questionTeams && questionTeams.length) {
-          for (let j = 0; j < questionTeams.length; j++) {
-            const teamScore = questionTeams.get(j);
-            if (teamScore) {
-              questionData.teamScores.push({
-                teamIndex: j,
-                score: teamScore.get('score') || 0,
-                extraCredit: teamScore.get('extraCredit') || 0
-              });
+        
+        const teamScores = question.get('teamScores');
+        if (teamScores && teamsById && teamOrder) {
+          // Include team scores in the order of teamOrder
+          for (let j = 0; j < teamOrder.length; j++) {
+            const teamId = teamOrder.get(j);
+            const team = teamsById.get(teamId);
+            if (team && !team.get('deleted')) {
+              const scoreData = teamScores.get(teamId);
+              if (scoreData) {
+                questionData.teamScores.push({
+                  teamIndex: j,
+                  teamId: teamId,
+                  score: scoreData.get('score') || 0,
+                  extraCredit: scoreData.get('extraCredit') || 0
+                });
+              }
             }
           }
         }
-
+        
         raw.questions.push(questionData);
       }
-    }
+    });
   }
 
   // Capture config
@@ -131,7 +153,7 @@ function captureRawData(session) {
   }
 
   // Capture history (last 50 entries for validation)
-  const history = session.get('history');
+  const history = session.get('history') || session.get('historyLog');
   if (history && history.length) {
     const historyCount = Math.min(history.length, 50);
     for (let i = history.length - historyCount; i < history.length; i++) {

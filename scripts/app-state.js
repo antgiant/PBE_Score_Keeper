@@ -695,17 +695,9 @@ async function switchSession(sessionIdOrIndex) {
 
   // Jump to last question for this session
   if (session) {
-    // Support both v3 (questions array) and v4/v5 (questionsById map)
-    const questions = session.get('questions');
     const questionsById = session.get('questionsById');
-    let questionCount = 0;
-    if (questionsById && questionsById.size > 0) {
-      questionCount = questionsById.size;
-    } else if (questions && questions.length > 0) {
-      questionCount = questions.length;
-    }
-    const lastQuestionIndex = Math.max(1, questionCount - 1);
-    current_question_index = lastQuestionIndex;
+    const lastQuestionIndex = (questionsById && questionsById.size > 0) ? questionsById.size : 1;
+    current_question_index = Math.max(1, lastQuestionIndex);
   }
   
   // Log in global history

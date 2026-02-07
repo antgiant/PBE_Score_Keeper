@@ -123,11 +123,14 @@ test('extra credit buttons update the stored value and display', () => {
 
   assert.equal(context.$('#team_1_extra_credit').text(), '1');
   
-  // Check Yjs session doc
+  // Check Yjs session doc using v5 UUID structures
   const session = context.get_current_session();
-  const question = session.get('questions').get(1);
-  const teamScore = question.get('teams').get(1);
-  assert.equal(teamScore.get('extraCredit'), 1);
+  const questions = context.getOrderedQuestions(session);
+  const teams = context.getOrderedTeams(session);
+  const questionId = questions[0].id;
+  const teamId = teams[0].id;
+  const scoreData = context.getTeamScore(session, questionId, teamId);
+  assert.equal(scoreData.extraCredit, 1);
 });
 
 test('extra credit points are included in team score totals', () => {

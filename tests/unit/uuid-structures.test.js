@@ -42,7 +42,7 @@ test('generateUUID creates unique IDs', () => {
   assert.equal(ids.size, 100, 'All 100 UUIDs should be unique');
 });
 
-test('isUUIDSession returns false for v3.0 session', () => {
+test('isUUIDSession returns true for v5.0 session', () => {
   const { context } = loadApp(createYjsDoc({
     currentSession: 1,
     sessions: [{
@@ -54,7 +54,7 @@ test('isUUIDSession returns false for v3.0 session', () => {
   }));
   
   const session = context.get_current_session();
-  assert.equal(context.isUUIDSession(session), false, 'v3.0 session should not be UUID session');
+  assert.equal(context.isUUIDSession(session), true, 'v5.0 session should be UUID session');
 });
 
 test('isDeleted returns true for deleted items', () => {
@@ -113,7 +113,7 @@ test('DATA_VERSION constants are defined', () => {
   assert.equal(context.MIN_SYNC_VERSION, '3.0');
 });
 
-test('getOrderedTeams returns empty for v3 session', () => {
+test('getOrderedTeams returns teams for v5 session', () => {
   const { context } = loadApp(createYjsDoc({
     currentSession: 1,
     sessions: [{
@@ -126,26 +126,29 @@ test('getOrderedTeams returns empty for v3 session', () => {
   
   const session = context.get_current_session();
   const teams = context.getOrderedTeams(session);
-  assert.equal(teams.length, 0, 'v3 session should return empty for UUID functions');
+  assert.equal(teams.length, 2, 'v5 session should return all teams');
+  assert.equal(teams[0].data.get('name'), 'Team A');
+  assert.equal(teams[1].data.get('name'), 'Team B');
 });
 
-test('getOrderedQuestions returns empty for v3 session', () => {
+test('getOrderedQuestions returns questions for v5 session', () => {
   const { context } = loadApp(createYjsDoc({
     currentSession: 1,
     sessions: [{
       name: 'Test',
       teams: ['Team A'],
       blocks: ['No Block'],
-      questions: [{ score: 10, block: 0, teamScores: [5] }]
+      questions: [{ score: 10 }]
     }]
   }));
   
   const session = context.get_current_session();
   const questions = context.getOrderedQuestions(session);
-  assert.equal(questions.length, 0, 'v3 session should return empty for UUID functions');
+  assert.equal(questions.length, 1, 'v5 session should return all questions');
+  assert.equal(questions[0].data.get('score'), 10);
 });
 
-test('getOrderedBlocks returns empty for v3 session', () => {
+test('getOrderedBlocks returns blocks for v5 session', () => {
   const { context } = loadApp(createYjsDoc({
     currentSession: 1,
     sessions: [{
@@ -158,10 +161,12 @@ test('getOrderedBlocks returns empty for v3 session', () => {
   
   const session = context.get_current_session();
   const blocks = context.getOrderedBlocks(session);
-  assert.equal(blocks.length, 0, 'v3 session should return empty for UUID functions');
+  assert.equal(blocks.length, 2, 'v5 session should return all blocks');
+  assert.equal(blocks[0].data.get('name'), 'No Block');
+  assert.equal(blocks[1].data.get('name'), 'Block 1');
 });
 
-test('getTeamById returns null for v3 session', () => {
+test('getTeamById returns team for v5 session', () => {
   const { context } = loadApp(createYjsDoc({
     currentSession: 1,
     sessions: [{
@@ -173,27 +178,37 @@ test('getTeamById returns null for v3 session', () => {
   }));
   
   const session = context.get_current_session();
-  const team = context.getTeamById(session, 't-fake-id');
-  assert.equal(team, null);
+  const teams = context.getOrderedTeams(session);
+  const teamId = teams[0].id;
+  const team = context.getTeamById(session, teamId);
+  assert.ok(team, 'Should find team by ID');
+  assert.equal(team.get('name'), 'Team A');
+  // Also test non-existent ID returns null
+  assert.equal(context.getTeamById(session, 't-nonexistent'), null);
 });
 
-test('getQuestionById returns null for v3 session', () => {
+test('getQuestionById returns question for v5 session', () => {
   const { context } = loadApp(createYjsDoc({
     currentSession: 1,
     sessions: [{
       name: 'Test',
       teams: ['Team A'],
       blocks: ['No Block'],
-      questions: [{ score: 10, block: 0, teamScores: [5] }]
+      questions: [{ score: 10 }]
     }]
   }));
   
   const session = context.get_current_session();
-  const question = context.getQuestionById(session, 'q-fake-id');
-  assert.equal(question, null);
+  const questions = context.getOrderedQuestions(session);
+  const questionId = questions[0].id;
+  const question = context.getQuestionById(session, questionId);
+  assert.ok(question, 'Should find question by ID');
+  assert.equal(question.get('score'), 10);
+  // Also test non-existent ID returns null
+  assert.equal(context.getQuestionById(session, 'q-nonexistent'), null);
 });
 
-test('getBlockById returns null for v3 session', () => {
+test('getBlockById returns block for v5 session', () => {
   const { context } = loadApp(createYjsDoc({
     currentSession: 1,
     sessions: [{
@@ -205,27 +220,40 @@ test('getBlockById returns null for v3 session', () => {
   }));
   
   const session = context.get_current_session();
-  const block = context.getBlockById(session, 'b-fake-id');
-  assert.equal(block, null);
+  const blocks = context.getOrderedBlocks(session);
+  const blockId = blocks[0].id;
+  const block = context.getBlockById(session, blockId);
+  assert.ok(block, 'Should find block by ID');
+  assert.equal(block.get('name'), 'No Block');
+  // Also test non-existent ID returns null
+  assert.equal(context.getBlockById(session, 'b-nonexistent'), null);
 });
 
-test('getTeamScore returns null for v3 session', () => {
+test('getTeamScore returns score for v5 session', () => {
   const { context } = loadApp(createYjsDoc({
     currentSession: 1,
     sessions: [{
       name: 'Test',
       teams: ['Team A'],
       blocks: ['No Block'],
-      questions: [{ score: 10, block: 0, teamScores: [5] }]
+      questions: [{ score: 10 }]
     }]
   }));
   
   const session = context.get_current_session();
-  const score = context.getTeamScore(session, 'q-fake', 't-fake');
-  assert.equal(score, null);
+  const teams = context.getOrderedTeams(session);
+  const questions = context.getOrderedQuestions(session);
+  const teamId = teams[0].id;
+  const questionId = questions[0].id;
+  
+  const scoreData = context.getTeamScore(session, questionId, teamId);
+  assert.ok(scoreData, 'Should return score data');
+  assert.equal(typeof scoreData.score, 'number', 'Should have score number');
+  // Test non-existent returns null
+  assert.equal(context.getTeamScore(session, 'q-fake', 't-fake'), null);
 });
 
-test('getTeamIdByDisplayIndex returns null for v3 session', () => {
+test('getTeamIdByDisplayIndex returns correct ID for v5 session', () => {
   const { context } = loadApp(createYjsDoc({
     currentSession: 1,
     sessions: [{
@@ -237,24 +265,32 @@ test('getTeamIdByDisplayIndex returns null for v3 session', () => {
   }));
   
   const session = context.get_current_session();
-  const teamId = context.getTeamIdByDisplayIndex(session, 1);
-  assert.equal(teamId, null);
+  const teams = context.getOrderedTeams(session);
+  
+  // 1-based index
+  assert.equal(context.getTeamIdByDisplayIndex(session, 1), teams[0].id);
+  assert.equal(context.getTeamIdByDisplayIndex(session, 2), teams[1].id);
+  assert.equal(context.getTeamIdByDisplayIndex(session, 3), null, 'Out of bounds should return null');
 });
 
-test('getDisplayIndexByTeamId returns 0 for v3 session', () => {
+test('getDisplayIndexByTeamId returns correct index for v5 session', () => {
   const { context } = loadApp(createYjsDoc({
     currentSession: 1,
     sessions: [{
       name: 'Test',
-      teams: ['Team A'],
+      teams: ['Team A', 'Team B'],
       blocks: ['No Block'],
       questions: []
     }]
   }));
   
   const session = context.get_current_session();
-  const index = context.getDisplayIndexByTeamId(session, 't-fake');
-  assert.equal(index, 0);
+  const teams = context.getOrderedTeams(session);
+  
+  // Returns 1-based index
+  assert.equal(context.getDisplayIndexByTeamId(session, teams[0].id), 1);
+  assert.equal(context.getDisplayIndexByTeamId(session, teams[1].id), 2);
+  assert.equal(context.getDisplayIndexByTeamId(session, 't-fake'), 0, 'Unknown ID should return 0');
 });
 // ============================================================================
 // V4 UUID Session Tests
@@ -984,13 +1020,13 @@ test('updateQuestionIgnore changes question ignore status', () => {
   assert.equal(context.getQuestionById(session, questionId).get('ignore'), false);
 });
 
-test('write operations return false for v3 sessions', () => {
+test('write operations succeed for v5 sessions', () => {
   const { context } = loadApp(createYjsDoc({
     currentSession: 1,
     sessions: [{
       name: 'Test Session',
-      teams: ['Team A'],
-      blocks: ['No Block'],
+      teams: ['Team A', 'Team B'],
+      blocks: ['No Block', 'Block 1'],
       questions: [{ score: 5 }]
     }]
   }));
@@ -998,17 +1034,26 @@ test('write operations return false for v3 sessions', () => {
   const session = context.get_current_session();
   const doc = context.getActiveSessionDoc();
   
-  // All operations should return false for v3 session
-  assert.equal(context.softDeleteTeam(doc, session, 'fake-id'), false);
-  assert.equal(context.softDeleteBlock(doc, session, 'fake-id'), false);
-  // Note: softDeleteQuestion removed in v5.0 - questions are permanent
-  assert.equal(context.setTeamScore(doc, session, 'q-id', 't-id', 5), false);
-  assert.equal(context.setTeamExtraCredit(doc, session, 'q-id', 't-id', 1), false);
-  assert.equal(context.updateTeamName(doc, session, 't-id', 'New'), false);
-  assert.equal(context.updateBlockName(doc, session, 'b-id', 'New'), false);
-  assert.equal(context.updateQuestionScore(doc, session, 'q-id', 10), false);
-  assert.equal(context.updateQuestionBlock(doc, session, 'q-id', 'b-id'), false);
-  assert.equal(context.updateQuestionIgnore(doc, session, 'q-id', true), false);
+  const teams = context.getOrderedTeams(session);
+  const blocks = context.getOrderedBlocks(session);
+  const questions = context.getOrderedQuestions(session);
+  
+  const teamId = teams[0].id;
+  const blockId = blocks[1].id;
+  const questionId = questions[0].id;
+  
+  // All operations should return true for v5 session
+  assert.equal(context.updateTeamName(doc, session, teamId, 'New Team Name'), true);
+  assert.equal(context.updateBlockName(doc, session, blockId, 'New Block Name'), true);
+  assert.equal(context.updateQuestionScore(doc, session, questionId, 10), true);
+  assert.equal(context.updateQuestionBlock(doc, session, questionId, blockId), true);
+  assert.equal(context.updateQuestionIgnore(doc, session, questionId, true), true);
+  assert.equal(context.setTeamScore(doc, session, questionId, teamId, 8), true);
+  assert.equal(context.setTeamExtraCredit(doc, session, questionId, teamId, 2), true);
+  
+  // Soft delete operations
+  assert.equal(context.softDeleteTeam(doc, session, teams[1].id), true);  // Delete Team B
+  assert.equal(context.softDeleteBlock(doc, session, blockId), true);  // Delete Block 1
 });
 
 // ============================================================================
@@ -1140,14 +1185,14 @@ test('session_to_json exports v4 session with UUID structures', () => {
   context.DocManager.sessionDocs.delete('test-session-uuid');
 });
 
-test('session_to_json exports v3 session with index-based arrays', () => {
+test('session_to_json exports v5 session with UUID structures via loadApp', () => {
   const { context } = loadApp(createYjsDoc({
     currentSession: 1,
     sessions: [{
-      name: 'V3 Export Test',
+      name: 'V5 Export Test',
       teams: ['Team A', 'Team B'],
       blocks: ['No Block'],
-      questions: [{ score: 3, teams: [2, 1] }]
+      questions: [{ score: 3 }]
     }]
   }));
   
@@ -1159,16 +1204,22 @@ test('session_to_json exports v3 session with index-based arrays', () => {
   // Export to JSON
   const exported = context.session_to_json(sessionId);
   
-  // Verify v3 structure (arrays, not UUID maps)
-  assert.equal(exported.name, 'V3 Export Test');
-  assert.equal(exported.dataVersion, '3.0');
-  assert.ok(Array.isArray(exported.teams), 'teams should be array for v3');
-  assert.ok(Array.isArray(exported.blocks), 'blocks should be array for v3');
-  assert.ok(Array.isArray(exported.questions), 'questions should be array for v3');
+  // Verify v5 structure (UUID maps, not index-based arrays)
+  assert.equal(exported.name, 'V5 Export Test');
+  assert.equal(exported.dataVersion, '4.0');  // Export uses 4.0 format
   
-  // Should NOT have UUID structures
-  assert.equal(exported.teamsById, undefined, 'v3 should not have teamsById');
-  assert.equal(exported.teamOrder, undefined, 'v3 should not have teamOrder');
+  // Should have UUID structures
+  assert.ok(exported.teamsById, 'v5 should have teamsById');
+  assert.ok(exported.teamOrder, 'v5 should have teamOrder');
+  assert.ok(exported.blocksById, 'v5 should have blocksById');
+  assert.ok(exported.blockOrder, 'v5 should have blockOrder');
+  assert.ok(exported.questionsById, 'v5 should have questionsById');
+  assert.ok(exported.questionOrder, 'v5 should have questionOrder');
+  
+  // Check team data
+  assert.equal(exported.teamOrder.length, 2);
+  const team1Id = exported.teamOrder[0];
+  assert.equal(exported.teamsById[team1Id].name, 'Team A');
 });
 
 test('detectImportFormat identifies v4 JSON format', () => {

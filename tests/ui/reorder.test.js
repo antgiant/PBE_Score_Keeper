@@ -78,24 +78,22 @@ test('reordering teams saves to the data store', () => {
 
   context.reorder_teams(['3', '1', '2']);
 
-  // Check Yjs session doc
+  // Check Yjs session doc using v5 UUID structures
   const session = context.get_current_session();
-  const teams = session.get('teams');
-  const teamNames = [];
-  for (let t = 1; t < teams.length; t++) {
-    teamNames.push(teams.get(t).get('name'));
-  }
-  assert.deepEqual(teamNames, ['Gamma', 'Alpha', 'Beta']);
+  const teams = context.getOrderedTeams(session);
+  const teamNames = teams.map(t => '' + t.data.get('name'));
+  // Use JSON comparison to avoid Node v25 deepStrictEqual issues with Yjs strings
+  assert.equal(JSON.stringify(teamNames), JSON.stringify(['Gamma', 'Alpha', 'Beta']));
   
-  // Check that team scores were reordered correctly
-  const question1 = session.get('questions').get(1);
-  const q1_team1 = question1.get('teams').get(1);
-  assert.equal(q1_team1.get('score'), 7);  // Was team 3
+  // Check that team scores are accessible (team order changed, but IDs are stable)
+  const questions = context.getOrderedQuestions(session);
+  const gammaTeamId = teams[0].id;
   
-  const question2 = session.get('questions').get(2);
-  const q2_team1 = question2.get('teams').get(1);
-  assert.equal(q2_team1.get('score'), 10);  // Was team 3
-
+  const scoreData1 = context.getTeamScore(session, questions[0].id, gammaTeamId);
+  assert.equal(scoreData1.score, 7);  // Gamma's score on Q1
+  
+  const scoreData2 = context.getTeamScore(session, questions[1].id, gammaTeamId);
+  assert.equal(scoreData2.score, 10);  // Gamma's score on Q2
 });
 
 test('reordering blocks updates display order', () => {
@@ -120,20 +118,21 @@ test('reordering blocks saves to the data store', () => {
 
   context.reorder_blocks(['2', '1']);
 
-  // Check Yjs session doc
+  // Check Yjs session doc using v5 UUID structures
   const session = context.get_current_session();
-  const blocks = session.get('blocks');
-  const blockNames = [];
-  for (let b = 0; b < blocks.length; b++) {
-    blockNames.push(blocks.get(b).get('name'));
-  }
-  assert.deepEqual(blockNames, ['No Block/Group', 'Block B', 'Block A']);
+  const blocks = context.getOrderedBlocks(session);
+  const blockNames = blocks.map(b => '' + b.data.get('name'));
+  // Use JSON comparison to avoid Node v25 deepStrictEqual issues with Yjs strings
+  assert.equal(JSON.stringify(blockNames), JSON.stringify(['No Block/Group', 'Block B', 'Block A']));
   
-  // Check that question blocks were updated
-  const question1 = session.get('questions').get(1);
-  assert.equal(question1.get('block'), 2);
-  const question2 = session.get('questions').get(2);
-  assert.equal(question2.get('block'), 1);
+  // Check that questions have correct blockId references
+  const questions = context.getOrderedQuestions(session);
+  const blockAId = blocks.find(b => ('' + b.data.get('name')) === 'Block A').id;
+  const blockBId = blocks.find(b => ('' + b.data.get('name')) === 'Block B').id;
+  
+  // Q1 was in Block A (now position 2), Q2 was in Block B (now position 1)
+  assert.equal(questions[0].data.get('blockId'), blockAId);
+  assert.equal(questions[1].data.get('blockId'), blockBId);
 });
 
 test('reordering keeps score summaries intact', () => {
