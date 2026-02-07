@@ -4,7 +4,7 @@ const { buildBasicSeed, buildMultiSessionSeed } = require('../helpers/yjs-seeds'
 const { loadApp } = require('../helpers/dom');
 
 // Phase 5: Comprehensive multi-doc architecture tests
-// v3.0 architecture: Global doc has sessionOrder (UUID array), each session is a separate Y.Doc
+// v5.0 architecture: Global doc has sessionOrder (UUID array), each session is a separate Y.Doc
 
 test('Session Management - generateSessionId creates valid UUID', (t) => {
   const { context } = loadApp(buildBasicSeed());
@@ -104,8 +104,8 @@ test('Format Detection - Identifies JSON v2.0/v3.0 format', (t) => {
   
   const jsonData = context.export_current_session_json();
   const format = context.detectImportFormat(jsonData);
-  // Format should be either json-v3 or json-legacy depending on structure
-  assert.ok(['json-v3', 'json-v2', 'json-legacy'].includes(format) || typeof format === 'string', 'Should detect JSON format');
+  // Format should be detected for JSON exports
+  assert.ok(['json-v4', 'json-v3', 'json-v2', 'json-legacy'].includes(format) || typeof format === 'string', 'Should detect JSON format');
 });
 
 test('Format Detection - Returns invalid for unrecognized format', (t) => {
@@ -115,14 +115,14 @@ test('Format Detection - Returns invalid for unrecognized format', (t) => {
   assert.strictEqual(format, 'invalid', 'Should return invalid format for unknown data');
 });
 
-test('Migration - migrate_v2_to_v3 not needed for v3.0 seeds', (t) => {
+test('Migration - migrate_v2_to_v3 not needed for v5.0 seeds', (t) => {
   const { context } = loadApp(buildBasicSeed());
   
-  // In test environment, data is already v3.0 format via multi-doc setup
+  // In test environment, data is already v5.0 format via multi-doc setup
   const meta = context.getGlobalDoc().getMap('meta');
   const dataVersion = meta.get('dataVersion');
   
-  assert.strictEqual(dataVersion, 3.0, 'Test seed should be v3.0');
+  assert.strictEqual(dataVersion, '5.0', 'Test seed should be v5.0');
 });
 
 test('Migration - Legacy migration function exists', (t) => {
@@ -132,13 +132,13 @@ test('Migration - Legacy migration function exists', (t) => {
   assert.ok(typeof context.migrate_localStorage_to_v3 === 'function', 'migrate_localStorage_to_v3 should exist');
 });
 
-test('Metadata - Global doc metadata contains dataVersion 3.0', (t) => {
+test('Metadata - Global doc metadata contains dataVersion 5.0', (t) => {
   const { context } = loadApp(buildBasicSeed());
   
   const meta = context.getGlobalDoc().getMap('meta');
   const dataVersion = meta.get('dataVersion');
   
-  assert.strictEqual(dataVersion, 3.0, 'Should have dataVersion 3.0');
+  assert.strictEqual(dataVersion, '5.0', 'Should have dataVersion 5.0');
 });
 
 test('Metadata - Global doc metadata contains currentSession UUID', (t) => {

@@ -201,6 +201,7 @@ function buildContext(seed = {}) {
     };
   }
 
+  const noop = () => {};
   const document = {
     createTextNode(text) {
       return { nodeValue: text };
@@ -216,9 +217,9 @@ function buildContext(seed = {}) {
         },
       };
     },
+    addEventListener: noop,
+    removeEventListener: noop,
   };
-
-  const noop = () => {};
   const jqueryStub = (selector) => {
     if (selector === document) {
       return { ready: noop };
@@ -248,8 +249,17 @@ function buildContext(seed = {}) {
     return 1;
   };
 
+  const silentConsole = {
+    log: noop,
+    warn: noop,
+    error: noop,
+    info: noop,
+    debug: noop,
+  };
+  const testConsole = process.env.TEST_LOGS ? console : silentConsole;
+
   const context = {
-    console,
+    console: testConsole,
     JSON,
     localStorage,
     document,
@@ -379,7 +389,7 @@ function loadApp(seed = {}) {
         
         ydoc.transact(() => {
           const meta = ydoc.getMap('meta');
-          meta.set('dataVersion', 3.0);
+          meta.set('dataVersion', '5.0');
           
           // sessionOrder will hold UUIDs in display order
           const sessionOrder = [];
@@ -626,13 +636,13 @@ function loadApp(seed = {}) {
       vm.runInContext('initialize_state();', context);
 
       // For tests, we need to sync Yjs changes back to localStorage so tests can verify
-      // that data was properly updated - use multi-doc v3.0 architecture
+      // that data was properly updated - use multi-doc v5.0 architecture
       vm.runInContext(`
         // After each transaction, sync Yjs state back to localStorage for test verification
         if (typeof ydoc !== 'undefined' && ydoc) {
           ydoc.on('update', function() {
             // Sync current session data back to localStorage for test verification
-            // Using v3.0 multi-doc architecture
+            // Using v5.0 multi-doc architecture
             const meta = ydoc.getMap('meta');
             const currentSessionId = meta.get('currentSession');
             const sessionOrder = meta.get('sessionOrder') || [];
@@ -688,7 +698,7 @@ function loadApp(seed = {}) {
 }
 
 // Helper function to export Yjs document data to localStorage-compatible format
-// Uses v3.0 multi-doc architecture
+// Uses v5.0 multi-doc architecture
 function exportYjsToLocalStorageFormat(ydoc, DocManager) {
   const result = {};
   

@@ -39,19 +39,21 @@ function buildRoundingSeed() {
 test('rounding uses the top team total for live scores and totals', () => {
   const { context } = loadApp(buildRoundingSeed());
 
-  // Execute debug code directly in VM to check state
-  const vm = require('vm');
-  const debugScript = `
-    (function() {
-      return {
-        current_session: typeof current_session !== 'undefined' ? current_session : 'UNDEFINED',
-        has_ydoc: typeof ydoc !== 'undefined',
-        session_result: typeof get_current_session !== 'undefined' ? (get_current_session() ? 'HAS_SESSION' : 'NULL_SESSION') : 'NO_FUNCTION'
-      };
-    })()
-  `;
-  const debugInfo = vm.runInContext(debugScript, context);
-  console.log('Debug from VM:', debugInfo);
+  if (process.env.TEST_LOGS) {
+    // Execute debug code directly in VM to check state
+    const vm = require('vm');
+    const debugScript = `
+      (function() {
+        return {
+          current_session: typeof current_session !== 'undefined' ? current_session : 'UNDEFINED',
+          has_ydoc: typeof ydoc !== 'undefined',
+          session_result: typeof get_current_session !== 'undefined' ? (get_current_session() ? 'HAS_SESSION' : 'NULL_SESSION') : 'NO_FUNCTION'
+        };
+      })()
+    `;
+    const debugInfo = vm.runInContext(debugScript, context);
+    console.log('Debug from VM:', debugInfo);
+  }
 
   try {
     context.sync_data_to_display();

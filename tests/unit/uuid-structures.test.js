@@ -108,9 +108,9 @@ test('softDelete sets deleted flag and timestamp', () => {
 test('DATA_VERSION constants are defined', () => {
   const { context } = loadApp(createYjsDoc({ currentSession: 1, sessions: [] }));
   
-  assert.equal(context.DATA_VERSION_CURRENT, '3.0');
+  assert.equal(context.DATA_VERSION_CURRENT, '5.0');
   assert.equal(context.DATA_VERSION_UUID, '4.0');
-  assert.equal(context.MIN_SYNC_VERSION, '3.0');
+  assert.equal(context.MIN_SYNC_VERSION, '5.0');
 });
 
 test('getOrderedTeams returns teams for v5 session', () => {
@@ -1125,11 +1125,10 @@ test('USE_UUID_FOR_NEW_SESSIONS flag exists and is enabled', () => {
   assert.equal(context.USE_UUID_FOR_NEW_SESSIONS, true, 'Flag should be true for v4 migration');
 });
 
-test('AUTO_MIGRATE_TO_V4 flag exists and is enabled', () => {
+test('ensureSessionIsV5 exists for automatic upgrades', () => {
   const { context } = loadApp(createYjsDoc({ currentSession: 1, sessions: [] }));
   
-  assert.equal(typeof context.AUTO_MIGRATE_TO_V4, 'boolean', 'Flag should be defined');
-  assert.equal(context.AUTO_MIGRATE_TO_V4, true, 'Auto-migration should be enabled');
+  assert.equal(typeof context.ensureSessionIsV5, 'function', 'ensureSessionIsV5 should be defined');
 });
 // ============================================================================
 // V4 EXPORT/IMPORT TESTS

@@ -49,11 +49,10 @@ var DocManager = {
 
 /**
  * Current data version for sessions.
- * v3.0 = multi-doc architecture with index-based arrays
  * v4.0 = UUID-keyed Y.Maps with order arrays
  * v5.0 = Deterministic question IDs (q-1, q-2, etc.)
  */
-var DATA_VERSION_CURRENT = '3.0';
+var DATA_VERSION_CURRENT = '5.0';
 var DATA_VERSION_UUID = '4.0';
 var DATA_VERSION_DETERMINISTIC = '5.0';
 
@@ -65,16 +64,10 @@ var DATA_VERSION_DETERMINISTIC = '5.0';
 var USE_UUID_FOR_NEW_SESSIONS = true;
 
 /**
- * Whether to auto-migrate v3 sessions to v4 when they are loaded.
- * When true, sessions are migrated transparently without user interaction.
- */
-var AUTO_MIGRATE_TO_V4 = true;
-
-/**
  * Minimum sync version - clients must have at least this version to sync.
- * After migration, set to '4.0' to prevent v3 clients from syncing with v4.
+ * v5-only runtime: prevent legacy clients from syncing.
  */
-var MIN_SYNC_VERSION = '3.0';
+var MIN_SYNC_VERSION = '5.0';
 
 // ============================================================================
 // UUID GENERATION FUNCTIONS
@@ -295,6 +288,84 @@ function migrateV4ToV5(sessionDoc, session) {
   
   console.log(`Migration complete: ${orderedQuestions.length} questions cleaned up`);
   return true;
+}
+
+/**
+ * Detect session data format for upgrade routing.
+ * @param {Y.Map} session - The session Y.Map
+ * @returns {string} 'v5', 'v4', 'v3', or 'unknown'
+ */
+function detectSessionFormat(session) {
+  if (!session) return 'unknown';
+  if (isDeterministicSession(session)) return 'v5';
+  if (session.get('teamsById') || session.get('questionsById') || session.get('blocksById')) {
+    return 'v4';
+  }
+  if (session.get('teams') || session.get('questions') || session.get('blocks')) {
+    return 'v3';
+  }
+  return 'unknown';
+}
+
+/**
+ * Ensure a session is upgraded to v5 deterministic structure.
+ * @param {Y.Doc} sessionDoc - The session Y.Doc
+ * @returns {{upgraded: boolean, reason: string}} Upgrade result
+ */
+function ensureSessionIsV5(sessionDoc) {
+  if (!sessionDoc) return { upgraded: false, reason: 'no-doc' };
+  const session = sessionDoc.getMap('session');
+  if (!session) return { upgraded: false, reason: 'no-session' };
+
+  if (isDeterministicSession(session)) {
+    validateQuestionCounter(session);
+    return { upgraded: false, reason: 'already-v5' };
+  }
+
+  const format = detectSessionFormat(session);
+  if (format === 'v3') {
+    const result = migrateSessionToUUID(sessionDoc);
+    if (result && result.success === false) {
+      return { upgraded: false, reason: 'v3-migration-failed' };
+    }
+  } else if (format === 'v4') {
+    const dataVersion = session.get('dataVersion');
+    if (dataVersion !== DATA_VERSION_UUID && dataVersion !== '4.0') {
+      sessionDoc.transact(() => {
+        session.set('dataVersion', DATA_VERSION_UUID);
+      }, 'migration');
+    }
+  } else {
+    return { upgraded: false, reason: 'unknown-format' };
+  }
+
+  const upgradedSession = sessionDoc.getMap('session');
+  const migrated = migrateV4ToV5(sessionDoc, upgradedSession);
+  if (migrated && isDeterministicSession(upgradedSession)) {
+    validateQuestionCounter(upgradedSession);
+  }
+  return { upgraded: migrated, reason: migrated ? 'upgraded' : 'no-change' };
+}
+
+/**
+ * Upgrade all sessions in the global order to v5.
+ * @returns {Promise<{upgraded: number, total: number}>}
+ */
+async function upgradeAllSessionsToV5() {
+  if (!getGlobalDoc()) return { upgraded: 0, total: 0 };
+  const meta = getGlobalDoc().getMap('meta');
+  const sessionOrder = meta.get('sessionOrder') || [];
+  let upgraded = 0;
+
+  for (const sessionId of sessionOrder) {
+    const sessionDoc = await initSessionDoc(sessionId);
+    const result = ensureSessionIsV5(sessionDoc);
+    if (result && result.upgraded) {
+      upgraded++;
+    }
+  }
+
+  return { upgraded, total: sessionOrder.length };
 }
 
 /**
@@ -1398,13 +1469,10 @@ async function initSessionDoc(sessionId) {
           console.log('Session doc synced:', sessionId);
           DocManager.pendingSessionLoads.delete(sessionId);
           
-          // Auto-migrate v3 sessions to v4 if enabled
-          if (AUTO_MIGRATE_TO_V4) {
-            const session = sessionDoc.getMap('session');
-            if (session && !isUUIDSession(session) && session.get('teams')) {
-              console.log('Auto-migrating session to v4:', sessionId);
-              migrateSessionToUUID(sessionDoc);
-            }
+          // Ensure sessions are upgraded to v5 deterministically on load
+          const upgradeResult = ensureSessionIsV5(sessionDoc);
+          if (upgradeResult.upgraded) {
+            console.log('Upgraded session to v5:', sessionId);
           }
           
           // Set up history listener for this session
@@ -1699,7 +1767,7 @@ function is_multi_doc() {
 }
 
 /**
- * Initialize new Yjs state for first-time users (v3.0 multi-doc)
+ * Initialize new Yjs state for first-time users (v5.0 multi-doc)
  * Creates global doc structure and first session doc
  */
 async function initialize_new_yjs_state() {
@@ -1716,7 +1784,7 @@ async function initialize_new_yjs_state() {
   // Initialize global doc structure
   getGlobalDoc().transact(function() {
     const meta = getGlobalDoc().getMap('meta');
-    meta.set('dataVersion', 3.0);
+    meta.set('dataVersion', DATA_VERSION_DETERMINISTIC);
     meta.set('currentSession', sessionId);
     meta.set('sessionOrder', [sessionId]);
     
@@ -1732,78 +1800,24 @@ async function initialize_new_yjs_state() {
 
   // Create first session doc
   const sessionDoc = await initSessionDoc(sessionId);
-  
-  sessionDoc.transact(function() {
-    const session = sessionDoc.getMap('session');
-    session.set('id', sessionId);
-    session.set('name', sessionName);
-    session.set('createdAt', Date.now());
-    session.set('lastModified', Date.now());
 
-    // Config
-    const config = new Y.Map();
-    config.set('maxPointsPerQuestion', 12);
-    config.set('rounding', false);
-    session.set('config', config);
-
-    // Teams
-    const teams = new Y.Array();
-    teams.push([null]); // Placeholder at index 0
-    const team1 = new Y.Map();
-    team1.set('name', (typeof t === 'function') ? t('defaults.team_name', { number: 1 }) : 'Team 1');
-    teams.push([team1]);
-    session.set('teams', teams);
-
-    // Blocks
-    const blocks = new Y.Array();
-    const block0 = new Y.Map();
-    block0.set('name', (typeof t === 'function') ? t('defaults.no_block') : 'No Block/Group');
-    blocks.push([block0]);
-    const block1 = new Y.Map();
-    block1.set('name', (typeof t === 'function') ? t('defaults.block_name', { number: 1 }) : 'Block/Group 1');
-    blocks.push([block1]);
-    session.set('blocks', blocks);
-
-    // Questions
-    const questions = new Y.Array();
-    questions.push([null]); // Placeholder at index 0
-
-    const initNow = Date.now();
-    const question1 = new Y.Map();
-    question1.set('name', (typeof t === 'function') ? t('defaults.question_name', { number: 1 }) : 'Question 1');
-    question1.set('nameUpdatedAt', initNow);
-    question1.set('score', 0);
-    question1.set('scoreUpdatedAt', initNow);
-    question1.set('block', 0);
-    question1.set('blockUpdatedAt', initNow);
-    question1.set('ignore', false);
-    question1.set('ignoreUpdatedAt', initNow);
-
-    const questionTeams = new Y.Array();
-    questionTeams.push([null]); // Placeholder at index 0
-    const team1Score = new Y.Map();
-    team1Score.set('score', 0);
-    team1Score.set('scoreUpdatedAt', initNow);
-    team1Score.set('extraCredit', 0);
-    team1Score.set('extraCreditUpdatedAt', initNow);
-    questionTeams.push([team1Score]);
-    question1.set('teams', questionTeams);
-
-    questions.push([question1]);
-    session.set('questions', questions);
-    // Note: currentQuestion is NOT stored in Yjs - it's tracked in-memory via current_question_index
-    // This allows each tab to navigate independently without sync conflicts
-
-    // Session-specific history log
-    const historyLog = new Y.Array();
-    session.set('historyLog', historyLog);
-  }, 'init');
+  const team1Name = (typeof t === 'function') ? t('defaults.team_name', { number: 1 }) : 'Team 1';
+  const block0Name = (typeof t === 'function') ? t('defaults.no_block') : 'No Block/Group';
+  const block1Name = (typeof t === 'function') ? t('defaults.block_name', { number: 1 }) : 'Block/Group 1';
+  createNewSessionV4(sessionDoc, {
+    id: sessionId,
+    name: sessionName,
+    maxPointsPerQuestion: 12,
+    rounding: false,
+    teamNames: [team1Name],
+    blockNames: [block0Name, block1Name]
+  });
 
   // Set active session
   DocManager.setActiveSession(sessionId);
 
   // Log creation in global history
-  const initSessionName = (typeof t === 'function') ? t('defaults.session_name', { date: date }) : 'Session ' + date;
+  const initSessionName = sessionName;
   add_global_history_entry(
     'history_global.actions.create_session',
     'history_global.details_templates.created_session',
@@ -2003,7 +2017,7 @@ function extractYMap(yMap) {
 }
 
 /**
- * Load state from Yjs - handles both v2.0 and v3.0 formats
+ * Load state from Yjs - upgrades legacy formats to v5
  * @returns {Promise<void>}
  */
 async function load_from_yjs() {
@@ -2023,31 +2037,31 @@ async function load_from_yjs() {
     await switch_to_new_database_key();
   }
 
-  // Load v3.0 format
+  // Load session state and upgrade to v5
   const currentSessionId = meta.get('currentSession');
   
   // Ensure session doc is loaded
   await initSessionDoc(currentSessionId);
   DocManager.setActiveSession(currentSessionId);
+
+  // Upgrade all sessions to v5 immediately
+  await upgradeAllSessionsToV5();
+  // Stamp global metadata to v5 after upgrade
+  getGlobalDoc().transact(function() {
+    meta.set('dataVersion', DATA_VERSION_DETERMINISTIC);
+  }, 'migration');
   
   // Jump to last question for the current session
   const sessionDoc = DocManager.getActiveSessionDoc();
   const session = sessionDoc ? sessionDoc.getMap('session') : null;
   if (session) {
-    // Support both v3 (questions array) and v4/v5 (questionsById map)
-    const questions = session.get('questions');
-    const questionsById = session.get('questionsById');
-    let questionCount = 0;
-    if (questions && questions.length) {
-      questionCount = questions.length;
-    } else if (questionsById) {
-      questionCount = questionsById.size;
-    }
+    const orderedQuestions = getOrderedQuestions(session);
+    const questionCount = orderedQuestions.length;
     const lastQuestionIndex = Math.max(1, questionCount - 1);
     current_question_index = lastQuestionIndex;
   }
   
-  console.log('Loaded from Yjs v3.0, current session:', currentSessionId);
+  console.log('Loaded from Yjs, current session:', currentSessionId);
 }
 
 /**
@@ -2305,23 +2319,13 @@ async function pruneEmptySessions() {
       continue;
     }
     
-    // Check if session is empty (no teams and no blocks)
-    let teamCount = 0;
-    let blockCount = 0;
-    
-    if (isUUIDSession(session)) {
-      // v4/v5 UUID-based structure
-      const orderedTeams = getOrderedTeams(session);
-      const orderedBlocks = getOrderedBlocks(session);
-      teamCount = orderedTeams.length;
-      blockCount = orderedBlocks.length;
-    } else {
-      // v3 index-based structure
-      const teams = session.get('teams');
-      const blocks = session.get('blocks');
-      teamCount = teams ? teams.length : 0;
-      blockCount = blocks ? blocks.length : 0;
-    }
+    // Ensure v5 and check if session is empty (no teams and no blocks)
+    ensureSessionIsV5(sessionDoc);
+    const upgradedSession = sessionDoc.getMap('session');
+    const orderedTeams = getOrderedTeams(upgradedSession);
+    const orderedBlocks = getOrderedBlocks(upgradedSession);
+    const teamCount = orderedTeams.length;
+    const blockCount = orderedBlocks.length;
     
     if (teamCount === 0 && blockCount === 0) {
       emptySessionIds.push(sessionId);
@@ -2407,25 +2411,13 @@ function get_team_names() {
   const team1Text = (typeof t === 'function') ? t('defaults.team_name', {number: 1}) : 'Team 1';
   const session = get_current_session();
   if (!session) return ['', team1Text];
-  
-  // v4.0 UUID-based structure
-  if (isUUIDSession(session)) {
-    const orderedTeams = getOrderedTeams(session);
-    const names = [''];  // Index 0 placeholder for v3 compatibility
-    for (let i = 0; i < orderedTeams.length; i++) {
-      names.push(orderedTeams[i].data.get('name') || '');
-    }
-    return names;
-  }
-  
-  // v3.0 index-based structure
-  const teams = session.get('teams');
-  if (!teams) return ['', team1Text];
-  
-  const names = [];
-  for (let i = 0; i < teams.length; i++) {
-    const team = teams.get(i);
-    names.push(team ? team.get('name') : '');
+
+  if (!isUUIDSession(session)) return ['', team1Text];
+
+  const orderedTeams = getOrderedTeams(session);
+  const names = [''];  // Index 0 placeholder for 1-based UI indexing
+  for (let i = 0; i < orderedTeams.length; i++) {
+    names.push(orderedTeams[i].data.get('name') || '');
   }
   return names;
 }
@@ -2440,25 +2432,13 @@ function get_block_names() {
   const block1Text = (typeof t === 'function') ? t('defaults.block_name', {number: 1}) : 'Block/Group 1';
   const session = get_current_session();
   if (!session) return [noBlockText, block1Text];
-  
-  // v4.0 UUID-based structure
-  if (isUUIDSession(session)) {
-    const orderedBlocks = getOrderedBlocks(session);
-    const names = [];
-    for (let i = 0; i < orderedBlocks.length; i++) {
-      names.push(orderedBlocks[i].data.get('name') || '');
-    }
-    return names;
-  }
-  
-  // v3.0 index-based structure
-  const blocks = session.get('blocks');
-  if (!blocks) return [noBlockText, block1Text];
-  
+
+  if (!isUUIDSession(session)) return [noBlockText, block1Text];
+
+  const orderedBlocks = getOrderedBlocks(session);
   const names = [];
-  for (let i = 0; i < blocks.length; i++) {
-    const block = blocks.get(i);
-    names.push(block ? block.get('name') : '');
+  for (let i = 0; i < orderedBlocks.length; i++) {
+    names.push(orderedBlocks[i].data.get('name') || '');
   }
   return names;
 }
@@ -2472,25 +2452,13 @@ function get_question_names() {
   const question1Text = (typeof t === 'function') ? t('defaults.question_name', {number: 1}) : 'Question 1';
   const session = get_current_session();
   if (!session) return ['', question1Text];
-  
-  // v4.0 UUID-based structure
-  if (isUUIDSession(session)) {
-    const orderedQuestions = getOrderedQuestions(session);
-    const names = [''];  // Index 0 placeholder for v3 compatibility
-    for (let i = 0; i < orderedQuestions.length; i++) {
-      names.push(orderedQuestions[i].data.get('name') || '');
-    }
-    return names;
-  }
-  
-  // v3.0 index-based structure
-  const questions = session.get('questions');
-  if (!questions) return ['', question1Text];
-  
-  const names = [];
-  for (let i = 0; i < questions.length; i++) {
-    const question = questions.get(i);
-    names.push(question ? question.get('name') : '');
+
+  if (!isUUIDSession(session)) return ['', question1Text];
+
+  const orderedQuestions = getOrderedQuestions(session);
+  const names = [''];  // Index 0 placeholder for 1-based UI indexing
+  for (let i = 0; i < orderedQuestions.length; i++) {
+    names.push(orderedQuestions[i].data.get('name') || '');
   }
   return names;
 }

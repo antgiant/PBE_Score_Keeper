@@ -6,7 +6,7 @@ var hasExistingDataOnLoad = false;
 
 /**
  * Initialize application state
- * Handles first run, legacy migration, and v2→v3 migration
+ * Handles first run, legacy migration, and v2→v5 migration
  */
 async function initialize_state() {
   // Wait for Yjs to be ready
@@ -16,9 +16,9 @@ async function initialize_state() {
   }
 
   try {
-    // Check if Yjs has data (v2.0 or v3.0)
+    // Check if Yjs has data (v2.0 or v3.0+)
     if (has_yjs_data()) {
-      // Load from Yjs (will migrate v2.0 to v3.0 if needed)
+      // Load from Yjs (will migrate v2.0 to v5.0 if needed)
       await load_from_yjs();
       
       // Set flag to show welcome back dialog after display is initialized
@@ -50,11 +50,11 @@ async function initialize_state() {
     var data_version = JSON.parse(get_element("data_version"));
 
     if (data_version === null) {
-      // First run - initialize new v3.0 multi-doc state
+      // First run - initialize new v5.0 multi-doc state
       await initialize_new_yjs_state();
       await load_from_yjs();
     } else if (data_version < 2.0) {
-      // Migration needed from localStorage to v3.0
+      // Migration needed from localStorage to v5.0
       // Set flag for welcome back dialog after migration
       hasExistingDataOnLoad = true;
       await migrate_localStorage_to_v3(data_version);
@@ -145,11 +145,11 @@ function data_upgrades(data_version, data) {
 }
 
 /**
- * Migrate localStorage data directly to v3.0 multi-doc format
+ * Migrate localStorage data directly to v5.0 multi-doc format
  * @param {number} oldVersion - Current localStorage data version
  */
 async function migrate_localStorage_to_v3(oldVersion) {
-  console.log('Starting migration from localStorage v' + oldVersion + ' to Yjs v3.0');
+  console.log('Starting migration from localStorage v' + oldVersion + ' to Yjs v5.0');
 
   try {
     // Create backup of localStorage
@@ -183,81 +183,108 @@ async function migrate_localStorage_to_v3(oldVersion) {
 
       // Create session doc
       const sessionDoc = await initSessionDoc(sessionId);
-      const teamNames = JSON.parse(upgradedData['session_' + s + '_team_names']);
+      const teamNames = JSON.parse(upgradedData['session_' + s + '_team_names'] || '[""]');
+      const blockNames = JSON.parse(upgradedData['session_' + s + '_block_names'] || '[]');
+      const normalizedTeamNames = teamNames.length > 1 ? teamNames.slice(1) : null;
+      const normalizedBlockNames = blockNames.length > 0 ? blockNames : null;
+      const maxPoints = Number(JSON.parse(upgradedData['session_' + s + '_max_points_per_question'] || '0'));
+      const rounding = JSON.parse(upgradedData['session_' + s + '_rounding'] || 'false') === 'true';
 
-      sessionDoc.transact(function() {
-        const session = sessionDoc.getMap('session');
-        session.set('id', sessionId);
-        session.set('name', sessionNames[s]);
-        session.set('createdAt', Date.now());
-        session.set('lastModified', Date.now());
+      // Create v5 session with deterministic IDs
+      createNewSessionV4(sessionDoc, {
+        id: sessionId,
+        name: sessionNames[s],
+        maxPointsPerQuestion: maxPoints,
+        rounding: rounding,
+        teamNames: normalizedTeamNames,
+        blockNames: normalizedBlockNames
+      });
 
-        // Config
-        const config = new Y.Map();
-        config.set('maxPointsPerQuestion', Number(JSON.parse(upgradedData['session_' + s + '_max_points_per_question'])));
-        config.set('rounding', JSON.parse(upgradedData['session_' + s + '_rounding']) === 'true');
-        session.set('config', config);
+      const session = sessionDoc.getMap('session');
+      const orderedTeams = getOrderedTeams(session);
+      const teamIdByIndex = [null];
+      orderedTeams.forEach(function(team) {
+        teamIdByIndex.push(team.id);
+      });
 
-        // Teams
-        const teams = new Y.Array();
-        teams.push([null]); // Placeholder at index 0
-        for (let t = 1; t < teamNames.length; t++) {
-          const teamMap = new Y.Map();
-          teamMap.set('name', teamNames[t]);
-          teams.push([teamMap]);
+      const orderedBlocks = getOrderedBlocks(session);
+      const blockIdByIndex = [null];
+      orderedBlocks.forEach(function(block) {
+        blockIdByIndex.push(block.id);
+      });
+
+      const questionNames = JSON.parse(upgradedData['session_' + s + '_question_names'] || '[null]');
+      const questionCount = Math.max(0, questionNames.length - 1);
+      const orderedQuestions = getOrderedQuestions(session);
+      const teamCount = Math.max(0, teamNames.length - 1);
+
+      function applyQuestionData(questionId, questionIndex) {
+        const questionsById = session.get('questionsById');
+        if (!questionsById) return;
+        const question = questionsById.get(questionId);
+        if (!question) return;
+
+        const name = questionNames[questionIndex] || '';
+        const score = Number(JSON.parse(upgradedData['session_' + s + '_question_' + questionIndex + '_score'] || '0'));
+        const blockIndex = Number(JSON.parse(upgradedData['session_' + s + '_question_' + questionIndex + '_block'] || '0'));
+        const ignore = JSON.parse(upgradedData['session_' + s + '_question_' + questionIndex + '_ignore'] || 'false') === 'true';
+        const blockId = blockIdByIndex[blockIndex + 1] || blockIdByIndex[1];
+
+        question.set('name', name);
+        question.set('score', score);
+        if (blockId) {
+          question.set('blockId', blockId);
         }
-        session.set('teams', teams);
+        question.set('ignore', ignore);
 
-        // Blocks
-        const blocks = new Y.Array();
-        const blockNames = JSON.parse(upgradedData['session_' + s + '_block_names']);
-        for (let b = 0; b < blockNames.length; b++) {
-          const blockMap = new Y.Map();
-          blockMap.set('name', blockNames[b]);
-          blocks.push([blockMap]);
+        let teamScores = question.get('teamScores');
+        if (!teamScores) {
+          teamScores = new Y.Map();
+          question.set('teamScores', teamScores);
         }
-        session.set('blocks', blocks);
 
-        // Questions
-        const questions = new Y.Array();
-        const questionNames = JSON.parse(upgradedData['session_' + s + '_question_names']);
-        questions.push([null]); // Placeholder at index 0
+        for (let t = 1; t <= teamCount; t++) {
+          const teamId = teamIdByIndex[t];
+          if (!teamId) continue;
+          const scoreValue = Number(JSON.parse(upgradedData['session_' + s + '_question_' + questionIndex + '_team_' + t + '_score'] || '0'));
+          const extraValue = Number(JSON.parse(upgradedData['session_' + s + '_question_' + questionIndex + '_team_' + t + '_extra_credit'] || '0'));
 
-        for (let q = 1; q < questionNames.length; q++) {
-          const questionMap = new Y.Map();
-          questionMap.set('name', questionNames[q]);
-          questionMap.set('score', Number(JSON.parse(upgradedData['session_' + s + '_question_' + q + '_score'] || '0')));
-          questionMap.set('block', Number(JSON.parse(upgradedData['session_' + s + '_question_' + q + '_block'] || '0')));
-          questionMap.set('ignore', JSON.parse(upgradedData['session_' + s + '_question_' + q + '_ignore'] || 'false') === 'true');
-
-          // Question teams
-          const questionTeams = new Y.Array();
-          questionTeams.push([null]); // Placeholder at index 0
-          for (let t = 1; t < teamNames.length; t++) {
-            const teamScoreMap = new Y.Map();
-            teamScoreMap.set('score', Number(JSON.parse(upgradedData['session_' + s + '_question_' + q + '_team_' + t + '_score'] || '0')));
-            teamScoreMap.set('extraCredit', Number(JSON.parse(upgradedData['session_' + s + '_question_' + q + '_team_' + t + '_extra_credit'] || '0')));
-            questionTeams.push([teamScoreMap]);
+          let scoreMap = teamScores.get(teamId);
+          if (!scoreMap) {
+            scoreMap = new Y.Map();
+            teamScores.set(teamId, scoreMap);
           }
-          questionMap.set('teams', questionTeams);
-          questions.push([questionMap]);
+          scoreMap.set('score', scoreValue);
+          scoreMap.set('extraCredit', extraValue);
         }
+      }
 
-        session.set('questions', questions);
-        // Note: currentQuestion is no longer stored in Yjs - it's transient app state
+      if (questionCount > 0 && orderedQuestions.length > 0) {
+        applyQuestionData(orderedQuestions[0].id, 1);
+      }
 
-        // Empty history log
-        const historyLog = new Y.Array();
-        session.set('historyLog', historyLog);
-      }, 'migration');
+      for (let q = 2; q <= questionCount; q++) {
+        const name = questionNames[q] || '';
+        const score = Number(JSON.parse(upgradedData['session_' + s + '_question_' + q + '_score'] || '0'));
+        const blockIndex = Number(JSON.parse(upgradedData['session_' + s + '_question_' + q + '_block'] || '0'));
+        const blockId = blockIdByIndex[blockIndex + 1] || blockIdByIndex[1];
+
+        const newQuestionId = createQuestion(sessionDoc, session, {
+          name: name,
+          score: score,
+          blockId: blockId
+        });
+
+        applyQuestionData(newQuestionId, q);
+      }
     }
 
-    // Set up global doc with v3.0 structure
+    // Set up global doc with v5.0 structure
     const newCurrentSession = indexToUuid.get(oldCurrentSession) || sessionOrder[0];
 
     getGlobalDoc().transact(function() {
       const meta = getGlobalDoc().getMap('meta');
-      meta.set('dataVersion', 3.0);
+      meta.set('dataVersion', (typeof DATA_VERSION_DETERMINISTIC !== 'undefined') ? DATA_VERSION_DETERMINISTIC : '5.0');
       meta.set('currentSession', newCurrentSession);
       meta.set('sessionOrder', sessionOrder);
       
@@ -282,7 +309,7 @@ async function migrate_localStorage_to_v3(oldVersion) {
       localStorage.removeItem(key);
     });
 
-    console.log('Migration to v3.0 completed successfully');
+    console.log('Migration to v5.0 completed successfully');
   } catch (error) {
     console.error('Migration failed:', error);
     alert(t('alerts.migration_failed'));
@@ -380,24 +407,17 @@ async function createNewSession(name) {
   const currentSession = get_current_session();
   if (!currentSession) return null;
 
-  // Support both v3 (questions array) and v4/v5 (questionsById map)
-  const questions = currentSession.get('questions');
-  const questionsById = currentSession.get('questionsById');
-  let question_count = 0;
-  
-  if (questionsById && questionsById.size > 0) {
-    // V4/V5: Use ordered questions
-    const orderedQuestions = getOrderedQuestions(currentSession);
-    question_count = orderedQuestions.length;
-    if (question_count > 0 && orderedQuestions[question_count - 1].data.get('score') === 0) {
-      question_count--;
+  if (!isUUIDSession(currentSession)) {
+    const currentDoc = getActiveSessionDoc();
+    if (currentDoc) {
+      ensureSessionIsV5(currentDoc);
     }
-  } else if (questions && questions.length > 0) {
-    // V3: Use questions array
-    question_count = questions.length - 1;
-    if (questions.get(question_count) && questions.get(question_count).get('score') === 0) {
-      question_count--;
-    }
+  }
+
+  const orderedQuestions = getOrderedQuestions(currentSession);
+  let question_count = orderedQuestions.length;
+  if (question_count > 0 && orderedQuestions[question_count - 1].data.get('score') === 0) {
+    question_count--;
   }
 
   // Only allow new session if current has some data
@@ -430,79 +450,14 @@ async function createNewSession(name) {
   // Create new session doc
   const sessionDoc = await initSessionDoc(sessionId);
 
-  // Check if we should use v4 UUID-based format
-  if (typeof USE_UUID_FOR_NEW_SESSIONS !== 'undefined' && USE_UUID_FOR_NEW_SESSIONS) {
-    // Create v4 session using UUID helpers
-    createNewSessionV4(sessionDoc, {
-      name: sessionName,
-      maxPointsPerQuestion: temp_max_points,
-      rounding: temp_rounding,
-      teamNames: temp_team_names.slice(1), // Remove null at index 0
-      blockNames: temp_block_names
-    });
-  } else {
-    // Create v3 session (index-based)
-    sessionDoc.transact(function() {
-      const session = sessionDoc.getMap('session');
-      session.set('id', sessionId);
-      session.set('name', sessionName);
-      session.set('createdAt', Date.now());
-      session.set('lastModified', Date.now());
-
-    // Copy config
-    const newConfig = new Y.Map();
-    newConfig.set('maxPointsPerQuestion', temp_max_points);
-    newConfig.set('rounding', temp_rounding);
-    session.set('config', newConfig);
-
-    // Copy teams
-    const newTeams = new Y.Array();
-    newTeams.push([null]); // Placeholder at index 0
-    for (let i = 1; i < temp_team_names.length; i++) {
-      const teamMap = new Y.Map();
-      teamMap.set('name', temp_team_names[i]);
-      newTeams.push([teamMap]);
-    }
-    session.set('teams', newTeams);
-
-    // Copy blocks
-    const newBlocks = new Y.Array();
-    for (let i = 0; i < temp_block_names.length; i++) {
-      const blockMap = new Y.Map();
-      blockMap.set('name', temp_block_names[i]);
-      newBlocks.push([blockMap]);
-    }
-    session.set('blocks', newBlocks);
-
-    // Create first question
-    const newQuestions = new Y.Array();
-    newQuestions.push([null]); // Placeholder at index 0
-
-    const question1 = new Y.Map();
-    question1.set('name', t('defaults.question_name', { number: 1 }));
-    question1.set('score', 0);
-    question1.set('block', 0);
-    question1.set('ignore', false);
-
-    const question1Teams = new Y.Array();
-    question1Teams.push([null]); // Placeholder
-    for (let i = 1; i < temp_team_names.length; i++) {
-      const teamScore = new Y.Map();
-      teamScore.set('score', 0);
-      teamScore.set('extraCredit', 0);
-      question1Teams.push([teamScore]);
-    }
-    question1.set('teams', question1Teams);
-
-    newQuestions.push([question1]);
-    session.set('questions', newQuestions);
-    // Note: currentQuestion is no longer stored in Yjs - it's transient app state
-
-    // Empty history log
-    const historyLog = new Y.Array();
-    session.set('historyLog', historyLog);
-    }, 'local');
-  } // End of else block for v3 session creation
+  // Create v5 session using UUID helpers
+  createNewSessionV4(sessionDoc, {
+    name: sessionName,
+    maxPointsPerQuestion: temp_max_points,
+    rounding: temp_rounding,
+    teamNames: temp_team_names.slice(1), // Remove null at index 0
+    blockNames: temp_block_names
+  });
 
   // Update global doc
   const meta = getGlobalDoc().getMap('meta');
@@ -559,6 +514,7 @@ async function createEmptySessionForSync(name) {
     session.set('createdAt', Date.now());
     session.set('lastModified', Date.now());
     session.set('isAwaitingSync', true);  // Flag to indicate waiting for sync data
+    session.set('dataVersion', (typeof DATA_VERSION_DETERMINISTIC !== 'undefined') ? DATA_VERSION_DETERMINISTIC : '5.0');
 
     // Minimal config
     const newConfig = new Y.Map();
@@ -566,19 +522,14 @@ async function createEmptySessionForSync(name) {
     newConfig.set('rounding', false);
     session.set('config', newConfig);
 
-    // Empty teams array with just the null placeholder
-    const newTeams = new Y.Array();
-    newTeams.push([null]); // Placeholder at index 0
-    session.set('teams', newTeams);
-
-    // Empty blocks array - not even "No Block"
-    const newBlocks = new Y.Array();
-    session.set('blocks', newBlocks);
-
-    // Empty questions array with just the null placeholder
-    const newQuestions = new Y.Array();
-    newQuestions.push([null]); // Placeholder at index 0
-    session.set('questions', newQuestions);
+    // Empty v5 structures
+    session.set('teamsById', new Y.Map());
+    session.set('teamOrder', new Y.Array());
+    session.set('questionsById', new Y.Map());
+    session.set('questionOrder', new Y.Array());
+    session.set('blocksById', new Y.Map());
+    session.set('blockOrder', new Y.Array());
+    session.set('nextQuestionNumber', 1);
 
     // Empty history log
     const historyLog = new Y.Array();
@@ -897,7 +848,7 @@ function updateSessionLastModified(sessionId) {
 
 /**
  * Extract session data for comparison (teams, blocks, questions names)
- * Supports both v3 (index-based) and v4 (UUID-based) session structures.
+ * Uses v5 ordered lists for merge matching.
  * @param {string} sessionId - Session UUID
  * @returns {Promise<Object>} Data object with teams, blocks, questions arrays
  */
@@ -921,48 +872,23 @@ async function extractSessionDataForMerge(sessionId) {
     questions: [null] // Index 0 is always null
   };
 
-  // Check if v4 (UUID-based) or v3 (index-based)
-  if (typeof isUUIDSession === 'function' && isUUIDSession(session)) {
-    // V4: Use ordered getter functions
-    const orderedTeams = getOrderedTeams(session);
-    for (const team of orderedTeams) {
-      result.teams.push(team.data.get('name') || null);
-    }
+  if (!isUUIDSession(session)) {
+    ensureSessionIsV5(sessionDoc);
+  }
 
-    const orderedBlocks = getOrderedBlocks(session);
-    for (const block of orderedBlocks) {
-      result.blocks.push(block.data.get('name') || null);
-    }
+  const orderedTeams = getOrderedTeams(session);
+  for (const team of orderedTeams) {
+    result.teams.push(team.data.get('name') || null);
+  }
 
-    const orderedQuestions = getOrderedQuestions(session);
-    for (const question of orderedQuestions) {
-      result.questions.push(question.data.get('name') || null);
-    }
-  } else {
-    // V3: Extract from index-based arrays
-    const teams = session.get('teams');
-    if (teams) {
-      for (let i = 1; i < teams.length; i++) {
-        const team = teams.get(i);
-        result.teams.push(team ? team.get('name') : null);
-      }
-    }
+  const orderedBlocks = getOrderedBlocks(session);
+  for (const block of orderedBlocks) {
+    result.blocks.push(block.data.get('name') || null);
+  }
 
-    const blocks = session.get('blocks');
-    if (blocks) {
-      for (let i = 1; i < blocks.length; i++) {
-        const block = blocks.get(i);
-        result.blocks.push(block ? block.get('name') : null);
-      }
-    }
-
-    const questions = session.get('questions');
-    if (questions) {
-      for (let i = 1; i < questions.length; i++) {
-        const question = questions.get(i);
-        result.questions.push(question ? question.get('name') : null);
-      }
-    }
+  const orderedQuestions = getOrderedQuestions(session);
+  for (const question of orderedQuestions) {
+    result.questions.push(question.data.get('name') || null);
   }
 
   return result;
@@ -2271,7 +2197,7 @@ async function waitForSessionData(sessionDoc, maxWait = 5000) {
   
   while (Date.now() - startTime < maxWait) {
     const session = sessionDoc.getMap('session');
-    if (session && session.get('teams') && session.get('blocks') && session.get('questions')) {
+    if (session && session.get('teamsById') && session.get('blocksById') && session.get('questionsById')) {
       return true;
     }
     // Wait 100ms and try again
@@ -2281,9 +2207,9 @@ async function waitForSessionData(sessionDoc, maxWait = 5000) {
   // Log what we found for debugging
   const session = sessionDoc.getMap('session');
   console.warn('waitForSessionData timeout. Session map exists:', !!session, 
-    'teams:', session ? !!session.get('teams') : false,
-    'blocks:', session ? !!session.get('blocks') : false,
-    'questions:', session ? !!session.get('questions') : false);
+    'teamsById:', session ? !!session.get('teamsById') : false,
+    'blocksById:', session ? !!session.get('blocksById') : false,
+    'questionsById:', session ? !!session.get('questionsById') : false);
   
   return false;
 }
@@ -2319,9 +2245,9 @@ async function applySessionMerge(sourceId, targetId, mappings) {
     const missing = [];
     if (!ss) missing.push('session map');
     else {
-      if (!ss.get('teams')) missing.push('teams');
-      if (!ss.get('blocks')) missing.push('blocks');
-      if (!ss.get('questions')) missing.push('questions');
+      if (!ss.get('teamsById')) missing.push('teams');
+      if (!ss.get('blocksById')) missing.push('blocks');
+      if (!ss.get('questionsById')) missing.push('questions');
     }
     throw new Error('Source session missing: ' + missing.join(', '));
   }
@@ -2330,9 +2256,9 @@ async function applySessionMerge(sourceId, targetId, mappings) {
     const missing = [];
     if (!ts) missing.push('session map');
     else {
-      if (!ts.get('teams')) missing.push('teams');
-      if (!ts.get('blocks')) missing.push('blocks');
-      if (!ts.get('questions')) missing.push('questions');
+      if (!ts.get('teamsById')) missing.push('teams');
+      if (!ts.get('blocksById')) missing.push('blocks');
+      if (!ts.get('questionsById')) missing.push('questions');
     }
     throw new Error('Target session missing: ' + missing.join(', '));
   }
@@ -2344,161 +2270,183 @@ async function applySessionMerge(sourceId, targetId, mappings) {
     throw new Error('Session data not found');
   }
 
-  // Get the data arrays and validate they exist
-  const sourceTeams = sourceSession.get('teams');
-  const sourceBlocks = sourceSession.get('blocks');
-  const sourceQuestions = sourceSession.get('questions');
-  const targetTeams = targetSession.get('teams');
-  const targetBlocks = targetSession.get('blocks');
-  const targetQuestions = targetSession.get('questions');
+  ensureSessionIsV5(sourceDoc);
+  ensureSessionIsV5(targetDoc);
 
-  // Validate required arrays exist
-  if (!sourceTeams || !sourceBlocks || !sourceQuestions) {
-    throw new Error('Source session data is incomplete');
-  }
-  if (!targetTeams || !targetBlocks || !targetQuestions) {
-    throw new Error('Target session data is incomplete');
+  const sourceTeams = getOrderedTeams(sourceSession);
+  const sourceBlocks = getOrderedBlocks(sourceSession);
+  const sourceQuestions = getOrderedQuestions(sourceSession);
+  const targetTeams = getOrderedTeams(targetSession);
+  const targetBlocks = getOrderedBlocks(targetSession);
+  const targetQuestions = getOrderedQuestions(targetSession);
+
+  const sourceTeamIds = [null];
+  sourceTeams.forEach(function(team) { sourceTeamIds.push(team.id); });
+  const targetTeamIds = [null];
+  targetTeams.forEach(function(team) { targetTeamIds.push(team.id); });
+
+  const sourceBlockIds = [null];
+  const sourceBlockIndexById = new Map();
+  sourceBlocks.forEach(function(block, index) {
+    const blockIndex = index + 1;
+    sourceBlockIds.push(block.id);
+    sourceBlockIndexById.set(block.id, blockIndex);
+  });
+  const targetBlockIds = [null];
+  targetBlocks.forEach(function(block) { targetBlockIds.push(block.id); });
+
+  const sourceQuestionIds = [null];
+  sourceQuestions.forEach(function(question) { sourceQuestionIds.push(question.id); });
+  const targetQuestionIds = [null];
+  targetQuestions.forEach(function(question) { targetQuestionIds.push(question.id); });
+
+  const hasMappings = !!mappings;
+  const teamMap = mappings ? mappings.teams : {};
+  const blockMap = mappings ? mappings.blocks : {};
+  const questionMap = mappings ? mappings.questions : {};
+
+  function resolveMapping(map, index, targetCount) {
+    if (map && map[index] !== undefined) return map[index];
+    if (!hasMappings) return index <= targetCount ? index : 'new';
+    return 'new';
   }
 
   targetDoc.transact(function() {
-    // Build mapping lookups
-    const teamMap = mappings ? mappings.teams : {};
-    const blockMap = mappings ? mappings.blocks : {};
-    const questionMap = mappings ? mappings.questions : {};
+    const newTeamIds = {};
+    const newBlockIds = {};
+    let defaultBlockId = null;
+    let defaultBlockAssigned = false;
 
-    // For items mapped to 'new', we need to add them to target
-    // For items mapped to existing indices, we merge scores
+    for (let i = 0; i < targetBlocks.length; i++) {
+      const block = targetBlocks[i];
+      if (block && block.data.get('isDefault')) {
+        defaultBlockId = block.id;
+        defaultBlockAssigned = true;
+        break;
+      }
+    }
 
     // Process teams - add new ones
-    const newTeamIndices = {}; // Maps source index to new target index
-    for (let i = 1; i < sourceTeams.length; i++) {
-      const sourceTeam = sourceTeams.get(i);
+    for (let i = 1; i < sourceTeamIds.length; i++) {
+      const sourceTeam = sourceTeams[i - 1];
       if (!sourceTeam) continue;
 
-      if (teamMap[i] === 'new') {
-        // Add new team to target
-        const newTeam = new Y.Map();
-        newTeam.set('name', sourceTeam.get('name'));
-        targetTeams.push([newTeam]);
-        newTeamIndices[i] = targetTeams.length - 1;
-
-        // Add placeholder scores for existing target questions
-        for (let q = 1; q < targetQuestions.length; q++) {
-          const targetQ = targetQuestions.get(q);
-          if (targetQ) {
-            const teamScores = targetQ.get('teams');
-            const newScore = new Y.Map();
-            newScore.set('score', 0);
-            newScore.set('extraCredit', 0);
-            teamScores.push([newScore]);
-          }
-        }
+      const teamSelection = resolveMapping(teamMap, i, targetTeamIds.length - 1);
+      if (teamSelection === 'new') {
+        const newTeamId = createTeam(targetDoc, targetSession, sourceTeam.data.get('name') || '');
+        newTeamIds[i] = newTeamId;
       }
     }
 
     // Process blocks - add new ones
-    const newBlockIndices = {};
-    for (let i = 1; i < sourceBlocks.length; i++) {
-      const sourceBlock = sourceBlocks.get(i);
+    for (let i = 1; i < sourceBlockIds.length; i++) {
+      const sourceBlock = sourceBlocks[i - 1];
       if (!sourceBlock) continue;
 
-      if (blockMap[i] === 'new') {
-        const newBlock = new Y.Map();
-        newBlock.set('name', sourceBlock.get('name'));
-        targetBlocks.push([newBlock]);
-        newBlockIndices[i] = targetBlocks.length - 1;
+      const blockSelection = resolveMapping(blockMap, i, targetBlockIds.length - 1);
+      if (blockSelection === 'new') {
+        const shouldDefault = !!sourceBlock.data.get('isDefault') && !defaultBlockAssigned;
+        const newBlockId = createBlock(targetDoc, targetSession, sourceBlock.data.get('name') || '', shouldDefault);
+        newBlockIds[i] = newBlockId;
+        if (shouldDefault) {
+          defaultBlockAssigned = true;
+          defaultBlockId = newBlockId;
+        }
       }
     }
 
+    if (!defaultBlockId && targetBlockIds.length > 1) {
+      defaultBlockId = targetBlockIds[1];
+    }
+
     // Process questions - add new ones and merge scores
-    for (let i = 1; i < sourceQuestions.length; i++) {
-      const sourceQ = sourceQuestions.get(i);
-      if (!sourceQ) continue;
+    for (let i = 1; i < sourceQuestionIds.length; i++) {
+      const sourceQuestion = sourceQuestions[i - 1];
+      if (!sourceQuestion) continue;
 
-      if (questionMap[i] === 'new') {
-        // Add new question
-        const newQuestion = new Y.Map();
-        newQuestion.set('name', sourceQ.get('name'));
-        newQuestion.set('score', sourceQ.get('score'));
-        
-        // Map block index
-        const sourceBlockIdx = sourceQ.get('block');
-        let targetBlockIdx = sourceBlockIdx;
-        if (blockMap[sourceBlockIdx] === 'new') {
-          targetBlockIdx = newBlockIndices[sourceBlockIdx] || sourceBlockIdx;
-        } else if (typeof blockMap[sourceBlockIdx] === 'number') {
-          targetBlockIdx = blockMap[sourceBlockIdx];
-        }
-        newQuestion.set('block', targetBlockIdx);
-        newQuestion.set('ignore', sourceQ.get('ignore') || false);
+      const sourceQuestionData = sourceQuestion.data;
+      const sourceBlockId = sourceQuestionData.get('blockId');
+      const sourceBlockIndex = sourceBlockIndexById.get(sourceBlockId) || 1;
+      const blockSelection = resolveMapping(blockMap, sourceBlockIndex, targetBlockIds.length - 1);
+      let targetBlockId = defaultBlockId;
+      if (blockSelection === 'new') {
+        targetBlockId = newBlockIds[sourceBlockIndex] || defaultBlockId;
+      } else if (typeof blockSelection === 'number') {
+        targetBlockId = targetBlockIds[blockSelection] || defaultBlockId;
+      }
 
-        // Create team scores array
-        const newTeamScores = new Y.Array();
-        newTeamScores.push([null]); // Index 0 is null
+      const questionSelection = resolveMapping(questionMap, i, targetQuestionIds.length - 1);
+      if (questionSelection === 'new') {
+        const newQuestionId = createQuestion(targetDoc, targetSession, {
+          name: sourceQuestionData.get('name') || '',
+          score: sourceQuestionData.get('score') || 0,
+          blockId: targetBlockId
+        });
 
-        // Add scores for each target team
-        for (let t = 1; t < targetTeams.length; t++) {
-          const teamScore = new Y.Map();
-          
-          // Find if this target team maps from a source team
-          let found = false;
-          for (let st = 1; st < sourceTeams.length; st++) {
-            if (teamMap[st] === t || (!mappings && st === t && st < sourceTeams.length)) {
-              // This source team maps to this target team
-              const sourceTeamScores = sourceQ.get('teams');
-              if (sourceTeamScores && sourceTeamScores.get(st)) {
-                teamScore.set('score', sourceTeamScores.get(st).get('score') || 0);
-                teamScore.set('extraCredit', sourceTeamScores.get(st).get('extraCredit') || 0);
-                found = true;
-                break;
+        const questionsById = targetSession.get('questionsById');
+        const newQuestion = questionsById ? questionsById.get(newQuestionId) : null;
+        if (newQuestion) {
+          newQuestion.set('ignore', sourceQuestionData.get('ignore') || false);
+          const teamScores = newQuestion.get('teamScores');
+          const sourceTeamScores = sourceQuestionData.get('teamScores');
+          if (teamScores && sourceTeamScores) {
+            for (let st = 1; st < sourceTeamIds.length; st++) {
+              const sourceTeamId = sourceTeamIds[st];
+              const sourceScore = sourceTeamScores.get(sourceTeamId);
+              if (!sourceScore) continue;
+
+              const teamSelection = resolveMapping(teamMap, st, targetTeamIds.length - 1);
+              let targetTeamId = null;
+              if (teamSelection === 'new') {
+                targetTeamId = newTeamIds[st];
+              } else if (typeof teamSelection === 'number') {
+                targetTeamId = targetTeamIds[teamSelection];
               }
+              if (!targetTeamId) continue;
+
+              let targetScore = teamScores.get(targetTeamId);
+              if (!targetScore) {
+                targetScore = new Y.Map();
+                teamScores.set(targetTeamId, targetScore);
+              }
+              targetScore.set('score', sourceScore.get('score') || 0);
+              targetScore.set('extraCredit', sourceScore.get('extraCredit') || 0);
             }
           }
-          
-          if (!found) {
-            teamScore.set('score', 0);
-            teamScore.set('extraCredit', 0);
-          }
-          
-          newTeamScores.push([teamScore]);
         }
+      } else if (typeof questionSelection === 'number') {
+        const targetQuestionId = targetQuestionIds[questionSelection];
+        const questionsById = targetSession.get('questionsById');
+        const targetQuestion = questionsById ? questionsById.get(targetQuestionId) : null;
+        if (!targetQuestion) continue;
 
-        newQuestion.set('teams', newTeamScores);
-        targetQuestions.push([newQuestion]);
+        const sourceTeamScores = sourceQuestionData.get('teamScores');
+        const targetTeamScores = targetQuestion.get('teamScores');
+        if (!sourceTeamScores || !targetTeamScores) continue;
 
-      } else if (typeof questionMap[i] === 'number') {
-        // Merge scores into existing question
-        const targetQIdx = questionMap[i];
-        const targetQ = targetQuestions.get(targetQIdx);
-        if (!targetQ) continue;
+        for (let st = 1; st < sourceTeamIds.length; st++) {
+          const sourceTeamId = sourceTeamIds[st];
+          const sourceScore = sourceTeamScores.get(sourceTeamId);
+          if (!sourceScore) continue;
 
-        const sourceTeamScores = sourceQ.get('teams');
-        const targetTeamScores = targetQ.get('teams');
-
-        // Merge scores for mapped teams
-        for (let st = 1; st < sourceTeams.length; st++) {
-          let targetTeamIdx;
-          if (teamMap[st] === 'new') {
-            targetTeamIdx = newTeamIndices[st];
-          } else if (typeof teamMap[st] === 'number') {
-            targetTeamIdx = teamMap[st];
-          } else if (!mappings && st < targetTeams.length) {
-            targetTeamIdx = st;
-          } else {
-            continue;
+          const teamSelection = resolveMapping(teamMap, st, targetTeamIds.length - 1);
+          let targetTeamId = null;
+          if (teamSelection === 'new') {
+            targetTeamId = newTeamIds[st];
+          } else if (typeof teamSelection === 'number') {
+            targetTeamId = targetTeamIds[teamSelection];
           }
+          if (!targetTeamId) continue;
 
-          if (targetTeamIdx && sourceTeamScores && sourceTeamScores.get(st)) {
-            const sourceScore = sourceTeamScores.get(st);
-            if (targetTeamScores && targetTeamScores.get(targetTeamIdx)) {
-              // Add scores together (merge)
-              const targetScore = targetTeamScores.get(targetTeamIdx);
-              const newScore = (targetScore.get('score') || 0) + (sourceScore.get('score') || 0);
-              const newExtra = (targetScore.get('extraCredit') || 0) + (sourceScore.get('extraCredit') || 0);
-              targetScore.set('score', newScore);
-              targetScore.set('extraCredit', newExtra);
-            }
+          let targetScore = targetTeamScores.get(targetTeamId);
+          if (!targetScore) {
+            targetScore = new Y.Map();
+            targetTeamScores.set(targetTeamId, targetScore);
           }
+          const mergedScore = (targetScore.get('score') || 0) + (sourceScore.get('score') || 0);
+          const mergedExtra = (targetScore.get('extraCredit') || 0) + (sourceScore.get('extraCredit') || 0);
+          targetScore.set('score', mergedScore);
+          targetScore.set('extraCredit', mergedExtra);
         }
       }
     }
@@ -2508,6 +2456,5 @@ async function applySessionMerge(sourceId, targetId, mappings) {
       source: sourceSession.get('name'),
       target: targetSession.get('name')
     });
-
   }, 'local');
 }

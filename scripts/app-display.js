@@ -269,22 +269,18 @@ function checkAndShowContinueOrNewDialog() {
   const sessionCreatedAt = session.get('createdAt');
   
   // Check if session has meaningful data (more than just the initial question)
-  // Works with both v3 (index-based) and v4 (UUID-based) sessions
   let questionCount = 0;
-  const isV4 = typeof isUUIDSession === 'function' && isUUIDSession(session);
-  
-  if (isV4) {
-    const orderedQuestions = getOrderedQuestions(session);
-    questionCount = orderedQuestions.length;
-    if (questionCount > 0 && orderedQuestions[questionCount - 1].data.get('score') === 0) {
-      questionCount--;
+  if (!isUUIDSession(session)) {
+    const sessionDoc = getActiveSessionDoc();
+    if (sessionDoc) {
+      ensureSessionIsV5(sessionDoc);
     }
-  } else {
-    const questions = session.get('questions');
-    questionCount = questions ? questions.length - 1 : 0;
-    if (questionCount > 0 && questions.get(questionCount).get('score') === 0) {
-      questionCount--;
-    }
+  }
+
+  const orderedQuestions = getOrderedQuestions(session);
+  questionCount = orderedQuestions.length;
+  if (questionCount > 0 && orderedQuestions[questionCount - 1].data.get('score') === 0) {
+    questionCount--;
   }
 
   // Only show dialog if there's actual data (at least 2 completed questions or multiple teams with data)
@@ -345,159 +341,104 @@ function sync_data_to_display() {
   var question_names = get_question_names();
   var question_count = question_names.length - 1;
   
-  // Check if this is a v4 (UUID-based) session
-  const isV4 = typeof isUUIDSession === 'function' && isUUIDSession(session);
-  
-  // Get current question data differently for v3 vs v4
-  var current_question = current_question_index;
-  var currentQuestionObj, currentQuestionTeams, current_selected_block, question_max_points, ignore_question;
-  
-  if (isV4) {
-    // V4: Use UUID-based structures
-    const orderedQuestions = getOrderedQuestions(session);
-    const orderedBlocks = getOrderedBlocks(session);
-    
-    // Check if last question has 0 points
-    if (orderedQuestions.length > 0 && orderedQuestions[orderedQuestions.length - 1].data.get('score') === 0) {
-      question_count--;
+  if (!isUUIDSession(session)) {
+    const sessionDoc = getActiveSessionDoc();
+    if (sessionDoc) {
+      ensureSessionIsV5(sessionDoc);
     }
+  }
+  if (!isUUIDSession(session)) {
+    console.error('Session not upgraded to v5');
+    return;
+  }
+
+  const orderedQuestions = getOrderedQuestions(session);
+  const orderedBlocks = getOrderedBlocks(session);
+  const orderedTeams = getOrderedTeams(session);
+  
+  // Get current question data
+  var current_question = current_question_index;
+  var currentQuestionObj, current_selected_block, question_max_points, ignore_question;
+  
+  if (orderedQuestions.length > 0 && orderedQuestions[orderedQuestions.length - 1].data.get('score') === 0) {
+    question_count--;
+  }
+  
+  if (current_question >= 1 && current_question <= orderedQuestions.length) {
+    const q = orderedQuestions[current_question - 1];
+    currentQuestionObj = q.data;
+    question_max_points = currentQuestionObj.get('score');
+    ignore_question = currentQuestionObj.get('ignore') || false;
     
-    // Get current question (1-based index)
-    if (current_question >= 1 && current_question <= orderedQuestions.length) {
-      const q = orderedQuestions[current_question - 1];
-      currentQuestionObj = q.data;
-      question_max_points = currentQuestionObj.get('score');
-      ignore_question = currentQuestionObj.get('ignore') || false;
-      
-      // Get block index from blockId
-      const blockId = currentQuestionObj.get('blockId');
-      current_selected_block = 0;
-      for (let i = 0; i < orderedBlocks.length; i++) {
-        if (orderedBlocks[i].id === blockId) {
-          current_selected_block = i;
-          break;
-        }
-      }
-      
-      // currentQuestionTeams not used directly in v4, but we need a placeholder
-      currentQuestionTeams = null;
-    } else {
-      // Default to first question
-      current_question = 1;
-      current_question_index = 1;
-      if (orderedQuestions.length > 0) {
-        const q = orderedQuestions[0];
-        currentQuestionObj = q.data;
-        question_max_points = currentQuestionObj.get('score');
-        ignore_question = currentQuestionObj.get('ignore') || false;
-        current_selected_block = 0;
-        currentQuestionTeams = null;
-      } else {
-        question_max_points = 0;
-        ignore_question = false;
-        current_selected_block = 0;
-        currentQuestionTeams = null;
+    const blockId = currentQuestionObj.get('blockId');
+    current_selected_block = 0;
+    for (let i = 0; i < orderedBlocks.length; i++) {
+      if (orderedBlocks[i].id === blockId) {
+        current_selected_block = i;
+        break;
       }
     }
   } else {
-    // V3: Use index-based structures
-    const questions = session.get('questions');
-    if (questions && questions.length > 0 && questions.get(question_count) && questions.get(question_count).get('score') == 0) {
-      question_count--;
+    current_question = 1;
+    current_question_index = 1;
+    if (orderedQuestions.length > 0) {
+      const q = orderedQuestions[0];
+      currentQuestionObj = q.data;
+      question_max_points = currentQuestionObj.get('score');
+      ignore_question = currentQuestionObj.get('ignore') || false;
+      current_selected_block = 0;
+    } else {
+      question_max_points = 0;
+      ignore_question = false;
+      current_selected_block = 0;
     }
-    currentQuestionObj = questions && questions.get(current_question);
-    currentQuestionTeams = currentQuestionObj ? currentQuestionObj.get('teams') : null;
-    current_selected_block = currentQuestionObj ? currentQuestionObj.get('block') : 0;
-    question_max_points = currentQuestionObj ? currentQuestionObj.get('score') : 0;
-    ignore_question = currentQuestionObj ? currentQuestionObj.get('ignore') : false;
   }
   
-  // Helper function to get team score for current question (works with v3 and v4)
   function getTeamScoreForDisplay(teamIndex) {
-    if (isV4) {
-      const orderedTeams = getOrderedTeams(session);
-      const orderedQuestions = getOrderedQuestions(session);
-      if (teamIndex >= 1 && teamIndex <= orderedTeams.length && current_question >= 1 && current_question <= orderedQuestions.length) {
-        const teamId = orderedTeams[teamIndex - 1].id;
-        const questionId = orderedQuestions[current_question - 1].id;
-        const scoreData = getTeamScore(session, questionId, teamId);
-        return scoreData ? scoreData.score : 0;
-      }
-      return 0;
-    } else {
-      return currentQuestionTeams.get(teamIndex).get('score');
+    if (teamIndex >= 1 && teamIndex <= orderedTeams.length && current_question >= 1 && current_question <= orderedQuestions.length) {
+      const teamId = orderedTeams[teamIndex - 1].id;
+      const questionId = orderedQuestions[current_question - 1].id;
+      const scoreData = getTeamScore(session, questionId, teamId);
+      return scoreData ? scoreData.score : 0;
     }
+    return 0;
   }
   
-  // Helper function to get team extra credit for current question
   function getTeamExtraCreditForDisplay(teamIndex) {
-    if (isV4) {
-      const orderedTeams = getOrderedTeams(session);
-      const orderedQuestions = getOrderedQuestions(session);
-      if (teamIndex >= 1 && teamIndex <= orderedTeams.length && current_question >= 1 && current_question <= orderedQuestions.length) {
-        const teamId = orderedTeams[teamIndex - 1].id;
-        const questionId = orderedQuestions[current_question - 1].id;
-        const scoreData = getTeamScore(session, questionId, teamId);
-        return scoreData ? scoreData.extraCredit : 0;
-      }
-      return 0;
-    } else {
-      return currentQuestionTeams.get(teamIndex).get('extraCredit') || 0;
+    if (teamIndex >= 1 && teamIndex <= orderedTeams.length && current_question >= 1 && current_question <= orderedQuestions.length) {
+      const teamId = orderedTeams[teamIndex - 1].id;
+      const questionId = orderedQuestions[current_question - 1].id;
+      const scoreData = getTeamScore(session, questionId, teamId);
+      return scoreData ? scoreData.extraCredit : 0;
     }
+    return 0;
   }
   
-  // Helper function to get question block index (1-based for v3, 0-based index for v4)
   function getQuestionBlockIndex(questionIndex) {
-    if (isV4) {
-      const orderedQuestions = getOrderedQuestions(session);
-      const orderedBlocks = getOrderedBlocks(session);
-      if (questionIndex >= 1 && questionIndex <= orderedQuestions.length) {
-        const q = orderedQuestions[questionIndex - 1];
-        const blockId = q.data.get('blockId');
-        for (let i = 0; i < orderedBlocks.length; i++) {
-          if (orderedBlocks[i].id === blockId) {
-            return i;
-          }
+    if (questionIndex >= 1 && questionIndex <= orderedQuestions.length) {
+      const q = orderedQuestions[questionIndex - 1];
+      const blockId = q.data.get('blockId');
+      for (let i = 0; i < orderedBlocks.length; i++) {
+        if (orderedBlocks[i].id === blockId) {
+          return i;
         }
       }
-      return 0;
-    } else {
-      return session.get('questions').get(questionIndex).get('block');
     }
+    return 0;
   }
   
-  // Helper function to get question ignore status
   function getQuestionIgnore(questionIndex) {
-    if (isV4) {
-      const orderedQuestions = getOrderedQuestions(session);
-      if (questionIndex >= 1 && questionIndex <= orderedQuestions.length) {
-        return orderedQuestions[questionIndex - 1].data.get('ignore') || false;
-      }
-      return false;
-    } else {
-      const questions = session.get('questions');
-      if (questions && questions.get(questionIndex)) {
-        return questions.get(questionIndex).get('ignore') || false;
-      }
-      return false;
+    if (questionIndex >= 1 && questionIndex <= orderedQuestions.length) {
+      return orderedQuestions[questionIndex - 1].data.get('ignore') || false;
     }
+    return false;
   }
   
-  // Helper function to get question max score
   function getQuestionScore(questionIndex) {
-    if (isV4) {
-      const orderedQuestions = getOrderedQuestions(session);
-      if (questionIndex >= 1 && questionIndex <= orderedQuestions.length) {
-        return orderedQuestions[questionIndex - 1].data.get('score') || 0;
-      }
-      return 0;
-    } else {
-      const questions = session.get('questions');
-      if (questions && questions.get(questionIndex)) {
-        return questions.get(questionIndex).get('score') || 0;
-      }
-      return 0;
+    if (questionIndex >= 1 && questionIndex <= orderedQuestions.length) {
+      return orderedQuestions[questionIndex - 1].data.get('score') || 0;
     }
+    return 0;
   }
 
   const currentSessionIndex = get_current_session_index();

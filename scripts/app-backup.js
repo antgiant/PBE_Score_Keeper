@@ -140,16 +140,15 @@ function extractSessionSummary(sessionDoc) {
     var session = sessionDoc.getMap('session');
     if (!session) return summary;
 
-    var teams = session.get('teams');
-    var questions = session.get('questions');
-    var blocks = session.get('blocks');
-
-    // Teams array has null at index 0
-    summary.teamCount = teams ? Math.max(0, teams.length - 1) : 0;
-    // Questions array has null at index 0
-    summary.questionCount = questions ? Math.max(0, questions.length - 1) : 0;
-    // Blocks array includes "No Block" at index 0
-    summary.blockCount = blocks ? blocks.length : 0;
+    if (!isUUIDSession(session)) {
+      ensureSessionIsV5(sessionDoc);
+    }
+    if (isUUIDSession(session)) {
+      summary.teamCount = getOrderedTeams(session).length;
+      summary.questionCount = getOrderedQuestions(session).length;
+      summary.blockCount = getOrderedBlocks(session).length;
+      return summary;
+    }
   } catch (e) {
     console.warn('Failed to extract session summary:', e);
   }
@@ -341,31 +340,40 @@ async function restoreFromBackup(backupId) {
     // Create a fresh session doc and replace contents
     sessionDoc.transact(function() {
       var session = sessionDoc.getMap('session');
-      
-      // Clear existing arrays
-      var teams = session.get('teams');
-      if (teams && teams.length > 0) {
-        teams.delete(0, teams.length);
+
+      function clearYMap(map) {
+        if (!map || !map.forEach) return;
+        map.forEach(function(_, key) {
+          map.delete(key);
+        });
       }
-      
-      var questions = session.get('questions');
-      if (questions && questions.length > 0) {
-        questions.delete(0, questions.length);
+
+      function clearYArray(arr) {
+        if (arr && arr.length > 0) {
+          arr.delete(0, arr.length);
+        }
       }
+
+      // Clear UUID-based structures
+      clearYMap(session.get('teamsById'));
+      clearYArray(session.get('teamOrder'));
+      clearYMap(session.get('questionsById'));
+      clearYArray(session.get('questionOrder'));
+      clearYMap(session.get('blocksById'));
+      clearYArray(session.get('blockOrder'));
+
+      // Clear legacy arrays if present
+      clearYArray(session.get('teams'));
+      clearYArray(session.get('questions'));
+      clearYArray(session.get('blocks'));
       
-      var blocks = session.get('blocks');
-      if (blocks && blocks.length > 0) {
-        blocks.delete(0, blocks.length);
-      }
-      
-      var historyLog = session.get('historyLog');
-      if (historyLog && historyLog.length > 0) {
-        historyLog.delete(0, historyLog.length);
-      }
+      // Clear history
+      clearYArray(session.get('historyLog'));
     }, 'local');
 
     // Apply the backup state (CRDT merge)
     Y.applyUpdate(sessionDoc, stateUpdate);
+    ensureSessionIsV5(sessionDoc);
 
     // Step 4: Log restore action in history
     if (typeof add_history_entry === 'function') {

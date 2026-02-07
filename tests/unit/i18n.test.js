@@ -20,6 +20,15 @@ function createI18nContext() {
   const i18nCode = fs.readFileSync(path.join(__dirname, '../../scripts/app-i18n.js'), 'utf8');
   const languageFiles = getLanguageFiles();
   
+  const silentConsole = {
+    log: function() {},
+    warn: function() {},
+    error: function() {},
+    info: function() {},
+    debug: function() {}
+  };
+  const testConsole = process.env.TEST_LOGS ? console : silentConsole;
+
   const context = {
     localStorage: {
       _data: {},
@@ -57,7 +66,7 @@ function createI18nContext() {
     },
     getGlobalDoc: function() { return null; },
     get_root_element: function() { return null; },
-    console: console
+    console: testConsole
   };
   
   vm.createContext(context);

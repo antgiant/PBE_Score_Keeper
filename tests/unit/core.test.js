@@ -147,7 +147,7 @@ test('has_yjs_data recognizes all current data version formats', () => {
   const { context } = loadApp(createYjsDoc({ currentSession: 1, sessions: [] }));
   
   // These constants should match what's defined in app-yjs.js
-  const DATA_VERSION_CURRENT = context.DATA_VERSION_CURRENT || '3.0';
+  const DATA_VERSION_CURRENT = context.DATA_VERSION_CURRENT || '5.0';
   const DATA_VERSION_UUID = context.DATA_VERSION_UUID || '4.0';
   const DATA_VERSION_DETERMINISTIC = context.DATA_VERSION_DETERMINISTIC || '5.0';
   

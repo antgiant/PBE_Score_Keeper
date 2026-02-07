@@ -16,7 +16,7 @@ test('serializeSnapshot / deserializeSnapshot round-trips correctly', () => {
       snapshotVersion: 1,
       sessionId: 'test-session-123',
       sessionName: 'Test Session',
-      dataVersion: '3.0'
+      dataVersion: '5.0'
     },
     raw: {
       teams: [{ index: 0, name: '' }, { index: 1, name: 'Team A' }],

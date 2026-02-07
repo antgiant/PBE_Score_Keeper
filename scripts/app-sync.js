@@ -2,6 +2,24 @@
 // Provides peer-to-peer real-time synchronization using y-webrtc
 // Also supports server-based sync for large events using y-websocket
 
+var console = (typeof process !== 'undefined' &&
+  process.release &&
+  process.release.name === 'node' &&
+  process.env &&
+  process.env.TEST_LOGS !== '1') ? {
+    log: function() {},
+    warn: function() {},
+    error: function() {},
+    info: function() {},
+    debug: function() {}
+  } : ((typeof globalThis !== 'undefined' && globalThis.console) ? globalThis.console : {
+    log: function() {},
+    warn: function() {},
+    error: function() {},
+    info: function() {},
+    debug: function() {}
+  });
+
 /**
  * Maximum length for display names (enforced in UI and validation)
  */
@@ -1664,7 +1682,7 @@ async function handleMergeAfterSync() {
 
 /**
  * Capture current session data for merge (before connecting to room)
- * Supports both v3 (index-based) and v4 (UUID-based) sessions.
+ * Supports v5 deterministic sessions.
  * @returns {Object|null} Captured data or null if session is empty
  */
 function captureSessionDataForMerge() {
@@ -1674,52 +1692,35 @@ function captureSessionDataForMerge() {
   var session = sessionDoc.getMap('session');
   if (!session) return null;
   
-  // Check if v4 (UUID-based) session
-  if (typeof isUUIDSession === 'function' && isUUIDSession(session)) {
-    var orderedTeams = getOrderedTeams(session);
-    var orderedBlocks = getOrderedBlocks(session);
-    var orderedQuestions = getOrderedQuestions(session);
-    
-    var hasTeams = orderedTeams.length > 0;
-    var hasQuestions = orderedQuestions.length > 0;
-    
-    if (!hasTeams && !hasQuestions) {
-      return null;
-    }
-    
-    return {
-      isV4: true,
-      teams: orderedTeams,
-      blocks: orderedBlocks,
-      questions: orderedQuestions
-    };
+  if (!isUUIDSession(session)) {
+    ensureSessionIsV5(sessionDoc);
   }
+  if (!isUUIDSession(session)) {
+    return null;
+  }
+
+  var orderedTeams = getOrderedTeams(session);
+  var orderedBlocks = getOrderedBlocks(session);
+  var orderedQuestions = getOrderedQuestions(session);
   
-  // V3 (index-based) session
-  var teams = session.get('teams');
-  var blocks = session.get('blocks');
-  var questions = session.get('questions');
-  
-  // Check if session has meaningful data
-  var hasTeams = teams && teams.length > 1;
-  var hasQuestions = questions && questions.length > 1;
+  var hasTeams = orderedTeams.length > 0;
+  var hasQuestions = orderedQuestions.length > 0;
   
   if (!hasTeams && !hasQuestions) {
-    return null; // Nothing to merge
+    return null;
   }
   
   return {
-    isV4: false,
-    teams: teams ? teams.toArray() : [],
-    blocks: blocks ? blocks.toArray() : [],
-    questions: questions ? questions.toArray() : []
+    teams: orderedTeams,
+    blocks: orderedBlocks,
+    questions: orderedQuestions
   };
 }
 
 /**
  * Perform safe additive merge - adds only unmatched items from local to synced session
  * Creates backup before merging and shows preview dialog
- * Supports both v3 (index-based) and v4 (UUID-based) sessions.
+ * Supports v5 deterministic sessions.
  * @param {Object} localData - Captured local data (teams, blocks, questions)
  * @returns {Promise<boolean>} True if merge completed
  */
@@ -1740,96 +1741,50 @@ async function performSafeAdditiveMerge(localData) {
   
   var sessionDoc = getActiveSessionDoc();
   var session = sessionDoc.getMap('session');
-  
-  // Check if current session is v4 (UUID-based)
-  var isCurrentSessionV4 = typeof isUUIDSession === 'function' && isUUIDSession(session);
+  if (!isUUIDSession(session)) {
+    ensureSessionIsV5(sessionDoc);
+  }
+  if (!isUUIDSession(session)) {
+    return false;
+  }
   
   // Step 2: Compare names to find unmatched items
   var existingTeamNames = new Set();
   var existingBlockNames = new Set();
   
-  if (isCurrentSessionV4) {
-    // V4: Use ordered getter functions
-    var orderedTeams = getOrderedTeams(session);
-    for (var i = 0; i < orderedTeams.length; i++) {
-      var teamName = orderedTeams[i].data.get('name');
-      if (teamName) {
-        existingTeamNames.add(teamName.toLowerCase());
-      }
-    }
-    
-    var orderedBlocks = getOrderedBlocks(session);
-    for (var i = 0; i < orderedBlocks.length; i++) {
-      var blockName = orderedBlocks[i].data.get('name');
-      if (blockName) {
-        existingBlockNames.add(blockName.toLowerCase());
-      }
-    }
-  } else {
-    // V3: Use index-based arrays
-    var remoteTeams = session.get('teams');
-    var remoteBlocks = session.get('blocks');
-    
-    if (remoteTeams) {
-      for (var i = 1; i < remoteTeams.length; i++) {
-        var t = remoteTeams.get(i);
-        if (t && t.get('name')) {
-          existingTeamNames.add(t.get('name').toLowerCase());
-        }
-      }
-    }
-    
-    if (remoteBlocks) {
-      for (var i = 0; i < remoteBlocks.length; i++) {
-        var b = remoteBlocks.get(i);
-        if (b && b.get('name')) {
-          existingBlockNames.add(b.get('name').toLowerCase());
-        }
-      }
+  var orderedTeams = getOrderedTeams(session);
+  for (var i = 0; i < orderedTeams.length; i++) {
+    var teamName = orderedTeams[i].data.get('name');
+    if (teamName) {
+      existingTeamNames.add(teamName.toLowerCase());
     }
   }
   
-  // Find unmatched local items (handle both v4 and v3 local data)
+  var orderedBlocks = getOrderedBlocks(session);
+  for (var i = 0; i < orderedBlocks.length; i++) {
+    var blockName = orderedBlocks[i].data.get('name');
+    if (blockName) {
+      existingBlockNames.add(blockName.toLowerCase());
+    }
+  }
+  
+  // Find unmatched local items
   var unmatchedTeams = [];
   var unmatchedBlocks = [];
   
-  if (localData.isV4) {
-    // V4 local data: teams is array of {id, data} objects
-    for (var i = 0; i < localData.teams.length; i++) {
-      var team = localData.teams[i];
-      var name = team.data.get('name');
-      if (name && !existingTeamNames.has(name.toLowerCase())) {
-        unmatchedTeams.push({ index: i, name: name, data: team.data, id: team.id });
-      }
+  for (var i = 0; i < localData.teams.length; i++) {
+    var team = localData.teams[i];
+    var name = team.data.get('name');
+    if (name && !existingTeamNames.has(name.toLowerCase())) {
+      unmatchedTeams.push({ index: i, name: name, data: team.data, id: team.id });
     }
-    
-    for (var i = 0; i < localData.blocks.length; i++) {
-      var block = localData.blocks[i];
-      var name = block.data.get('name');
-      if (name && !existingBlockNames.has(name.toLowerCase())) {
-        unmatchedBlocks.push({ index: i, name: name, data: block.data, id: block.id });
-      }
-    }
-  } else {
-    // V3 local data: teams is array of Y.Maps
-    for (var i = 1; i < localData.teams.length; i++) {
-      var team = localData.teams[i];
-      if (team && team.get && team.get('name')) {
-        var name = team.get('name');
-        if (!existingTeamNames.has(name.toLowerCase())) {
-          unmatchedTeams.push({ index: i, name: name, data: team });
-        }
-      }
-    }
-    
-    for (var i = 0; i < localData.blocks.length; i++) {
-      var block = localData.blocks[i];
-      if (block && block.get && block.get('name')) {
-        var name = block.get('name');
-        if (!existingBlockNames.has(name.toLowerCase())) {
-          unmatchedBlocks.push({ index: i, name: name, data: block });
-        }
-      }
+  }
+  
+  for (var i = 0; i < localData.blocks.length; i++) {
+    var block = localData.blocks[i];
+    var name = block.data.get('name');
+    if (name && !existingBlockNames.has(name.toLowerCase())) {
+      unmatchedBlocks.push({ index: i, name: name, data: block.data, id: block.id });
     }
   }
   
@@ -1852,65 +1807,36 @@ async function performSafeAdditiveMerge(localData) {
   
   // Step 4: Apply the merge (add unmatched items)
   sessionDoc.transact(function() {
-    if (isCurrentSessionV4) {
-      // V4: Add to teamsById/blocksById and order arrays
-      var teamsById = session.get('teamsById');
-      var teamOrder = session.get('teamOrder');
-      var blocksById = session.get('blocksById');
-      var blockOrder = session.get('blockOrder');
-      
-      for (var i = 0; i < unmatchedTeams.length; i++) {
-        var teamData = unmatchedTeams[i].data;
-        var teamId = generateTeamId();
-        var newTeam = new Y.Map();
-        newTeam.set('id', teamId);
-        newTeam.set('name', teamData.get ? teamData.get('name') : teamData.name);
-        newTeam.set('createdAt', Date.now());
-        newTeam.set('deleted', false);
-        newTeam.set('sortOrder', teamOrder.length);
-        teamsById.set(teamId, newTeam);
-        teamOrder.push([teamId]);
-      }
-      
-      for (var i = 0; i < unmatchedBlocks.length; i++) {
-        var blockData = unmatchedBlocks[i].data;
-        var blockId = generateBlockId();
-        var newBlock = new Y.Map();
-        newBlock.set('id', blockId);
-        newBlock.set('name', blockData.get ? blockData.get('name') : blockData.name);
-        newBlock.set('isDefault', false);
-        newBlock.set('createdAt', Date.now());
-        newBlock.set('deleted', false);
-        newBlock.set('sortOrder', blockOrder.length);
-        blocksById.set(blockId, newBlock);
-        blockOrder.push([blockId]);
-      }
-    } else {
-      // V3: Add to arrays
-      var remoteTeams = session.get('teams');
-      var remoteBlocks = session.get('blocks');
-      
-      for (var i = 0; i < unmatchedTeams.length; i++) {
-        var teamData = unmatchedTeams[i].data;
-        var newTeam = new Y.Map();
-        if (teamData.forEach) {
-          teamData.forEach(function(value, key) {
-            newTeam.set(key, value);
-          });
-        }
-        remoteTeams.push([newTeam]);
-      }
-      
-      for (var i = 0; i < unmatchedBlocks.length; i++) {
-        var blockData = unmatchedBlocks[i].data;
-        var newBlock = new Y.Map();
-        if (blockData.forEach) {
-          blockData.forEach(function(value, key) {
-            newBlock.set(key, value);
-          });
-        }
-        remoteBlocks.push([newBlock]);
-      }
+    var teamsById = session.get('teamsById');
+    var teamOrder = session.get('teamOrder');
+    var blocksById = session.get('blocksById');
+    var blockOrder = session.get('blockOrder');
+    
+    for (var i = 0; i < unmatchedTeams.length; i++) {
+      var teamData = unmatchedTeams[i].data;
+      var teamId = generateTeamId();
+      var newTeam = new Y.Map();
+      newTeam.set('id', teamId);
+      newTeam.set('name', teamData.get ? teamData.get('name') : teamData.name);
+      newTeam.set('createdAt', Date.now());
+      newTeam.set('deleted', false);
+      newTeam.set('sortOrder', teamOrder.length);
+      teamsById.set(teamId, newTeam);
+      teamOrder.push([teamId]);
+    }
+    
+    for (var i = 0; i < unmatchedBlocks.length; i++) {
+      var blockData = unmatchedBlocks[i].data;
+      var blockId = generateBlockId();
+      var newBlock = new Y.Map();
+      newBlock.set('id', blockId);
+      newBlock.set('name', blockData.get ? blockData.get('name') : blockData.name);
+      newBlock.set('isDefault', false);
+      newBlock.set('createdAt', Date.now());
+      newBlock.set('deleted', false);
+      newBlock.set('sortOrder', blockOrder.length);
+      blocksById.set(blockId, newBlock);
+      blockOrder.push([blockId]);
     }
   }, 'local');
   
@@ -3273,10 +3199,12 @@ function setupAwareness(awareness) {
   // Track when we joined for oldest-peer determination
   SyncManager.joinedAt = Date.now();
   
-  // Get current data version (v4.0 for UUID-based, v3.0 for legacy)
-  var currentDataVersion = (typeof DATA_VERSION_CURRENT !== 'undefined') ? DATA_VERSION_CURRENT : '3.0';
+  // Get current data version (v5.0 deterministic)
+  var currentDataVersion = (typeof DATA_VERSION_CURRENT !== 'undefined') ? DATA_VERSION_CURRENT : '5.0';
   var session = get_current_session();
-  if (session && typeof isUUIDSession === 'function' && isUUIDSession(session)) {
+  if (session && typeof isDeterministicSession === 'function' && isDeterministicSession(session)) {
+    currentDataVersion = (typeof DATA_VERSION_DETERMINISTIC !== 'undefined') ? DATA_VERSION_DETERMINISTIC : '5.0';
+  } else if (session && typeof isUUIDSession === 'function' && isUUIDSession(session)) {
     currentDataVersion = (typeof DATA_VERSION_UUID !== 'undefined') ? DATA_VERSION_UUID : '4.0';
   }
   
@@ -3415,6 +3343,7 @@ function updatePeersFromAwareness() {
   
   var states = SyncManager.awareness.getStates();
   var localClientId = SyncManager.awareness.clientID;
+  var defaultDataVersion = (typeof DATA_VERSION_DETERMINISTIC !== 'undefined') ? DATA_VERSION_DETERMINISTIC : '5.0';
   
   states.forEach(function(state, clientId) {
     if (clientId !== localClientId && state.displayName) {
@@ -3422,7 +3351,7 @@ function updatePeersFromAwareness() {
         displayName: state.displayName,
         color: state.color || '#888',
         lastSeen: state.lastSeen || Date.now(),
-        dataVersion: state.dataVersion || '3.0'
+        dataVersion: state.dataVersion || defaultDataVersion
       });
     }
   });
@@ -3437,17 +3366,17 @@ function checkDataVersionCompatibility() {
   
   // Get our version
   var localState = SyncManager.awareness.getLocalState();
-  var localVersion = localState ? localState.dataVersion : '3.0';
+  var defaultDataVersion = (typeof DATA_VERSION_DETERMINISTIC !== 'undefined') ? DATA_VERSION_DETERMINISTIC : '5.0';
+  var localVersion = localState ? localState.dataVersion : defaultDataVersion;
   
   // Check peer versions
   var incompatiblePeers = [];
   
   SyncManager.peers.forEach(function(peer, clientId) {
-    var peerVersion = peer.dataVersion || '3.0';
+    var peerVersion = peer.dataVersion || defaultDataVersion;
     
-    // Version compatibility: v3.0 and v4.0 can sync during migration
-    // After full migration, update MIN_SYNC_VERSION to '4.0' to block v3 clients
-    var minVersion = (typeof MIN_SYNC_VERSION !== 'undefined') ? MIN_SYNC_VERSION : '3.0';
+    // Version compatibility: v5-only runtime
+    var minVersion = (typeof MIN_SYNC_VERSION !== 'undefined') ? MIN_SYNC_VERSION : defaultDataVersion;
     
     // Check if peer meets minimum version
     if (parseFloat(peerVersion) < parseFloat(minVersion)) {
@@ -3467,7 +3396,7 @@ function checkDataVersionCompatibility() {
     var peerNames = incompatiblePeers.map(function(p) { return p.name; }).join(', ');
     var message = t('sync.version_mismatch_warning', { 
       peers: peerNames,
-      minVersion: (typeof MIN_SYNC_VERSION !== 'undefined') ? MIN_SYNC_VERSION : '3.0'
+      minVersion: (typeof MIN_SYNC_VERSION !== 'undefined') ? MIN_SYNC_VERSION : defaultDataVersion
     });
     
     // Show toast notification

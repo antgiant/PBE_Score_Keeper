@@ -78,7 +78,7 @@ function buildDeleteSessionSeed() {
   });
 }
 
-// Test that seed data loads correctly into Yjs (v3.0 multi-doc)
+// Test that seed data loads correctly into Yjs (v5.0 multi-doc)
 test('score summary seed data loads correctly', () => {
   const { context, ydoc } = loadApp(buildScoreSummarySeed());
   const meta = ydoc.getMap('meta');
@@ -116,7 +116,7 @@ test('question log seed data is valid', () => {
   }
 });
 
-// Test that delete session seed has two sessions (v3.0 multi-doc)
+// Test that delete session seed has two sessions (v5.0 multi-doc)
 test('delete session seed has correct structure', () => {
   const { context, ydoc } = loadApp(buildDeleteSessionSeed());
   const meta = ydoc.getMap('meta');

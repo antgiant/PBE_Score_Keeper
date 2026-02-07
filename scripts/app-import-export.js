@@ -32,70 +32,12 @@ function session_to_json(sessionId) {
   const session = sessionDoc.getMap('session');
   if (!session) return null;
 
-  // Check if this is a v4 (UUID-based) session
-  if (typeof isUUIDSession === 'function' && isUUIDSession(session)) {
-    return session_to_json_v4(sessionId, session);
+  if (!isUUIDSession(session)) {
+    ensureSessionIsV5(sessionDoc);
   }
+  if (!isUUIDSession(session)) return null;
 
-  // V3 export (index-based)
-  const sessionObj = {
-    id: sessionId,
-    name: session.get('name'),
-    dataVersion: '3.0',
-    config: {
-      maxPointsPerQuestion: session.get('config').get('maxPointsPerQuestion'),
-      rounding: session.get('config').get('rounding')
-    },
-    teams: [],
-    blocks: [],
-    questions: []
-    // Note: currentQuestion is no longer exported - it's transient app state
-  };
-
-  // Teams
-  const teams = session.get('teams');
-  for (let t = 0; t < teams.length; t++) {
-    const team = teams.get(t);
-    sessionObj.teams.push(team === null ? null : { name: team.get('name') });
-  }
-
-  // Blocks
-  const blocks = session.get('blocks');
-  for (let b = 0; b < blocks.length; b++) {
-    const block = blocks.get(b);
-    sessionObj.blocks.push({ name: block.get('name') });
-  }
-
-  // Questions
-  const questions = session.get('questions');
-  for (let q = 0; q < questions.length; q++) {
-    const question = questions.get(q);
-    if (question === null) {
-      sessionObj.questions.push(null);
-      continue;
-    }
-
-    const questionObj = {
-      name: question.get('name'),
-      score: question.get('score'),
-      block: question.get('block'),
-      ignore: question.get('ignore'),
-      teams: []
-    };
-
-    const questionTeams = question.get('teams');
-    for (let qt = 0; qt < questionTeams.length; qt++) {
-      const teamScore = questionTeams.get(qt);
-      questionObj.teams.push(teamScore === null ? null : {
-        score: teamScore.get('score'),
-        extraCredit: teamScore.get('extraCredit')
-      });
-    }
-
-    sessionObj.questions.push(questionObj);
-  }
-
-  return sessionObj;
+  return session_to_json_v4(sessionId, session);
 }
 
 /**
@@ -193,7 +135,7 @@ async function yjs_to_json() {
   }
 
   const result = {
-    dataVersion: meta.get('dataVersion') || 3.0,
+    dataVersion: meta.get('dataVersion') || (typeof DATA_VERSION_DETERMINISTIC !== 'undefined' ? DATA_VERSION_DETERMINISTIC : '5.0'),
     currentSession: sessionOrder.indexOf(currentSessionId) + 1,
     sessions: [null]  // Index 0 is null placeholder
   };
@@ -227,7 +169,7 @@ function export_current_session_json() {
   }
 
   const singleSessionData = {
-    dataVersion: 3.0,
+    dataVersion: meta.get('dataVersion') || (typeof DATA_VERSION_DETERMINISTIC !== 'undefined' ? DATA_VERSION_DETERMINISTIC : '5.0'),
     currentSession: 1,
     sessions: [null, sessionJson]
   };
@@ -312,7 +254,7 @@ async function import_yjs_from_json(data, mode) {
 
     // Reset global doc
     getGlobalDoc().transact(() => {
-      meta.set('dataVersion', 3.0);
+      meta.set('dataVersion', (typeof DATA_VERSION_DETERMINISTIC !== 'undefined') ? DATA_VERSION_DETERMINISTIC : '5.0');
       meta.set('sessionOrder', []);
       meta.set('currentSession', null);
       // Clear session name cache
@@ -414,6 +356,7 @@ async function import_yjs_from_json(data, mode) {
       // Initialize history
       session.set('historyLog', new Y.Array());
     }, 'import');
+    ensureSessionIsV5(sessionDoc);
 
     // Store session doc if not already stored
     if (!DocManager.sessionDocs.has(sessionId)) {
@@ -993,7 +936,7 @@ async function exportAllSessions() {
     // Create container object with Base64-encoded binaries
     const container = {
       format: 'pbe-multi-doc',
-      version: '3.0',
+      version: (typeof DATA_VERSION_DETERMINISTIC !== 'undefined') ? DATA_VERSION_DETERMINISTIC : '5.0',
       exportedAt: Date.now(),
       global: uint8ArrayToBase64(globalState),
       sessions: sessions
@@ -1217,7 +1160,7 @@ async function importSessionData(data) {
                 DocManager.sessionProviders.set(sessionId, persistence);
               }
             }
-            
+            ensureSessionIsV5(sessionDoc);
             importedSessionIds.push(sessionId);
             result.importedCount++;
           } catch (error) {
@@ -1310,6 +1253,8 @@ async function importSessionData(data) {
             DocManager.sessionProviders.set(sessionId, persistence);
           }
         }
+        
+        ensureSessionIsV5(sessionDoc);
         
         // Update global doc
         getGlobalDoc().transact(() => {

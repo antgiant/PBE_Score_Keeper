@@ -81,7 +81,7 @@ test('creating a new session works after scoring and writes to storage', async (
   // createNewSession is async
   await context.update_data_element('new_session');
 
-  // Check v3.0 multi-doc structure
+  // Check multi-doc structure
   const meta = ydoc.getMap('meta');
   const sessionOrder = meta.get('sessionOrder');
   assert.equal(sessionOrder.length, 2, 'Should have 2 sessions');
@@ -94,14 +94,9 @@ test('creating a new session works after scoring and writes to storage', async (
   const newSessionDoc = context.DocManager.sessionDocs.get(currentSessionId);
   const newSession = newSessionDoc.getMap('session');
   
-  // Check for v4 (UUID-based) or v3 (index-based) structure
+  // Check v5 deterministic structure
   const questionOrder = newSession.get('questionOrder');
-  if (questionOrder) {
-    // V4 structure: questionOrder is an array of question UUIDs
-    // V4 creates 1 placeholder question (question 1 with 0 points)
-    assert.equal(questionOrder.length, 1, 'New session should have 1 question in questionOrder (placeholder)');
-  } else {
-    // V3 structure: questions is a Y.Array with index 0 as placeholder
-    assert.equal(newSession.get('questions').length, 2, 'New session should have 2 questions (including placeholder)');
-  }
+  assert.ok(questionOrder, 'New session should have questionOrder array');
+  assert.equal(questionOrder.length, 1, 'New session should have 1 question in questionOrder (placeholder)');
+  assert.equal(questionOrder.get(0), 'q-1', 'New session should start with deterministic q-1');
 });
