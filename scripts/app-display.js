@@ -180,6 +180,7 @@ function initialize_display() {
   
   initialize_language_controls();
   initialize_theme_controls();
+  initialize_ui_mode_controls();
   apply_score_entry_field_order();
   initialize_score_entry_field_reorder();
   sync_data_to_display();

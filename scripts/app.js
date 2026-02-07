@@ -13,6 +13,7 @@ $(document).ready(function() {
 
 initialize_language_preference();
 initialize_theme_preference();
+initialize_ui_mode_preference();
 initialize_storage_persistence();
 
 // Yjs bundle loads synchronously and sets window.yjsModulesLoaded
@@ -28,4 +29,3 @@ if (window.yjsModulesLoaded) {
   // Fallback: wait for event (shouldn't be needed with sync script)
   window.addEventListener('yjsModulesLoaded', initializeApp, { once: true });
 }
-

@@ -26,6 +26,13 @@ register_i18n_language('en', {
       "light": "Light",
       "dark": "Dark"
     },
+    "ui_mode": {
+      "label": "UI Mode",
+      "classic": "Classic",
+      "beta": "Beta",
+      "toggle_aria": "Toggle beta UI",
+      "toggle_title": "Switch between Classic and Beta UI"
+    },
     "config": {
       "title": "Configuration (Session)",
       "session_title": "Session",

@@ -23,6 +23,13 @@ register_i18n_language('pig', {
       "light": "Ight-Lay",
       "dark": "Ark-Day"
     },
+    "ui_mode": {
+      "label": "UI Ode-May",
+      "classic": "Assic-Clay",
+      "beta": "Eta-Bay",
+      "toggle_aria": "Oggle-Tay Eta-Bay UI",
+      "toggle_title": "Itch-Sway etween-bay Assic-Clay and-ay Eta-Bay UI"
+    },
     "config": {
       "title": "Onfiguration-Cay (Ession-Say)",
       "session_title": "Ession-Say",
