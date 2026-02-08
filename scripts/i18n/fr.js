@@ -108,6 +108,7 @@ register_i18n_language('fr', {
       "ignore": "Ignorer cette Question dans les Calculs de Score",
       "extra_credit": "Autoriser le Crédit Supplémentaire",
       "question": "Question",
+      "question_title": "Question {{number}}",
       "team": "Équipe",
       "team_one": "Équipe",
       "team_other": "Équipes",

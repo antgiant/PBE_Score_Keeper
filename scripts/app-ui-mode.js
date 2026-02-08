@@ -20,6 +20,11 @@ function apply_ui_mode(mode) {
   var resolvedMode = mode === "beta" ? "beta" : "classic";
   root.setAttribute("data-ui-mode", resolvedMode);
   update_ui_mode_toggle(resolvedMode);
+  if (typeof sync_data_to_display_debounced === "function") {
+    sync_data_to_display_debounced();
+  } else if (typeof sync_data_to_display === "function") {
+    sync_data_to_display();
+  }
 }
 
 function update_ui_mode_toggle(mode) {

@@ -107,6 +107,7 @@ register_i18n_language('en', {
       "ignore": "Ignore this Question in Score Calculations",
       "extra_credit": "Allow Extra Credit",
       "question": "Question",
+      "question_title": "Question {{number}}",
       "team": "Team",
       "team_one": "Team",
       "team_other": "Teams",

@@ -1203,7 +1203,18 @@ function sync_data_to_display() {
     }
   }
   question_quick_nav += '</select>';
-  $("#current_question_title_count").html(question_quick_nav);
+  var isBetaUi = false;
+  if (typeof document !== "undefined") {
+    var root = document.documentElement;
+    isBetaUi = !!(root && root.getAttribute("data-ui-mode") === "beta");
+  }
+  if (isBetaUi) {
+    $("#current_question_title_count").text(t('score_entry.question_title', { number: current_question }));
+    $("#question_quick_nav_container").html(question_quick_nav);
+  } else {
+    $("#current_question_title_count").html(question_quick_nav);
+    $("#question_quick_nav_container").html("");
+  }
 
   //Set up Max Points per Question
 

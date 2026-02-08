@@ -104,6 +104,7 @@ register_i18n_language('pig', {
       "ignore": "Ignore-ay is-thay Uestion-Qay in-ay Ore-Scay Alculations-Cay",
       "extra_credit": "Allow-ay Extra-ay Edit-Cray",
       "question": "Uestion-Qay",
+      "question_title": "Uestion-Qay {{number}}",
       "team": "Eam-Tay",
       "team_one": "Eam-Tay",
       "team_other": "Eams-Tay",

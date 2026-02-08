@@ -108,6 +108,7 @@ register_i18n_language('es', {
       "ignore": "Ignorar esta Pregunta en los Cálculos de Puntuación",
       "extra_credit": "Permitir Crédito Extra",
       "question": "Pregunta",
+      "question_title": "Pregunta {{number}}",
       "team": "Equipo",
       "team_one": "Equipo",
       "team_other": "Equipos",
