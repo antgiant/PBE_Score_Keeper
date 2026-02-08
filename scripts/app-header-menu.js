@@ -17,6 +17,8 @@ function initialize_header_menu() {
   var questionFieldset = document.getElementById("header_menu_question_fieldset");
   var scoreEntryAdvancedPanel = document.getElementById("score_entry_advanced_options");
   var scoreEntryAdvancedPlaceholder = document.getElementById("score_entry_advanced_placeholder");
+  var syncButton = document.getElementById("sync_button");
+  var syncButtonSlot = document.getElementById("sync_button_slot");
   if (!root || !toggle || !panel) {
     return;
   }
@@ -68,6 +70,26 @@ function initialize_header_menu() {
     }
   }
 
+  function move_sync_button_for_mode() {
+    if (!syncButton || !syncButtonSlot || !sessionFieldset) {
+      return;
+    }
+    if (is_beta_mode()) {
+      var legend = sessionFieldset.querySelector("legend");
+      if (legend) {
+        if (legend.nextSibling !== syncButton) {
+          sessionFieldset.insertBefore(syncButton, legend.nextSibling);
+        }
+      } else if (sessionFieldset.firstChild !== syncButton) {
+        sessionFieldset.insertBefore(syncButton, sessionFieldset.firstChild);
+      }
+      return;
+    }
+    if (!syncButtonSlot.contains(syncButton)) {
+      syncButtonSlot.appendChild(syncButton);
+    }
+  }
+
   function move_question_options_for_mode() {
     if (!questionFieldset || !scoreEntryAdvancedPanel || !scoreEntryAdvancedPlaceholder) {
       return;
@@ -89,6 +111,7 @@ function initialize_header_menu() {
       move_session_fieldset_for_mode();
       move_rounding_fieldset_for_mode();
       move_question_options_for_mode();
+      move_sync_button_for_mode();
       return;
     }
 
@@ -98,6 +121,7 @@ function initialize_header_menu() {
     move_session_fieldset_for_mode();
     move_rounding_fieldset_for_mode();
     move_question_options_for_mode();
+    move_sync_button_for_mode();
   }
 
   toggle.addEventListener("click", function(event) {
