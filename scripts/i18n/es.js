@@ -305,7 +305,6 @@ register_i18n_language('es', {
     "alerts": {
       "migration_failed": "La migración de datos falló. Sus datos están seguros en localStorage. Por favor exporte una copia de seguridad y reporte este problema.",
       "cannot_delete_only_session": "No puede eliminar la única Sesión",
-      "deleted": "Eliminado",
       "import_success": "Importación exitosa: {{count}} sesión(es) importada(s)",
       "import_failed": "Importación fallida: {{error}}",
       "import_json_failed": "Error al importar archivo JSON: {{error}}",
@@ -523,16 +522,15 @@ register_i18n_language('es', {
       "empty_name_error": "El nombre de la sesión no puede estar vacío",
       "manage_button": "Gestionar Sesiones",
       "reorder_hint": "Arrastre las sesiones para reordenar"
-    },    "session_dialogs": {
-      "new_session_created_title": "Nueva Sesión Creada",
-      "new_session_created_message": "Se ha creado una nueva sesión \"{{name}}\" y ahora está activa.",
-      "new_session_ok": "Aceptar",
+    },
+    "session_dialogs": {
       "continue_or_new_title": "¡Bienvenido de Nuevo!",
       "continue_or_new_message": "¿Desea continuar con su sesión anterior o comenzar de nuevo con una nueva?",
       "continue_session": "Continuar Anterior",
       "start_new_session": "Iniciar Nueva",
       "current_session_label": "Anterior:"
-    },    "merge": {
+    },
+    "merge": {
       "dialog_title": "Fusionar Sesiones",
       "select_source": "Seleccionar Sesión de Origen",
       "select_target": "Seleccionar Sesión de Destino",

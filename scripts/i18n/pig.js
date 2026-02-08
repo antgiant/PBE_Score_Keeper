@@ -301,7 +301,6 @@ register_i18n_language('pig', {
     "alerts": {
       "migration_failed": "Ata-Day igration-may ailed-fay. Our-Yay ata-day is-ay afe-say in-ay ocalStorage-lay. Ease-Play export-ay a-ay ackup-bay and-ay eport-ray is-thay issue-ay.",
       "cannot_delete_only_session": "Ou-Yay ay-may ot-nay elete-day e-thay only-ay Ession-Say",
-      "deleted": "Eleted-Day",
       "import_success": "Import-ay uccessful-say: {{count}} ession(s)-say imported-ay",
       "import_failed": "Import-ay ailed-fay: {{error}}",
       "import_json_failed": "Ailed-Fay o-tay import-ay JSON-ay ile-fay: {{error}}",
@@ -521,9 +520,6 @@ register_i18n_language('pig', {
       "reorder_hint": "Agdray essionssay otay eorderray"
     },
     "session_dialogs": {
-      "new_session_created_title": "Ew-Nay Ession-Say Eated-Cray",
-      "new_session_created_message": "A-ay ew-nay ession-say \"{{name}}\" as-hay een-bay eated-cray and-ay is-ay ow-nay active-ay.",
-      "new_session_ok": "OK-ay",
       "continue_or_new_title": "Elcome-Way Ack-Bay!",
       "continue_or_new_message": "Ould-Way ou-yay ike-lay o-tay ontinue-cay ith-way our-yay evious-pray ession-say or-ay art-stay esh-fray ith-way a-ay ew-nay one-ay?",
       "continue_session": "Ontinue-Cay Evious-Pray",

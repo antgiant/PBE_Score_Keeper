@@ -777,9 +777,6 @@ async function deleteSession(sessionIdOrIndex, skipConfirm, mergeContext) {
     add_global_history_entry('history_global.actions.delete_session', 'history_global.details_templates.deleted_session', { name: sessionName });
   }
 
-  if (!skipConfirm) {
-    alert(t('alerts.deleted'));
-  }
   sync_data_to_display();
   return true;
 }
@@ -943,63 +940,6 @@ function showSessionManagerDialog() {
       document.removeEventListener('keydown', onSessionManagerEscape);
       overlay.remove();
     }
-  });
-}
-
-/**
- * Show a modal confirming that a new session has been created
- * @param {string} sessionName - Name of the newly created session
- * @returns {Promise<void>} Resolves when dialog is closed
- */
-function showNewSessionCreatedModal(sessionName) {
-  return new Promise(function(resolve) {
-    // Remove any existing dialog
-    const existing = document.getElementById('new-session-modal-overlay');
-    if (existing) existing.remove();
-
-    const overlay = document.createElement('div');
-    overlay.id = 'new-session-modal-overlay';
-    overlay.className = 'sync-dialog-overlay';
-
-    const escapedName = HTMLescape(sessionName);
-
-    overlay.innerHTML = '<div class="sync-dialog" role="dialog" aria-labelledby="new-session-modal-title" aria-modal="true">' +
-      '<h2 id="new-session-modal-title">' + t('session_dialogs.new_session_created_title') + '</h2>' +
-      '<p>' + t('session_dialogs.new_session_created_message', { name: escapedName }) + '</p>' +
-      '<div class="button-row">' +
-        '<button type="button" class="new-session-ok-btn primary">' + t('session_dialogs.new_session_ok') + '</button>' +
-      '</div>' +
-    '</div>';
-
-    document.body.appendChild(overlay);
-
-    // Focus OK button
-    const okBtn = overlay.querySelector('.new-session-ok-btn');
-    if (okBtn) okBtn.focus();
-
-    function closeNewSessionModal() {
-      document.removeEventListener('keydown', onNewSessionModalEscape);
-      overlay.remove();
-      resolve();
-    }
-
-    // Handle OK button click
-    okBtn.addEventListener('click', closeNewSessionModal);
-
-    // Handle Escape key
-    function onNewSessionModalEscape(e) {
-      if (e.key === 'Escape') {
-        closeNewSessionModal();
-      }
-    }
-    document.addEventListener('keydown', onNewSessionModalEscape);
-
-    // Handle overlay click
-    overlay.addEventListener('click', function(e) {
-      if (e.target === overlay) {
-        closeNewSessionModal();
-      }
-    });
   });
 }
 
@@ -1290,7 +1230,6 @@ async function handleSessionManagerDelete(button, overlay) {
 
   // Delete the session (skipConfirm=true since we already confirmed)
   await deleteSession(sessionId, true);
-  alert(t('alerts.deleted'));
 
   // Re-open the dialog if there are still sessions
   const sessions = getAllSessions();

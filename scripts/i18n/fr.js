@@ -305,7 +305,6 @@ register_i18n_language('fr', {
     "alerts": {
       "migration_failed": "La migration des données a échoué. Vos données sont en sécurité dans localStorage. Veuillez exporter une sauvegarde et signaler ce problème.",
       "cannot_delete_only_session": "Vous ne pouvez pas supprimer la seule Session",
-      "deleted": "Supprimé",
       "import_success": "Importation réussie : {{count}} session(s) importée(s)",
       "import_failed": "Échec de l'importation : {{error}}",
       "import_json_failed": "Échec de l'importation du fichier JSON : {{error}}",
@@ -523,16 +522,15 @@ register_i18n_language('fr', {
       "empty_name_error": "Le nom de la session ne peut pas être vide",
       "manage_button": "Gérer les Sessions",
       "reorder_hint": "Faites glisser les sessions pour les réorganiser"
-    },    "session_dialogs": {
-      "new_session_created_title": "Nouvelle Session Créée",
-      "new_session_created_message": "Une nouvelle session \"{{name}}\" a été créée et est maintenant active.",
-      "new_session_ok": "OK",
+    },
+    "session_dialogs": {
       "continue_or_new_title": "Bon Retour !",
       "continue_or_new_message": "Souhaitez-vous continuer avec votre session précédente ou en commencer une nouvelle ?",
       "continue_session": "Continuer Précédente",
       "start_new_session": "Démarrer Nouvelle",
       "current_session_label": "Précédente :"
-    },    "merge": {
+    },
+    "merge": {
       "dialog_title": "Fusionner les Sessions",
       "select_source": "Sélectionner la Session Source",
       "select_target": "Sélectionner la Session Cible",

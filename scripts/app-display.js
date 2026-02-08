@@ -802,25 +802,16 @@ function checkAndShowContinueOrNewDialog() {
     questionCount--;
   }
 
-  // Only show dialog if there's actual data (at least 2 completed questions or multiple teams with data)
+  // Auto-apply the default choice (continue if created today, otherwise start new)
   if (questionCount >= 2) {
-    showContinueOrNewSessionDialog(sessionName, sessionCreatedAt).then(function(choice) {
-      if (choice === 'new') {
-        // Create a new session
-        createNewSession().then(function(newSessionId) {
-          if (newSessionId) {
-            sync_data_to_display();
-            // Show confirmation modal with session name
-            const newSession = get_current_session();
-            if (newSession) {
-              const newSessionName = newSession.get('name') || t('defaults.unnamed_session');
-              showNewSessionCreatedModal(newSessionName);
-            }
-          }
-        });
-      }
-      // If 'continue', do nothing - user continues with current session
-    });
+    const defaultToContinue = isFromToday(sessionCreatedAt);
+    if (!defaultToContinue) {
+      createNewSession().then(function(newSessionId) {
+        if (newSessionId) {
+          sync_data_to_display();
+        }
+      });
+    }
   }
 }
 

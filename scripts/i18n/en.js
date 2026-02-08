@@ -304,7 +304,6 @@ register_i18n_language('en', {
     "alerts": {
       "migration_failed": "Data migration failed. Your data is safe in localStorage. Please export a backup and report this issue.",
       "cannot_delete_only_session": "You may not delete the only Session",
-      "deleted": "Deleted",
       "import_success": "Import successful: {{count}} session(s) imported",
       "import_failed": "Import failed: {{error}}",
       "import_json_failed": "Failed to import JSON file: {{error}}",
@@ -526,9 +525,6 @@ register_i18n_language('en', {
       "reorder_hint": "Drag sessions to reorder"
     },
     "session_dialogs": {
-      "new_session_created_title": "New Session Created",
-      "new_session_created_message": "A new session \"{{name}}\" has been created and is now active.",
-      "new_session_ok": "OK",
       "continue_or_new_title": "Welcome Back!",
       "continue_or_new_message": "Would you like to continue with your previous session or start fresh with a new one?",
       "continue_session": "Continue Previous",
