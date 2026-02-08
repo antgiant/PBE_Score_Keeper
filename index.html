@@ -80,6 +80,11 @@
             </label>
             <div id="header_menu_rounding_slot" class="header-menu-rounding-slot"></div>
             <div id="header_menu_session_slot" class="header-menu-session-slot"></div>
+            <div id="header_menu_question_slot" class="header-menu-question-slot">
+              <fieldset class="config-fieldset header-menu-question-fieldset" id="header_menu_question_fieldset">
+                <legend data-i18n="score_entry.question">Question</legend>
+              </fieldset>
+            </div>
             <div class="header-menu-actions">
               <button id="import_export_button" class="config-add-btn header-menu-action-btn" type="button" onclick="showImportExportDialog()" data-i18n="advanced.title"></button>
               <button id="change_log_button" class="config-add-btn header-menu-action-btn" type="button" onclick="showChangeLogDialog()" data-i18n="edit_log.see_all_changes"></button>
@@ -176,6 +181,7 @@
               <button class="config-add-btn" id="next_question" onclick='local_data_update(this)' data-i18n="score_entry.next">Next Question</button>
             </div>
             <br>
+            <div id="score_entry_advanced_placeholder" class="score-entry-advanced-placeholder"></div>
             <div id="score_entry_advanced_options" class="score-entry-advanced">
               <label><span id="ignore_question_warning" style="font-size: xx-large;display:none">🚫</span><input type="checkbox" id="ignore_question" onchange="local_data_update(this)"><span data-i18n="score_entry.ignore">Ignore this Question in Score Calculations</span></label>
               <label><input type="checkbox" id="extra_credit" onchange="local_data_update(this)"><span data-i18n="score_entry.extra_credit">Allow Extra Credit</span></label>
@@ -333,7 +339,7 @@
     </div>
     <div id="scores_tabs_placeholder"></div>
     <footer><p><span data-i18n="footer.feedback">Have an idea to make this better?</span> <a target="_blank" href="https://github.com/antgiant/PBE_Score_Keeper/issues" data-i18n="footer.let_me_know">Let me know</a>.</p>
-    <p><center data-i18n="footer.version" data-i18n-version="2.16.18">v 2.16.18</center></p></footer>
+    <p><center data-i18n="footer.version" data-i18n-version="2.16.19">v 2.16.19</center></p></footer>
 </body>
 
 </html>

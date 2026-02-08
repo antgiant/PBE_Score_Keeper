@@ -90,6 +90,9 @@ fieldset {
   width: 100%;
   justify-content: center;
 }
+.header-menu-question-slot {
+  display: none;
+}
 .header-menu-session-slot {
   display: none;
 }
@@ -141,6 +144,7 @@ fieldset {
     flex: 1 1 100%;
     justify-content: space-between;
   }
+
 
   [data-ui-mode="classic"] .ui-mode-toggle {
     flex-wrap: wrap;
@@ -406,6 +410,17 @@ tr:nth-child(even){
 [data-ui-mode="beta"] .header-menu-rounding-slot .config-fieldset {
   margin: 0;
 }
+[data-ui-mode="beta"] .header-menu-question-slot {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border-color);
+}
+[data-ui-mode="beta"] .header-menu-question-slot .config-fieldset {
+  margin: 0;
+}
 [data-ui-mode="beta"] .header-menu-panel.is-open {
   display: flex;
 }
@@ -558,10 +573,13 @@ tr:nth-child(even){
   gap: 0.75rem;
 }
 [data-ui-mode="beta"] .score-entry-advanced-toggle {
-  display: inline-flex;
+  display: none;
   align-items: center;
 }
 [data-ui-mode="beta"] .score-entry-advanced {
+  display: none;
+}
+.score-entry-advanced-placeholder {
   display: none;
 }
 .score-entry-advanced label {
@@ -572,6 +590,9 @@ tr:nth-child(even){
   margin-bottom: 0;
 }
 [data-ui-mode="beta"] .score-entry-advanced.is-open {
+  display: block;
+}
+[data-ui-mode="beta"] .header-menu-question-fieldset .score-entry-advanced {
   display: block;
 }
 .score-entry-advanced-toggle {
@@ -843,7 +864,7 @@ tr:nth-child(even){
   display: none;
 }
 :root[data-ui-mode="beta"] .score-entry-advanced-toggle {
-  display: inline-flex;
+  display: none;
 }
 .session-buttons-row {
   display: flex;
