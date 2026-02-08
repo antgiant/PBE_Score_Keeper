@@ -246,7 +246,8 @@ register_i18n_language('en', {
       "migration_error": "Migration failed: {{error}}",
       "migration_no_sessions": "No sessions to transfer.",
       "migration_close": "Close",
-      "migration_info": "This uses the same peer-to-peer technology as Real-Time Sync. Both devices must be online."
+      "migration_info": "This uses the same peer-to-peer technology as Real-Time Sync. Both devices must be online.",
+      "close_button": "Close"
     },
     "footer": {
       "feedback": "Have an idea to make this better?",

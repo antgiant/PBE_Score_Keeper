@@ -243,7 +243,8 @@ register_i18n_language('pig', {
       "migration_error": "Igration-May ailed-fay: {{error}}",
       "migration_no_sessions": "O-Nay essions-say o-tay ansfer-tray.",
       "migration_close": "Ose-Clay",
-      "migration_info": "Is-Thay uses-ay e-thay ame-say eer-pay-o-tay-eer-pay echnology-tay as-ay Eal-Ray Ime-Tay Ync-Say. Oth-Bay evices-day ust-may e-bay online-ay."
+      "migration_info": "Is-Thay uses-ay e-thay ame-say eer-pay-o-tay-eer-pay echnology-tay as-ay Eal-Ray Ime-Tay Ync-Say. Oth-Bay evices-day ust-may e-bay online-ay.",
+      "close_button": "Ose-Clay"
     },
     "footer": {
       "feedback": "Ave-Hay an-ay idea-ay o-tay ake-may is-thay etter-bay?",

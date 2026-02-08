@@ -247,7 +247,8 @@ register_i18n_language('es', {
       "migration_error": "Migración fallida: {{error}}",
       "migration_no_sessions": "No hay sesiones para transferir.",
       "migration_close": "Cerrar",
-      "migration_info": "Esto usa la misma tecnología punto a punto que la Sincronización en Tiempo Real. Ambos dispositivos deben estar en línea."
+      "migration_info": "Esto usa la misma tecnología punto a punto que la Sincronización en Tiempo Real. Ambos dispositivos deben estar en línea.",
+      "close_button": "Cerrar"
     },
     "footer": {
       "feedback": "¿Tiene una idea para mejorar esto?",

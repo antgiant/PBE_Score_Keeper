@@ -247,7 +247,8 @@ register_i18n_language('fr', {
       "migration_error": "Échec de la migration : {{error}}",
       "migration_no_sessions": "Aucune session à transférer.",
       "migration_close": "Fermer",
-      "migration_info": "Ceci utilise la même technologie pair-à-pair que la Synchronisation en Temps Réel. Les deux appareils doivent être en ligne."
+      "migration_info": "Ceci utilise la même technologie pair-à-pair que la Synchronisation en Temps Réel. Les deux appareils doivent être en ligne.",
+      "close_button": "Fermer"
     },
     "footer": {
       "feedback": "Vous avez une idée pour améliorer ceci ?",

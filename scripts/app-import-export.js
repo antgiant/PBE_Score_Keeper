@@ -148,6 +148,132 @@ async function yjs_to_json() {
   return result;
 }
 
+var IMPORT_EXPORT_DIALOG_ID = "import-export-dialog-overlay";
+var importExportDialogOrigin = null;
+var importExportDialogKeyHandler = null;
+var importExportDialogObserver = null;
+var importExportDialogLastFocus = null;
+
+function showImportExportDialog() {
+  if (typeof document === "undefined") {
+    return;
+  }
+  var root = document.documentElement;
+  if (root && root.getAttribute("data-ui-mode") !== "beta") {
+    return;
+  }
+  if (document.getElementById(IMPORT_EXPORT_DIALOG_ID)) {
+    return;
+  }
+
+  var advancedPanel = document.getElementById("Advanced");
+  if (!advancedPanel) {
+    return;
+  }
+
+  importExportDialogLastFocus = document.activeElement || null;
+  importExportDialogOrigin = {
+    parent: advancedPanel.parentNode,
+    nextSibling: advancedPanel.nextSibling
+  };
+
+  var overlay = document.createElement("div");
+  overlay.id = IMPORT_EXPORT_DIALOG_ID;
+  overlay.className = "sync-dialog-overlay import-export-overlay";
+
+  var dialog = document.createElement("div");
+  dialog.className = "import-export-dialog";
+  dialog.setAttribute("role", "dialog");
+  dialog.setAttribute("aria-modal", "true");
+
+  var header = document.createElement("div");
+  header.className = "import-export-dialog-header";
+
+  var title = document.createElement("h2");
+  title.id = "import-export-dialog-title";
+  title.textContent = t("advanced.title");
+
+  var closeButton = document.createElement("button");
+  closeButton.type = "button";
+  closeButton.className = "config-add-btn import-export-dialog-close";
+  closeButton.textContent = t("advanced.close_button");
+  closeButton.addEventListener("click", closeImportExportDialog);
+
+  header.appendChild(title);
+  header.appendChild(closeButton);
+
+  var body = document.createElement("div");
+  body.className = "import-export-dialog-body";
+  body.appendChild(advancedPanel);
+
+  dialog.appendChild(header);
+  dialog.appendChild(body);
+  dialog.setAttribute("aria-labelledby", title.id);
+  overlay.appendChild(dialog);
+  document.body.appendChild(overlay);
+
+  closeButton.focus();
+
+  importExportDialogKeyHandler = function(event) {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      closeImportExportDialog();
+    }
+  };
+  document.addEventListener("keydown", importExportDialogKeyHandler);
+
+  if (typeof MutationObserver !== "undefined" && root) {
+    importExportDialogObserver = new MutationObserver(function(mutations) {
+      for (var i = 0; i < mutations.length; i++) {
+        if (mutations[i].attributeName === "data-ui-mode") {
+          if (root.getAttribute("data-ui-mode") !== "beta") {
+            closeImportExportDialog();
+          }
+          break;
+        }
+      }
+    });
+    importExportDialogObserver.observe(root, { attributes: true, attributeFilter: ["data-ui-mode"] });
+  }
+}
+
+function closeImportExportDialog() {
+  if (typeof document === "undefined") {
+    return;
+  }
+  var overlay = document.getElementById(IMPORT_EXPORT_DIALOG_ID);
+  if (!overlay) {
+    return;
+  }
+
+  var advancedPanel = document.getElementById("Advanced");
+  if (advancedPanel && importExportDialogOrigin && importExportDialogOrigin.parent) {
+    if (importExportDialogOrigin.nextSibling && importExportDialogOrigin.nextSibling.parentNode === importExportDialogOrigin.parent) {
+      importExportDialogOrigin.parent.insertBefore(advancedPanel, importExportDialogOrigin.nextSibling);
+    } else {
+      importExportDialogOrigin.parent.appendChild(advancedPanel);
+    }
+  }
+
+  overlay.remove();
+
+  if (importExportDialogKeyHandler) {
+    document.removeEventListener("keydown", importExportDialogKeyHandler);
+    importExportDialogKeyHandler = null;
+  }
+
+  if (importExportDialogObserver) {
+    importExportDialogObserver.disconnect();
+    importExportDialogObserver = null;
+  }
+
+  if (importExportDialogLastFocus && typeof importExportDialogLastFocus.focus === "function") {
+    importExportDialogLastFocus.focus();
+  }
+  importExportDialogLastFocus = null;
+  importExportDialogOrigin = null;
+}
+
 /**
  * Export current session only as JSON
  */
