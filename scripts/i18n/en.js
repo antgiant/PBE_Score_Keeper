@@ -47,6 +47,10 @@ register_i18n_language('en', {
       "new_session": "New Session",
       "enter_scores": "Enter Scores"
     },
+    "session_nav": {
+      "previous": "Previous Session",
+      "next": "Next Session"
+    },
     "teams": {
       "title_one": "Set up your Team",
       "title_other": "Set up your {{count}} Teams",

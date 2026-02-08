@@ -48,6 +48,10 @@ register_i18n_language('es', {
       "new_session": "Nueva Sesión",
       "enter_scores": "Ingresar Puntuaciones"
     },
+    "session_nav": {
+      "previous": "Sesión anterior",
+      "next": "Sesión siguiente"
+    },
     "teams": {
       "title_one": "Configure su Equipo",
       "title_other": "Configure sus {{count}} Equipos",

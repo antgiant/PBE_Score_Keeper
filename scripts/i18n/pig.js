@@ -44,6 +44,10 @@ register_i18n_language('pig', {
       "new_session": "Ew-Nay Ession-Say",
       "enter_scores": "Enter-ay Ores-Scay"
     },
+    "session_nav": {
+      "previous": "Evious-Pray Ession-Say",
+      "next": "Ext-Nay Ession-Say"
+    },
     "teams": {
       "title_one": "Et-Say up-ay our-yay Eam-Tay",
       "title_other": "Et-Say up-ay our-yay {{count}} Eams-Tay",

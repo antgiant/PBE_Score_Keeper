@@ -53,6 +53,42 @@ function update_data_element(updated_id, new_value) {
     });
   }
 
+  else if (updated_id == "session_prev_button") {
+    const currentSessionIndex = get_current_session_index();
+    if (currentSessionIndex <= 1) {
+      return;
+    }
+    return switchSession(currentSessionIndex - 1).then(function(switched) {
+      sync_data_to_display();
+      return switched;
+    });
+  }
+
+  else if (updated_id == "session_next_button") {
+    const sessionNames = get_session_names();
+    const sessionCount = sessionNames.length - 1;
+    const currentSessionIndex = get_current_session_index();
+    if (currentSessionIndex < sessionCount) {
+      return switchSession(currentSessionIndex + 1).then(function(switched) {
+        sync_data_to_display();
+        return switched;
+      });
+    }
+    return createNewSession().then(function(newSessionId) {
+      if (newSessionId) {
+        sync_data_to_display();
+        if (typeof showNewSessionCreatedModal === 'function' && typeof document !== 'undefined' && document.getElementById) {
+          const session = get_current_session();
+          if (session) {
+            const sessionName = session.get('name') || t('defaults.unnamed_session');
+            showNewSessionCreatedModal(sessionName);
+          }
+        }
+      }
+      return newSessionId;
+    });
+  }
+
   //Jump to specific session
   else if (updated_id == "session_quick_nav") {
     // Use multi-doc switchSession - return promise for await support

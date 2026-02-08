@@ -513,6 +513,7 @@ function initialize_rounding_toggle_switch() {
 
 function initialize_display() {
   initialize_scores_tabs();
+  initialize_beta_session_frame();
 
   //Set up Accordion display
   $("#accordion").accordion({
@@ -614,6 +615,55 @@ function initialize_display() {
     hasExistingDataOnLoad = false; // Reset flag so it doesn't show again
     checkAndShowContinueOrNewDialog();
   }
+}
+
+function initialize_beta_session_frame() {
+  if (typeof document === "undefined") {
+    return;
+  }
+  var root = document.documentElement;
+  var fieldset = document.getElementById("beta_session_fieldset");
+  var slot = document.getElementById("beta_session_entry_slot");
+  var placeholder = document.getElementById("score_entry_fieldset_placeholder");
+  var content = document.getElementById("score_entry_content");
+  if (!root || !fieldset || !slot || !placeholder || !content) {
+    return;
+  }
+
+  function is_beta_mode_for_session_frame() {
+    return root.getAttribute("data-ui-mode") === "beta";
+  }
+
+  function sync_frame_for_mode() {
+    if (is_beta_mode_for_session_frame()) {
+      fieldset.setAttribute("aria-hidden", "false");
+      if (!slot.contains(content)) {
+        slot.appendChild(content);
+      }
+      return;
+    }
+    fieldset.setAttribute("aria-hidden", "true");
+    if (placeholder.parentNode && content.parentNode !== placeholder.parentNode) {
+      placeholder.parentNode.insertBefore(content, placeholder.nextSibling);
+    }
+  }
+
+  if (typeof MutationObserver === "undefined") {
+    sync_frame_for_mode();
+    return;
+  }
+
+  var observer = new MutationObserver(function(mutations) {
+    for (var i = 0; i < mutations.length; i++) {
+      if (mutations[i].attributeName === "data-ui-mode") {
+        sync_frame_for_mode();
+        break;
+      }
+    }
+  });
+  observer.observe(root, { attributes: true, attributeFilter: ["data-ui-mode"] });
+
+  sync_frame_for_mode();
 }
 
 /**
@@ -824,6 +874,24 @@ function sync_data_to_display() {
     $("#new_session").prop("disabled", false);
   } else {
     $("#new_session").prop("disabled", true);
+  }
+
+  if (typeof document !== 'undefined' && typeof document.getElementById === 'function') {
+    var sessionTitle = session.get('name') || t('defaults.unnamed_session');
+    var sessionTitleEl = document.getElementById("beta_session_title");
+    if (sessionTitleEl) {
+      sessionTitleEl.textContent = sessionTitle;
+    }
+    var prevSessionButton = document.getElementById("session_prev_button");
+    if (prevSessionButton) {
+      prevSessionButton.disabled = currentSessionIndex <= 1;
+    }
+    var nextSessionButton = document.getElementById("session_next_button");
+    if (nextSessionButton) {
+      var hasNextSession = currentSessionIndex < session_count;
+      var canCreateSession = question_count > 1;
+      nextSessionButton.disabled = !hasNextSession && !canCreateSession;
+    }
   }
   
   //Set up Summary Stats here so that those calculations can be reused elsewhere

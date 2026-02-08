@@ -549,6 +549,52 @@ tr:nth-child(even){
   overflow: hidden;
   box-shadow: 0 18px 50px rgba(0, 0, 0, 0.12);
 }
+[data-ui-mode="beta"] .beta-session-fieldset {
+  display: block;
+  border: 1px solid var(--border-color);
+  background: var(--panel-bg);
+  margin: 1rem 0;
+}
+.beta-session-fieldset {
+  display: none;
+}
+[data-ui-mode="beta"] .beta-session-legend {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  width: 100%;
+  box-sizing: border-box;
+  font-weight: 700;
+  padding: 0 0.5rem;
+}
+[data-ui-mode="beta"] .beta-session-title {
+  flex: 1;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+[data-ui-mode="beta"] .beta-session-nav-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2rem;
+  height: 2rem;
+  border-radius: 999px;
+  border: 1px solid var(--border-color);
+  background: var(--control-bg);
+  color: var(--text-color);
+  cursor: pointer;
+  font-weight: 700;
+}
+[data-ui-mode="beta"] .beta-session-nav-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+[data-ui-mode="beta"] .beta-session-entry-slot {
+  margin-top: 0.5rem;
+}
 [data-ui-mode="beta"] #accordion .ui-accordion-header {
   background: var(--accordion-header-bg, var(--header-bg));
   border-color: var(--accordion-header-border, var(--border-color));
@@ -564,6 +610,9 @@ tr:nth-child(even){
 }
 [data-ui-mode="beta"] #accordion .ui-accordion-content {
   border-color: var(--border-color);
+}
+[data-ui-mode="beta"] #new_session {
+  display: none;
 }
 [data-ui-mode="beta"] fieldset {
   border-radius: 12px;
