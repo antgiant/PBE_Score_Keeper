@@ -121,6 +121,7 @@ fieldset {
   border: 1px solid var(--border-color);
   background: var(--control-bg);
   color: var(--text-color);
+  box-sizing: border-box;
 }
 .ui-mode-option {
   font-weight: 600;
