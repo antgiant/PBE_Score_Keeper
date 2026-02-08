@@ -92,7 +92,7 @@ register_i18n_language('en', {
       "no": "No"
     },
     "score_entry": {
-      "title": "Score Entry",
+      "title": "Entry",
       "previous": "Previous Question",
       "next": "Next Question",
       "new": "New Question",
@@ -104,6 +104,7 @@ register_i18n_language('en', {
       "reorder_block": "Drag to reorder Block field"
     },
     "scores": {
+      "according": "Score",
       "team_exact": "Score by Team (Exact)",
       "team_rounded": "Score by Team (Rounded)",
       "by_block": "Score by Block",

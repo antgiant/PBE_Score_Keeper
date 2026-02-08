@@ -448,6 +448,101 @@ tr:nth-child(even){
   margin-top: 0.3rem;
   order: 5;
 }
+#scores_tabs_placeholder {
+  display: none;
+}
+[data-ui-mode="classic"] #accordion_scores_tabs_header,
+[data-ui-mode="classic"] #accordion_scores_tabs_panel {
+  display: none;
+}
+[data-ui-mode="beta"] #accordion_score_by_team_exact,
+[data-ui-mode="beta"] #accordion_score_by_team_exact_panel,
+[data-ui-mode="beta"] #accordion_score_by_team_rounded,
+[data-ui-mode="beta"] #accordion_score_by_team_rounded_panel,
+[data-ui-mode="beta"] #accordion_score_by_block,
+[data-ui-mode="beta"] #accordion_score_by_block_panel,
+[data-ui-mode="beta"] #accordion_score_by_team_and_block,
+[data-ui-mode="beta"] #accordion_score_by_team_and_block_panel,
+[data-ui-mode="beta"] #accordion_score_by_question_history,
+[data-ui-mode="beta"] #accordion_score_by_question_history_panel {
+  display: none;
+}
+[data-ui-mode="beta"] #scores_tabs {
+  border: none;
+  background: transparent;
+  padding: 0;
+}
+[data-ui-mode="beta"] #scores_tabs .ui-tabs-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0 0 0.6rem;
+  padding: 0;
+  border: none;
+  background: transparent;
+}
+[data-ui-mode="beta"] #scores_tabs .ui-tabs-nav li {
+  float: none;
+  margin: 0;
+  border-radius: 999px;
+  border: 1px solid var(--border-color);
+  background: var(--control-bg);
+}
+[data-ui-mode="beta"] #scores_tabs .ui-tabs-nav li .ui-tabs-anchor {
+  padding: 0.35rem 0.9rem;
+  color: var(--text-color);
+}
+[data-ui-mode="beta"] #scores_tabs .ui-tabs-nav li.ui-tabs-active {
+  background: var(--link-color);
+  border-color: var(--link-color);
+}
+[data-ui-mode="beta"] #scores_tabs .ui-tabs-nav li.ui-tabs-active .ui-tabs-anchor {
+  color: var(--accordion-header-active-text, #ffffff);
+}
+[data-ui-mode="beta"] #scores_tabs .ui-tabs-panel {
+  padding: 0.5rem 0.25rem 0.25rem;
+  border: none;
+  background: transparent;
+}
+[data-ui-mode="beta"] #team_scores table,
+[data-ui-mode="beta"] #rounded_team_scores table,
+[data-ui-mode="beta"] #block_scores table,
+[data-ui-mode="beta"] #team_and_block_scores table,
+[data-ui-mode="beta"] #scores table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--panel-bg);
+  color: var(--text-color);
+  border: 1px solid var(--border-color);
+}
+[data-ui-mode="beta"] #team_scores th,
+[data-ui-mode="beta"] #rounded_team_scores th,
+[data-ui-mode="beta"] #block_scores th,
+[data-ui-mode="beta"] #team_and_block_scores th,
+[data-ui-mode="beta"] #scores th {
+  background: var(--accordion-header-bg, var(--header-bg));
+  color: var(--text-color);
+}
+[data-ui-mode="beta"] #team_scores th,
+[data-ui-mode="beta"] #rounded_team_scores th,
+[data-ui-mode="beta"] #block_scores th,
+[data-ui-mode="beta"] #team_and_block_scores th,
+[data-ui-mode="beta"] #scores th,
+[data-ui-mode="beta"] #team_scores td,
+[data-ui-mode="beta"] #rounded_team_scores td,
+[data-ui-mode="beta"] #block_scores td,
+[data-ui-mode="beta"] #team_and_block_scores td,
+[data-ui-mode="beta"] #scores td {
+  border: 1px solid var(--border-color);
+  padding: 0.35rem 0.5rem;
+}
+[data-theme="dark"][data-ui-mode="beta"] #team_scores th,
+[data-theme="dark"][data-ui-mode="beta"] #rounded_team_scores th,
+[data-theme="dark"][data-ui-mode="beta"] #block_scores th,
+[data-theme="dark"][data-ui-mode="beta"] #team_and_block_scores th,
+[data-theme="dark"][data-ui-mode="beta"] #scores th {
+  background: #1e2b43;
+}
 /* Editable number (click to edit) */
 .editable-number {
   cursor: pointer;

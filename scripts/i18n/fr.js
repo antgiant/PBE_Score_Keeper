@@ -93,7 +93,7 @@ register_i18n_language('fr', {
       "no": "Non"
     },
     "score_entry": {
-      "title": "Saisie des Scores",
+      "title": "Saisie",
       "previous": "Question Précédente",
       "next": "Question Suivante",
       "new": "Nouvelle Question",
@@ -105,6 +105,7 @@ register_i18n_language('fr', {
       "reorder_block": "Glisser pour réordonner le champ Bloc"
     },
     "scores": {
+      "according": "Pointage",
       "team_exact": "Score par Équipe (Exact)",
       "team_rounded": "Score par Équipe (Arrondi)",
       "by_block": "Score par Bloc",

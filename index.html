@@ -194,14 +194,31 @@
           </div>
         </div>
       </div>
-      <h3 data-i18n="scores.team_exact">Score by Team (Exact)</h3>
-      <div>
+      <h3 id="accordion_scores_tabs_header" data-i18n="scores.according"></h3>
+      <div id="accordion_scores_tabs_panel">
+        <div id="scores_tabs" class="scores-tabs">
+          <ul>
+            <li id="scores_tab_team_exact_tab"><a href="#scores_tab_team_exact" data-i18n="scores.team_exact"></a></li>
+            <li id="scores_tab_team_rounded_tab"><a href="#scores_tab_team_rounded" data-i18n="scores.team_rounded"></a></li>
+            <li id="scores_tab_by_block_tab"><a href="#scores_tab_by_block" data-i18n="scores.by_block"></a></li>
+            <li id="scores_tab_team_block_tab"><a href="#scores_tab_team_block" data-i18n="scores.team_and_block"></a></li>
+            <li id="scores_tab_history_tab"><a href="#scores_tab_history" data-i18n="scores.question_history"></a></li>
+          </ul>
+          <div id="scores_tab_team_exact" class="scores-tab-panel"></div>
+          <div id="scores_tab_team_rounded" class="scores-tab-panel"></div>
+          <div id="scores_tab_by_block" class="scores-tab-panel"></div>
+          <div id="scores_tab_team_block" class="scores-tab-panel"></div>
+          <div id="scores_tab_history" class="scores-tab-panel"></div>
+        </div>
+      </div>
+      <h3 id="accordion_score_by_team_exact" data-i18n="scores.team_exact">Score by Team (Exact)</h3>
+      <div id="accordion_score_by_team_exact_panel">
         <div data-role="team_scores" id="team_scores" data-i18n="placeholders.team_scores">
           Team Scores Go Here
         </div>
       </div>
-      <h3 data-i18n="scores.team_rounded">Score by Team (Rounded)</h3>
-      <div>
+      <h3 id="accordion_score_by_team_rounded" data-i18n="scores.team_rounded">Score by Team (Rounded)</h3>
+      <div id="accordion_score_by_team_rounded_panel">
         <div data-role="rounded_team_scores" id="rounded_team_scores" data-i18n="placeholders.rounded_scores">
           Rounded Team Scores Go Here
         </div>
@@ -218,8 +235,8 @@
           Team &amp; Block/Group Scores Go Here
         </div>
       </div>
-      <h3 data-i18n="scores.question_history">Question History</h3>
-      <div>
+      <h3 id="accordion_score_by_question_history" data-i18n="scores.question_history">Question History</h3>
+      <div id="accordion_score_by_question_history_panel">
         <div data-role="scores" id="scores" data-i18n="placeholders.question_history">
           Question History Goes Here
         </div>
@@ -283,8 +300,9 @@
         </div>
       </div>
     </div>
+    <div id="scores_tabs_placeholder"></div>
     <footer><p><span data-i18n="footer.feedback">Have an idea to make this better?</span> <a target="_blank" href="https://github.com/antgiant/PBE_Score_Keeper/issues" data-i18n="footer.let_me_know">Let me know</a>.</p>
-    <p><center data-i18n="footer.version" data-i18n-version="2.14.9">v 2.14.9</center></p></footer>
+    <p><center data-i18n="footer.version" data-i18n-version="2.14.14">v 2.14.14</center></p></footer>
 </body>
 
 </html>

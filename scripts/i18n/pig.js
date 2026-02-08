@@ -89,7 +89,7 @@ register_i18n_language('pig', {
       "no": "O-Nay"
     },
     "score_entry": {
-      "title": "Ore-Scay Entry-ay",
+      "title": "Entry-ay",
       "previous": "Evious-Pray Uestion-Qay",
       "next": "Ext-Nay Uestion-Qay",
       "new": "Ew-Nay Uestion-Qay",
@@ -101,6 +101,7 @@ register_i18n_language('pig', {
       "reorder_block": "Ag-Dray o-tay eorder-ray Ock-Blay ield-fay"
     },
     "scores": {
+      "according": "Ore-Scay",
       "team_exact": "Ore-Scay y-bay Eam-Tay (Exact-ay)",
       "team_rounded": "Ore-Scay y-bay Eam-Tay (Ounded-Ray)",
       "by_block": "Ore-Scay y-bay Ock-Blay",

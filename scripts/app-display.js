@@ -153,7 +153,162 @@ function sync_data_to_display_debounced() {
   }, 100);
 }
 
+function initialize_scores_tabs() {
+  if (typeof document === "undefined" || typeof $ === "undefined") {
+    return;
+  }
+  if (typeof document.getElementById !== "function") {
+    return;
+  }
+  var root = document.documentElement;
+  var tabsElement = document.getElementById("scores_tabs");
+  var accordion = document.getElementById("accordion");
+  var tabsPlaceholder = document.getElementById("scores_tabs_placeholder");
+  var tabsHeader = document.getElementById("accordion_scores_tabs_header");
+  var tabsPanel = document.getElementById("accordion_scores_tabs_panel");
+  if (!root || !tabsElement) {
+    return;
+  }
+
+  var panelMappings = [
+    { contentId: "team_scores", classicPanelId: "accordion_score_by_team_exact_panel", tabPanelId: "scores_tab_team_exact" },
+    { contentId: "rounded_team_scores", classicPanelId: "accordion_score_by_team_rounded_panel", tabPanelId: "scores_tab_team_rounded" },
+    { contentId: "block_scores", classicPanelId: "accordion_score_by_block_panel", tabPanelId: "scores_tab_by_block" },
+    { contentId: "team_and_block_scores", classicPanelId: "accordion_score_by_team_and_block_panel", tabPanelId: "scores_tab_team_block" },
+    { contentId: "scores", classicPanelId: "accordion_score_by_question_history_panel", tabPanelId: "scores_tab_history" }
+  ];
+
+  function ensure_tabs_initialized() {
+    var $tabs = $("#scores_tabs");
+    if (typeof $tabs.tabs !== "function") {
+      return $tabs;
+    }
+    if (!$tabs.hasClass("ui-tabs")) {
+      $tabs.tabs();
+    }
+    return $tabs;
+  }
+
+  function move_tabs_section(isBeta) {
+    if (!tabsHeader || !tabsPanel) {
+      return;
+    }
+    if (isBeta && accordion) {
+      var reference = document.getElementById("accordion_score_by_team_exact");
+      if (reference && reference.parentNode === accordion) {
+        accordion.insertBefore(tabsHeader, reference);
+        accordion.insertBefore(tabsPanel, reference);
+      } else {
+        accordion.appendChild(tabsHeader);
+        accordion.appendChild(tabsPanel);
+      }
+      return;
+    }
+    if (tabsPlaceholder) {
+      tabsPlaceholder.appendChild(tabsHeader);
+      tabsPlaceholder.appendChild(tabsPanel);
+    }
+  }
+
+  function move_score_panels(isBeta) {
+    for (var i = 0; i < panelMappings.length; i++) {
+      var mapping = panelMappings[i];
+      var content = document.getElementById(mapping.contentId);
+      var targetId = isBeta ? mapping.tabPanelId : mapping.classicPanelId;
+      var target = document.getElementById(targetId);
+      if (!content || !target) {
+        continue;
+      }
+      if (content.parentNode !== target) {
+        target.appendChild(content);
+      }
+    }
+  }
+
+  function apply_layout_for_mode() {
+    var isBeta = root.getAttribute("data-ui-mode") === "beta";
+    var $tabs = ensure_tabs_initialized();
+    move_tabs_section(isBeta);
+    move_score_panels(isBeta);
+    if (typeof $tabs.tabs === "function") {
+      try {
+        $tabs.tabs("refresh");
+      } catch (e) {
+        // Tabs not initialized yet.
+      }
+    }
+    try {
+      $("#accordion").accordion("refresh");
+    } catch (e) {
+      // Accordion not initialized yet.
+    }
+  }
+
+  if (typeof MutationObserver !== "undefined") {
+    var observer = new MutationObserver(function(mutations) {
+      for (var i = 0; i < mutations.length; i++) {
+        if (mutations[i].attributeName === "data-ui-mode") {
+          apply_layout_for_mode();
+          break;
+        }
+      }
+    });
+    observer.observe(root, { attributes: true, attributeFilter: ["data-ui-mode"] });
+  }
+
+  apply_layout_for_mode();
+}
+
+function update_scores_tabs_for_block_count(blockCount) {
+  if (typeof document === "undefined" || typeof $ === "undefined") {
+    return;
+  }
+  if (typeof document.getElementById !== "function") {
+    return;
+  }
+  var tabsElement = document.getElementById("scores_tabs");
+  if (!tabsElement) {
+    return;
+  }
+
+  var hideBlockTabs = blockCount === 1;
+  var toggleTargets = [
+    { tabId: "scores_tab_by_block_tab", panelId: "scores_tab_by_block" },
+    { tabId: "scores_tab_team_block_tab", panelId: "scores_tab_team_block" }
+  ];
+
+  for (var i = 0; i < toggleTargets.length; i++) {
+    var target = toggleTargets[i];
+    var tab = document.getElementById(target.tabId);
+    var panel = document.getElementById(target.panelId);
+    if (tab) {
+      tab.style.display = hideBlockTabs ? "none" : "";
+    }
+    if (panel) {
+      panel.style.display = hideBlockTabs ? "none" : "";
+    }
+  }
+
+  var $tabs = $("#scores_tabs");
+  if (typeof $tabs.tabs === "function" && $tabs.hasClass("ui-tabs")) {
+    $tabs.tabs("refresh");
+    if (hideBlockTabs) {
+      var $activeTab = $tabs.find(".ui-tabs-nav li.ui-tabs-active");
+      if ($activeTab.length && $activeTab.css("display") === "none") {
+        var $firstVisible = $tabs.find(".ui-tabs-nav li").filter(function() {
+          return $(this).css("display") !== "none";
+        }).first();
+        if ($firstVisible.length) {
+          $tabs.tabs("option", "active", $firstVisible.index());
+        }
+      }
+    }
+  }
+}
+
 function initialize_display() {
+  initialize_scores_tabs();
+
   //Set up Accordion display
   $("#accordion").accordion({
     heightStyle: "content"
@@ -804,6 +959,8 @@ function sync_data_to_display() {
     $("#accordion_score_by_team_and_block").css('display', '');
     $("#accordion_score_by_team_and_block_panel").css('display', '');
   }
+
+  update_scores_tabs_for_block_count(block_count);
   
   // Refresh accordion to account for visibility changes
   try {

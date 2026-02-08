@@ -93,7 +93,7 @@ register_i18n_language('es', {
       "no": "No"
     },
     "score_entry": {
-      "title": "Entrada de Puntuación",
+      "title": "Entrada",
       "previous": "Pregunta Anterior",
       "next": "Siguiente Pregunta",
       "new": "Nueva Pregunta",
@@ -105,6 +105,7 @@ register_i18n_language('es', {
       "reorder_block": "Arrastrar para reordenar el campo de Bloque"
     },
     "scores": {
+      "according": "Puntuación",
       "team_exact": "Puntuación por Equipo (Exacta)",
       "team_rounded": "Puntuación por Equipo (Redondeada)",
       "by_block": "Puntuación por Bloque",
