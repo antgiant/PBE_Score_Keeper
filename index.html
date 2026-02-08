@@ -24,6 +24,7 @@
   <script src="scripts/i18n/pig.js"></script>
   <script src="scripts/app-theme.js"></script>
   <script src="scripts/app-ui-mode.js"></script>
+  <script src="scripts/app-header-menu.js"></script>
   <script src="scripts/app-state.js"></script>
   <script src="scripts/app-data.js"></script>
   <script src="scripts/app-reorder.js"></script>
@@ -47,38 +48,48 @@
   <div data-role="page" id="main">
     <div data-role="header" class="jqm-header">
       <div class="header-row">
+        <div class="header-menu">
+          <button id="header_menu_toggle" class="header-menu-toggle" type="button" aria-expanded="false" aria-controls="header_menu_panel" data-i18n-aria-label="menu.toggle_aria" data-i18n-title="menu.toggle_title">
+            <span class="header-menu-icon" aria-hidden="true">&#9776;</span>
+          </button>
+          <div id="header_menu_panel" class="header-menu-panel" aria-hidden="false">
+            <label class="language-picker" for="language_preference">
+              <span data-i18n="app.language">Language</span>
+              <select id="language_preference">
+                <!-- Options populated dynamically from registered languages -->
+              </select>
+            </label>
+            <label class="theme-picker" for="theme_preference">
+              <span data-i18n="app.theme">Theme</span>
+              <select id="theme_preference">
+                <option value="system" data-i18n="theme.system">System</option>
+                <option value="light" data-i18n="theme.light">Light</option>
+                <option value="dark" data-i18n="theme.dark">Dark</option>
+              </select>
+            </label>
+            <label class="ui-mode-toggle">
+              <span data-i18n="ui_mode.label">UI Mode</span>
+              <span class="ui-mode-option" data-i18n="ui_mode.classic">Classic</span>
+              <span class="ui-mode-switch">
+                <input type="checkbox" id="ui_mode_toggle" role="switch" data-i18n-aria-label="ui_mode.toggle_aria" data-i18n-title="ui_mode.toggle_title">
+                <span class="ui-mode-slider" aria-hidden="true"></span>
+              </span>
+              <span class="ui-mode-option" data-i18n="ui_mode.beta">Beta</span>
+            </label>
+            <div id="header_menu_session_slot" class="header-menu-session-slot"></div>
+          </div>
+        </div>
         <h1 data-i18n="app.title">PBE Score Keeper</h1>
-        <label class="language-picker" for="language_preference">
-          <span data-i18n="app.language">Language</span>
-          <select id="language_preference">
-            <!-- Options populated dynamically from registered languages -->
-          </select>
-        </label>
-        <label class="theme-picker" for="theme_preference">
-          <span data-i18n="app.theme">Theme</span>
-          <select id="theme_preference">
-            <option value="system" data-i18n="theme.system">System</option>
-            <option value="light" data-i18n="theme.light">Light</option>
-            <option value="dark" data-i18n="theme.dark">Dark</option>
-          </select>
-        </label>
-        <label class="ui-mode-toggle">
-          <span data-i18n="ui_mode.label">UI Mode</span>
-          <span class="ui-mode-option" data-i18n="ui_mode.classic">Classic</span>
-          <span class="ui-mode-switch">
-            <input type="checkbox" id="ui_mode_toggle" role="switch" data-i18n-aria-label="ui_mode.toggle_aria" data-i18n-title="ui_mode.toggle_title">
-            <span class="ui-mode-slider" aria-hidden="true"></span>
-          </span>
-          <span class="ui-mode-option" data-i18n="ui_mode.beta">Beta</span>
-        </label>
-        <button id="sync_button" class="sync-button" onclick="showSyncDialog()" data-i18n-title="sync.button_tooltip">
-          <span class="sync-icon">🔄</span>
-          <span class="sync-status" data-i18n="sync.button">Sync</span>
-        </button>
-        <span id="sync_server_badge" class="sync-server-badge" style="display: none;" data-i18n-title="sync.server_badge_tooltip">🖥️</span>
-        <div id="sync_peers" class="sync-peers" style="display: none;">
-          <span class="peer-count"></span>
-          <div class="peer-tooltip"></div>
+        <div class="header-sync">
+          <button id="sync_button" class="sync-button" onclick="showSyncDialog()" data-i18n-title="sync.button_tooltip">
+            <span class="sync-icon">🔄</span>
+            <span class="sync-status" data-i18n="sync.button">Sync</span>
+          </button>
+          <span id="sync_server_badge" class="sync-server-badge" style="display: none;" data-i18n-title="sync.server_badge_tooltip">🖥️</span>
+          <div id="sync_peers" class="sync-peers" style="display: none;">
+            <span class="peer-count"></span>
+            <div class="peer-tooltip"></div>
+          </div>
         </div>
       </div>
     </div>
@@ -89,7 +100,8 @@
         <p data-i18n="config.instructions">This is a score keeper for the Pathfinder Bible Experience (aka the Bible Bowl). Please enter your number of teams as well as blocks/groups below so that the scoring grid can be created</p>
         <h5 data-i18n="config.storage_title">Data Storage Note</h5>
         <p data-i18n="config.storage_note">Data is stored only on your device, and is not shared in any way with any server. This also means that if you change devices your data will not appear on the new device.</p>
-        <fieldset class="config-fieldset">
+        <div id="session_fieldset_placeholder"></div>
+        <fieldset class="config-fieldset" id="session_fieldset">
           <legend data-i18n="config.session_title">Session</legend>
           <div class="config-count-row">
             <span id="session_display_count"></span>
@@ -260,7 +272,7 @@
       </div>
     </div>
     <footer><p><span data-i18n="footer.feedback">Have an idea to make this better?</span> <a target="_blank" href="https://github.com/antgiant/PBE_Score_Keeper/issues" data-i18n="footer.let_me_know">Let me know</a>.</p>
-    <p><center data-i18n="footer.version" data-i18n-version="2.13.2">v 2.13.2</center></p></footer>
+    <p><center data-i18n="footer.version" data-i18n-version="2.14.1">v 2.14.1</center></p></footer>
 </body>
 
 </html>

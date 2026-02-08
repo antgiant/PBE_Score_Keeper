@@ -34,6 +34,10 @@ register_i18n_language('fr', {
       "toggle_aria": "Basculer l'interface bêta",
       "toggle_title": "Basculer entre l'interface classique et bêta"
     },
+    "menu": {
+      "toggle_aria": "Menu",
+      "toggle_title": "Menu"
+    },
     "config": {
       "title": "Configuration (Session)",
       "session_title": "Session",

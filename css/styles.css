@@ -48,6 +48,49 @@ fieldset {
 }
 .header-row h1 {
   margin: 0.25rem 0;
+  order: 1;
+}
+.header-menu {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-left: auto;
+  order: 2;
+  position: relative;
+}
+.header-menu-toggle {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 2.4rem;
+  height: 2.4rem;
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  background: var(--control-bg);
+  color: var(--text-color);
+  cursor: pointer;
+}
+.header-menu-toggle:focus-visible {
+  outline: 2px solid var(--link-color);
+  outline-offset: 2px;
+}
+.header-menu-icon {
+  font-size: 1.2rem;
+  line-height: 1;
+}
+.header-menu-panel {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.header-menu-session-slot {
+  display: none;
+}
+.header-sync {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  order: 3;
 }
 .theme-picker {
   display: flex;
@@ -262,9 +305,61 @@ tr:nth-child(even){
   border-width: 1px;
   box-shadow: 0 12px 30px rgba(0, 0, 0, 0.12);
 }
+[data-ui-mode="beta"] .header-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+}
 [data-ui-mode="beta"] .header-row h1 {
   font-size: 1.6rem;
   letter-spacing: 0.04em;
+  text-align: center;
+  justify-self: center;
+}
+[data-ui-mode="beta"] .header-menu {
+  margin-left: 0;
+  order: 0;
+}
+[data-ui-mode="beta"] .header-menu-toggle {
+  display: inline-flex;
+}
+[data-ui-mode="beta"] .header-menu-panel {
+  position: absolute;
+  left: 0;
+  top: calc(100% + 0.5rem);
+  display: none;
+  flex-direction: column;
+  align-items: stretch;
+  padding: 0.85rem;
+  min-width: 15rem;
+  border-radius: 14px;
+  border: 1px solid var(--border-color);
+  background: var(--panel-bg);
+  box-shadow: 0 16px 30px rgba(0, 0, 0, 0.18);
+  z-index: 2000;
+}
+[data-ui-mode="beta"] .header-menu-session-slot {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border-color);
+}
+[data-ui-mode="beta"] .header-menu-session-slot .config-fieldset {
+  margin: 0;
+}
+[data-ui-mode="beta"] .header-menu-panel.is-open {
+  display: flex;
+}
+[data-ui-mode="beta"] .header-menu-panel .language-picker,
+[data-ui-mode="beta"] .header-menu-panel .theme-picker,
+[data-ui-mode="beta"] .header-menu-panel .ui-mode-toggle {
+  width: 100%;
+  justify-content: space-between;
+}
+[data-ui-mode="beta"] .header-sync {
+  justify-self: end;
 }
 [data-ui-mode="beta"] #accordion {
   border-radius: 18px;

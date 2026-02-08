@@ -34,6 +34,10 @@ register_i18n_language('es', {
       "toggle_aria": "Alternar interfaz beta",
       "toggle_title": "Cambiar entre la interfaz clásica y beta"
     },
+    "menu": {
+      "toggle_aria": "Menú",
+      "toggle_title": "Menú"
+    },
     "config": {
       "title": "Configuración (Sesión)",
       "session_title": "Sesión",

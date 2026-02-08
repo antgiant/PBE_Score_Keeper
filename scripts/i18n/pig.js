@@ -30,6 +30,10 @@ register_i18n_language('pig', {
       "toggle_aria": "Oggle-Tay Eta-Bay UI",
       "toggle_title": "Itch-Sway etween-bay Assic-Clay and-ay Eta-Bay UI"
     },
+    "menu": {
+      "toggle_aria": "Enu-May",
+      "toggle_title": "Enu-May"
+    },
     "config": {
       "title": "Onfiguration-Cay (Ession-Say)",
       "session_title": "Ession-Say",

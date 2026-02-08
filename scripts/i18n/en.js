@@ -33,6 +33,10 @@ register_i18n_language('en', {
       "toggle_aria": "Toggle beta UI",
       "toggle_title": "Switch between Classic and Beta UI"
     },
+    "menu": {
+      "toggle_aria": "Menu",
+      "toggle_title": "Menu"
+    },
     "config": {
       "title": "Configuration (Session)",
       "session_title": "Session",
