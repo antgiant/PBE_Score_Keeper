@@ -411,6 +411,34 @@ function initialize_score_entry_advanced_toggle() {
   set_expanded_state(false);
 }
 
+function initialize_rounding_toggle_switch() {
+  if (typeof document === "undefined" || typeof document.getElementById !== "function") {
+    return;
+  }
+  var roundingContainer = document.getElementById("rounding");
+  if (!roundingContainer || typeof roundingContainer.querySelector !== "function") {
+    return;
+  }
+  var switchElement = roundingContainer.querySelector(".rounding-switch");
+  var roundingYes = document.getElementById("rounding_yes");
+  var roundingNo = document.getElementById("rounding_no");
+  if (!switchElement || !roundingYes || !roundingNo) {
+    return;
+  }
+
+  function toggleRounding() {
+    var target = roundingYes.checked ? roundingNo : roundingYes;
+    target.checked = true;
+    local_data_update(target);
+  }
+
+  switchElement.addEventListener("click", function(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    toggleRounding();
+  });
+}
+
 function initialize_display() {
   initialize_scores_tabs();
 
@@ -449,6 +477,7 @@ function initialize_display() {
   apply_score_entry_field_order();
   initialize_score_entry_field_reorder();
   initialize_score_entry_advanced_toggle();
+  initialize_rounding_toggle_switch();
   sync_data_to_display();
   initialize_reorder_controls();
   initialize_history_viewer();
@@ -1228,6 +1257,14 @@ function sync_data_to_display() {
     $("#rounding_yes").prop("checked", true);
   } else {
     $("#rounding_no").prop("checked", true);
+  }
+  const roundingToggle = $("#rounding");
+  if (rounding === true) {
+    roundingToggle.addClass("is-rounded");
+    roundingToggle.removeClass("is-exact");
+  } else {
+    roundingToggle.addClass("is-exact");
+    roundingToggle.removeClass("is-rounded");
   }
 
   //Show ignore status

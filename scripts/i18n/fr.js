@@ -94,9 +94,10 @@ register_i18n_language('fr', {
       "minimum_notice": "Ne peut pas être inférieur en raison des scores déjà saisis"
     },
     "rounding": {
-      "title": "Arrondir le score de l'équipe en direct au total de la meilleure équipe ?",
-      "yes": "Oui",
-      "no": "Non"
+      "title": "Score en direct",
+      "title_classic": "Arrondir le score de l'équipe en direct au total de la meilleure équipe ?",
+      "yes": "Arrondi",
+      "no": "Exact"
     },
     "score_entry": {
       "title": "Saisie",

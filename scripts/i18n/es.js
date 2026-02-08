@@ -94,9 +94,10 @@ register_i18n_language('es', {
       "minimum_notice": "No puede ser menor debido a las puntuaciones ya ingresadas"
     },
     "rounding": {
-      "title": "¿Redondear la puntuación del equipo en vivo al total del mejor equipo?",
-      "yes": "Sí",
-      "no": "No"
+      "title": "Puntuación en vivo",
+      "title_classic": "¿Redondear la puntuación del equipo en vivo al total del mejor equipo?",
+      "yes": "Redondeado",
+      "no": "Exacto"
     },
     "score_entry": {
       "title": "Entrada",

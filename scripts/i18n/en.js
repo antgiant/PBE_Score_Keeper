@@ -93,9 +93,10 @@ register_i18n_language('en', {
       "minimum_notice": "Cannot be lower due to already entered scores"
     },
     "rounding": {
-      "title": "Rounding Live Team score to best team's total?",
-      "yes": "Yes",
-      "no": "No"
+      "title": "Live Score",
+      "title_classic": "Rounding Live Team score to best team's total?",
+      "yes": "Rounded",
+      "no": "Exact"
     },
     "score_entry": {
       "title": "Entry",
