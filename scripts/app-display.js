@@ -857,11 +857,21 @@ function sync_data_to_display() {
   $("#total_teams").text(format_number(team_count));
   if (team_count == 1) {
     $("#total_teams_text").text(t('teams.team'));
-    $("#teams_legend").text(t('teams.title_one'));
   } else {
     $("#total_teams_text").text(t('teams.teams'));
-    $("#teams_legend").text(t('teams.title_other', { count: team_count }));
   }
+  if (typeof document !== "undefined" && typeof document.getElementById === "function") {
+    var teamsLegend = document.getElementById("teams_legend");
+    if (teamsLegend) {
+      teamsLegend.setAttribute("data-i18n-count", team_count);
+    }
+    var scoreEntryTeamLabel = document.getElementById("score_entry_team_label");
+    if (scoreEntryTeamLabel) {
+      scoreEntryTeamLabel.setAttribute("data-i18n-count", team_count);
+    }
+  }
+  $("#teams_legend").text(t('teams.title', { count: team_count }));
+  $("#score_entry_team_label").text(t('score_entry.team', { count: team_count }));
 
   //Set up Team Name Editing
   let displayed_teams_count = $("#team_names").children().length;
@@ -979,11 +989,21 @@ function sync_data_to_display() {
   $("#total_blocks").text(format_number(block_count));
   if (block_count == 1) {
     $("#total_blocks_text").text(t('blocks.block'));
-    $("#blocks_legend").text(t('blocks.title_one'));
   } else {
     $("#total_blocks_text").text(t('blocks.blocks'));
-    $("#blocks_legend").text(t('blocks.title_other', { count: block_count }));
   }
+  if (typeof document !== "undefined" && typeof document.getElementById === "function") {
+    var blocksLegend = document.getElementById("blocks_legend");
+    if (blocksLegend) {
+      blocksLegend.setAttribute("data-i18n-count", block_count);
+    }
+    var scoreEntryBlockLabel = document.getElementById("score_entry_block_label");
+    if (scoreEntryBlockLabel) {
+      scoreEntryBlockLabel.setAttribute("data-i18n-count", block_count);
+    }
+  }
+  $("#blocks_legend").text(t('blocks.title', { count: block_count }));
+  $("#score_entry_block_label").text(t('score_entry.block_group', { count: block_count }));
   
   // Hide the notices by default (shown on hover/click of items that can't be deleted)
   $("#block_in_use_notice").hide();

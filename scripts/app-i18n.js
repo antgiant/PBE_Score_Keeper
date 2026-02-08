@@ -392,6 +392,10 @@ function t(key, params) {
   // Handle pluralization
   var lookupKey = key;
   if (typeof params.count !== 'undefined') {
+    var numericCount = Number(params.count);
+    if (!Number.isNaN(numericCount)) {
+      params.count = numericCount;
+    }
     var pluralSuffix = (params.count === 1) ? '_one' : '_other';
     var pluralKey = key + pluralSuffix;
     // Check if plural key exists

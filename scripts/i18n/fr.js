@@ -109,7 +109,11 @@ register_i18n_language('fr', {
       "extra_credit": "Autoriser le Crédit Supplémentaire",
       "question": "Question",
       "team": "Équipe",
+      "team_one": "Équipe",
+      "team_other": "Équipes",
       "block_group": "Bloc",
+      "block_group_one": "Bloc",
+      "block_group_other": "Blocs",
       "reorder_points": "Glisser pour réordonner le champ Points Possibles",
       "reorder_block": "Glisser pour réordonner le champ Bloc"
     },

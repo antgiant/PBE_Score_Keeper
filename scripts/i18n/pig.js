@@ -105,7 +105,11 @@ register_i18n_language('pig', {
       "extra_credit": "Allow-ay Extra-ay Edit-Cray",
       "question": "Uestion-Qay",
       "team": "Eam-Tay",
+      "team_one": "Eam-Tay",
+      "team_other": "Eams-Tay",
       "block_group": "Ock-Blay",
+      "block_group_one": "Ock-Blay",
+      "block_group_other": "Ocks-Blay",
       "reorder_points": "Ag-Dray o-tay eorder-ray Ossible-Pay Oints-Pay ield-fay",
       "reorder_block": "Ag-Dray o-tay eorder-ray Ock-Blay ield-fay"
     },

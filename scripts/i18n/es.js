@@ -109,7 +109,11 @@ register_i18n_language('es', {
       "extra_credit": "Permitir Crédito Extra",
       "question": "Pregunta",
       "team": "Equipo",
+      "team_one": "Equipo",
+      "team_other": "Equipos",
       "block_group": "Bloque",
+      "block_group_one": "Bloque",
+      "block_group_other": "Bloques",
       "reorder_points": "Arrastrar para reordenar el campo de Puntos Posibles",
       "reorder_block": "Arrastrar para reordenar el campo de Bloque"
     },

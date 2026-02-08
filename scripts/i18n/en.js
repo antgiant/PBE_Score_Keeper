@@ -108,7 +108,11 @@ register_i18n_language('en', {
       "extra_credit": "Allow Extra Credit",
       "question": "Question",
       "team": "Team",
+      "team_one": "Team",
+      "team_other": "Teams",
       "block_group": "Block",
+      "block_group_one": "Block",
+      "block_group_other": "Blocks",
       "reorder_points": "Drag to reorder Possible Points field",
       "reorder_block": "Drag to reorder Block field"
     },
