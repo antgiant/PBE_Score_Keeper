@@ -259,6 +259,12 @@ button {
   margin-top: 0.25rem;
   flex-shrink: 0;
 }
+:root[data-ui-mode="classic"] #score_entry_reorder_button {
+  display: none;
+}
+:root[data-ui-mode="beta"] #score_entry_reorder_button {
+  margin-bottom: 0.5rem;
+}
 .score-entry-field.dragging {
   opacity: 0.5;
 }
@@ -594,6 +600,9 @@ tr:nth-child(even){
 }
 [data-ui-mode="beta"] .header-menu-question-fieldset .score-entry-advanced {
   display: block;
+}
+:root[data-ui-mode="beta"] .score-entry-drag-handle {
+  display: none;
 }
 .score-entry-advanced-toggle {
   display: none;
@@ -947,6 +956,21 @@ tr:nth-child(even){
 }
 .reorder-item.drag-over {
   border-top: 2px solid var(--link-color);
+}
+.score-entry-reorder-dialog .score-entry-reorder-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin: 0.5rem 0 1rem;
+}
+.score-entry-reorder-dialog .reorder-item {
+  border: 1px solid var(--border-color);
+  padding: 0.4rem 0.6rem;
+  border-radius: 8px;
+}
+.score-entry-reorder-dialog .reorder-entry-label {
+  flex: 1;
+  min-width: 0;
 }
 
 /* Sync Button & Status */

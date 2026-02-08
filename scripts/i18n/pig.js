@@ -111,7 +111,10 @@ register_i18n_language('pig', {
       "block_group_one": "Ock-Blay",
       "block_group_other": "Ocks-Blay",
       "reorder_points": "Ag-Dray o-tay eorder-ray Ossible-Pay Oints-Pay ield-fay",
-      "reorder_block": "Ag-Dray o-tay eorder-ray Ock-Blay ield-fay"
+      "reorder_block": "Ag-Dray o-tay eorder-ray Ock-Blay ield-fay",
+      "reorder_entry": "Eorder-Ray Ataday Entry-ay",
+      "reorder_entry_hint": "Ag-Dray entries-ay otay eorder-ray ataday entry-ay ields-fay.",
+      "reorder_entry_drag_aria": "Ag-Dray otay eorder-ray {{name}}"
     },
     "scores": {
       "according": "Ore-Scay",

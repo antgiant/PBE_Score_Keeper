@@ -411,6 +411,19 @@ function initialize_score_entry_advanced_toggle() {
   set_expanded_state(false);
 }
 
+function initialize_score_entry_reorder_controls() {
+  if (typeof document === "undefined" || typeof document.getElementById !== "function") {
+    return;
+  }
+  var button = document.getElementById("score_entry_reorder_button");
+  if (!button) {
+    return;
+  }
+  button.addEventListener("click", function() {
+    showScoreEntryReorderDialog();
+  });
+}
+
 function initialize_rounding_toggle_switch() {
   if (typeof document === "undefined" || typeof document.getElementById !== "function") {
     return;
@@ -464,9 +477,10 @@ function initialize_display() {
   initialize_header_menu();
   initialize_block_manager();
   initialize_team_manager();
-  apply_score_entry_field_order();
+  initialize_score_entry_field_order_for_ui_mode();
   initialize_score_entry_field_reorder();
   initialize_score_entry_advanced_toggle();
+  initialize_score_entry_reorder_controls();
   initialize_rounding_toggle_switch();
   sync_data_to_display();
   initialize_reorder_controls();
@@ -1497,6 +1511,19 @@ function finishMaxPointsEdit(input) {
   local_data_update({ id: "max_points_direct", value: newValue });
 }
 
+var SCORE_ENTRY_REORDER_DIALOG_ID = "score-entry-reorder-dialog-overlay";
+var scoreEntryReorderLastFocus = null;
+var scoreEntryReorderKeyHandler = null;
+var scoreEntryReorderObserver = null;
+
+function is_beta_mode_for_score_entry() {
+  if (typeof document === "undefined") {
+    return false;
+  }
+  var root = document.documentElement;
+  return !!(root && root.getAttribute("data-ui-mode") === "beta");
+}
+
 /**
  * Get the saved score entry field order from global doc
  * @returns {Array|null} - Array of field IDs in order, or null if not set
@@ -1511,6 +1538,33 @@ function get_score_entry_field_order() {
   }
   var meta = doc.getMap("meta");
   var orderStr = meta.get("scoreEntryFieldOrder");
+  if (typeof orderStr === "string") {
+    try {
+      var order = JSON.parse(orderStr);
+      if (Array.isArray(order) && order.length > 0) {
+        return order;
+      }
+    } catch (e) {
+      // Invalid JSON
+    }
+  }
+  return null;
+}
+
+/**
+ * Get the saved score entry field order for beta UI from global doc
+ * @returns {Array|null} - Array of field IDs in order, or null if not set
+ */
+function get_beta_score_entry_field_order() {
+  if (typeof getGlobalDoc !== "function") {
+    return null;
+  }
+  var doc = getGlobalDoc();
+  if (!doc) {
+    return null;
+  }
+  var meta = doc.getMap("meta");
+  var orderStr = meta.get("scoreEntryFieldOrderBeta");
   if (typeof orderStr === "string") {
     try {
       var order = JSON.parse(orderStr);
@@ -1548,29 +1602,130 @@ function set_score_entry_field_order(order) {
 }
 
 /**
+ * Set the beta score entry field order in global doc
+ * @param {Array} order - Array of field IDs in order (e.g., ['points', 'block', 'teams'])
+ * @returns {boolean} - True if successfully set, false otherwise
+ */
+function set_beta_score_entry_field_order(order) {
+  if (typeof getGlobalDoc !== "function") {
+    return false;
+  }
+  var doc = getGlobalDoc();
+  if (!doc) {
+    return false;
+  }
+  if (!Array.isArray(order) || order.length === 0) {
+    return false;
+  }
+  var meta = doc.getMap("meta");
+  doc.transact(function() {
+    meta.set("scoreEntryFieldOrderBeta", JSON.stringify(order));
+  }, "scoreEntryFieldOrderBeta");
+  return true;
+}
+
+function get_score_entry_field_ids(container) {
+  if (!container || typeof container.querySelectorAll !== "function") {
+    return [];
+  }
+  return Array.from(container.querySelectorAll(".score-entry-field")).map(function(field) {
+    return field.dataset.field;
+  }).filter(Boolean);
+}
+
+function get_default_score_entry_field_order(isBeta) {
+  return isBeta ? ["points", "block", "teams"] : ["points", "block"];
+}
+
+function normalize_score_entry_field_order(order, available, isBeta) {
+  var baseOrder = Array.isArray(order) && order.length > 0 ? order : get_default_score_entry_field_order(isBeta);
+  if (!isBeta) {
+    baseOrder = baseOrder.filter(function(fieldId) {
+      return fieldId === "points" || fieldId === "block";
+    });
+  }
+  var normalized = [];
+  baseOrder.forEach(function(fieldId) {
+    if (available.indexOf(fieldId) !== -1 && normalized.indexOf(fieldId) === -1) {
+      normalized.push(fieldId);
+    }
+  });
+
+  if (isBeta) {
+    available.forEach(function(fieldId) {
+      if (normalized.indexOf(fieldId) === -1) {
+        normalized.push(fieldId);
+      }
+    });
+    return normalized;
+  }
+
+  if (available.indexOf("teams") !== -1 && normalized.indexOf("teams") === -1) {
+    normalized.push("teams");
+  }
+  return normalized;
+}
+
+function get_score_entry_field_order_for_mode(isBeta) {
+  var container = document.getElementById("score_entry_fields");
+  if (!container) {
+    return null;
+  }
+  var available = get_score_entry_field_ids(container);
+  var stored = isBeta ? get_beta_score_entry_field_order() : get_score_entry_field_order();
+  return normalize_score_entry_field_order(stored, available, isBeta);
+}
+
+/**
  * Apply the saved score entry field order to the DOM
  */
 function apply_score_entry_field_order() {
-  var order = get_score_entry_field_order();
-  if (!order) {
-    return; // Use default order
-  }
-  var $container = $("#score_entry_fields");
-  if ($container.length === 0) {
+  var container = document.getElementById("score_entry_fields");
+  if (!container) {
     return;
   }
-  var container = $container[0];
-  var fields = $container.find(".score-entry-field").toArray();
+  var order = get_score_entry_field_order_for_mode(is_beta_mode_for_score_entry());
+  if (!order || order.length === 0) {
+    return;
+  }
+  var fields = Array.from(container.querySelectorAll(".score-entry-field"));
   var fieldMap = {};
   fields.forEach(function(field) {
-    fieldMap[$(field).data("field")] = field;
+    fieldMap[field.dataset.field] = field;
   });
-  // Reorder based on saved order
   order.forEach(function(fieldId) {
     if (fieldMap[fieldId]) {
       container.appendChild(fieldMap[fieldId]);
     }
   });
+}
+
+function initialize_score_entry_field_order_for_ui_mode() {
+  if (typeof document === "undefined") {
+    return;
+  }
+  var root = document.documentElement;
+  if (!root) {
+    return;
+  }
+
+  function sync_field_order() {
+    apply_score_entry_field_order();
+  }
+
+  if (typeof MutationObserver !== "undefined") {
+    var observer = new MutationObserver(function(mutations) {
+      for (var i = 0; i < mutations.length; i++) {
+        if (mutations[i].attributeName === "data-ui-mode") {
+          sync_field_order();
+          break;
+        }
+      }
+    });
+    observer.observe(root, { attributes: true, attributeFilter: ["data-ui-mode"] });
+  }
+
+  sync_field_order();
 }
 
 /**
@@ -1584,30 +1739,47 @@ function initialize_score_entry_field_reorder() {
   var container = $container[0];
   
   var draggedItem = null;
+  var reorderableIds = ["points", "block"];
+
+  function is_reorderable_field(field) {
+    return !!(field && reorderableIds.indexOf(field.dataset.field) !== -1);
+  }
+
+  function get_reorderable_fields() {
+    return Array.from(container.querySelectorAll(".score-entry-field")).filter(is_reorderable_field);
+  }
   
   // Handle drag start
   container.addEventListener("dragstart", function(e) {
+    if (is_beta_mode_for_score_entry()) {
+      return;
+    }
     var handle = e.target.closest(".score-entry-drag-handle");
     if (!handle) {
       e.preventDefault();
       return;
     }
     draggedItem = handle.closest(".score-entry-field");
-    if (draggedItem) {
+    if (draggedItem && is_reorderable_field(draggedItem)) {
       draggedItem.classList.add("dragging");
       e.dataTransfer.effectAllowed = "move";
       e.dataTransfer.setData("text/plain", draggedItem.dataset.field);
+    } else {
+      draggedItem = null;
     }
   });
   
   // Handle drag over
   container.addEventListener("dragover", function(e) {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = "move";
+    if (is_beta_mode_for_score_entry() || !draggedItem) {
+      return;
+    }
     var target = e.target.closest(".score-entry-field");
-    if (target && target !== draggedItem) {
+    if (target && target !== draggedItem && is_reorderable_field(target)) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = "move";
       // Remove drag-over from all
-      container.querySelectorAll(".score-entry-field").forEach(function(f) {
+      get_reorderable_fields().forEach(function(f) {
         f.classList.remove("drag-over");
       });
       target.classList.add("drag-over");
@@ -1617,16 +1789,19 @@ function initialize_score_entry_field_reorder() {
   // Handle drag leave
   container.addEventListener("dragleave", function(e) {
     var target = e.target.closest(".score-entry-field");
-    if (target) {
+    if (target && is_reorderable_field(target)) {
       target.classList.remove("drag-over");
     }
   });
   
   // Handle drop
   container.addEventListener("drop", function(e) {
-    e.preventDefault();
+    if (is_beta_mode_for_score_entry()) {
+      return;
+    }
     var target = e.target.closest(".score-entry-field");
-    if (target && draggedItem && target !== draggedItem) {
+    if (target && draggedItem && target !== draggedItem && is_reorderable_field(target)) {
+      e.preventDefault();
       // Insert before or after based on position
       var targetRect = target.getBoundingClientRect();
       var dropY = e.clientY;
@@ -1639,7 +1814,7 @@ function initialize_score_entry_field_reorder() {
       save_score_entry_field_order();
     }
     // Clean up
-    container.querySelectorAll(".score-entry-field").forEach(function(f) {
+    get_reorderable_fields().forEach(function(f) {
       f.classList.remove("drag-over");
     });
   });
@@ -1650,7 +1825,7 @@ function initialize_score_entry_field_reorder() {
       draggedItem.classList.remove("dragging");
       draggedItem = null;
     }
-    container.querySelectorAll(".score-entry-field").forEach(function(f) {
+    get_reorderable_fields().forEach(function(f) {
       f.classList.remove("drag-over");
     });
   });
@@ -1661,12 +1836,19 @@ function initialize_score_entry_field_reorder() {
   var touchClone = null;
   
   container.addEventListener("touchstart", function(e) {
+    if (is_beta_mode_for_score_entry()) {
+      return;
+    }
     var handle = e.target.closest(".score-entry-drag-handle");
     if (!handle) {
       return;
     }
     e.preventDefault();
     touchDraggedItem = handle.closest(".score-entry-field");
+    if (!is_reorderable_field(touchDraggedItem)) {
+      touchDraggedItem = null;
+      return;
+    }
     touchStartY = e.touches[0].clientY;
     touchDraggedItem.classList.add("dragging");
   }, { passive: false });
@@ -1677,10 +1859,10 @@ function initialize_score_entry_field_reorder() {
     }
     e.preventDefault();
     var touchY = e.touches[0].clientY;
-    var fields = Array.from(container.querySelectorAll(".score-entry-field"));
+    var fields = get_reorderable_fields();
     
     // Find which field we're over
-    container.querySelectorAll(".score-entry-field").forEach(function(f) {
+    fields.forEach(function(f) {
       f.classList.remove("drag-over");
     });
     
@@ -1700,7 +1882,7 @@ function initialize_score_entry_field_reorder() {
       return;
     }
     var touchY = e.changedTouches[0].clientY;
-    var fields = Array.from(container.querySelectorAll(".score-entry-field"));
+    var fields = get_reorderable_fields();
     
     // Find target field
     var targetField = null;
@@ -1726,7 +1908,7 @@ function initialize_score_entry_field_reorder() {
     
     // Clean up
     touchDraggedItem.classList.remove("dragging");
-    container.querySelectorAll(".score-entry-field").forEach(function(f) {
+    get_reorderable_fields().forEach(function(f) {
       f.classList.remove("drag-over");
     });
     touchDraggedItem = null;
@@ -1737,6 +1919,9 @@ function initialize_score_entry_field_reorder() {
  * Save the current score entry field order to global doc
  */
 function save_score_entry_field_order() {
+  if (is_beta_mode_for_score_entry()) {
+    return;
+  }
   var container = document.getElementById("score_entry_fields");
   if (!container) {
     return;
@@ -1744,6 +1929,168 @@ function save_score_entry_field_order() {
   var fields = Array.from(container.querySelectorAll(".score-entry-field"));
   var order = fields.map(function(field) {
     return field.dataset.field;
+  }).filter(function(fieldId) {
+    return fieldId === "points" || fieldId === "block";
   });
   set_score_entry_field_order(order);
+}
+
+function get_score_entry_reorder_label(fieldId) {
+  if (fieldId === "points") {
+    return t("table.possible_points");
+  }
+  if (fieldId === "block") {
+    return t("score_entry.block_group", { count: 1 });
+  }
+  if (fieldId === "teams") {
+    return t("score_entry.team", { count: 2 });
+  }
+  return "";
+}
+
+function showScoreEntryReorderDialog() {
+  if (typeof document === "undefined") {
+    return;
+  }
+  var root = document.documentElement;
+  if (!root || root.getAttribute("data-ui-mode") !== "beta") {
+    return;
+  }
+  if (document.getElementById(SCORE_ENTRY_REORDER_DIALOG_ID)) {
+    return;
+  }
+
+  var order = get_score_entry_field_order_for_mode(true);
+  if (!order || order.length === 0) {
+    return;
+  }
+
+  scoreEntryReorderLastFocus = document.activeElement || null;
+
+  var overlay = document.createElement("div");
+  overlay.id = SCORE_ENTRY_REORDER_DIALOG_ID;
+  overlay.className = "sync-dialog-overlay score-entry-reorder-overlay";
+
+  var dialog = document.createElement("div");
+  dialog.className = "sync-dialog score-entry-reorder-dialog";
+  dialog.setAttribute("role", "dialog");
+  dialog.setAttribute("aria-modal", "true");
+
+  var title = document.createElement("h2");
+  title.id = "score-entry-reorder-title";
+  title.textContent = t("score_entry.reorder_entry");
+
+  var hint = document.createElement("p");
+  hint.className = "score-entry-reorder-hint";
+  hint.textContent = t("score_entry.reorder_entry_hint");
+
+  var list = document.createElement("div");
+  list.id = "score_entry_reorder_list";
+  list.className = "score-entry-reorder-list";
+
+  order.forEach(function(fieldId) {
+    var label = get_score_entry_reorder_label(fieldId);
+    if (!label) {
+      return;
+    }
+    var item = document.createElement("div");
+    item.className = "reorder-item";
+    item.dataset.index = fieldId;
+
+    var handle = document.createElement("button");
+    handle.type = "button";
+    handle.className = "drag-handle";
+    handle.setAttribute("draggable", "true");
+    handle.setAttribute("aria-label", t("score_entry.reorder_entry_drag_aria", { name: label }));
+    handle.innerHTML = "&#9776;";
+
+    var text = document.createElement("span");
+    text.className = "reorder-entry-label";
+    text.textContent = label;
+
+    item.appendChild(handle);
+    item.appendChild(text);
+    list.appendChild(item);
+  });
+
+  var buttonRow = document.createElement("div");
+  buttonRow.className = "button-row";
+
+  var closeButton = document.createElement("button");
+  closeButton.type = "button";
+  closeButton.className = "primary";
+  closeButton.textContent = t("advanced.close_button");
+  closeButton.addEventListener("click", closeScoreEntryReorderDialog);
+
+  buttonRow.appendChild(closeButton);
+
+  dialog.appendChild(title);
+  dialog.appendChild(hint);
+  dialog.appendChild(list);
+  dialog.appendChild(buttonRow);
+  dialog.setAttribute("aria-labelledby", title.id);
+  overlay.appendChild(dialog);
+  document.body.appendChild(overlay);
+
+  setup_reorder_list("score_entry_reorder_list", {
+    item_selector: ".reorder-item",
+    handle_selector: ".drag-handle",
+    get_expected_order: function() {
+      return get_score_entry_field_order_for_mode(true) || get_default_score_entry_field_order(true);
+    },
+    on_reorder: function(updatedOrder) {
+      set_beta_score_entry_field_order(updatedOrder);
+      apply_score_entry_field_order();
+    }
+  });
+
+  closeButton.focus();
+
+  scoreEntryReorderKeyHandler = function(event) {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      closeScoreEntryReorderDialog();
+    }
+  };
+  document.addEventListener("keydown", scoreEntryReorderKeyHandler);
+
+  if (typeof MutationObserver !== "undefined" && root) {
+    scoreEntryReorderObserver = new MutationObserver(function(mutations) {
+      for (var i = 0; i < mutations.length; i++) {
+        if (mutations[i].attributeName === "data-ui-mode") {
+          if (root.getAttribute("data-ui-mode") !== "beta") {
+            closeScoreEntryReorderDialog();
+          }
+          break;
+        }
+      }
+    });
+    scoreEntryReorderObserver.observe(root, { attributes: true, attributeFilter: ["data-ui-mode"] });
+  }
+}
+
+function closeScoreEntryReorderDialog() {
+  if (typeof document === "undefined") {
+    return;
+  }
+  var overlay = document.getElementById(SCORE_ENTRY_REORDER_DIALOG_ID);
+  if (!overlay) {
+    return;
+  }
+  overlay.remove();
+
+  if (scoreEntryReorderKeyHandler) {
+    document.removeEventListener("keydown", scoreEntryReorderKeyHandler);
+    scoreEntryReorderKeyHandler = null;
+  }
+
+  if (scoreEntryReorderObserver) {
+    scoreEntryReorderObserver.disconnect();
+    scoreEntryReorderObserver = null;
+  }
+
+  if (scoreEntryReorderLastFocus && typeof scoreEntryReorderLastFocus.focus === "function") {
+    scoreEntryReorderLastFocus.focus();
+  }
+  scoreEntryReorderLastFocus = null;
 }

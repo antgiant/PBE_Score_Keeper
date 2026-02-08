@@ -114,7 +114,10 @@ register_i18n_language('en', {
       "block_group_one": "Block",
       "block_group_other": "Blocks",
       "reorder_points": "Drag to reorder Possible Points field",
-      "reorder_block": "Drag to reorder Block field"
+      "reorder_block": "Drag to reorder Block field",
+      "reorder_entry": "Reorder Data Entry",
+      "reorder_entry_hint": "Drag entries to reorder the data entry fields.",
+      "reorder_entry_drag_aria": "Drag to reorder {{name}}"
     },
     "scores": {
       "according": "Score",

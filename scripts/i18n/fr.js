@@ -115,7 +115,10 @@ register_i18n_language('fr', {
       "block_group_one": "Bloc",
       "block_group_other": "Blocs",
       "reorder_points": "Glisser pour réordonner le champ Points Possibles",
-      "reorder_block": "Glisser pour réordonner le champ Bloc"
+      "reorder_block": "Glisser pour réordonner le champ Bloc",
+      "reorder_entry": "Réorganiser la saisie des données",
+      "reorder_entry_hint": "Faites glisser les éléments pour réorganiser les champs de saisie des données.",
+      "reorder_entry_drag_aria": "Glisser pour réorganiser {{name}}"
     },
     "scores": {
       "according": "Pointage",

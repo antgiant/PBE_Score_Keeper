@@ -115,7 +115,10 @@ register_i18n_language('es', {
       "block_group_one": "Bloque",
       "block_group_other": "Bloques",
       "reorder_points": "Arrastrar para reordenar el campo de Puntos Posibles",
-      "reorder_block": "Arrastrar para reordenar el campo de Bloque"
+      "reorder_block": "Arrastrar para reordenar el campo de Bloque",
+      "reorder_entry": "Reordenar la Entrada de Datos",
+      "reorder_entry_hint": "Arrastre las entradas para reordenar los campos de entrada de datos.",
+      "reorder_entry_drag_aria": "Arrastrar para reordenar {{name}}"
     },
     "scores": {
       "according": "Puntuación",
