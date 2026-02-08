@@ -639,6 +639,10 @@ async function switchSession(sessionIdOrIndex) {
     migrateV4ToV5(sessionDoc, session);
   }
 
+  if (sessionDoc && session && typeof repairDeterministicQuestionIds === 'function') {
+    repairDeterministicQuestionIds(sessionDoc, session);
+  }
+
   // Validate question counter for deterministic sessions (v5.0+)
   if (session && typeof validateQuestionCounter === 'function') {
     validateQuestionCounter(session);

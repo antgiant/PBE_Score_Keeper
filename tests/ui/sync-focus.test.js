@@ -179,21 +179,7 @@ describe('Focus Preservation During Sync Updates', () => {
     });
   });
   
-  describe('question title contenteditable focus preservation', () => {
-    it('should correctly identify question title focus', () => {
-      const focusState = {
-        id: 'current_question_title',
-        selector: '#current_question_title',
-        selectionStart: null,
-        selectionEnd: null,
-        contentEditableSelection: { startOffset: 5, endOffset: 5, collapsed: true },
-        isContentEditable: true
-      };
-      
-      assert.strictEqual(context.isElementFocused('current_question_title', focusState), true);
-      assert.strictEqual(context.isElementFocused('team_1_name', focusState), false);
-    });
-  });
+  
 });
 
 describe('Focus State Object Structure', () => {

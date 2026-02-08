@@ -184,13 +184,168 @@ function validateQuestionCounter(session) {
   }
 }
 
+function getQuestionIdsForRekey(session) {
+  if (!session) return [];
+  const questionsById = session.get('questionsById');
+  if (!questionsById || questionsById.size === 0) return [];
+
+  const questionOrder = session.get('questionOrder');
+  const orderedIds = [];
+  const seen = new Set();
+
+  if (questionOrder && questionOrder.length > 0) {
+    for (let i = 0; i < questionOrder.length; i++) {
+      const qId = questionOrder.get(i);
+      if (questionsById.has(qId) && !seen.has(qId)) {
+        orderedIds.push(qId);
+        seen.add(qId);
+      }
+    }
+  }
+
+  if (orderedIds.length !== questionsById.size) {
+    const fallback = [];
+    questionsById.forEach((question, questionId) => {
+      if (seen.has(questionId)) return;
+      const createdAt = question && question.get ? question.get('createdAt') : 0;
+      fallback.push({ id: questionId, createdAt: createdAt || 0 });
+    });
+    fallback.sort((a, b) => {
+      if (a.createdAt !== b.createdAt) return a.createdAt - b.createdAt;
+      return a.id.localeCompare(b.id);
+    });
+    for (const item of fallback) {
+      orderedIds.push(item.id);
+      seen.add(item.id);
+    }
+  }
+
+  return orderedIds;
+}
+
+function rekeyQuestionsToDeterministic(sessionDoc, session, orderedQuestionIds, reason) {
+  if (!sessionDoc || !session) return false;
+  const questionsById = session.get('questionsById');
+  if (!questionsById || questionsById.size === 0) return false;
+  if (!Array.isArray(orderedQuestionIds) || orderedQuestionIds.length === 0) return false;
+
+  let questionOrder = session.get('questionOrder');
+  if (!questionOrder) {
+    questionOrder = new Y.Array();
+    session.set('questionOrder', questionOrder);
+  }
+
+  const orderedQuestions = [];
+  for (let i = 0; i < orderedQuestionIds.length; i++) {
+    const qId = orderedQuestionIds[i];
+    const question = questionsById.get(qId);
+    if (question && !isDeleted(question)) {
+      orderedQuestions.push({ oldId: qId, data: question, newId: `q-${orderedQuestions.length + 1}` });
+    }
+  }
+
+  if (orderedQuestions.length === 0) return false;
+
+  const idMapping = new Map();
+  orderedQuestions.forEach((q) => {
+    idMapping.set(q.oldId, q.newId);
+  });
+
+  sessionDoc.transact(() => {
+    const obsoleteQuestionFields = new Set([
+      'sortOrder',
+      'nameUpdatedAt',
+      'scoreUpdatedAt',
+      'blockUpdatedAt',
+      'ignoreUpdatedAt',
+      'deleted',
+      'deletedAt'
+    ]);
+    const obsoleteTeamScoreFields = new Set(['scoreUpdatedAt', 'extraCreditUpdatedAt']);
+
+    questionOrder.delete(0, questionOrder.length);
+    const newQuestionIds = new Set();
+
+    orderedQuestions.forEach((q) => {
+      const questionData = q.data;
+      const clonedQuestion = new Y.Map();
+
+      questionData.forEach((value, key) => {
+        if (obsoleteQuestionFields.has(key)) return;
+        if (key === 'id') return;
+        if (key === 'teamScores') {
+          if (!value) return;
+          const newTeamScores = new Y.Map();
+          value.forEach((teamScore, teamId) => {
+            if (!teamScore) return;
+            const newTeamScore = new Y.Map();
+            teamScore.forEach((scoreValue, scoreKey) => {
+              if (obsoleteTeamScoreFields.has(scoreKey)) return;
+              newTeamScore.set(scoreKey, scoreValue);
+            });
+            newTeamScores.set(teamId, newTeamScore);
+          });
+          clonedQuestion.set('teamScores', newTeamScores);
+          return;
+        }
+        clonedQuestion.set(key, value);
+      });
+
+      clonedQuestion.set('id', q.newId);
+      questionsById.set(q.newId, clonedQuestion);
+      questionOrder.push([q.newId]);
+      newQuestionIds.add(q.newId);
+    });
+
+    questionsById.forEach((question, questionId) => {
+      if (!newQuestionIds.has(questionId)) {
+        questionsById.delete(questionId);
+      }
+    });
+
+    session.set('nextQuestionNumber', orderedQuestions.length + 1);
+
+    const historyLog = session.get('historyLog');
+    if (historyLog) {
+      for (let i = 0; i < historyLog.length; i++) {
+        const entry = historyLog.get(i);
+        if (entry && entry.get) {
+          const oldQId = entry.get('questionId');
+          if (oldQId && idMapping.has(oldQId)) {
+            entry.set('questionId', idMapping.get(oldQId));
+          }
+        }
+      }
+    }
+  }, reason || 'question-rekey');
+
+  return true;
+}
+
+function repairDeterministicQuestionIds(sessionDoc, session) {
+  if (!sessionDoc || !session || !isDeterministicSession(session)) return false;
+  const questionsById = session.get('questionsById');
+  if (!questionsById || questionsById.size === 0) return false;
+
+  let hasNonDeterministic = false;
+  questionsById.forEach((question, questionId) => {
+    if (!/^q-\d+$/.test(questionId)) {
+      hasNonDeterministic = true;
+    }
+  });
+
+  if (!hasNonDeterministic) return false;
+
+  const orderedQuestionIds = getQuestionIdsForRekey(session);
+  return rekeyQuestionsToDeterministic(sessionDoc, session, orderedQuestionIds, 'deterministic-rekey');
+}
+
 /**
  * Migrate a v4.0 session to v5.0 format (deterministic question IDs)
  * Called automatically when loading a v4.0 session.
  * 
- * Note: This migration updates the internal 'id' field and cleans up obsolete fields,
- * but preserves the original map keys for CRDT compatibility. The getOrderedQuestions()
- * function handles both v4 (questionOrder-based) and v5 (numeric-sorted) sessions.
+ * Note: This migration rekeys questions to deterministic q-N IDs, updates the internal
+ * 'id' field, and cleans up obsolete fields. Ordering is preserved via questionOrder.
  * 
  * @param {Y.Doc} sessionDoc - The session Y.Doc
  * @param {Y.Map} session - The session Y.Map
@@ -220,73 +375,20 @@ function migrateV4ToV5(sessionDoc, session) {
   
   console.log('Migrating v4.0 session to v5.0...');
   
-  // Build ordered list of questions from questionOrder array
-  const orderedQuestions = [];
-  for (let i = 0; i < questionOrder.length; i++) {
-    const qId = questionOrder.get(i);
-    const question = questionsById.get(qId);
-    if (question && !isDeleted(question)) {
-      orderedQuestions.push({ oldId: qId, data: question, newId: `q-${orderedQuestions.length + 1}` });
-    }
+  const orderedQuestionIds = getQuestionIdsForRekey(session);
+  if (orderedQuestionIds.length > 0) {
+    rekeyQuestionsToDeterministic(sessionDoc, session, orderedQuestionIds, 'v5-migration');
+  } else {
+    sessionDoc.transact(() => {
+      session.set('nextQuestionNumber', 1);
+    }, 'v5-migration');
   }
   
-  // Build old→new ID mapping for history updates
-  const idMapping = new Map();
-  orderedQuestions.forEach((q) => {
-    idMapping.set(q.oldId, q.newId);
-  });
-  
   sessionDoc.transact(() => {
-    // Process each question: clean up obsolete fields
-    // Note: We keep the original map keys for CRDT compatibility
-    orderedQuestions.forEach((q) => {
-      const questionData = q.data;
-      
-      // Remove obsolete fields
-      if (questionData.has('sortOrder')) questionData.delete('sortOrder');
-      if (questionData.has('nameUpdatedAt')) questionData.delete('nameUpdatedAt');
-      if (questionData.has('scoreUpdatedAt')) questionData.delete('scoreUpdatedAt');
-      if (questionData.has('blockUpdatedAt')) questionData.delete('blockUpdatedAt');
-      if (questionData.has('ignoreUpdatedAt')) questionData.delete('ignoreUpdatedAt');
-      if (questionData.has('deleted')) questionData.delete('deleted');
-      if (questionData.has('deletedAt')) questionData.delete('deletedAt');
-      
-      // Clean up team scores
-      const teamScores = questionData.get('teamScores');
-      if (teamScores) {
-        teamScores.forEach((ts) => {
-          if (ts && ts.has) {
-            if (ts.has('scoreUpdatedAt')) ts.delete('scoreUpdatedAt');
-            if (ts.has('extraCreditUpdatedAt')) ts.delete('extraCreditUpdatedAt');
-          }
-        });
-      }
-    });
-    
-    // Set nextQuestionNumber counter based on number of questions
-    session.set('nextQuestionNumber', orderedQuestions.length + 1);
-    
-    // Update history entries with new question IDs
-    const historyLog = session.get('historyLog');
-    if (historyLog) {
-      for (let i = 0; i < historyLog.length; i++) {
-        const entry = historyLog.get(i);
-        if (entry && entry.get) {
-          const oldQId = entry.get('questionId');
-          if (oldQId && idMapping.has(oldQId)) {
-            entry.set('questionId', idMapping.get(oldQId));
-          }
-        }
-      }
-    }
-    
-    // Set data version to v5.0
-    // Note: The session will use questionOrder array for ordering (v4 compatibility path)
-    // until all questions have deterministic q-N IDs
     session.set('dataVersion', DATA_VERSION_DETERMINISTIC);
   }, 'v5-migration');
   
-  console.log(`Migration complete: ${orderedQuestions.length} questions cleaned up`);
+  console.log(`Migration complete: ${orderedQuestionIds.length} questions cleaned up`);
   return true;
 }
 
@@ -318,8 +420,9 @@ function ensureSessionIsV5(sessionDoc) {
   if (!session) return { upgraded: false, reason: 'no-session' };
 
   if (isDeterministicSession(session)) {
+    const rekeyed = repairDeterministicQuestionIds(sessionDoc, session);
     validateQuestionCounter(session);
-    return { upgraded: false, reason: 'already-v5' };
+    return { upgraded: rekeyed, reason: rekeyed ? 'rekeyed' : 'already-v5' };
   }
 
   const format = detectSessionFormat(session);

@@ -454,16 +454,6 @@ function initialize_display() {
   $( "#rounding" ).controlgroup();
   $( "#import" ).controlgroup();
 
-  //Block multi-line question titles
-  $("#current_question_title").keypress(function(e){ 
-    if (e.which == 13) {
-      $("#current_question_title").trigger("onblur");
-      return false;
-    } else {
-      return true;
-    } 
-  });
-  
   // Set up click-to-edit for max points
   initialize_max_points_edit();
   
@@ -1127,18 +1117,13 @@ function sync_data_to_display() {
     // Accordion not initialized yet
   }
 
-  //Update Question name to saved name (skip if user is editing it)
-  if (!isElementFocused("current_question_title", focusState)) {
-    $("#current_question_title").text(question_names[current_question]);
-  }
-
   //Set up Question quick navigation
   let question_quick_nav = '<select name="question_quick_nav" id="question_quick_nav" onchange="local_data_update(this)"">';
   temp_count = (current_question>question_count?current_question:question_count);
   for (let i=1; i <= temp_count; i++) {
     let temp_ignore_question = getQuestionIgnore(i);
     if (i==current_question) {
-      question_quick_nav += '<option value="'+i+'" selected>'+(temp_ignore_question === true?"🚫":"")+i+" of "+question_count+'</option>';
+      question_quick_nav += '<option value="'+i+'" selected>'+(temp_ignore_question === true?"🚫":"")+i+" of "+question_count+' - '+HTMLescape(question_names[i])+'</option>';
     } else {
       question_quick_nav += '<option value="'+i+'">'+(temp_ignore_question === true?"🚫":"")+i+" of "+question_count+' - '+HTMLescape(question_names[i])+'</option>';
     }

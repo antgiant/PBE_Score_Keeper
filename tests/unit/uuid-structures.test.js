@@ -1390,11 +1390,73 @@ test('validateQuestionCounter ignores non-deterministic question IDs', () => {
   assert.equal(session.get('nextQuestionNumber'), 1, 'Counter should remain 1 for non-deterministic IDs');
 });
 
+test('repairDeterministicQuestionIds rekeys v5 sessions with UUID question IDs', () => {
+  const { context } = loadApp(createYjsDoc({ currentSession: 1, sessions: [] }));
+  
+  const testDoc = new context.Y.Doc();
+  const session = testDoc.getMap('session');
+  session.set('dataVersion', '5.0');
+  session.set('nextQuestionNumber', 1);
+  
+  const questionsById = new context.Y.Map();
+  const questionOrder = new context.Y.Array();
+  const historyLog = new context.Y.Array();
+  
+  const q1Id = 'q-uuid-1';
+  const q1 = new context.Y.Map();
+  q1.set('id', q1Id);
+  q1.set('name', 'Question 1');
+  q1.set('createdAt', 10);
+  questionsById.set(q1Id, q1);
+  questionOrder.push([q1Id]);
+  
+  const q2Id = 'q-uuid-2';
+  const q2 = new context.Y.Map();
+  q2.set('id', q2Id);
+  q2.set('name', 'Question 2');
+  q2.set('createdAt', 20);
+  questionsById.set(q2Id, q2);
+  questionOrder.push([q2Id]);
+  
+  const historyEntry = new context.Y.Map();
+  historyEntry.set('questionId', q2Id);
+  historyLog.push([historyEntry]);
+  
+  session.set('questionsById', questionsById);
+  session.set('questionOrder', questionOrder);
+  session.set('historyLog', historyLog);
+  
+  const result = context.repairDeterministicQuestionIds(testDoc, session);
+  
+  assert.equal(result, true, 'Repair should return true');
+  assert.equal(session.get('nextQuestionNumber'), 3, 'Next question number should be 3');
+  
+  const migratedQuestionsById = session.get('questionsById');
+  assert.ok(migratedQuestionsById.has('q-1'), 'q-1 should exist after rekey');
+  assert.ok(migratedQuestionsById.has('q-2'), 'q-2 should exist after rekey');
+  assert.ok(!migratedQuestionsById.has(q1Id), 'Original q1 key should be removed');
+  assert.ok(!migratedQuestionsById.has(q2Id), 'Original q2 key should be removed');
+  
+  const migratedOrder = session.get('questionOrder');
+  assert.equal(migratedOrder.get(0), 'q-1', 'First should be q-1');
+  assert.equal(migratedOrder.get(1), 'q-2', 'Second should be q-2');
+  
+  const migratedQ1 = migratedQuestionsById.get('q-1');
+  const migratedQ2 = migratedQuestionsById.get('q-2');
+  assert.equal(migratedQ1.get('id'), 'q-1', 'Question id should be updated to deterministic ID');
+  assert.equal(migratedQ2.get('id'), 'q-2', 'Question id should be updated to deterministic ID');
+  
+  const migratedHistoryEntry = session.get('historyLog').get(0);
+  assert.equal(migratedHistoryEntry.get('questionId'), 'q-2', 'History should update questionId');
+  
+  testDoc.destroy();
+});
+
 // ============================================================================
 // V4 TO V5 MIGRATION TESTS
 // ============================================================================
 
-test('migrateV4ToV5 cleans up obsolete fields and sets version', () => {
+test('migrateV4ToV5 cleans up obsolete fields, rekeys questions, and sets version', () => {
   const { context } = loadApp(createYjsDoc({ currentSession: 1, sessions: [] }));
   
   const testDoc = new context.Y.Doc();
@@ -1436,19 +1498,23 @@ test('migrateV4ToV5 cleans up obsolete fields and sets version', () => {
   assert.equal(session.get('dataVersion'), '5.0', 'Data version should be 5.0');
   assert.equal(session.get('nextQuestionNumber'), 3, 'Next question number should be 3');
   
-  // Check original question keys are preserved (CRDT compatibility)
+  // Check questions are rekeyed to deterministic IDs
   const migratedQuestionsById = session.get('questionsById');
-  assert.ok(migratedQuestionsById.has(q1Id), 'Original q1 key should still exist');
-  assert.ok(migratedQuestionsById.has(q2Id), 'Original q2 key should still exist');
+  assert.ok(migratedQuestionsById.has('q-1'), 'q-1 should exist after rekey');
+  assert.ok(migratedQuestionsById.has('q-2'), 'q-2 should exist after rekey');
+  assert.ok(!migratedQuestionsById.has(q1Id), 'Original q1 key should be removed');
+  assert.ok(!migratedQuestionsById.has(q2Id), 'Original q2 key should be removed');
   
   // Check obsolete fields were removed
-  const migratedQ1 = migratedQuestionsById.get(q1Id);
+  const migratedQ1 = migratedQuestionsById.get('q-1');
   assert.ok(!migratedQ1.has('sortOrder'), 'sortOrder should be removed');
   assert.ok(!migratedQ1.has('scoreUpdatedAt'), 'scoreUpdatedAt should be removed');
+  assert.equal(migratedQ1.get('id'), 'q-1', 'Question id should be updated to deterministic ID');
   
-  const migratedQ2 = migratedQuestionsById.get(q2Id);
+  const migratedQ2 = migratedQuestionsById.get('q-2');
   assert.ok(!migratedQ2.has('sortOrder'), 'sortOrder should be removed');
   assert.ok(!migratedQ2.has('blockUpdatedAt'), 'blockUpdatedAt should be removed');
+  assert.equal(migratedQ2.get('id'), 'q-2', 'Question id should be updated to deterministic ID');
   
   testDoc.destroy();
 });
@@ -1505,8 +1571,8 @@ test('migrateV4ToV5 removes team score timestamp fields', () => {
   // Run migration
   context.migrateV4ToV5(testDoc, session);
   
-  // Check team score timestamp fields were removed (original key preserved)
-  const migratedQ1 = session.get('questionsById').get(q1Id);
+  // Check team score timestamp fields were removed (rekeyed to q-1)
+  const migratedQ1 = session.get('questionsById').get('q-1');
   const migratedTeamScores = migratedQ1.get('teamScores');
   const migratedT1Score = migratedTeamScores.get('t-team1');
   
@@ -1518,7 +1584,7 @@ test('migrateV4ToV5 removes team score timestamp fields', () => {
   testDoc.destroy();
 });
 
-test('migrateV4ToV5 preserves questionOrder array with original keys', () => {
+test('migrateV4ToV5 rekeys questionOrder array to deterministic IDs', () => {
   const { context } = loadApp(createYjsDoc({ currentSession: 1, sessions: [] }));
   
   const testDoc = new context.Y.Doc();
@@ -1546,12 +1612,12 @@ test('migrateV4ToV5 preserves questionOrder array with original keys', () => {
   // Run migration
   context.migrateV4ToV5(testDoc, session);
   
-  // Check questionOrder still uses original keys (for CRDT compatibility)
+  // Check questionOrder uses deterministic IDs
   const migratedOrder = session.get('questionOrder');
   assert.equal(migratedOrder.length, 3, 'Should have 3 entries in order');
-  assert.equal(migratedOrder.get(0), 'q-uuid-1', 'First should still be original key');
-  assert.equal(migratedOrder.get(1), 'q-uuid-2', 'Second should still be original key');
-  assert.equal(migratedOrder.get(2), 'q-uuid-3', 'Third should still be original key');
+  assert.equal(migratedOrder.get(0), 'q-1', 'First should be q-1');
+  assert.equal(migratedOrder.get(1), 'q-2', 'Second should be q-2');
+  assert.equal(migratedOrder.get(2), 'q-3', 'Third should be q-3');
   
   // Verify data version is 5.0 and counter is set
   assert.equal(session.get('dataVersion'), '5.0', 'Data version should be updated');
