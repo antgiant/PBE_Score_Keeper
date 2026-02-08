@@ -77,6 +77,7 @@
               <span class="ui-mode-option" data-i18n="ui_mode.beta">Beta</span>
             </label>
             <div id="header_menu_session_slot" class="header-menu-session-slot"></div>
+            <div id="header_menu_rounding_slot" class="header-menu-rounding-slot"></div>
           </div>
         </div>
         <h1 data-i18n="app.title">PBE Score Keeper</h1>
@@ -137,7 +138,8 @@
             <span id="max_points_minimum_notice" class="config-minimum-notice" style="display:none;" data-i18n="points.minimum_notice">Cannot be lower due to already entered scores</span>
           </span>
         </fieldset>
-        <fieldset>
+        <div id="rounding_fieldset_placeholder"></div>
+        <fieldset class="config-fieldset" id="rounding_fieldset">
           <legend data-i18n="rounding.title">Rounding Live Team score to best team's total?</legend>
           <div id="rounding">
             <label><input type="radio" id="rounding_yes" name="rounding" value="true" onchange="local_data_update(this)"><span data-i18n="rounding.yes">Yes</span></label>
@@ -282,7 +284,7 @@
       </div>
     </div>
     <footer><p><span data-i18n="footer.feedback">Have an idea to make this better?</span> <a target="_blank" href="https://github.com/antgiant/PBE_Score_Keeper/issues" data-i18n="footer.let_me_know">Let me know</a>.</p>
-    <p><center data-i18n="footer.version" data-i18n-version="2.14.8">v 2.14.8</center></p></footer>
+    <p><center data-i18n="footer.version" data-i18n-version="2.14.9">v 2.14.9</center></p></footer>
 </body>
 
 </html>

@@ -11,6 +11,9 @@ function initialize_header_menu() {
   var sessionFieldset = document.getElementById("session_fieldset");
   var sessionSlot = document.getElementById("header_menu_session_slot");
   var sessionPlaceholder = document.getElementById("session_fieldset_placeholder");
+  var roundingFieldset = document.getElementById("rounding_fieldset");
+  var roundingSlot = document.getElementById("header_menu_rounding_slot");
+  var roundingPlaceholder = document.getElementById("rounding_fieldset_placeholder");
   if (!root || !toggle || !panel) {
     return;
   }
@@ -47,10 +50,26 @@ function initialize_header_menu() {
     }
   }
 
+  function move_rounding_fieldset_for_mode() {
+    if (!roundingFieldset || !roundingSlot || !roundingPlaceholder) {
+      return;
+    }
+    if (is_beta_mode()) {
+      if (!roundingSlot.contains(roundingFieldset)) {
+        roundingSlot.appendChild(roundingFieldset);
+      }
+      return;
+    }
+    if (roundingPlaceholder.parentNode && !roundingPlaceholder.parentNode.contains(roundingFieldset)) {
+      roundingPlaceholder.parentNode.insertBefore(roundingFieldset, roundingPlaceholder.nextSibling);
+    }
+  }
+
   function sync_menu_for_mode() {
     if (is_beta_mode()) {
       set_menu_state(false);
       move_session_fieldset_for_mode();
+      move_rounding_fieldset_for_mode();
       return;
     }
 
@@ -58,6 +77,7 @@ function initialize_header_menu() {
     panel.setAttribute("aria-hidden", "false");
     toggle.setAttribute("aria-expanded", "false");
     move_session_fieldset_for_mode();
+    move_rounding_fieldset_for_mode();
   }
 
   toggle.addEventListener("click", function(event) {

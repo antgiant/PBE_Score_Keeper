@@ -349,6 +349,17 @@ tr:nth-child(even){
 [data-ui-mode="beta"] .header-menu-session-slot .config-fieldset {
   margin: 0;
 }
+[data-ui-mode="beta"] .header-menu-rounding-slot {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border-color);
+}
+[data-ui-mode="beta"] .header-menu-rounding-slot .config-fieldset {
+  margin: 0;
+}
 [data-ui-mode="beta"] .header-menu-panel.is-open {
   display: flex;
 }
