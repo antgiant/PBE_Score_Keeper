@@ -181,6 +181,7 @@ function initialize_display() {
   initialize_language_controls();
   initialize_theme_controls();
   initialize_ui_mode_controls();
+  initialize_max_points_controls_for_ui_mode();
   initialize_header_menu();
   apply_score_entry_field_order();
   initialize_score_entry_field_reorder();

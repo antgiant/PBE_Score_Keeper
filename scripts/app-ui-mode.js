@@ -65,3 +65,57 @@ function initialize_ui_mode_controls() {
     });
   }
 }
+
+function initialize_max_points_controls_for_ui_mode() {
+  if (typeof document === "undefined" || typeof document.getElementById !== "function") {
+    return;
+  }
+  var root = document.documentElement;
+  var controls = document.getElementById("max_points_controls");
+  var fieldset = document.getElementById("max_points_fieldset");
+  var slot = document.getElementById("max_points_controls_slot");
+  var notice = document.getElementById("max_points_minimum_notice");
+  var noticeSlot = document.getElementById("max_points_notice_slot");
+  if (!root || !controls || !fieldset || !slot) {
+    return;
+  }
+
+  function is_beta_mode_for_controls() {
+    return root.getAttribute("data-ui-mode") === "beta";
+  }
+
+  function sync_controls_for_mode() {
+    if (is_beta_mode_for_controls()) {
+      if (!slot.contains(controls)) {
+        slot.appendChild(controls);
+      }
+      if (notice && noticeSlot && !noticeSlot.contains(notice)) {
+        noticeSlot.appendChild(notice);
+      }
+      return;
+    }
+    if (!fieldset.contains(controls)) {
+      fieldset.appendChild(controls);
+    }
+    if (notice && !controls.contains(notice)) {
+      controls.appendChild(notice);
+    }
+  }
+
+  if (typeof MutationObserver === "undefined") {
+    sync_controls_for_mode();
+    return;
+  }
+
+  var observer = new MutationObserver(function(mutations) {
+    for (var i = 0; i < mutations.length; i++) {
+      if (mutations[i].attributeName === "data-ui-mode") {
+        sync_controls_for_mode();
+        break;
+      }
+    }
+  });
+  observer.observe(root, { attributes: true, attributeFilter: ["data-ui-mode"] });
+
+  sync_controls_for_mode();
+}

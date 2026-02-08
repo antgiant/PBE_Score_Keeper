@@ -395,6 +395,48 @@ tr:nth-child(even){
 [data-ui-mode="beta"] .score-entry-fields {
   gap: 0.75rem;
 }
+[data-ui-mode="beta"] #max_points_fieldset {
+  display: none;
+}
+[data-ui-mode="beta"] #max_points_controls_slot {
+  display: inline-flex;
+  align-items: center;
+}
+[data-ui-mode="beta"] #max_points_controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+[data-ui-mode="beta"] .max-points-legend-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  margin-left: 0.35rem;
+}
+[data-ui-mode="classic"] .max-points-legend-controls {
+  display: none;
+}
+[data-ui-mode="beta"] #max_points {
+  display: none;
+}
+[data-ui-mode="beta"] #max_points_decrease {
+  order: 1;
+}
+[data-ui-mode="beta"] #max_points {
+  order: 2;
+}
+[data-ui-mode="beta"] #max_points_text {
+  order: 3;
+}
+[data-ui-mode="beta"] #max_points_increase {
+  order: 4;
+}
+[data-ui-mode="beta"] #max_points_controls #max_points_minimum_notice {
+  flex-basis: 100%;
+  margin-top: 0.3rem;
+  order: 5;
+}
 /* Editable number (click to edit) */
 .editable-number {
   cursor: pointer;
