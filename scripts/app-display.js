@@ -242,6 +242,7 @@ function initialize_scores_tabs() {
     } catch (e) {
       // Accordion not initialized yet.
     }
+    update_scores_tabs_for_rounding();
   }
 
   if (typeof MutationObserver !== "undefined") {
@@ -301,6 +302,64 @@ function update_scores_tabs_for_block_count(blockCount) {
         if ($firstVisible.length) {
           $tabs.tabs("option", "active", $firstVisible.index());
         }
+      }
+    }
+  }
+}
+
+function update_scores_tabs_for_rounding(roundingEnabled) {
+  if (typeof document === "undefined" || typeof $ === "undefined") {
+    return;
+  }
+  if (typeof document.getElementById !== "function") {
+    return;
+  }
+  var root = document.documentElement;
+  if (!root || root.getAttribute("data-ui-mode") !== "beta") {
+    return;
+  }
+  var tabsElement = document.getElementById("scores_tabs");
+  if (!tabsElement) {
+    return;
+  }
+
+  var isRounded = roundingEnabled === true;
+  if (typeof roundingEnabled !== "boolean") {
+    var session = (typeof get_current_session === "function") ? get_current_session() : null;
+    var config = session ? session.get("config") : null;
+    if (config) {
+      isRounded = config.get("rounding") === true;
+    }
+  }
+
+  var exactTab = document.getElementById("scores_tab_team_exact_tab");
+  var exactPanel = document.getElementById("scores_tab_team_exact");
+  var roundedTab = document.getElementById("scores_tab_team_rounded_tab");
+  var roundedPanel = document.getElementById("scores_tab_team_rounded");
+
+  if (exactTab) {
+    exactTab.style.display = isRounded ? "none" : "";
+  }
+  if (exactPanel) {
+    exactPanel.style.display = isRounded ? "none" : "";
+  }
+  if (roundedTab) {
+    roundedTab.style.display = isRounded ? "" : "none";
+  }
+  if (roundedPanel) {
+    roundedPanel.style.display = isRounded ? "" : "none";
+  }
+
+  var $tabs = $("#scores_tabs");
+  if (typeof $tabs.tabs === "function" && $tabs.hasClass("ui-tabs")) {
+    $tabs.tabs("refresh");
+    var $activeTab = $tabs.find(".ui-tabs-nav li.ui-tabs-active");
+    if ($activeTab.length && $activeTab.css("display") === "none") {
+      var $firstVisible = $tabs.find(".ui-tabs-nav li").filter(function() {
+        return $(this).css("display") !== "none";
+      }).first();
+      if ($firstVisible.length) {
+        $tabs.tabs("option", "active", $firstVisible.index());
       }
     }
   }
@@ -1123,6 +1182,7 @@ function sync_data_to_display() {
   }
 
   update_scores_tabs_for_block_count(block_count);
+  update_scores_tabs_for_rounding(rounding);
   
   // Refresh accordion to account for visibility changes
   try {

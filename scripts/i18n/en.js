@@ -89,7 +89,7 @@ register_i18n_language('en', {
       "point": "point",
       "points": "points",
       "edit_max_points": "Click to edit maximum points",
-      "possible": "Possible Points for Question",
+      "possible": "Possible Points",
       "minimum_notice": "Cannot be lower due to already entered scores"
     },
     "rounding": {
@@ -120,12 +120,13 @@ register_i18n_language('en', {
       "reorder_entry_drag_aria": "Drag to reorder {{name}}"
     },
     "scores": {
-      "according": "Score",
-      "team_exact": "Score by Team (Exact)",
-      "team_rounded": "Score by Team (Rounded)",
-      "by_block": "Score by Block",
-      "team_and_block": "Score by Team & Block",
-      "question_history": "Question History"
+      "according": "Results",
+      "team": "Team",
+      "team_exact": "Team (Exact)",
+      "team_rounded": "Team (Rounded)",
+      "by_block": "Block",
+      "team_and_block": "Team & Block",
+      "question_history": "Question Log"
     },
     "table": {
       "team_name": "Team Name",

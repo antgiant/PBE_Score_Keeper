@@ -86,7 +86,7 @@ register_i18n_language('pig', {
       "point": "oint-pay",
       "points": "oints-pay",
       "edit_max_points": "Ick-Clay o-tay edit-ay aximum-may oints-pay",
-      "possible": "Ossible-Pay Oints-Pay or-fay Uestion-Qay",
+      "possible": "Ossible-Pay Oints-Pay",
       "minimum_notice": "Annot-cay e-bay ower-lay ue-day o-tay already-ay entered-ay ores-scay"
     },
     "rounding": {
@@ -117,12 +117,13 @@ register_i18n_language('pig', {
       "reorder_entry_drag_aria": "Ag-Dray otay eorder-ray {{name}}"
     },
     "scores": {
-      "according": "Ore-Scay",
-      "team_exact": "Ore-Scay y-bay Eam-Tay (Exact-ay)",
-      "team_rounded": "Ore-Scay y-bay Eam-Tay (Ounded-Ray)",
-      "by_block": "Ore-Scay y-bay Ock-Blay",
-      "team_and_block": "Ore-Scay y-bay Eam-Tay & Ock-Blay",
-      "question_history": "Uestion-Qay Istory-Hay"
+      "according": "Esults-Ray",
+      "team": "Eam-Tay",
+      "team_exact": "Eam-Tay (Exact-ay)",
+      "team_rounded": "Eam-Tay (Ounded-Ray)",
+      "by_block": "Ock-Blay",
+      "team_and_block": "Eam-Tay & Ock-Blay",
+      "question_history": "Uestion-Qay Og-Lay"
     },
     "table": {
       "team_name": "Eam-Tay Ame-Nay",
