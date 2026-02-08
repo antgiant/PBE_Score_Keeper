@@ -97,6 +97,7 @@ register_i18n_language('fr', {
       "previous": "Question Précédente",
       "next": "Question Suivante",
       "new": "Nouvelle Question",
+      "advanced_toggle": "Options avancées",
       "ignore": "Ignorer cette Question dans les Calculs de Score",
       "extra_credit": "Autoriser le Crédit Supplémentaire",
       "question": "Question",

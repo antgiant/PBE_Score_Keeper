@@ -93,6 +93,7 @@ register_i18n_language('pig', {
       "previous": "Evious-Pray Uestion-Qay",
       "next": "Ext-Nay Uestion-Qay",
       "new": "Ew-Nay Uestion-Qay",
+      "advanced_toggle": "Advanced-ay Options-ay",
       "ignore": "Ignore-ay is-thay Uestion-Qay in-ay Ore-Scay Alculations-Cay",
       "extra_credit": "Allow-ay Extra-ay Edit-Cray",
       "question": "Uestion-Qay",

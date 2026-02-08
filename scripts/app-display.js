@@ -306,6 +306,28 @@ function update_scores_tabs_for_block_count(blockCount) {
   }
 }
 
+function initialize_score_entry_advanced_toggle() {
+  if (typeof document === "undefined" || typeof document.getElementById !== "function") {
+    return;
+  }
+  var toggle = document.getElementById("score_entry_advanced_toggle");
+  var panel = document.getElementById("score_entry_advanced_options");
+  if (!toggle || !panel) {
+    return;
+  }
+
+  function set_expanded_state(isExpanded) {
+    panel.classList.toggle("is-open", isExpanded);
+    toggle.setAttribute("aria-expanded", isExpanded ? "true" : "false");
+  }
+
+  toggle.addEventListener("click", function() {
+    set_expanded_state(!panel.classList.contains("is-open"));
+  });
+
+  set_expanded_state(false);
+}
+
 function initialize_display() {
   initialize_scores_tabs();
 
@@ -340,6 +362,7 @@ function initialize_display() {
   initialize_header_menu();
   apply_score_entry_field_order();
   initialize_score_entry_field_reorder();
+  initialize_score_entry_advanced_toggle();
   sync_data_to_display();
   initialize_reorder_controls();
   initialize_history_viewer();
@@ -1127,11 +1150,13 @@ function sync_data_to_display() {
     $("#ignore_question_warning").show();
     $("#ignored_question").css("opacity", 0.25);
     $("#ignored_question").css("pointer-events", "none");
+    $("#extra_credit").prop("disabled", true);
   } else {
     $("#ignore_question").prop("checked", false);
     $("#ignore_question_warning").hide();
     $("#ignored_question").css("opacity", 1);
     $("#ignored_question").css("pointer-events", "initial");
+    $("#extra_credit").prop("disabled", false);
   }
 
   //Manage extra credit status

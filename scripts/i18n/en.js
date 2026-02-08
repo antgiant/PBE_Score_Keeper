@@ -96,6 +96,7 @@ register_i18n_language('en', {
       "previous": "Previous Question",
       "next": "Next Question",
       "new": "New Question",
+      "advanced_toggle": "Advanced Options",
       "ignore": "Ignore this Question in Score Calculations",
       "extra_credit": "Allow Extra Credit",
       "question": "Question",

@@ -97,6 +97,7 @@ register_i18n_language('es', {
       "previous": "Pregunta Anterior",
       "next": "Siguiente Pregunta",
       "new": "Nueva Pregunta",
+      "advanced_toggle": "Opciones Avanzadas",
       "ignore": "Ignorar esta Pregunta en los Cálculos de Puntuación",
       "extra_credit": "Permitir Crédito Extra",
       "question": "Pregunta",

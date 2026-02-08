@@ -421,6 +421,26 @@ tr:nth-child(even){
 [data-ui-mode="beta"] .score-entry-fields {
   gap: 0.75rem;
 }
+[data-ui-mode="beta"] .score-entry-advanced-toggle {
+  display: inline-flex;
+  align-items: center;
+}
+[data-ui-mode="beta"] .score-entry-advanced {
+  display: none;
+}
+.score-entry-advanced label {
+  display: block;
+  margin-bottom: 0.4rem;
+}
+.score-entry-advanced label:last-child {
+  margin-bottom: 0;
+}
+[data-ui-mode="beta"] .score-entry-advanced.is-open {
+  display: block;
+}
+.score-entry-advanced-toggle {
+  display: none;
+}
 [data-ui-mode="beta"] #max_points_fieldset {
   display: none;
 }
@@ -632,6 +652,7 @@ tr:nth-child(even){
   display: flex;
   gap: 0.5rem;
   flex-wrap: wrap;
+  align-items: center;
 }
 
 .config-add-btn:hover {
@@ -640,6 +661,12 @@ tr:nth-child(even){
 .config-add-btn:focus {
   outline: 2px solid var(--link-color);
   outline-offset: 2px;
+}
+.score-entry-advanced-toggle {
+  display: none;
+}
+:root[data-ui-mode="beta"] .score-entry-advanced-toggle {
+  display: inline-flex;
 }
 .session-buttons-row {
   display: flex;
