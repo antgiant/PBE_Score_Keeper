@@ -1,6 +1,132 @@
 // History Viewer for PBE Score Keeper
 // Supports both global history (session-level events) and per-session history
 
+var CHANGE_LOG_DIALOG_ID = "change-log-dialog-overlay";
+var changeLogDialogOrigin = null;
+var changeLogDialogKeyHandler = null;
+var changeLogDialogObserver = null;
+var changeLogDialogLastFocus = null;
+
+function showChangeLogDialog() {
+  if (typeof document === "undefined") {
+    return;
+  }
+  var root = document.documentElement;
+  if (root && root.getAttribute("data-ui-mode") !== "beta") {
+    return;
+  }
+  if (document.getElementById(CHANGE_LOG_DIALOG_ID)) {
+    return;
+  }
+
+  var historyViewer = document.getElementById("history_viewer");
+  if (!historyViewer) {
+    return;
+  }
+
+  changeLogDialogLastFocus = document.activeElement || null;
+  changeLogDialogOrigin = {
+    parent: historyViewer.parentNode,
+    nextSibling: historyViewer.nextSibling
+  };
+
+  var overlay = document.createElement("div");
+  overlay.id = CHANGE_LOG_DIALOG_ID;
+  overlay.className = "sync-dialog-overlay change-log-overlay";
+
+  var dialog = document.createElement("div");
+  dialog.className = "change-log-dialog";
+  dialog.setAttribute("role", "dialog");
+  dialog.setAttribute("aria-modal", "true");
+
+  var header = document.createElement("div");
+  header.className = "change-log-dialog-header";
+
+  var title = document.createElement("h2");
+  title.id = "change-log-dialog-title";
+  title.textContent = t("edit_log.change_log");
+
+  var closeButton = document.createElement("button");
+  closeButton.type = "button";
+  closeButton.className = "config-add-btn change-log-dialog-close";
+  closeButton.textContent = t("edit_log.close_button");
+  closeButton.addEventListener("click", closeChangeLogDialog);
+
+  header.appendChild(title);
+  header.appendChild(closeButton);
+
+  var body = document.createElement("div");
+  body.className = "change-log-dialog-body";
+  body.appendChild(historyViewer);
+
+  dialog.appendChild(header);
+  dialog.appendChild(body);
+  dialog.setAttribute("aria-labelledby", title.id);
+  overlay.appendChild(dialog);
+  document.body.appendChild(overlay);
+
+  closeButton.focus();
+
+  changeLogDialogKeyHandler = function(event) {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      closeChangeLogDialog();
+    }
+  };
+  document.addEventListener("keydown", changeLogDialogKeyHandler);
+
+  if (typeof MutationObserver !== "undefined" && root) {
+    changeLogDialogObserver = new MutationObserver(function(mutations) {
+      for (var i = 0; i < mutations.length; i++) {
+        if (mutations[i].attributeName === "data-ui-mode") {
+          if (root.getAttribute("data-ui-mode") !== "beta") {
+            closeChangeLogDialog();
+          }
+          break;
+        }
+      }
+    });
+    changeLogDialogObserver.observe(root, { attributes: true, attributeFilter: ["data-ui-mode"] });
+  }
+}
+
+function closeChangeLogDialog() {
+  if (typeof document === "undefined") {
+    return;
+  }
+  var overlay = document.getElementById(CHANGE_LOG_DIALOG_ID);
+  if (!overlay) {
+    return;
+  }
+
+  var historyViewer = document.getElementById("history_viewer");
+  if (historyViewer && changeLogDialogOrigin && changeLogDialogOrigin.parent) {
+    if (changeLogDialogOrigin.nextSibling && changeLogDialogOrigin.nextSibling.parentNode === changeLogDialogOrigin.parent) {
+      changeLogDialogOrigin.parent.insertBefore(historyViewer, changeLogDialogOrigin.nextSibling);
+    } else {
+      changeLogDialogOrigin.parent.appendChild(historyViewer);
+    }
+  }
+
+  overlay.remove();
+
+  if (changeLogDialogKeyHandler) {
+    document.removeEventListener("keydown", changeLogDialogKeyHandler);
+    changeLogDialogKeyHandler = null;
+  }
+
+  if (changeLogDialogObserver) {
+    changeLogDialogObserver.disconnect();
+    changeLogDialogObserver = null;
+  }
+
+  if (changeLogDialogLastFocus && typeof changeLogDialogLastFocus.focus === "function") {
+    changeLogDialogLastFocus.focus();
+  }
+  changeLogDialogLastFocus = null;
+  changeLogDialogOrigin = null;
+}
+
 /**
  * Initialize the history viewer
  * Sets up listeners and populates with current history

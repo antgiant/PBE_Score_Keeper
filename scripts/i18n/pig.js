@@ -132,6 +132,8 @@ register_i18n_language('pig', {
     "edit_log": {
       "title": "Ange-Chay Og-Lay",
       "change_log": "Ange-Chay Og-Lay",
+      "see_all_changes": "Ee-Say All-ay Anges-Chay",
+      "close_button": "Ose-Clay",
       "time": "Ime-Tay",
       "user": "User-ay",
       "session": "Ession-Say",

@@ -136,6 +136,8 @@ register_i18n_language('es', {
     "edit_log": {
       "title": "Registro de Cambios",
       "change_log": "Registro de Cambios",
+      "see_all_changes": "Ver todos los cambios",
+      "close_button": "Cerrar",
       "time": "Hora",
       "user": "Usuario",
       "session": "Sesión",

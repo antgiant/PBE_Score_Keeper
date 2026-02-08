@@ -136,6 +136,8 @@ register_i18n_language('fr', {
     "edit_log": {
       "title": "Journal des Modifications",
       "change_log": "Journal des Modifications",
+      "see_all_changes": "Voir tous les changements",
+      "close_button": "Fermer",
       "time": "Heure",
       "user": "Utilisateur",
       "session": "Session",
