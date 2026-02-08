@@ -1907,13 +1907,23 @@ async function initialize_new_yjs_state() {
   const team1Name = (typeof t === 'function') ? t('defaults.team_name', { number: 1 }) : 'Team 1';
   const block0Name = (typeof t === 'function') ? t('defaults.no_block') : 'No Block/Group';
   const block1Name = (typeof t === 'function') ? t('defaults.block_name', { number: 1 }) : 'Block/Group 1';
+  const blockNames = [block0Name];
+  if (typeof t === 'function') {
+    for (let i = 1; i <= 6; i++) {
+      blockNames.push(t('defaults.block_name', { number: i }));
+    }
+  } else {
+    for (let i = 1; i <= 6; i++) {
+      blockNames.push(block1Name);
+    }
+  }
   createNewSessionV4(sessionDoc, {
     id: sessionId,
     name: sessionName,
     maxPointsPerQuestion: 12,
     rounding: false,
     teamNames: [team1Name],
-    blockNames: [block0Name, block1Name]
+    blockNames: blockNames
   });
 
   // Set active session
