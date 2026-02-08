@@ -1008,6 +1008,14 @@ tr:nth-child(even){
   cursor: pointer;
   font-size: 0.875rem;
 }
+[data-ui-mode="beta"] .sync-button {
+  padding: 0.4rem 0.8rem;
+  border-radius: 999px;
+  letter-spacing: 0.02em;
+  font-weight: 600;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.12);
+  font-size: 0.95rem;
+}
 
 .sync-button:hover {
   background: var(--row-alt);

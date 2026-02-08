@@ -17,6 +17,7 @@ function initialize_header_menu() {
   var questionFieldset = document.getElementById("header_menu_question_fieldset");
   var scoreEntryAdvancedPanel = document.getElementById("score_entry_advanced_options");
   var scoreEntryAdvancedPlaceholder = document.getElementById("score_entry_advanced_placeholder");
+  var scoreEntryReorderButton = document.getElementById("score_entry_reorder_button");
   var syncButton = document.getElementById("sync_button");
   var syncButtonSlot = document.getElementById("sync_button_slot");
   if (!root || !toggle || !panel) {
@@ -70,6 +71,21 @@ function initialize_header_menu() {
     }
   }
 
+  function move_reorder_button_for_mode() {
+    if (!scoreEntryReorderButton || !scoreEntryAdvancedPanel || !sessionFieldset) {
+      return;
+    }
+    if (is_beta_mode()) {
+      if (sessionFieldset.lastChild !== scoreEntryReorderButton) {
+        sessionFieldset.appendChild(scoreEntryReorderButton);
+      }
+      return;
+    }
+    if (!scoreEntryAdvancedPanel.contains(scoreEntryReorderButton)) {
+      scoreEntryAdvancedPanel.insertBefore(scoreEntryReorderButton, scoreEntryAdvancedPanel.firstChild);
+    }
+  }
+
   function move_sync_button_for_mode() {
     if (!syncButton || !syncButtonSlot || !sessionFieldset) {
       return;
@@ -110,6 +126,7 @@ function initialize_header_menu() {
       set_menu_state(false);
       move_session_fieldset_for_mode();
       move_rounding_fieldset_for_mode();
+      move_reorder_button_for_mode();
       move_question_options_for_mode();
       move_sync_button_for_mode();
       return;
@@ -120,6 +137,7 @@ function initialize_header_menu() {
     toggle.setAttribute("aria-expanded", "false");
     move_session_fieldset_for_mode();
     move_rounding_fieldset_for_mode();
+    move_reorder_button_for_mode();
     move_question_options_for_mode();
     move_sync_button_for_mode();
   }
