@@ -58,6 +58,9 @@ register_i18n_language('en', {
       "score_label": "{{name}}'s score",
       "score_label_s": "{{name}}' score",
       "add_team": "Add Team",
+      "manage_button": "Manage Teams",
+      "manage_title": "Manage Teams",
+      "manage_close": "Close",
       "delete_team": "Delete Team",
       "delete_aria": "Delete {{name}}",
       "minimum_notice": "This team cannot be deleted because at least 1 team is required"
@@ -103,6 +106,7 @@ register_i18n_language('en', {
       "ignore": "Ignore this Question in Score Calculations",
       "extra_credit": "Allow Extra Credit",
       "question": "Question",
+      "team": "Team",
       "block_group": "Block",
       "reorder_points": "Drag to reorder Possible Points field",
       "reorder_block": "Drag to reorder Block field"

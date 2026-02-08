@@ -306,6 +306,89 @@ function update_scores_tabs_for_block_count(blockCount) {
   }
 }
 
+function initialize_config_accordion_for_ui_mode() {
+  if (typeof document === "undefined" || typeof document.getElementById !== "function") {
+    return;
+  }
+  var root = document.documentElement;
+  var accordion = document.getElementById("accordion");
+  var configHeader = document.getElementById("accordion_config_header");
+  var configPanel = document.getElementById("session_configuration");
+  if (!root || !accordion || !configHeader || !configPanel) {
+    return;
+  }
+
+  function is_beta_mode_for_config_accordion() {
+    return root.getAttribute("data-ui-mode") === "beta";
+  }
+
+  function set_config_accordion_visibility(isBeta) {
+    configHeader.style.display = isBeta ? "none" : "";
+    configPanel.style.display = isBeta ? "none" : "";
+  }
+
+  function set_active_first_visible_config_section() {
+    if (typeof window === "undefined" || typeof window.getComputedStyle !== "function") {
+      return;
+    }
+    if (typeof accordion.querySelectorAll !== "function") {
+      return;
+    }
+    var headers = accordion.querySelectorAll("h3");
+    if (!headers.length) {
+      return;
+    }
+    var firstVisibleIndex = -1;
+    for (var i = 0; i < headers.length; i++) {
+      var style = window.getComputedStyle(headers[i]);
+      if (style && style.display !== "none") {
+        firstVisibleIndex = i;
+        break;
+      }
+    }
+    if (firstVisibleIndex < 0 || typeof $ === "undefined") {
+      return;
+    }
+    try {
+      var currentActive = $("#accordion").accordion("option", "active");
+      if (currentActive !== firstVisibleIndex) {
+        $("#accordion").accordion("option", "active", firstVisibleIndex);
+      }
+    } catch (e) {
+      // Accordion not initialized yet.
+    }
+  }
+
+  function sync_config_accordion_for_mode() {
+    var isBeta = is_beta_mode_for_config_accordion();
+    set_config_accordion_visibility(isBeta);
+    if (typeof $ !== "undefined") {
+      try {
+        $("#accordion").accordion("refresh");
+      } catch (e) {
+        // Accordion not initialized yet.
+      }
+    }
+    if (isBeta) {
+      set_active_first_visible_config_section();
+    }
+  }
+
+  if (typeof MutationObserver !== "undefined") {
+    var observer = new MutationObserver(function(mutations) {
+      for (var i = 0; i < mutations.length; i++) {
+        if (mutations[i].attributeName === "data-ui-mode") {
+          sync_config_accordion_for_mode();
+          break;
+        }
+      }
+    });
+    observer.observe(root, { attributes: true, attributeFilter: ["data-ui-mode"] });
+  }
+
+  sync_config_accordion_for_mode();
+}
+
 function initialize_score_entry_advanced_toggle() {
   if (typeof document === "undefined" || typeof document.getElementById !== "function") {
     return;
@@ -335,6 +418,7 @@ function initialize_display() {
   $("#accordion").accordion({
     heightStyle: "content"
   });
+  initialize_config_accordion_for_ui_mode();
 
   //Set up score entry buttons
   $( "#question_score" ).controlgroup();
@@ -361,6 +445,7 @@ function initialize_display() {
   initialize_max_points_controls_for_ui_mode();
   initialize_header_menu();
   initialize_block_manager();
+  initialize_team_manager();
   apply_score_entry_field_order();
   initialize_score_entry_field_reorder();
   initialize_score_entry_advanced_toggle();

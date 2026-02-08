@@ -70,11 +70,17 @@ function ensure_block_manager_overlay() {
     }
   });
 
+  return overlay;
+}
+
+function ensure_block_manager_trap_focus(overlay) {
+  if (!overlay || overlay.getAttribute("data-trap-focus") === "true") {
+    return;
+  }
   if (typeof trapFocus === "function") {
     trapFocus(overlay);
+    overlay.setAttribute("data-trap-focus", "true");
   }
-
-  return overlay;
 }
 
 function showBlockManagerDialog() {
@@ -95,6 +101,7 @@ function showBlockManagerDialog() {
     body.appendChild(blocksFieldset);
   }
   update_block_manager_labels(overlay);
+  ensure_block_manager_trap_focus(overlay);
   blocksManagerLastFocus = document.activeElement;
   overlay.style.display = "flex";
   overlay.setAttribute("aria-hidden", "false");

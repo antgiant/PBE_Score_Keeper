@@ -59,6 +59,9 @@ register_i18n_language('fr', {
       "score_label": "Score de {{name}}",
       "score_label_s": "Score de {{name}}",
       "add_team": "Ajouter une Équipe",
+      "manage_button": "Gérer les Équipes",
+      "manage_title": "Gérer les Équipes",
+      "manage_close": "Fermer",
       "delete_team": "Supprimer l'Équipe",
       "delete_aria": "Supprimer {{name}}",
       "minimum_notice": "Cette équipe ne peut pas être supprimée car au moins 1 équipe est requise"
@@ -104,6 +107,7 @@ register_i18n_language('fr', {
       "ignore": "Ignorer cette Question dans les Calculs de Score",
       "extra_credit": "Autoriser le Crédit Supplémentaire",
       "question": "Question",
+      "team": "Équipe",
       "block_group": "Bloc",
       "reorder_points": "Glisser pour réordonner le champ Points Possibles",
       "reorder_block": "Glisser pour réordonner le champ Bloc"

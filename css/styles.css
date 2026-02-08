@@ -665,7 +665,24 @@ tr:nth-child(even){
 .score-entry-manage-blocks {
   display: none;
 }
+.score-entry-manage-teams {
+  display: none;
+}
+.score-entry-team-legend {
+  display: none;
+}
+.score-entry-team-fieldset {
+  border: 0;
+  padding: 0;
+  margin: 0;
+}
 :root[data-ui-mode="beta"] .score-entry-block-legend {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+:root[data-ui-mode="beta"] .score-entry-team-legend {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -676,6 +693,15 @@ tr:nth-child(even){
   margin-top: 0;
   padding: 0.25rem 0.6rem;
   font-size: 0.85rem;
+}
+:root[data-ui-mode="beta"] .score-entry-manage-teams {
+  display: inline-flex;
+  margin-top: 0;
+  padding: 0.25rem 0.6rem;
+  font-size: 0.85rem;
+}
+:root[data-ui-mode="beta"] .score-entry-team-fieldset {
+  border: 1px solid var(--border-color);
 }
 .score-entry-advanced-toggle {
   display: none;
@@ -1054,6 +1080,19 @@ tr:nth-child(even){
   margin-bottom: 1rem;
 }
 .block-manager-dialog-body .config-fieldset {
+  margin-bottom: 0;
+}
+.team-manager-dialog {
+  max-width: 640px;
+}
+.team-manager-dialog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+.team-manager-dialog-body .config-fieldset {
   margin-bottom: 0;
 }
 

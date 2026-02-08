@@ -55,6 +55,9 @@ register_i18n_language('pig', {
       "score_label": "{{name}}'s-ay ore-scay",
       "score_label_s": "{{name}}'-ay ore-scay",
       "add_team": "Add-ay Eam-Tay",
+      "manage_button": "Anage-May Eams-Tay",
+      "manage_title": "Anage-May Eams-Tay",
+      "manage_close": "Ose-Clay",
       "delete_team": "Elete-Day Eam-Tay",
       "delete_aria": "Elete-Day {{name}}",
       "minimum_notice": "Is-thay eam-tay annot-cay e-bay eleted-day ecause-bay at-ay east-lay 1 eam-tay is-ay equired-ray"
@@ -100,6 +103,7 @@ register_i18n_language('pig', {
       "ignore": "Ignore-ay is-thay Uestion-Qay in-ay Ore-Scay Alculations-Cay",
       "extra_credit": "Allow-ay Extra-ay Edit-Cray",
       "question": "Uestion-Qay",
+      "team": "Eam-Tay",
       "block_group": "Ock-Blay",
       "reorder_points": "Ag-Dray o-tay eorder-ray Ossible-Pay Oints-Pay ield-fay",
       "reorder_block": "Ag-Dray o-tay eorder-ray Ock-Blay ield-fay"

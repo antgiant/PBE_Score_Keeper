@@ -36,6 +36,7 @@
   <script src="scripts/app-sync.js"></script>
   <script src="scripts/app-history.js"></script>
   <script src="scripts/app-block-manager.js"></script>
+  <script src="scripts/app-team-manager.js"></script>
   <script src="scripts/app-display.js"></script>
   <script src="scripts/app-storage.js"></script>
   <script src="scripts/app.js"></script>
@@ -100,7 +101,7 @@
       </div>
     </div>
     <div id="accordion">
-      <h3 data-i18n="config.title">Configuration (Session/Round/Game)</h3>
+      <h3 id="accordion_config_header" data-i18n="config.title">Configuration (Session/Round/Game)</h3>
       <div data-role="session_configuration" id="session_configuration">
         <h4 data-i18n="config.instructions_title">Instructions</h4>
         <p data-i18n="config.instructions">This is a score keeper for the Pathfinder Bible Experience (aka the Bible Bowl). Please enter your number of teams as well as blocks/groups below so that the scoring grid can be created</p>
@@ -117,7 +118,8 @@
             <button id="manage_sessions" class="config-add-btn" onclick='showSessionManagerDialog()' data-i18n="session_manager.manage_button">Manage Sessions</button>
           </div>
         </fieldset>
-        <fieldset class="config-fieldset">
+        <div id="teams_fieldset_placeholder"></div>
+        <fieldset class="config-fieldset" id="teams_fieldset">
           <legend id="teams_legend" data-i18n="teams.title_other">Set up your Teams</legend>
           <div class="config-count-row" style="display:none;">
             <span id="total_teams"></span> <span id="total_teams_text" data-i18n="teams.teams">teams</span>
@@ -198,7 +200,13 @@
                   </fieldset>
                 </div>
               </div>
-              <div id = "question_teams"></div>
+              <fieldset id="question_teams_fieldset" class="score-entry-team-fieldset">
+                <legend class="score-entry-team-legend">
+                  <span data-i18n="score_entry.team">Team</span>
+                  <button id="manage_teams_button" class="config-add-btn score-entry-manage-teams" type="button" onclick="showTeamManagerDialog()" data-i18n="teams.manage_button"></button>
+                </legend>
+                <div id="question_teams"></div>
+              </fieldset>
             </div>
           </div><br>
           <div class="nav-buttons">
@@ -315,7 +323,7 @@
     </div>
     <div id="scores_tabs_placeholder"></div>
     <footer><p><span data-i18n="footer.feedback">Have an idea to make this better?</span> <a target="_blank" href="https://github.com/antgiant/PBE_Score_Keeper/issues" data-i18n="footer.let_me_know">Let me know</a>.</p>
-    <p><center data-i18n="footer.version" data-i18n-version="2.15.10">v 2.15.10</center></p></footer>
+    <p><center data-i18n="footer.version" data-i18n-version="2.16.1">v 2.16.1</center></p></footer>
 </body>
 
 </html>
