@@ -575,6 +575,12 @@ tr:nth-child(even){
   font-weight: 600;
   box-shadow: 0 8px 18px rgba(0, 0, 0, 0.12);
 }
+[data-ui-mode="beta"] .config-select {
+  border-radius: 999px;
+  letter-spacing: 0.02em;
+  font-weight: 600;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.12);
+}
 [data-ui-mode="beta"] .score-entry-fields {
   gap: 0.75rem;
 }
@@ -812,6 +818,16 @@ tr:nth-child(even){
   cursor: pointer;
   font-size: 0.95rem;
 }
+.config-select {
+  display: inline-block;
+  padding: 0.4rem 0.8rem;
+  border: 1px solid var(--border-color);
+  background: var(--control-bg);
+  color: var(--text-color);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.95rem;
+}
 
 /* Navigation buttons row */
 .nav-buttons {
@@ -825,6 +841,13 @@ tr:nth-child(even){
   background: var(--row-alt);
 }
 .config-add-btn:focus {
+  outline: 2px solid var(--link-color);
+  outline-offset: 2px;
+}
+.config-select:hover {
+  background: var(--row-alt);
+}
+.config-select:focus {
   outline: 2px solid var(--link-color);
   outline-offset: 2px;
 }

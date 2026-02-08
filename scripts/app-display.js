@@ -806,7 +806,7 @@ function sync_data_to_display() {
   var syncStatuses = (typeof getSessionSyncStatuses === 'function') ? getSessionSyncStatuses() : {};
 
   //Set up Session quick navigation
-  var session_quick_nav = '<select name="session_quick_nav" id="session_quick_nav" onchange="local_data_update(this)"">';
+  var session_quick_nav = '<select name="session_quick_nav" id="session_quick_nav" class="config-select" onchange="local_data_update(this)"">';
   let temp_count = (currentSessionIndex>session_count?currentSessionIndex:session_count);
   for (let i=1; i <= temp_count; i++) {
     var syncIndicator = syncStatuses[i] ? ' (🔄)' : '';
@@ -1192,7 +1192,7 @@ function sync_data_to_display() {
   }
 
   //Set up Question quick navigation
-  let question_quick_nav = '<select name="question_quick_nav" id="question_quick_nav" onchange="local_data_update(this)"">';
+  let question_quick_nav = '<select name="question_quick_nav" id="question_quick_nav" class="config-select" onchange="local_data_update(this)"">';
   temp_count = (current_question>question_count?current_question:question_count);
   for (let i=1; i <= temp_count; i++) {
     let temp_ignore_question = getQuestionIgnore(i);
