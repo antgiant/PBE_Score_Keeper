@@ -558,7 +558,8 @@ tr:nth-child(even){
 .beta-session-fieldset {
   display: none;
 }
-[data-ui-mode="beta"] .beta-session-legend {
+[data-ui-mode="beta"] .beta-session-legend,
+[data-ui-mode="beta"] .beta-question-legend {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -568,12 +569,38 @@ tr:nth-child(even){
   font-weight: 700;
   padding: 0 0.5rem;
 }
+[data-ui-mode="beta"] .beta-question-fieldset {
+  display: block;
+  border: 1px solid var(--border-color);
+  background: var(--panel-bg);
+  margin: 0.75rem 0;
+}
+.beta-question-fieldset {
+  display: none;
+}
+[data-ui-mode="beta"] .beta-question-legend .config-add-btn {
+  min-width: 2rem;
+  height: 2rem;
+  padding: 0 0.6rem;
+  border-radius: 999px;
+}
 [data-ui-mode="beta"] .beta-session-title {
   flex: 1;
   text-align: center;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+[data-ui-mode="beta"] .beta-question-slot {
+  margin-top: 0.5rem;
+}
+[data-ui-mode="beta"] .beta-question-bottom-slot {
+  margin-top: 0.75rem;
+}
+[data-ui-mode="beta"] .beta-question-bottom-slot .nav-buttons {
+  justify-content: space-between;
+  flex-wrap: nowrap;
+  width: 100%;
 }
 [data-ui-mode="beta"] .beta-session-nav-btn {
   display: inline-flex;
@@ -638,6 +665,12 @@ tr:nth-child(even){
   align-items: center;
 }
 [data-ui-mode="beta"] .score-entry-advanced {
+  display: none;
+}
+[data-ui-mode="beta"] .score-entry-top-nav {
+  display: none;
+}
+[data-ui-mode="beta"] #ignored_question h4 {
   display: none;
 }
 .score-entry-advanced-placeholder {

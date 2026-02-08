@@ -514,6 +514,7 @@ function initialize_rounding_toggle_switch() {
 function initialize_display() {
   initialize_scores_tabs();
   initialize_beta_session_frame();
+  initialize_beta_question_frame();
 
   //Set up Accordion display
   $("#accordion").accordion({
@@ -666,6 +667,115 @@ function initialize_beta_session_frame() {
   sync_frame_for_mode();
 }
 
+function initialize_beta_question_frame() {
+  if (typeof document === "undefined") {
+    return;
+  }
+  var root = document.documentElement;
+  var fieldset = document.getElementById("beta_question_fieldset");
+  var slot = document.getElementById("beta_question_slot");
+  var bottomSlot = document.getElementById("beta_question_bottom_slot");
+  var placeholder = document.getElementById("score_entry_content_body_placeholder");
+  var content = document.getElementById("score_entry_content_body");
+  var bottomNav = document.getElementById("score_entry_bottom_nav");
+  var bottomNavPlaceholder = document.getElementById("score_entry_bottom_nav_placeholder");
+  var prevButton = document.getElementById("previous_question");
+  var nextButton = document.getElementById("next_question");
+  var prevButtonSecondary = document.getElementById("previous_question_2");
+  var nextButtonSecondary = document.getElementById("next_question_2");
+  var prevPlaceholder = document.getElementById("previous_question_placeholder");
+  var nextPlaceholder = document.getElementById("next_question_placeholder");
+  var prevSlot = document.getElementById("beta_question_prev_slot");
+  var nextSlot = document.getElementById("beta_question_next_slot");
+  var titleSpan = document.getElementById("current_question_title_count");
+  var titlePlaceholder = document.getElementById("current_question_title_placeholder");
+  var titleSlot = document.getElementById("beta_question_title_slot");
+  if (!root || !fieldset || !slot || !placeholder || !content) {
+    return;
+  }
+
+  function is_beta_mode_for_question_frame() {
+    return root.getAttribute("data-ui-mode") === "beta";
+  }
+
+  function update_question_nav_labels(useShortLabels) {
+    var prevKey = useShortLabels ? "score_entry.previous_short" : "score_entry.previous";
+    var nextKey = useShortLabels ? "score_entry.next_short" : "score_entry.next";
+    var buttons = [prevButton, prevButtonSecondary];
+    for (var i = 0; i < buttons.length; i++) {
+      if (buttons[i]) {
+        buttons[i].setAttribute("data-i18n", prevKey);
+      }
+    }
+    buttons = [nextButton, nextButtonSecondary];
+    for (var j = 0; j < buttons.length; j++) {
+      if (buttons[j]) {
+        buttons[j].setAttribute("data-i18n", nextKey);
+      }
+    }
+    if (typeof translate_page === "function") {
+      translate_page();
+    }
+  }
+
+  function sync_question_frame_for_mode() {
+    if (is_beta_mode_for_question_frame()) {
+      fieldset.setAttribute("aria-hidden", "false");
+      if (!slot.contains(content)) {
+        slot.appendChild(content);
+      }
+      if (prevSlot && prevButton && prevSlot.firstChild !== prevButton) {
+        prevSlot.appendChild(prevButton);
+      }
+      if (titleSlot && titleSpan && titleSlot.firstChild !== titleSpan) {
+        titleSlot.appendChild(titleSpan);
+      }
+      if (nextSlot && nextButton && nextSlot.firstChild !== nextButton) {
+        nextSlot.appendChild(nextButton);
+      }
+      if (bottomSlot && bottomNav && bottomSlot.firstChild !== bottomNav) {
+        bottomSlot.appendChild(bottomNav);
+      }
+      update_question_nav_labels(true);
+      return;
+    }
+    fieldset.setAttribute("aria-hidden", "true");
+    if (placeholder.parentNode && content.parentNode !== placeholder.parentNode) {
+      placeholder.parentNode.insertBefore(content, placeholder.nextSibling);
+    }
+    if (prevPlaceholder && prevButton && prevPlaceholder.parentNode) {
+      prevPlaceholder.parentNode.insertBefore(prevButton, prevPlaceholder.nextSibling);
+    }
+    if (titlePlaceholder && titleSpan && titlePlaceholder.parentNode) {
+      titlePlaceholder.parentNode.insertBefore(titleSpan, titlePlaceholder.nextSibling);
+    }
+    if (nextPlaceholder && nextButton && nextPlaceholder.parentNode) {
+      nextPlaceholder.parentNode.insertBefore(nextButton, nextPlaceholder.nextSibling);
+    }
+    if (bottomNavPlaceholder && bottomNav && bottomNavPlaceholder.parentNode) {
+      bottomNavPlaceholder.parentNode.insertBefore(bottomNav, bottomNavPlaceholder.nextSibling);
+    }
+    update_question_nav_labels(false);
+  }
+
+  if (typeof MutationObserver === "undefined") {
+    sync_question_frame_for_mode();
+    return;
+  }
+
+  var observer = new MutationObserver(function(mutations) {
+    for (var i = 0; i < mutations.length; i++) {
+      if (mutations[i].attributeName === "data-ui-mode") {
+        sync_question_frame_for_mode();
+        break;
+      }
+    }
+  });
+  observer.observe(root, { attributes: true, attributeFilter: ["data-ui-mode"] });
+
+  sync_question_frame_for_mode();
+}
+
 /**
  * Check if user has meaningful data and show the continue/new session dialog
  */
@@ -723,6 +833,10 @@ function sync_data_to_display() {
     } catch (e) {
       // Ignore errors in test environment
     }
+  }
+
+  if (typeof stateInitialized !== 'undefined' && !stateInitialized) {
+    return;
   }
   
   // Save focus state before any DOM updates to preserve user's editing position
@@ -1480,12 +1594,18 @@ function sync_data_to_display() {
   }
 
   //Change Next Question to New Question if that is reality
+  var useShortQuestionLabels = false;
+  if (typeof document !== "undefined" && document.documentElement) {
+    useShortQuestionLabels = document.documentElement.getAttribute("data-ui-mode") === "beta";
+  }
   if (current_question >= question_count) {
-    $("#next_question").text(t('score_entry.new'));
-    $("#next_question_2").text(t('score_entry.new'));
+    var nextLabelKey = useShortQuestionLabels ? 'score_entry.new_short' : 'score_entry.new';
+    $("#next_question").text(t(nextLabelKey));
+    $("#next_question_2").text(t(nextLabelKey));
   } else {
-    $("#next_question").text(t('score_entry.next'));
-    $("#next_question_2").text(t('score_entry.next'));
+    var nextKey = useShortQuestionLabels ? 'score_entry.next_short' : 'score_entry.next';
+    $("#next_question").text(t(nextKey));
+    $("#next_question_2").text(t(nextKey));
   }
 
   //Disable Next Question Button if max possible points is not set

@@ -186,64 +186,79 @@
             <div id="beta_session_entry_slot" class="beta-session-entry-slot"></div>
           </fieldset>
           <div id="score_entry_content">
-            <div>
-              <div class="nav-buttons">
-                <button class="config-add-btn" id="previous_question" onclick='local_data_update(this)' data-i18n="score_entry.previous">Previous Question</button>
-                <button class="config-add-btn score-entry-advanced-toggle" id="score_entry_advanced_toggle" type="button" data-i18n="score_entry.advanced_toggle" aria-expanded="false" aria-controls="score_entry_advanced_options"></button>
-                <button class="config-add-btn" id="next_question" onclick='local_data_update(this)' data-i18n="score_entry.next">Next Question</button>
-              </div>
-              <br>
-              <div id="score_entry_advanced_placeholder" class="score-entry-advanced-placeholder"></div>
-              <div id="score_entry_advanced_options" class="score-entry-advanced">
-                <button type="button" id="score_entry_reorder_button" class="config-add-btn score-entry-reorder-button" data-i18n="score_entry.reorder_entry" aria-haspopup="dialog"></button>
-                <div id="question_quick_nav_container" class="question-quick-nav-container"></div>
-                <label><span id="ignore_question_warning" style="font-size: xx-large;display:none">🚫</span><input type="checkbox" id="ignore_question" onchange="local_data_update(this)"><span data-i18n="score_entry.ignore">Ignore this Question in Score Calculations</span></label>
-                <label><input type="checkbox" id="extra_credit" onchange="local_data_update(this)"><span data-i18n="score_entry.extra_credit">Allow Extra Credit</span></label>
-              </div>
-              <div id="ignored_question">
-                <h4><span id="current_question_title_count" ></span></h4>
-                <div id="score_entry_fields" class="score-entry-fields">
-                  <div class="score-entry-field" data-field="points">
-                    <button type="button" class="score-entry-drag-handle drag-handle" draggable="true" data-i18n-title="score_entry.reorder_points" data-i18n-aria-label="score_entry.reorder_points">&equiv; &#8597;</button>
-                    <fieldset>
-                      <legend id="points_legend">
-                        <span data-i18n="points.possible">Possible Points</span>
-                        <span class="max-points-legend-controls">
-                          <span class="max-points-legend-open">(</span>
-                          <span id="max_points_controls_slot" class="max-points-controls-slot"></span>
-                          <span class="max-points-legend-close">)</span>
-                        </span>
-                      </legend>
-                      <div id="max_points_notice_slot" class="max-points-notice-slot"></div>
-                      <div id="question_score">
-                      </div>
-                    </fieldset>
-                  </div>
-                  <div class="score-entry-field" data-field="block" id="score_entry_block_container">
-                    <button type="button" class="score-entry-drag-handle drag-handle" draggable="true" data-i18n-title="score_entry.reorder_block" data-i18n-aria-label="score_entry.reorder_block">&equiv; &#8597;</button>
-                    <fieldset id="question_block_fieldset">
-                      <legend class="score-entry-block-legend">
-                        <span id="score_entry_block_label" data-i18n="score_entry.block_group" data-i18n-count="1">Block/Group</span>
-                        <button id="manage_blocks_button" class="config-add-btn score-entry-manage-blocks" type="button" onclick="showBlockManagerDialog()" data-i18n="blocks.manage_button"></button>
-                      </legend>
-                      <div id="question_block"></div>
-                    </fieldset>
-                  </div>
-                  <div class="score-entry-field score-entry-team-container" data-field="teams">
-                    <fieldset id="question_teams_fieldset" class="score-entry-team-fieldset">
-                      <legend class="score-entry-team-legend">
-                        <span id="score_entry_team_label" data-i18n="score_entry.team" data-i18n-count="1">Team</span>
-                        <button id="manage_teams_button" class="config-add-btn score-entry-manage-teams" type="button" onclick="showTeamManagerDialog()" data-i18n="teams.manage_button"></button>
-                      </legend>
-                      <div id="question_teams"></div>
-                    </fieldset>
+            <div id="score_entry_content_body_placeholder"></div>
+            <fieldset id="beta_question_fieldset" class="beta-question-fieldset" aria-hidden="true">
+              <legend class="beta-question-legend">
+                <span id="beta_question_prev_slot"></span>
+                <span id="beta_question_title_slot"></span>
+                <span id="beta_question_next_slot"></span>
+              </legend>
+              <div id="beta_question_slot" class="beta-question-slot"></div>
+              <div id="beta_question_bottom_slot" class="beta-question-bottom-slot"></div>
+            </fieldset>
+            <div id="score_entry_content_body">
+              <div>
+                <div class="nav-buttons score-entry-top-nav">
+                  <span id="previous_question_placeholder"></span>
+                  <button class="config-add-btn" id="previous_question" onclick='local_data_update(this)' data-i18n="score_entry.previous">Previous Question</button>
+                  <button class="config-add-btn score-entry-advanced-toggle" id="score_entry_advanced_toggle" type="button" data-i18n="score_entry.advanced_toggle" aria-expanded="false" aria-controls="score_entry_advanced_options"></button>
+                  <span id="next_question_placeholder"></span>
+                  <button class="config-add-btn" id="next_question" onclick='local_data_update(this)' data-i18n="score_entry.next">Next Question</button>
+                </div>
+                <br>
+                <div id="score_entry_advanced_placeholder" class="score-entry-advanced-placeholder"></div>
+                <div id="score_entry_advanced_options" class="score-entry-advanced">
+                  <button type="button" id="score_entry_reorder_button" class="config-add-btn score-entry-reorder-button" data-i18n="score_entry.reorder_entry" aria-haspopup="dialog"></button>
+                  <div id="question_quick_nav_container" class="question-quick-nav-container"></div>
+                  <label><span id="ignore_question_warning" style="font-size: xx-large;display:none">🚫</span><input type="checkbox" id="ignore_question" onchange="local_data_update(this)"><span data-i18n="score_entry.ignore">Ignore this Question in Score Calculations</span></label>
+                  <label><input type="checkbox" id="extra_credit" onchange="local_data_update(this)"><span data-i18n="score_entry.extra_credit">Allow Extra Credit</span></label>
+                </div>
+                <div id="ignored_question">
+                  <h4><span id="current_question_title_placeholder"></span><span id="current_question_title_count" ></span></h4>
+                  <div id="score_entry_fields" class="score-entry-fields">
+                    <div class="score-entry-field" data-field="points">
+                      <button type="button" class="score-entry-drag-handle drag-handle" draggable="true" data-i18n-title="score_entry.reorder_points" data-i18n-aria-label="score_entry.reorder_points">&equiv; &#8597;</button>
+                      <fieldset>
+                        <legend id="points_legend">
+                          <span data-i18n="points.possible">Possible Points</span>
+                          <span class="max-points-legend-controls">
+                            <span class="max-points-legend-open">(</span>
+                            <span id="max_points_controls_slot" class="max-points-controls-slot"></span>
+                            <span class="max-points-legend-close">)</span>
+                          </span>
+                        </legend>
+                        <div id="max_points_notice_slot" class="max-points-notice-slot"></div>
+                        <div id="question_score">
+                        </div>
+                      </fieldset>
+                    </div>
+                    <div class="score-entry-field" data-field="block" id="score_entry_block_container">
+                      <button type="button" class="score-entry-drag-handle drag-handle" draggable="true" data-i18n-title="score_entry.reorder_block" data-i18n-aria-label="score_entry.reorder_block">&equiv; &#8597;</button>
+                      <fieldset id="question_block_fieldset">
+                        <legend class="score-entry-block-legend">
+                          <span id="score_entry_block_label" data-i18n="score_entry.block_group" data-i18n-count="1">Block/Group</span>
+                          <button id="manage_blocks_button" class="config-add-btn score-entry-manage-blocks" type="button" onclick="showBlockManagerDialog()" data-i18n="blocks.manage_button"></button>
+                        </legend>
+                        <div id="question_block"></div>
+                      </fieldset>
+                    </div>
+                    <div class="score-entry-field score-entry-team-container" data-field="teams">
+                      <fieldset id="question_teams_fieldset" class="score-entry-team-fieldset">
+                        <legend class="score-entry-team-legend">
+                          <span id="score_entry_team_label" data-i18n="score_entry.team" data-i18n-count="1">Team</span>
+                          <button id="manage_teams_button" class="config-add-btn score-entry-manage-teams" type="button" onclick="showTeamManagerDialog()" data-i18n="teams.manage_button"></button>
+                        </legend>
+                        <div id="question_teams"></div>
+                      </fieldset>
+                    </div>
                   </div>
                 </div>
+              </div><br>
+              <div id="score_entry_bottom_nav_placeholder"></div>
+              <div id="score_entry_bottom_nav" class="nav-buttons">
+                <button class="config-add-btn" id="previous_question_2" onclick='local_data_update(this)' data-i18n="score_entry.previous">Previous Question</button>
+                <button class="config-add-btn" id="next_question_2" onclick='local_data_update(this)' data-i18n="score_entry.next">Next Question</button>
               </div>
-            </div><br>
-            <div class="nav-buttons">
-              <button class="config-add-btn" id="previous_question_2" onclick='local_data_update(this)' data-i18n="score_entry.previous">Previous Question</button>
-              <button class="config-add-btn" id="next_question_2" onclick='local_data_update(this)' data-i18n="score_entry.next">Next Question</button>
             </div>
           </div>
         </div>
@@ -356,7 +371,7 @@
     </div>
     <div id="scores_tabs_placeholder"></div>
     <footer><p><span data-i18n="footer.feedback">Have an idea to make this better?</span> <a target="_blank" href="https://github.com/antgiant/PBE_Score_Keeper/issues" data-i18n="footer.let_me_know">Let me know</a>.</p>
-    <p><center data-i18n="footer.version" data-i18n-version="2.18.4">v 2.18.4</center></p></footer>
+    <p><center data-i18n="footer.version" data-i18n-version="2.18.11">v 2.18.11</center></p></footer>
 </body>
 
 </html>
