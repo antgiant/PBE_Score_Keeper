@@ -662,6 +662,21 @@ tr:nth-child(even){
   outline: 2px solid var(--link-color);
   outline-offset: 2px;
 }
+.score-entry-manage-blocks {
+  display: none;
+}
+:root[data-ui-mode="beta"] .score-entry-block-legend {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+:root[data-ui-mode="beta"] .score-entry-manage-blocks {
+  display: inline-flex;
+  margin-top: 0;
+  padding: 0.25rem 0.6rem;
+  font-size: 0.85rem;
+}
 .score-entry-advanced-toggle {
   display: none;
 }
@@ -1027,6 +1042,19 @@ tr:nth-child(even){
   background: #f44336;
   color: #fff;
   border-color: #f44336;
+}
+.block-manager-dialog {
+  max-width: 640px;
+}
+.block-manager-dialog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+.block-manager-dialog-body .config-fieldset {
+  margin-bottom: 0;
 }
 
 /* Change Log and Import/Export Dialogs */

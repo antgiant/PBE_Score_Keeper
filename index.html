@@ -35,6 +35,7 @@
   <script src="scripts/app-sync-crypto.js"></script>
   <script src="scripts/app-sync.js"></script>
   <script src="scripts/app-history.js"></script>
+  <script src="scripts/app-block-manager.js"></script>
   <script src="scripts/app-display.js"></script>
   <script src="scripts/app-storage.js"></script>
   <script src="scripts/app.js"></script>
@@ -125,7 +126,8 @@
           <div id="team_minimum_notice" class="config-minimum-notice" style="display:none;" data-i18n="teams.minimum_notice">At least 1 team is required</div>
           <button id="total_teams_increase" class="config-add-btn" onclick='local_data_update(this)' data-i18n="teams.add_team">Add Team</button>
         </fieldset>
-        <fieldset class="config-fieldset">
+        <div id="blocks_fieldset_placeholder"></div>
+        <fieldset class="config-fieldset" id="blocks_fieldset">
           <legend id="blocks_legend" data-i18n="blocks.title_other">Set up your Blocks</legend>
           <div class="config-count-row" style="display:none;">
             <span id="total_blocks"></span> <span id="total_blocks_text" data-i18n="blocks.blocks">blocks/groups</span>
@@ -188,7 +190,10 @@
                 <div class="score-entry-field" data-field="block" id="score_entry_block_container">
                   <button type="button" class="score-entry-drag-handle drag-handle" draggable="true" data-i18n-title="score_entry.reorder_block" data-i18n-aria-label="score_entry.reorder_block">&equiv; &#8597;</button>
                   <fieldset id="question_block_fieldset">
-                    <legend data-i18n="score_entry.block_group">Block/Group</legend>
+                    <legend class="score-entry-block-legend">
+                      <span data-i18n="score_entry.block_group">Block/Group</span>
+                      <button id="manage_blocks_button" class="config-add-btn score-entry-manage-blocks" type="button" onclick="showBlockManagerDialog()" data-i18n="blocks.manage_button"></button>
+                    </legend>
                     <div id="question_block"></div>
                   </fieldset>
                 </div>
@@ -310,7 +315,7 @@
     </div>
     <div id="scores_tabs_placeholder"></div>
     <footer><p><span data-i18n="footer.feedback">Have an idea to make this better?</span> <a target="_blank" href="https://github.com/antgiant/PBE_Score_Keeper/issues" data-i18n="footer.let_me_know">Let me know</a>.</p>
-    <p><center data-i18n="footer.version" data-i18n-version="2.15.7">v 2.15.7</center></p></footer>
+    <p><center data-i18n="footer.version" data-i18n-version="2.15.10">v 2.15.10</center></p></footer>
 </body>
 
 </html>

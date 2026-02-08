@@ -360,6 +360,7 @@ function initialize_display() {
   initialize_ui_mode_controls();
   initialize_max_points_controls_for_ui_mode();
   initialize_header_menu();
+  initialize_block_manager();
   apply_score_entry_field_order();
   initialize_score_entry_field_reorder();
   initialize_score_entry_advanced_toggle();
