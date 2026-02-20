@@ -337,6 +337,7 @@ register_i18n_language('pig', {
     },
     "sync": {
       "button": "Ync-Say",
+      "title": "Ollaborate-Cay",
       "button_tooltip": "Ollaborate-Cay in-ay eal-ray ime-tay ith-way others-ay",
       "status_offline": "Offline-ay",
       "status_connecting": "Onnecting-Cay...",

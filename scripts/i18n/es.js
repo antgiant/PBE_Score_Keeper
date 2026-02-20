@@ -343,6 +343,7 @@ register_i18n_language('es', {
     },
     "sync": {
       "button": "Sincronizar",
+      "title": "Colaborar",
       "button_tooltip": "Colabora en tiempo real con otros",
       "status_offline": "Desconectado",
       "status_connecting": "Conectando...",

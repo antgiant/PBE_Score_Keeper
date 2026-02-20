@@ -124,6 +124,13 @@
             <button id="new_session" class="config-add-btn" onclick='local_data_update(this)' data-i18n="config.new_session">New Session</button>
             <button id="manage_sessions" class="config-add-btn" onclick='showSessionManagerDialog()' data-i18n="session_manager.manage_button">Manage Sessions</button>
           </div>
+          <fieldset class="config-fieldset beta-sync-fieldset" id="beta_sync_fieldset">
+            <legend class="beta-sync-legend">
+              <span data-i18n="sync.title">Collaborate</span>
+              <a href="#" class="sync-info-link" onclick="showSyncInfoDialog(); return false;" data-i18n-title="sync.info_link_title" data-i18n-aria-label="sync.info_link_title">ⓘ</a>
+            </legend>
+            <div id="beta_sync_button_slot" class="beta-sync-button-slot"></div>
+          </fieldset>
         </fieldset>
         <div id="teams_fieldset_placeholder"></div>
         <fieldset class="config-fieldset" id="teams_fieldset">
@@ -179,9 +186,9 @@
           <div id="score_entry_fieldset_placeholder"></div>
           <fieldset id="beta_session_fieldset" class="beta-session-fieldset" aria-hidden="true">
             <legend class="beta-session-legend">
-              <button id="session_prev_button" class="beta-session-nav-btn" type="button" onclick="local_data_update(this)" data-i18n-aria-label="session_nav.previous" data-i18n-title="session_nav.previous">&lt;</button>
+              <button id="session_prev_button" class="beta-session-nav-btn" type="button" onclick="local_data_update(this)" data-i18n-aria-label="session_nav.previous" data-i18n-title="session_nav.previous">⏮️📜</button>
               <span id="beta_session_title" class="beta-session-title"></span>
-              <button id="session_next_button" class="beta-session-nav-btn" type="button" onclick="local_data_update(this)" data-i18n-aria-label="session_nav.next" data-i18n-title="session_nav.next">&gt;</button>
+              <button id="session_next_button" class="beta-session-nav-btn" type="button" onclick="local_data_update(this)" data-i18n-aria-label="session_nav.next" data-i18n-title="session_nav.next">📜⏭️</button>
             </legend>
             <div id="beta_session_entry_slot" class="beta-session-entry-slot"></div>
           </fieldset>
@@ -371,7 +378,7 @@
     </div>
     <div id="scores_tabs_placeholder"></div>
     <footer><p><span data-i18n="footer.feedback">Have an idea to make this better?</span> <a target="_blank" href="https://github.com/antgiant/PBE_Score_Keeper/issues" data-i18n="footer.let_me_know">Let me know</a>.</p>
-    <p><center data-i18n="footer.version" data-i18n-version="2.18.16">v 2.18.16</center></p></footer>
+    <p><center data-i18n="footer.version" data-i18n-version="2.18.20">v 2.18.20</center></p></footer>
 </body>
 
 </html>

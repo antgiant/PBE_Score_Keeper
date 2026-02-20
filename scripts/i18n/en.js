@@ -342,6 +342,7 @@ register_i18n_language('en', {
     },
     "sync": {
       "button": "Sync",
+      "title": "Collaborate",
       "button_tooltip": "Collaborate in real-time with others",
       "status_offline": "Offline",
       "status_connecting": "Connecting...",

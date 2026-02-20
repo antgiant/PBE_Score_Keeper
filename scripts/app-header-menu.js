@@ -20,6 +20,8 @@ function initialize_header_menu() {
   var scoreEntryReorderButton = document.getElementById("score_entry_reorder_button");
   var syncButton = document.getElementById("sync_button");
   var syncButtonSlot = document.getElementById("sync_button_slot");
+  var syncButtonBetaSlot = document.getElementById("beta_sync_button_slot");
+  var betaSyncFieldset = document.getElementById("beta_sync_fieldset");
   if (!root || !toggle || !panel) {
     return;
   }
@@ -76,6 +78,12 @@ function initialize_header_menu() {
       return;
     }
     if (is_beta_mode()) {
+      if (betaSyncFieldset && betaSyncFieldset.parentNode === sessionFieldset) {
+        if (betaSyncFieldset.previousSibling !== scoreEntryReorderButton) {
+          sessionFieldset.insertBefore(scoreEntryReorderButton, betaSyncFieldset);
+        }
+        return;
+      }
       if (sessionFieldset.lastChild !== scoreEntryReorderButton) {
         sessionFieldset.appendChild(scoreEntryReorderButton);
       }
@@ -87,17 +95,23 @@ function initialize_header_menu() {
   }
 
   function move_sync_button_for_mode() {
-    if (!syncButton || !syncButtonSlot || !sessionFieldset) {
+    if (!syncButton || !syncButtonSlot) {
       return;
     }
     if (is_beta_mode()) {
-      var legend = sessionFieldset.querySelector("legend");
-      if (legend) {
-        if (legend.nextSibling !== syncButton) {
-          sessionFieldset.insertBefore(syncButton, legend.nextSibling);
+      if (syncButtonBetaSlot) {
+        if (!syncButtonBetaSlot.contains(syncButton)) {
+          syncButtonBetaSlot.appendChild(syncButton);
         }
-      } else if (sessionFieldset.firstChild !== syncButton) {
-        sessionFieldset.insertBefore(syncButton, sessionFieldset.firstChild);
+      } else if (sessionFieldset) {
+        var legend = sessionFieldset.querySelector("legend");
+        if (legend) {
+          if (legend.nextSibling !== syncButton) {
+            sessionFieldset.insertBefore(syncButton, legend.nextSibling);
+          }
+        } else if (sessionFieldset.firstChild !== syncButton) {
+          sessionFieldset.insertBefore(syncButton, sessionFieldset.firstChild);
+        }
       }
       return;
     }

@@ -343,6 +343,7 @@ register_i18n_language('fr', {
     },
     "sync": {
       "button": "Synchroniser",
+      "title": "Collaborer",
       "button_tooltip": "Collaborez en temps réel avec d'autres",
       "status_offline": "Hors ligne",
       "status_connecting": "Connexion...",
