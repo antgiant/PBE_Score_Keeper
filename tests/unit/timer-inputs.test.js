@@ -11,11 +11,15 @@ function getInputTagById(html, id) {
 
 test('timer setting inputs use mobile numeric keypad hints', () => {
   const html = fs.readFileSync(path.join(__dirname, '../../index.html'), 'utf8');
+  const autoStartInput = getInputTagById(html, 'timer_auto_start');
   const firstPointInput = getInputTagById(html, 'timer_first_point_seconds');
   const subsequentInput = getInputTagById(html, 'timer_subsequent_point_seconds');
 
+  assert.ok(autoStartInput, 'expected auto-start timer input');
   assert.ok(firstPointInput, 'expected first-point timer input');
   assert.ok(subsequentInput, 'expected subsequent-point timer input');
+
+  assert.match(autoStartInput, /\btype=["']checkbox["']/);
 
   assert.match(firstPointInput, /\btype=["']number["']/);
   assert.match(firstPointInput, /\bmin=["']0["']/);
@@ -28,4 +32,6 @@ test('timer setting inputs use mobile numeric keypad hints', () => {
   assert.match(subsequentInput, /\bstep=["']1["']/);
   assert.match(subsequentInput, /\binputmode=["']numeric["']/);
   assert.match(subsequentInput, /\bpattern=["']\[0-9\]\*["']/);
+
+  assert.equal(html.includes('id="question_timer_stop"'), false, 'timer stop button should be removed');
 });

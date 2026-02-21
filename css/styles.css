@@ -260,6 +260,7 @@ fieldset {
   border-radius: 5px;
 }
 .question-timer-panel.question-timer-panel-expired .question-timer-display,
+.question-timer-panel.question-timer-panel-expired .question-timer-display-line button,
 .question-timer-panel.question-timer-panel-expired .question-timer-buttons button {
   color: var(--timer-expired-text);
 }
@@ -267,12 +268,15 @@ fieldset {
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 0.35rem;
   margin: 0.25rem 0 0.45rem;
 }
 .question-timer-display {
   font-weight: 700;
   font-size: 1.35rem;
   font-variant-numeric: tabular-nums;
+  min-width: 2.6ch;
+  text-align: center;
 }
 .question-timer-buttons {
   display: flex;
@@ -281,6 +285,7 @@ fieldset {
   gap: 0.35rem;
   flex-wrap: wrap;
 }
+.question-timer-display-line button,
 .question-timer-buttons button {
   appearance: none;
   background: transparent !important;
@@ -294,10 +299,12 @@ fieldset {
   margin: 0;
   min-width: 0;
 }
+.question-timer-display-line button:disabled,
 .question-timer-buttons button:disabled {
   opacity: 0.45;
   cursor: not-allowed;
 }
+.question-timer-display-line button:focus-visible,
 .question-timer-buttons button:focus-visible {
   outline: 2px solid currentColor;
   outline-offset: 2px;

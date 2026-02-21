@@ -198,6 +198,10 @@
             </label>
           </div>
           <div class="timer-settings">
+            <label for="timer_auto_start">
+              <span data-i18n="timer.auto_start">Auto start timer when score is selected</span>
+              <input type="checkbox" id="timer_auto_start" onchange="local_data_update(this)">
+            </label>
             <label for="timer_first_point_seconds">
               <span data-i18n="timer.first_point_seconds">Seconds for first point</span>
               <input type="number" id="timer_first_point_seconds" min="0" step="1" inputmode="numeric" pattern="[0-9]*" onchange="local_data_update(this)">
@@ -273,12 +277,13 @@
                       <fieldset id="question_timer_panel" class="question-timer-panel" style="display:none;">
                         <legend data-i18n="timer.time_remaining">Time Remaining</legend>
                         <div class="question-timer-display-line">
+                          <button id="question_timer_decrease" type="button" onclick="local_data_update(this)" data-i18n-title="timer.remove_time" data-i18n-aria-label="timer.remove_time">-</button>
                           <span id="question_timer_display" class="question-timer-display">00:00</span>
+                          <button id="question_timer_increase" type="button" onclick="local_data_update(this)" data-i18n-title="timer.add_time" data-i18n-aria-label="timer.add_time">+</button>
                         </div>
                         <div class="question-timer-buttons">
                           <button id="question_timer_restart" type="button" onclick="local_data_update(this)" data-i18n="timer.restart">⏮️</button>
                           <button id="question_timer_play_pause" type="button" onclick="local_data_update(this)">⏯️</button>
-                          <button id="question_timer_stop" type="button" onclick="local_data_update(this)" data-i18n="timer.stop">⏹️</button>
                         </div>
                       </fieldset>
                     </div>
@@ -421,7 +426,7 @@
     </div>
     <div id="scores_tabs_placeholder"></div>
     <footer><p><span data-i18n="footer.feedback">Have an idea to make this better?</span> <a target="_blank" href="https://github.com/antgiant/PBE_Score_Keeper/issues" data-i18n="footer.let_me_know">Let me know</a>.</p>
-    <p><center data-i18n="footer.version" data-i18n-version="2.18.31">v 2.18.31</center></p></footer>
+    <p><center data-i18n="footer.version" data-i18n-version="2.18.34">v 2.18.34</center></p></footer>
 </body>
 
 </html>

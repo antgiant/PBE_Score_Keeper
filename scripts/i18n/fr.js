@@ -106,12 +106,15 @@ register_i18n_language('fr', {
     "timer": {
       "title": "Minuteur de question",
       "enable": "Activer le minuteur",
+      "auto_start": "Démarrer automatiquement le minuteur lors de la sélection du score",
       "toggle_label": "Minuteur",
       "enabled": "Activé",
       "disabled": "Désactivé",
       "first_point_seconds": "Secondes pour le premier point",
       "subsequent_point_seconds": "Secondes pour chaque point supplémentaire",
       "time_remaining": "Temps restant",
+      "remove_time": "Retirer 1 seconde",
+      "add_time": "Ajouter 1 seconde",
       "restart": "⏮️",
       "stop": "⏹️"
     },

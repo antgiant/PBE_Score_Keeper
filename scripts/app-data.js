@@ -309,6 +309,14 @@ function update_data_element(updated_id, new_value) {
       stop_question_timer_from_user();
     }
   }
+  //Enable or disable auto-start for the timer (local only)
+  else if (updated_id == "timer_auto_start") {
+    const timerAutoStart = $("#timer_auto_start").prop("checked") === true;
+    const sessionId = session.get('id');
+    if (sessionId && typeof set_local_timer_auto_start === 'function') {
+      set_local_timer_auto_start(sessionId, timerAutoStart);
+    }
+  }
   //Update timer seconds for first point
   else if (updated_id.search(timer_first_point_seconds_check) > -1) {
     const sessionDoc = getActiveSessionDoc();
@@ -341,10 +349,11 @@ function update_data_element(updated_id, new_value) {
       toggle_question_timer_play_pause();
     }
   }
-  //Stop question timer
-  else if (updated_id == "question_timer_stop") {
-    if (typeof stop_question_timer_from_user === 'function') {
-      stop_question_timer_from_user();
+  //Adjust question timer duration and persist per-question adjustment in Yjs
+  else if (updated_id == "question_timer_decrease" || updated_id == "question_timer_increase") {
+    const delta = updated_id == "question_timer_increase" ? 1 : -1;
+    if (typeof adjust_question_timer_for_current_question === 'function') {
+      adjust_question_timer_for_current_question(delta);
     }
   }
   //Update Ignore Question Status

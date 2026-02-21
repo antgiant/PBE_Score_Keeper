@@ -105,12 +105,15 @@ register_i18n_language('en', {
     "timer": {
       "title": "Question Timer",
       "enable": "Enable timer",
+      "auto_start": "Auto start timer when score is selected",
       "toggle_label": "Timer",
       "enabled": "Enabled",
       "disabled": "Disabled",
       "first_point_seconds": "Seconds for first point",
       "subsequent_point_seconds": "Seconds for each additional point",
       "time_remaining": "Time Remaining",
+      "remove_time": "Remove 1 second",
+      "add_time": "Add 1 second",
       "restart": "⏮️",
       "stop": "⏹️"
     },

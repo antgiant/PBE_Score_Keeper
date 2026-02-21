@@ -1204,8 +1204,37 @@ function updateQuestionScore(sessionDoc, session, questionId, score) {
   
   sessionDoc.transact(() => {
     question.set('score', score);
+    question.delete('timerAdjustmentSeconds');
   }, 'local');
   
+  return true;
+}
+
+/**
+ * Update a question's timer adjustment (seconds, can be negative)
+ * @param {Y.Doc} sessionDoc - The session Y.Doc
+ * @param {Y.Map} session - The session Y.Map
+ * @param {string} questionId - Question UUID
+ * @param {number} timerAdjustmentSeconds - Adjustment in seconds
+ * @returns {boolean} True if updated, false if not found/invalid
+ */
+function updateQuestionTimerAdjustment(sessionDoc, session, questionId, timerAdjustmentSeconds) {
+  if (!isUUIDSession(session)) return false;
+
+  const question = getQuestionById(session, questionId);
+  if (!question || isDeleted(question)) return false;
+
+  const normalizedValue = Math.floor(Number(timerAdjustmentSeconds));
+  if (!Number.isFinite(normalizedValue)) return false;
+
+  sessionDoc.transact(() => {
+    if (normalizedValue === 0) {
+      question.delete('timerAdjustmentSeconds');
+    } else {
+      question.set('timerAdjustmentSeconds', normalizedValue);
+    }
+  }, 'local');
+
   return true;
 }
 

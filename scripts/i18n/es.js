@@ -106,12 +106,15 @@ register_i18n_language('es', {
     "timer": {
       "title": "Temporizador de pregunta",
       "enable": "Activar temporizador",
+      "auto_start": "Iniciar temporizador automáticamente al seleccionar puntuación",
       "toggle_label": "Temporizador",
       "enabled": "Activado",
       "disabled": "Desactivado",
       "first_point_seconds": "Segundos para el primer punto",
       "subsequent_point_seconds": "Segundos por cada punto adicional",
       "time_remaining": "Tiempo restante",
+      "remove_time": "Restar 1 segundo",
+      "add_time": "Sumar 1 segundo",
       "restart": "⏮️",
       "stop": "⏹️"
     },

@@ -966,14 +966,17 @@ test('updateQuestionScore changes question max points', () => {
   
   const questions = context.getOrderedQuestions(session);
   const questionId = questions[0].id;
+  const question = context.getQuestionById(session, questionId);
+  question.set('timerAdjustmentSeconds', 3);
   
   // Update score
   const result = context.updateQuestionScore(doc, session, questionId, 15);
   assert.equal(result, true, 'Should return true on successful update');
   
   // Verify score changed
-  const question = context.getQuestionById(session, questionId);
-  assert.equal(question.get('score'), 15);
+  const updatedQuestion = context.getQuestionById(session, questionId);
+  assert.equal(updatedQuestion.get('score'), 15);
+  assert.equal(updatedQuestion.get('timerAdjustmentSeconds'), undefined);
 });
 
 test('updateQuestionBlock changes question block assignment', () => {

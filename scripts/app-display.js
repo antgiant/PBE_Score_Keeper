@@ -578,6 +578,10 @@ function get_timer_enabled_storage_key(sessionId) {
   return "pbe_timer_enabled_" + sessionId;
 }
 
+function get_timer_auto_start_storage_key(sessionId) {
+  return "pbe_timer_auto_start_" + sessionId;
+}
+
 function get_local_timer_enabled(sessionId) {
   if (!sessionId || typeof localStorage === "undefined" || !localStorage) {
     return true;
@@ -604,6 +608,43 @@ function set_local_timer_enabled(sessionId, enabled) {
   }
 }
 
+function get_local_timer_auto_start(sessionId) {
+  if (!sessionId || typeof localStorage === "undefined" || !localStorage) {
+    return false;
+  }
+  try {
+    var storedValue = localStorage.getItem(get_timer_auto_start_storage_key(sessionId));
+    if (storedValue === null) {
+      return false;
+    }
+    return storedValue === "true";
+  } catch (error) {
+    return false;
+  }
+}
+
+function set_local_timer_auto_start(sessionId, autoStart) {
+  if (!sessionId || typeof localStorage === "undefined" || !localStorage) {
+    return;
+  }
+  try {
+    localStorage.setItem(get_timer_auto_start_storage_key(sessionId), autoStart ? "true" : "false");
+  } catch (error) {
+    // Ignore storage errors and keep runtime behavior unchanged.
+  }
+}
+
+function get_question_timer_adjustment_seconds(question) {
+  if (!question || typeof question.get !== "function") {
+    return 0;
+  }
+  var adjustment = Math.floor(Number(question.get("timerAdjustmentSeconds")));
+  if (!Number.isFinite(adjustment)) {
+    return 0;
+  }
+  return adjustment;
+}
+
 function get_timer_config_values(session, config) {
   var firstPointDefault = (typeof TIMER_DEFAULT_FIRST_POINT_SECONDS !== "undefined") ? TIMER_DEFAULT_FIRST_POINT_SECONDS : 30;
   var subsequentDefault = (typeof TIMER_DEFAULT_SUBSEQUENT_POINT_SECONDS !== "undefined") ? TIMER_DEFAULT_SUBSEQUENT_POINT_SECONDS : 10;
@@ -611,23 +652,34 @@ function get_timer_config_values(session, config) {
   if (!config) {
     return {
       enabled: get_local_timer_enabled(sessionId),
+      autoStart: get_local_timer_auto_start(sessionId),
       firstPointSeconds: firstPointDefault,
       subsequentPointSeconds: subsequentDefault
     };
   }
   return {
     enabled: get_local_timer_enabled(sessionId),
+    autoStart: get_local_timer_auto_start(sessionId),
     firstPointSeconds: parse_non_negative_integer(config.get("timerFirstPointSeconds"), firstPointDefault),
     subsequentPointSeconds: parse_non_negative_integer(config.get("timerSubsequentPointSeconds"), subsequentDefault)
   };
 }
 
-function calculate_question_timer_duration_seconds(questionPoints, timerConfig) {
+function calculate_question_timer_base_duration_seconds(questionPoints, timerConfig) {
   var points = parse_non_negative_integer(questionPoints, 0);
   if (points <= 0) {
     return 0;
   }
   return timerConfig.firstPointSeconds + ((points - 1) * timerConfig.subsequentPointSeconds);
+}
+
+function calculate_question_timer_duration_seconds(questionPoints, timerConfig, timerAdjustmentSeconds) {
+  var baseDuration = calculate_question_timer_base_duration_seconds(questionPoints, timerConfig);
+  var adjustment = Math.floor(Number(timerAdjustmentSeconds));
+  if (!Number.isFinite(adjustment)) {
+    adjustment = 0;
+  }
+  return Math.max(0, baseDuration + adjustment);
 }
 
 function format_question_timer_seconds(seconds) {
@@ -688,7 +740,8 @@ function render_question_timer_panel(timerEnabled) {
   $("#question_timer_play_pause").text(question_timer_running ? "⏸️" : "▶️");
   $("#question_timer_restart").prop("disabled", !isEnabled || question_timer_duration_seconds <= 0);
   $("#question_timer_play_pause").prop("disabled", !isEnabled || question_timer_duration_seconds <= 0);
-  $("#question_timer_stop").prop("disabled", !isEnabled || (!question_timer_running && question_timer_remaining_seconds <= 0));
+  $("#question_timer_decrease").prop("disabled", !isEnabled || !question_timer_question_id);
+  $("#question_timer_increase").prop("disabled", !isEnabled || !question_timer_question_id);
 }
 
 function stop_question_timer(resetToDuration) {
@@ -702,7 +755,7 @@ function stop_question_timer(resetToDuration) {
   }
 }
 
-function sync_question_timer_with_current_question(questionId, questionPoints, timerConfig) {
+function sync_question_timer_with_current_question(questionId, questionPoints, timerConfig, timerAdjustmentSeconds) {
   if (!timerConfig.enabled || !questionId) {
     stop_question_timer(false);
     question_timer_duration_seconds = 0;
@@ -712,26 +765,30 @@ function sync_question_timer_with_current_question(questionId, questionPoints, t
     return;
   }
 
-  var nextDuration = calculate_question_timer_duration_seconds(questionPoints, timerConfig);
+  var nextDuration = calculate_question_timer_duration_seconds(questionPoints, timerConfig, timerAdjustmentSeconds);
   if (question_timer_question_id !== questionId) {
     stop_question_timer(true);
     question_timer_question_id = questionId;
     question_timer_duration_seconds = nextDuration;
     question_timer_remaining_seconds = nextDuration;
     question_timer_expired = false;
-  } else if (!question_timer_running && question_timer_duration_seconds !== nextDuration) {
+  } else if (question_timer_duration_seconds !== nextDuration) {
+    var durationDelta = nextDuration - question_timer_duration_seconds;
     question_timer_duration_seconds = nextDuration;
-    question_timer_remaining_seconds = nextDuration;
-    question_timer_expired = false;
-  } else if (question_timer_running && question_timer_duration_seconds !== nextDuration) {
-    question_timer_duration_seconds = nextDuration;
-    question_timer_remaining_seconds = Math.min(question_timer_remaining_seconds, nextDuration);
+    question_timer_remaining_seconds = question_timer_remaining_seconds + durationDelta;
+    if (question_timer_remaining_seconds > nextDuration) {
+      question_timer_remaining_seconds = nextDuration;
+    }
     if (question_timer_remaining_seconds <= 0) {
       question_timer_remaining_seconds = 0;
-      question_timer_running = false;
-      clear_question_timer_interval();
+      if (question_timer_running) {
+        question_timer_running = false;
+        clear_question_timer_interval();
+      }
+      question_timer_expired = nextDuration > 0;
+    } else {
+      question_timer_expired = false;
     }
-    question_timer_expired = false;
   }
 
   render_question_timer_panel(true);
@@ -749,7 +806,7 @@ function get_current_question_for_timer() {
   return questions[current_question_index - 1];
 }
 
-function start_question_timer_from_question_points(questionPoints) {
+function start_question_timer_from_question_points(questionPoints, forceStart) {
   var session = get_current_session();
   if (!session || !isUUIDSession(session)) {
     return;
@@ -759,13 +816,20 @@ function start_question_timer_from_question_points(questionPoints) {
   if (!timerConfig.enabled) {
     return;
   }
+  if (forceStart !== true && timerConfig.autoStart !== true) {
+    return;
+  }
 
   var question = get_current_question_for_timer();
   if (!question) {
     return;
   }
 
-  var duration = calculate_question_timer_duration_seconds(questionPoints, timerConfig);
+  var duration = calculate_question_timer_duration_seconds(
+    questionPoints,
+    timerConfig,
+    get_question_timer_adjustment_seconds(question.data)
+  );
   question_timer_question_id = question.id;
   question_timer_duration_seconds = duration;
   question_timer_remaining_seconds = duration;
@@ -778,7 +842,7 @@ function restart_question_timer_from_current_question() {
   if (!question) {
     return;
   }
-  start_question_timer_from_question_points(question.data.get("score") || 0);
+  start_question_timer_from_question_points(question.data.get("score") || 0, true);
 }
 
 function stop_question_timer_from_user() {
@@ -811,13 +875,51 @@ function toggle_question_timer_play_pause() {
       return;
     }
     question_timer_question_id = question.id;
-    question_timer_duration_seconds = calculate_question_timer_duration_seconds(question.data.get("score") || 0, timerConfig);
+    question_timer_duration_seconds = calculate_question_timer_duration_seconds(
+      question.data.get("score") || 0,
+      timerConfig,
+      get_question_timer_adjustment_seconds(question.data)
+    );
   }
   if (question_timer_remaining_seconds <= 0) {
     question_timer_remaining_seconds = question_timer_duration_seconds;
   }
   question_timer_expired = false;
   begin_question_timer_countdown();
+}
+
+function adjust_question_timer_for_current_question(deltaSeconds) {
+  var delta = Math.floor(Number(deltaSeconds));
+  if (!Number.isFinite(delta) || delta === 0) {
+    return;
+  }
+
+  var session = get_current_session();
+  var sessionDoc = getActiveSessionDoc();
+  if (!session || !sessionDoc || !isUUIDSession(session)) {
+    return;
+  }
+
+  var question = get_current_question_for_timer();
+  if (!question) {
+    return;
+  }
+
+  var config = session.get("config");
+  var timerConfig = get_timer_config_values(session, config);
+  if (!timerConfig.enabled) {
+    return;
+  }
+
+  var questionScore = question.data.get("score") || 0;
+  var baseDuration = calculate_question_timer_base_duration_seconds(questionScore, timerConfig);
+  var minAdjustment = -baseDuration;
+  var currentAdjustment = get_question_timer_adjustment_seconds(question.data);
+  var nextAdjustment = Math.max(minAdjustment, currentAdjustment + delta);
+
+  if (typeof updateQuestionTimerAdjustment === "function") {
+    updateQuestionTimerAdjustment(sessionDoc, session, question.id, nextAdjustment);
+  }
 }
 
 function initialize_display() {
@@ -1183,7 +1285,7 @@ function sync_data_to_display() {
   
   // Get current question data
   var current_question = current_question_index;
-  var currentQuestionObj, current_selected_block, question_max_points, ignore_question, current_question_id;
+  var currentQuestionObj, current_selected_block, question_max_points, ignore_question, current_question_id, question_timer_adjustment_seconds;
   
   if (orderedQuestions.length > 0 && orderedQuestions[orderedQuestions.length - 1].data.get('score') === 0) {
     question_count--;
@@ -1195,6 +1297,7 @@ function sync_data_to_display() {
     current_question_id = q.id;
     question_max_points = currentQuestionObj.get('score');
     ignore_question = currentQuestionObj.get('ignore') || false;
+    question_timer_adjustment_seconds = get_question_timer_adjustment_seconds(currentQuestionObj);
     
     const blockId = currentQuestionObj.get('blockId');
     current_selected_block = 0;
@@ -1213,12 +1316,14 @@ function sync_data_to_display() {
       current_question_id = q.id;
       question_max_points = currentQuestionObj.get('score');
       ignore_question = currentQuestionObj.get('ignore') || false;
+      question_timer_adjustment_seconds = get_question_timer_adjustment_seconds(currentQuestionObj);
       current_selected_block = 0;
     } else {
       question_max_points = 0;
       ignore_question = false;
       current_selected_block = 0;
       current_question_id = null;
+      question_timer_adjustment_seconds = 0;
     }
   }
   
@@ -1848,9 +1953,11 @@ function sync_data_to_display() {
   }
   $("#timer_first_point_seconds").val(timer_config.firstPointSeconds);
   $("#timer_subsequent_point_seconds").val(timer_config.subsequentPointSeconds);
+  $("#timer_auto_start").prop("checked", timer_config.autoStart);
   $("#timer_first_point_seconds").prop("disabled", !timer_config.enabled);
   $("#timer_subsequent_point_seconds").prop("disabled", !timer_config.enabled);
-  sync_question_timer_with_current_question(current_question_id, question_max_points, timer_config);
+  $("#timer_auto_start").prop("disabled", !timer_config.enabled);
+  sync_question_timer_with_current_question(current_question_id, question_max_points, timer_config, question_timer_adjustment_seconds);
 
   const roundingToggle = $("#rounding");
   if (rounding === true) {
