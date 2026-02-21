@@ -485,6 +485,10 @@ tr:nth-child(even){
   background: var(--panel-bg);
   box-shadow: 0 16px 30px rgba(0, 0, 0, 0.18);
   z-index: 2000;
+  max-height: calc(100vh - 5rem);
+  max-height: calc(100dvh - 5rem);
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 [data-ui-mode="beta"] .header-menu-actions {
   display: flex;
