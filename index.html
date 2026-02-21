@@ -200,11 +200,11 @@
           <div class="timer-settings">
             <label for="timer_first_point_seconds">
               <span data-i18n="timer.first_point_seconds">Seconds for first point</span>
-              <input type="number" id="timer_first_point_seconds" min="0" step="1" onchange="local_data_update(this)">
+              <input type="number" id="timer_first_point_seconds" min="0" step="1" inputmode="numeric" pattern="[0-9]*" onchange="local_data_update(this)">
             </label>
             <label for="timer_subsequent_point_seconds">
               <span data-i18n="timer.subsequent_point_seconds">Seconds for each additional point</span>
-              <input type="number" id="timer_subsequent_point_seconds" min="0" step="1" onchange="local_data_update(this)">
+              <input type="number" id="timer_subsequent_point_seconds" min="0" step="1" inputmode="numeric" pattern="[0-9]*" onchange="local_data_update(this)">
             </label>
           </div>
         </fieldset>
@@ -421,7 +421,7 @@
     </div>
     <div id="scores_tabs_placeholder"></div>
     <footer><p><span data-i18n="footer.feedback">Have an idea to make this better?</span> <a target="_blank" href="https://github.com/antgiant/PBE_Score_Keeper/issues" data-i18n="footer.let_me_know">Let me know</a>.</p>
-    <p><center data-i18n="footer.version" data-i18n-version="2.18.28">v 2.18.28</center></p></footer>
+    <p><center data-i18n="footer.version" data-i18n-version="2.18.29">v 2.18.29</center></p></footer>
 </body>
 
 </html>
