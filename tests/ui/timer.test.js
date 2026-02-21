@@ -150,6 +150,8 @@ test('timer play/pause toggle pauses and resumes countdown', () => {
 
 test('question points do not start timer when disabled', () => {
   const { context } = loadApp(buildTimerSeed());
+  const session = context.get_current_session();
+  context.set_local_timer_enabled(session.get('id'), false);
 
   context.update_data_element('question_score_4', '4');
 

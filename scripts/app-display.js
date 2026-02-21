@@ -553,12 +553,16 @@ function get_timer_enabled_storage_key(sessionId) {
 
 function get_local_timer_enabled(sessionId) {
   if (!sessionId || typeof localStorage === "undefined" || !localStorage) {
-    return false;
+    return true;
   }
   try {
-    return localStorage.getItem(get_timer_enabled_storage_key(sessionId)) === "true";
+    var storedValue = localStorage.getItem(get_timer_enabled_storage_key(sessionId));
+    if (storedValue === null) {
+      return true;
+    }
+    return storedValue === "true";
   } catch (error) {
-    return false;
+    return true;
   }
 }
 
