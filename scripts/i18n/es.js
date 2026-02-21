@@ -103,6 +103,18 @@ register_i18n_language('es', {
       "yes": "Redondeado",
       "no": "Exacto"
     },
+    "timer": {
+      "title": "Temporizador de pregunta",
+      "enable": "Activar temporizador",
+      "toggle_label": "Temporizador",
+      "enabled": "Activado",
+      "disabled": "Desactivado",
+      "first_point_seconds": "Segundos para el primer punto",
+      "subsequent_point_seconds": "Segundos por cada punto adicional",
+      "time_remaining": "Tiempo restante",
+      "restart": "⏮️",
+      "stop": "⏹️"
+    },
     "score_entry": {
       "title": "Entrada",
       "previous": "Pregunta Anterior",

@@ -189,6 +189,8 @@ async function migrate_localStorage_to_v3(oldVersion) {
       const normalizedBlockNames = blockNames.length > 0 ? blockNames : null;
       const maxPoints = Number(JSON.parse(upgradedData['session_' + s + '_max_points_per_question'] || '0'));
       const rounding = JSON.parse(upgradedData['session_' + s + '_rounding'] || 'false') === 'true';
+      const timerFirstPointSeconds = (typeof TIMER_DEFAULT_FIRST_POINT_SECONDS !== 'undefined') ? TIMER_DEFAULT_FIRST_POINT_SECONDS : 30;
+      const timerSubsequentPointSeconds = (typeof TIMER_DEFAULT_SUBSEQUENT_POINT_SECONDS !== 'undefined') ? TIMER_DEFAULT_SUBSEQUENT_POINT_SECONDS : 10;
 
       // Create v5 session with deterministic IDs
       createNewSessionV4(sessionDoc, {
@@ -196,6 +198,8 @@ async function migrate_localStorage_to_v3(oldVersion) {
         name: sessionNames[s],
         maxPointsPerQuestion: maxPoints,
         rounding: rounding,
+        timerFirstPointSeconds: timerFirstPointSeconds,
+        timerSubsequentPointSeconds: timerSubsequentPointSeconds,
         teamNames: normalizedTeamNames,
         blockNames: normalizedBlockNames
       });
@@ -438,6 +442,12 @@ async function createNewSession(name) {
   const config = currentSession.get('config');
   const temp_max_points = config.get('maxPointsPerQuestion');
   const temp_rounding = config.get('rounding');
+  const timerFirstPointFallback = (typeof TIMER_DEFAULT_FIRST_POINT_SECONDS !== 'undefined') ? TIMER_DEFAULT_FIRST_POINT_SECONDS : 30;
+  const timerSubsequentFallback = (typeof TIMER_DEFAULT_SUBSEQUENT_POINT_SECONDS !== 'undefined') ? TIMER_DEFAULT_SUBSEQUENT_POINT_SECONDS : 10;
+  const timerFirstValue = Math.floor(Number(config.get('timerFirstPointSeconds')));
+  const timerSubsequentValue = Math.floor(Number(config.get('timerSubsequentPointSeconds')));
+  const temp_timer_first_point_seconds = (Number.isFinite(timerFirstValue) && timerFirstValue >= 0) ? timerFirstValue : timerFirstPointFallback;
+  const temp_timer_subsequent_point_seconds = (Number.isFinite(timerSubsequentValue) && timerSubsequentValue >= 0) ? timerSubsequentValue : timerSubsequentFallback;
   const temp_block_names = get_block_names();
   const temp_team_names = get_team_names();
 
@@ -455,6 +465,8 @@ async function createNewSession(name) {
     name: sessionName,
     maxPointsPerQuestion: temp_max_points,
     rounding: temp_rounding,
+    timerFirstPointSeconds: temp_timer_first_point_seconds,
+    timerSubsequentPointSeconds: temp_timer_subsequent_point_seconds,
     teamNames: temp_team_names.slice(1), // Remove null at index 0
     blockNames: temp_block_names
   });
@@ -520,6 +532,8 @@ async function createEmptySessionForSync(name) {
     const newConfig = new Y.Map();
     newConfig.set('maxPointsPerQuestion', 20);
     newConfig.set('rounding', false);
+    newConfig.set('timerFirstPointSeconds', (typeof TIMER_DEFAULT_FIRST_POINT_SECONDS !== 'undefined') ? TIMER_DEFAULT_FIRST_POINT_SECONDS : 30);
+    newConfig.set('timerSubsequentPointSeconds', (typeof TIMER_DEFAULT_SUBSEQUENT_POINT_SECONDS !== 'undefined') ? TIMER_DEFAULT_SUBSEQUENT_POINT_SECONDS : 10);
     session.set('config', newConfig);
 
     // Empty v5 structures

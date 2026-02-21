@@ -511,6 +511,284 @@ function initialize_rounding_toggle_switch() {
   });
 }
 
+function initialize_timer_toggle_switch() {
+  if (typeof document === "undefined" || typeof document.getElementById !== "function") {
+    return;
+  }
+  var timerContainer = document.getElementById("timer_enabled_toggle");
+  if (!timerContainer || typeof timerContainer.querySelector !== "function") {
+    return;
+  }
+  var switchElement = timerContainer.querySelector(".timer-enabled-switch");
+  var timerEnabledYes = document.getElementById("timer_enabled_yes");
+  var timerEnabledNo = document.getElementById("timer_enabled_no");
+  if (!switchElement || !timerEnabledYes || !timerEnabledNo) {
+    return;
+  }
+
+  function toggleTimerEnabled() {
+    var target = timerEnabledYes.checked ? timerEnabledNo : timerEnabledYes;
+    target.checked = true;
+    local_data_update(target);
+  }
+
+  switchElement.addEventListener("click", function(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    toggleTimerEnabled();
+  });
+}
+
+function parse_non_negative_integer(value, fallback) {
+  var parsed = Math.floor(Number(value));
+  if (!Number.isFinite(parsed) || parsed < 0) {
+    return fallback;
+  }
+  return parsed;
+}
+
+function get_timer_enabled_storage_key(sessionId) {
+  return "pbe_timer_enabled_" + sessionId;
+}
+
+function get_local_timer_enabled(sessionId) {
+  if (!sessionId || typeof localStorage === "undefined" || !localStorage) {
+    return false;
+  }
+  try {
+    return localStorage.getItem(get_timer_enabled_storage_key(sessionId)) === "true";
+  } catch (error) {
+    return false;
+  }
+}
+
+function set_local_timer_enabled(sessionId, enabled) {
+  if (!sessionId || typeof localStorage === "undefined" || !localStorage) {
+    return;
+  }
+  try {
+    localStorage.setItem(get_timer_enabled_storage_key(sessionId), enabled ? "true" : "false");
+  } catch (error) {
+    // Ignore storage errors and keep runtime behavior unchanged.
+  }
+}
+
+function get_timer_config_values(session, config) {
+  var firstPointDefault = (typeof TIMER_DEFAULT_FIRST_POINT_SECONDS !== "undefined") ? TIMER_DEFAULT_FIRST_POINT_SECONDS : 30;
+  var subsequentDefault = (typeof TIMER_DEFAULT_SUBSEQUENT_POINT_SECONDS !== "undefined") ? TIMER_DEFAULT_SUBSEQUENT_POINT_SECONDS : 10;
+  var sessionId = session && typeof session.get === "function" ? session.get("id") : null;
+  if (!config) {
+    return {
+      enabled: get_local_timer_enabled(sessionId),
+      firstPointSeconds: firstPointDefault,
+      subsequentPointSeconds: subsequentDefault
+    };
+  }
+  return {
+    enabled: get_local_timer_enabled(sessionId),
+    firstPointSeconds: parse_non_negative_integer(config.get("timerFirstPointSeconds"), firstPointDefault),
+    subsequentPointSeconds: parse_non_negative_integer(config.get("timerSubsequentPointSeconds"), subsequentDefault)
+  };
+}
+
+function calculate_question_timer_duration_seconds(questionPoints, timerConfig) {
+  var points = parse_non_negative_integer(questionPoints, 0);
+  if (points <= 0) {
+    return 0;
+  }
+  return timerConfig.firstPointSeconds + ((points - 1) * timerConfig.subsequentPointSeconds);
+}
+
+function format_question_timer_seconds(seconds) {
+  var safeSeconds = Math.max(0, parse_non_negative_integer(seconds, 0));
+  return String(safeSeconds);
+}
+
+function clear_question_timer_interval() {
+  if (question_timer_interval) {
+    clearInterval(question_timer_interval);
+    question_timer_interval = null;
+  }
+}
+
+function begin_question_timer_countdown() {
+  clear_question_timer_interval();
+  if (question_timer_duration_seconds <= 0 || question_timer_remaining_seconds <= 0) {
+    question_timer_running = false;
+    if (question_timer_duration_seconds <= 0) {
+      question_timer_expired = false;
+    }
+    render_question_timer_panel(true);
+    return;
+  }
+
+  question_timer_expired = false;
+  question_timer_running = true;
+  question_timer_interval = setInterval(function() {
+    if (question_timer_remaining_seconds > 0) {
+      question_timer_remaining_seconds = question_timer_remaining_seconds - 1;
+    }
+    if (question_timer_remaining_seconds <= 0) {
+      question_timer_remaining_seconds = 0;
+      question_timer_running = false;
+      question_timer_expired = true;
+      clear_question_timer_interval();
+    }
+    render_question_timer_panel(true);
+  }, 1000);
+
+  render_question_timer_panel(true);
+}
+
+function render_question_timer_panel(timerEnabled) {
+  var isEnabled = timerEnabled === true;
+  var timerPanel = $("#question_timer_panel");
+  if (isEnabled) {
+    timerPanel.show();
+  } else {
+    timerPanel.hide();
+  }
+  if (isEnabled && question_timer_expired) {
+    timerPanel.addClass("question-timer-panel-expired");
+  } else {
+    timerPanel.removeClass("question-timer-panel-expired");
+  }
+  $("#question_timer_display").text(format_question_timer_seconds(question_timer_remaining_seconds));
+  $("#question_timer_play_pause").text(question_timer_running ? "⏸️" : "▶️");
+  $("#question_timer_restart").prop("disabled", !isEnabled || question_timer_duration_seconds <= 0);
+  $("#question_timer_play_pause").prop("disabled", !isEnabled || question_timer_duration_seconds <= 0);
+  $("#question_timer_stop").prop("disabled", !isEnabled || (!question_timer_running && question_timer_remaining_seconds <= 0));
+}
+
+function stop_question_timer(resetToDuration) {
+  clear_question_timer_interval();
+  question_timer_running = false;
+  question_timer_expired = false;
+  if (resetToDuration) {
+    question_timer_remaining_seconds = question_timer_duration_seconds;
+  } else {
+    question_timer_remaining_seconds = 0;
+  }
+}
+
+function sync_question_timer_with_current_question(questionId, questionPoints, timerConfig) {
+  if (!timerConfig.enabled || !questionId) {
+    stop_question_timer(false);
+    question_timer_duration_seconds = 0;
+    question_timer_question_id = questionId || null;
+    question_timer_expired = false;
+    render_question_timer_panel(false);
+    return;
+  }
+
+  var nextDuration = calculate_question_timer_duration_seconds(questionPoints, timerConfig);
+  if (question_timer_question_id !== questionId) {
+    stop_question_timer(true);
+    question_timer_question_id = questionId;
+    question_timer_duration_seconds = nextDuration;
+    question_timer_remaining_seconds = nextDuration;
+    question_timer_expired = false;
+  } else if (!question_timer_running && question_timer_duration_seconds !== nextDuration) {
+    question_timer_duration_seconds = nextDuration;
+    question_timer_remaining_seconds = nextDuration;
+    question_timer_expired = false;
+  } else if (question_timer_running && question_timer_duration_seconds !== nextDuration) {
+    question_timer_duration_seconds = nextDuration;
+    question_timer_remaining_seconds = Math.min(question_timer_remaining_seconds, nextDuration);
+    if (question_timer_remaining_seconds <= 0) {
+      question_timer_remaining_seconds = 0;
+      question_timer_running = false;
+      clear_question_timer_interval();
+    }
+    question_timer_expired = false;
+  }
+
+  render_question_timer_panel(true);
+}
+
+function get_current_question_for_timer() {
+  var session = get_current_session();
+  if (!session || !isUUIDSession(session)) {
+    return null;
+  }
+  var questions = getOrderedQuestions(session);
+  if (current_question_index < 1 || current_question_index > questions.length) {
+    return null;
+  }
+  return questions[current_question_index - 1];
+}
+
+function start_question_timer_from_question_points(questionPoints) {
+  var session = get_current_session();
+  if (!session || !isUUIDSession(session)) {
+    return;
+  }
+  var config = session.get("config");
+  var timerConfig = get_timer_config_values(session, config);
+  if (!timerConfig.enabled) {
+    return;
+  }
+
+  var question = get_current_question_for_timer();
+  if (!question) {
+    return;
+  }
+
+  var duration = calculate_question_timer_duration_seconds(questionPoints, timerConfig);
+  question_timer_question_id = question.id;
+  question_timer_duration_seconds = duration;
+  question_timer_remaining_seconds = duration;
+  question_timer_expired = false;
+  begin_question_timer_countdown();
+}
+
+function restart_question_timer_from_current_question() {
+  var question = get_current_question_for_timer();
+  if (!question) {
+    return;
+  }
+  start_question_timer_from_question_points(question.data.get("score") || 0);
+}
+
+function stop_question_timer_from_user() {
+  stop_question_timer(false);
+  render_question_timer_panel(true);
+}
+
+function toggle_question_timer_play_pause() {
+  var session = get_current_session();
+  if (!session || !isUUIDSession(session)) {
+    return;
+  }
+  var config = session.get("config");
+  var timerConfig = get_timer_config_values(session, config);
+  if (!timerConfig.enabled) {
+    return;
+  }
+
+  if (question_timer_running) {
+    clear_question_timer_interval();
+    question_timer_running = false;
+    question_timer_expired = false;
+    render_question_timer_panel(true);
+    return;
+  }
+
+  if (question_timer_duration_seconds <= 0) {
+    var question = get_current_question_for_timer();
+    if (!question) {
+      return;
+    }
+    question_timer_question_id = question.id;
+    question_timer_duration_seconds = calculate_question_timer_duration_seconds(question.data.get("score") || 0, timerConfig);
+  }
+  if (question_timer_remaining_seconds <= 0) {
+    question_timer_remaining_seconds = question_timer_duration_seconds;
+  }
+  question_timer_expired = false;
+  begin_question_timer_countdown();
+}
+
 function initialize_display() {
   initialize_scores_tabs();
   initialize_beta_session_frame();
@@ -543,6 +821,7 @@ function initialize_display() {
   initialize_score_entry_advanced_toggle();
   initialize_score_entry_reorder_controls();
   initialize_rounding_toggle_switch();
+  initialize_timer_toggle_switch();
   sync_data_to_display();
   initialize_reorder_controls();
   initialize_history_viewer();
@@ -848,6 +1127,7 @@ function sync_data_to_display() {
   }
   var max_points = config.get('maxPointsPerQuestion');
   var rounding = config.get('rounding');
+  var timer_config = get_timer_config_values(session, config);
   var team_names = get_team_names();
   var team_count = team_names.length - 1;
   var block_names = get_block_names();
@@ -872,7 +1152,7 @@ function sync_data_to_display() {
   
   // Get current question data
   var current_question = current_question_index;
-  var currentQuestionObj, current_selected_block, question_max_points, ignore_question;
+  var currentQuestionObj, current_selected_block, question_max_points, ignore_question, current_question_id;
   
   if (orderedQuestions.length > 0 && orderedQuestions[orderedQuestions.length - 1].data.get('score') === 0) {
     question_count--;
@@ -881,6 +1161,7 @@ function sync_data_to_display() {
   if (current_question >= 1 && current_question <= orderedQuestions.length) {
     const q = orderedQuestions[current_question - 1];
     currentQuestionObj = q.data;
+    current_question_id = q.id;
     question_max_points = currentQuestionObj.get('score');
     ignore_question = currentQuestionObj.get('ignore') || false;
     
@@ -898,6 +1179,7 @@ function sync_data_to_display() {
     if (orderedQuestions.length > 0) {
       const q = orderedQuestions[0];
       currentQuestionObj = q.data;
+      current_question_id = q.id;
       question_max_points = currentQuestionObj.get('score');
       ignore_question = currentQuestionObj.get('ignore') || false;
       current_selected_block = 0;
@@ -905,6 +1187,7 @@ function sync_data_to_display() {
       question_max_points = 0;
       ignore_question = false;
       current_selected_block = 0;
+      current_question_id = null;
     }
   }
   
@@ -1521,6 +1804,23 @@ function sync_data_to_display() {
   } else {
     $("#rounding_no").prop("checked", true);
   }
+
+  $("#timer_enabled").prop("checked", timer_config.enabled);
+  $("#timer_enabled_yes").prop("checked", timer_config.enabled);
+  $("#timer_enabled_no").prop("checked", !timer_config.enabled);
+  if (timer_config.enabled) {
+    $("#timer_enabled_toggle").addClass("is-enabled");
+    $("#timer_enabled_toggle").removeClass("is-disabled");
+  } else {
+    $("#timer_enabled_toggle").addClass("is-disabled");
+    $("#timer_enabled_toggle").removeClass("is-enabled");
+  }
+  $("#timer_first_point_seconds").val(timer_config.firstPointSeconds);
+  $("#timer_subsequent_point_seconds").val(timer_config.subsequentPointSeconds);
+  $("#timer_first_point_seconds").prop("disabled", !timer_config.enabled);
+  $("#timer_subsequent_point_seconds").prop("disabled", !timer_config.enabled);
+  sync_question_timer_with_current_question(current_question_id, question_max_points, timer_config);
+
   const roundingToggle = $("#rounding");
   if (rounding === true) {
     roundingToggle.addClass("is-rounded");
@@ -1884,14 +2184,14 @@ function get_score_entry_field_ids(container) {
 }
 
 function get_default_score_entry_field_order(isBeta) {
-  return isBeta ? ["points", "block", "teams"] : ["points", "block"];
+  return isBeta ? ["points", "timer", "block", "teams"] : ["points", "timer", "block"];
 }
 
 function normalize_score_entry_field_order(order, available, isBeta) {
   var baseOrder = Array.isArray(order) && order.length > 0 ? order : get_default_score_entry_field_order(isBeta);
   if (!isBeta) {
     baseOrder = baseOrder.filter(function(fieldId) {
-      return fieldId === "points" || fieldId === "block";
+      return fieldId === "points" || fieldId === "timer" || fieldId === "block";
     });
   }
   var normalized = [];
@@ -1901,9 +2201,21 @@ function normalize_score_entry_field_order(order, available, isBeta) {
     }
   });
 
+  if (available.indexOf("timer") !== -1) {
+    normalized = normalized.filter(function(fieldId) {
+      return fieldId !== "timer";
+    });
+    var pointsIndex = normalized.indexOf("points");
+    if (pointsIndex === -1) {
+      normalized.unshift("timer");
+    } else {
+      normalized.splice(pointsIndex + 1, 0, "timer");
+    }
+  }
+
   if (isBeta) {
     available.forEach(function(fieldId) {
-      if (normalized.indexOf(fieldId) === -1) {
+      if (fieldId !== "timer" && normalized.indexOf(fieldId) === -1) {
         normalized.push(fieldId);
       }
     });

@@ -14,6 +14,9 @@ function initialize_header_menu() {
   var roundingFieldset = document.getElementById("rounding_fieldset");
   var roundingSlot = document.getElementById("header_menu_rounding_slot");
   var roundingPlaceholder = document.getElementById("rounding_fieldset_placeholder");
+  var timerFieldset = document.getElementById("timer_fieldset");
+  var timerSlot = document.getElementById("header_menu_timer_slot");
+  var timerPlaceholder = document.getElementById("timer_fieldset_placeholder");
   var questionFieldset = document.getElementById("header_menu_question_fieldset");
   var scoreEntryAdvancedPanel = document.getElementById("score_entry_advanced_options");
   var scoreEntryAdvancedPlaceholder = document.getElementById("score_entry_advanced_placeholder");
@@ -70,6 +73,21 @@ function initialize_header_menu() {
     }
     if (roundingPlaceholder.parentNode && !roundingPlaceholder.parentNode.contains(roundingFieldset)) {
       roundingPlaceholder.parentNode.insertBefore(roundingFieldset, roundingPlaceholder.nextSibling);
+    }
+  }
+
+  function move_timer_fieldset_for_mode() {
+    if (!timerFieldset || !timerSlot || !timerPlaceholder) {
+      return;
+    }
+    if (is_beta_mode()) {
+      if (!timerSlot.contains(timerFieldset)) {
+        timerSlot.appendChild(timerFieldset);
+      }
+      return;
+    }
+    if (timerPlaceholder.parentNode && !timerPlaceholder.parentNode.contains(timerFieldset)) {
+      timerPlaceholder.parentNode.insertBefore(timerFieldset, timerPlaceholder.nextSibling);
     }
   }
 
@@ -140,6 +158,7 @@ function initialize_header_menu() {
       set_menu_state(false);
       move_session_fieldset_for_mode();
       move_rounding_fieldset_for_mode();
+      move_timer_fieldset_for_mode();
       move_reorder_button_for_mode();
       move_question_options_for_mode();
       move_sync_button_for_mode();
@@ -151,6 +170,7 @@ function initialize_header_menu() {
     toggle.setAttribute("aria-expanded", "false");
     move_session_fieldset_for_mode();
     move_rounding_fieldset_for_mode();
+    move_timer_fieldset_for_mode();
     move_reorder_button_for_mode();
     move_question_options_for_mode();
     move_sync_button_for_mode();

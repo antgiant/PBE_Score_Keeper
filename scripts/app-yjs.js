@@ -881,9 +881,19 @@ function createBlock(sessionDoc, session, name, isDefault = false) {
  * @param {boolean} options.rounding - Enable rounding mode
  * @returns {Y.Map} The session Y.Map
  */
+function normalize_timer_seconds(value, fallback) {
+  const parsed = Math.floor(Number(value));
+  if (!Number.isFinite(parsed) || parsed < 0) {
+    return fallback;
+  }
+  return parsed;
+}
+
 function initializeUUIDSession(sessionDoc, options = {}) {
   const session = sessionDoc.getMap('session');
   const now = Date.now();
+  const defaultFirstPointSeconds = (typeof TIMER_DEFAULT_FIRST_POINT_SECONDS !== 'undefined') ? TIMER_DEFAULT_FIRST_POINT_SECONDS : 30;
+  const defaultSubsequentPointSeconds = (typeof TIMER_DEFAULT_SUBSEQUENT_POINT_SECONDS !== 'undefined') ? TIMER_DEFAULT_SUBSEQUENT_POINT_SECONDS : 10;
   
   sessionDoc.transact(() => {
     // Set metadata
@@ -895,6 +905,8 @@ function initializeUUIDSession(sessionDoc, options = {}) {
     const config = new Y.Map();
     config.set('maxPointsPerQuestion', options.maxPointsPerQuestion || 4);
     config.set('rounding', options.rounding || false);
+    config.set('timerFirstPointSeconds', normalize_timer_seconds(options.timerFirstPointSeconds, defaultFirstPointSeconds));
+    config.set('timerSubsequentPointSeconds', normalize_timer_seconds(options.timerSubsequentPointSeconds, defaultSubsequentPointSeconds));
     session.set('config', config);
     
     // Initialize UUID structures
@@ -939,6 +951,8 @@ function initializeUUIDSession(sessionDoc, options = {}) {
 function createNewSessionV4(sessionDoc, options = {}) {
   const session = sessionDoc.getMap('session');
   const now = Date.now();
+  const defaultFirstPointSeconds = (typeof TIMER_DEFAULT_FIRST_POINT_SECONDS !== 'undefined') ? TIMER_DEFAULT_FIRST_POINT_SECONDS : 30;
+  const defaultSubsequentPointSeconds = (typeof TIMER_DEFAULT_SUBSEQUENT_POINT_SECONDS !== 'undefined') ? TIMER_DEFAULT_SUBSEQUENT_POINT_SECONDS : 10;
   
   sessionDoc.transact(() => {
     // Set metadata
@@ -952,6 +966,8 @@ function createNewSessionV4(sessionDoc, options = {}) {
     const config = new Y.Map();
     config.set('maxPointsPerQuestion', options.maxPointsPerQuestion || 4);
     config.set('rounding', options.rounding || false);
+    config.set('timerFirstPointSeconds', normalize_timer_seconds(options.timerFirstPointSeconds, defaultFirstPointSeconds));
+    config.set('timerSubsequentPointSeconds', normalize_timer_seconds(options.timerSubsequentPointSeconds, defaultSubsequentPointSeconds));
     session.set('config', config);
     
     // Initialize UUID structures
@@ -1922,6 +1938,8 @@ async function initialize_new_yjs_state() {
     name: sessionName,
     maxPointsPerQuestion: 12,
     rounding: false,
+    timerFirstPointSeconds: (typeof TIMER_DEFAULT_FIRST_POINT_SECONDS !== 'undefined') ? TIMER_DEFAULT_FIRST_POINT_SECONDS : 30,
+    timerSubsequentPointSeconds: (typeof TIMER_DEFAULT_SUBSEQUENT_POINT_SECONDS !== 'undefined') ? TIMER_DEFAULT_SUBSEQUENT_POINT_SECONDS : 10,
     teamNames: [team1Name],
     blockNames: blockNames
   });
@@ -1963,7 +1981,9 @@ async function migrate_v2_to_v3() {
       name: oldSession.get('name'),
       config: {
         maxPointsPerQuestion: oldSession.get('config').get('maxPointsPerQuestion'),
-        rounding: oldSession.get('config').get('rounding')
+        rounding: oldSession.get('config').get('rounding'),
+        timerFirstPointSeconds: normalize_timer_seconds(oldSession.get('config').get('timerFirstPointSeconds'), (typeof TIMER_DEFAULT_FIRST_POINT_SECONDS !== 'undefined') ? TIMER_DEFAULT_FIRST_POINT_SECONDS : 30),
+        timerSubsequentPointSeconds: normalize_timer_seconds(oldSession.get('config').get('timerSubsequentPointSeconds'), (typeof TIMER_DEFAULT_SUBSEQUENT_POINT_SECONDS !== 'undefined') ? TIMER_DEFAULT_SUBSEQUENT_POINT_SECONDS : 10)
       },
       teams: extractYArray(oldSession.get('teams')),
       blocks: extractYArray(oldSession.get('blocks')),
@@ -1996,6 +2016,8 @@ async function migrate_v2_to_v3() {
       const config = new Y.Map();
       config.set('maxPointsPerQuestion', sessionData.config.maxPointsPerQuestion);
       config.set('rounding', sessionData.config.rounding);
+      config.set('timerFirstPointSeconds', sessionData.config.timerFirstPointSeconds);
+      config.set('timerSubsequentPointSeconds', sessionData.config.timerSubsequentPointSeconds);
       session.set('config', config);
 
       // Teams

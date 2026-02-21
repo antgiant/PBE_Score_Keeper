@@ -53,7 +53,17 @@ function session_to_json_v4(sessionId, session) {
     dataVersion: '4.0',
     config: {
       maxPointsPerQuestion: session.get('config').get('maxPointsPerQuestion'),
-      rounding: session.get('config').get('rounding')
+      rounding: session.get('config').get('rounding'),
+      timerFirstPointSeconds: (function() {
+        const value = Math.floor(Number(session.get('config').get('timerFirstPointSeconds')));
+        const fallback = (typeof TIMER_DEFAULT_FIRST_POINT_SECONDS !== 'undefined') ? TIMER_DEFAULT_FIRST_POINT_SECONDS : 30;
+        return (Number.isFinite(value) && value >= 0) ? value : fallback;
+      })(),
+      timerSubsequentPointSeconds: (function() {
+        const value = Math.floor(Number(session.get('config').get('timerSubsequentPointSeconds')));
+        const fallback = (typeof TIMER_DEFAULT_SUBSEQUENT_POINT_SECONDS !== 'undefined') ? TIMER_DEFAULT_SUBSEQUENT_POINT_SECONDS : 10;
+        return (Number.isFinite(value) && value >= 0) ? value : fallback;
+      })()
     },
     // UUID-keyed structures
     teamsById: {},
@@ -417,6 +427,16 @@ async function import_yjs_from_json(data, mode) {
       const config = new Y.Map();
       config.set('maxPointsPerQuestion', sessionData.config.maxPointsPerQuestion);
       config.set('rounding', sessionData.config.rounding);
+      config.set('timerFirstPointSeconds', (function() {
+        const value = Math.floor(Number(sessionData.config.timerFirstPointSeconds));
+        const fallback = (typeof TIMER_DEFAULT_FIRST_POINT_SECONDS !== 'undefined') ? TIMER_DEFAULT_FIRST_POINT_SECONDS : 30;
+        return (Number.isFinite(value) && value >= 0) ? value : fallback;
+      })());
+      config.set('timerSubsequentPointSeconds', (function() {
+        const value = Math.floor(Number(sessionData.config.timerSubsequentPointSeconds));
+        const fallback = (typeof TIMER_DEFAULT_SUBSEQUENT_POINT_SECONDS !== 'undefined') ? TIMER_DEFAULT_SUBSEQUENT_POINT_SECONDS : 10;
+        return (Number.isFinite(value) && value >= 0) ? value : fallback;
+      })());
       session.set('config', config);
 
       // Teams
@@ -605,6 +625,16 @@ async function import_yjs_from_json_v4(data, mode) {
       const config = new Y.Map();
       config.set('maxPointsPerQuestion', sessionData.config.maxPointsPerQuestion);
       config.set('rounding', sessionData.config.rounding);
+      config.set('timerFirstPointSeconds', (function() {
+        const value = Math.floor(Number(sessionData.config.timerFirstPointSeconds));
+        const fallback = (typeof TIMER_DEFAULT_FIRST_POINT_SECONDS !== 'undefined') ? TIMER_DEFAULT_FIRST_POINT_SECONDS : 30;
+        return (Number.isFinite(value) && value >= 0) ? value : fallback;
+      })());
+      config.set('timerSubsequentPointSeconds', (function() {
+        const value = Math.floor(Number(sessionData.config.timerSubsequentPointSeconds));
+        const fallback = (typeof TIMER_DEFAULT_SUBSEQUENT_POINT_SECONDS !== 'undefined') ? TIMER_DEFAULT_SUBSEQUENT_POINT_SECONDS : 10;
+        return (Number.isFinite(value) && value >= 0) ? value : fallback;
+      })());
       session.set('config', config);
 
       // Initialize UUID structures
@@ -835,7 +865,9 @@ function convert_localStorage_to_v2(localStorageData) {
       name: sessionNames[s],
       config: {
         maxPointsPerQuestion: Number(JSON.parse(localStorageData['session_' + s + '_max_points_per_question'])),
-        rounding: JSON.parse(localStorageData['session_' + s + '_rounding']) === 'true'
+        rounding: JSON.parse(localStorageData['session_' + s + '_rounding']) === 'true',
+        timerFirstPointSeconds: (typeof TIMER_DEFAULT_FIRST_POINT_SECONDS !== 'undefined') ? TIMER_DEFAULT_FIRST_POINT_SECONDS : 30,
+        timerSubsequentPointSeconds: (typeof TIMER_DEFAULT_SUBSEQUENT_POINT_SECONDS !== 'undefined') ? TIMER_DEFAULT_SUBSEQUENT_POINT_SECONDS : 10
       },
       teams: [],
       blocks: [],

@@ -102,6 +102,18 @@ register_i18n_language('en', {
       "yes": "Rounded",
       "no": "Exact"
     },
+    "timer": {
+      "title": "Question Timer",
+      "enable": "Enable timer",
+      "toggle_label": "Timer",
+      "enabled": "Enabled",
+      "disabled": "Disabled",
+      "first_point_seconds": "Seconds for first point",
+      "subsequent_point_seconds": "Seconds for each additional point",
+      "time_remaining": "Time Remaining",
+      "restart": "⏮️",
+      "stop": "⏹️"
+    },
     "score_entry": {
       "title": "Entry",
       "previous": "Previous Question",

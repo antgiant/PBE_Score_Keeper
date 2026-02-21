@@ -10,6 +10,10 @@
   --header-bg: #ededed;
   --link-color: #0b57d0;
   --history-global-bg: #f0f0f0;
+  --accent-color: #0b57d0;
+  --accent-hover: #0847ac;
+  --timer-expired-bg: #0b57d0;
+  --timer-expired-text: #ffffff;
 }
 [data-theme="dark"] {
   color-scheme: dark;
@@ -23,6 +27,10 @@
   --header-bg: #161a20;
   --link-color: #8ab4f8;
   --history-global-bg: #252a33;
+  --accent-color: #8ab4f8;
+  --accent-hover: #a7c6fa;
+  --timer-expired-bg: #8ab4f8;
+  --timer-expired-text: #0f1115;
 }
 body {
   background-color: var(--page-bg);
@@ -94,6 +102,9 @@ fieldset {
   display: none;
 }
 .header-menu-session-slot {
+  display: none;
+}
+.header-menu-timer-slot {
   display: none;
 }
 .header-sync {
@@ -207,6 +218,91 @@ fieldset {
 .rounding-switch {
   display: none;
 }
+.timer-enabled-classic-row {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+.timer-enabled-toggle {
+  display: none;
+}
+.timer-settings {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  margin-top: 0.5rem;
+}
+.timer-settings label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+.timer-settings input[type="number"] {
+  width: 5.5rem;
+}
+.question-timer-panel {
+  margin-top: 0.55rem;
+  padding: 0.5rem;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--control-bg);
+}
+.question-timer-panel.question-timer-panel-expired {
+  background: var(--timer-expired-bg);
+  border-color: var(--timer-expired-bg);
+  color: var(--timer-expired-text);
+}
+.question-timer-panel.question-timer-panel-expired legend {
+  color: var(--timer-expired-text);
+  background: var(--timer-expired-bg);
+  padding: 0 0.3rem;
+  border-radius: 5px;
+}
+.question-timer-panel.question-timer-panel-expired .question-timer-display,
+.question-timer-panel.question-timer-panel-expired .question-timer-buttons button {
+  color: var(--timer-expired-text);
+}
+.question-timer-display-line {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0.25rem 0 0.45rem;
+}
+.question-timer-display {
+  font-weight: 700;
+  font-size: 1.35rem;
+  font-variant-numeric: tabular-nums;
+}
+.question-timer-buttons {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+.question-timer-buttons button {
+  appearance: none;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  color: inherit !important;
+  font-size: 1.35rem;
+  line-height: 1;
+  padding: 0.05rem 0.15rem;
+  margin: 0;
+  min-width: 0;
+}
+.question-timer-buttons button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.question-timer-buttons button:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+  border-radius: 4px !important;
+}
 #theme_preference {
   font-size: 0.9rem;
 }
@@ -318,6 +414,8 @@ tr:nth-child(even){
   --accordion-header-border: #b6c5da;
   --accordion-header-active-bg: #1f4b8f;
   --accordion-header-active-text: #ffffff;
+  --timer-expired-bg: #c08a00;
+  --timer-expired-text: #1b2738;
   font-family: "Iowan Old Style", "Palatino", "Georgia", serif;
 }
 :root[data-theme="dark"][data-ui-mode="beta"] {
@@ -336,6 +434,8 @@ tr:nth-child(even){
   --accordion-header-border: #34435f;
   --accordion-header-active-bg: #f5c24a;
   --accordion-header-active-text: #1b2334;
+  --timer-expired-bg: #f5c24a;
+  --timer-expired-text: #1b2334;
 }
 [data-ui-mode="beta"] body {
   background-image: radial-gradient(circle at top left, rgba(31, 75, 143, 0.12), transparent 45%),
@@ -427,6 +527,17 @@ tr:nth-child(even){
 [data-ui-mode="beta"] .header-menu-rounding-slot .config-fieldset {
   margin: 0;
 }
+[data-ui-mode="beta"] .header-menu-timer-slot {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border-color);
+}
+[data-ui-mode="beta"] .header-menu-timer-slot .config-fieldset {
+  margin: 0;
+}
 [data-ui-mode="beta"] .header-menu-question-slot {
   display: flex;
   flex-direction: column;
@@ -444,7 +555,8 @@ tr:nth-child(even){
 [data-ui-mode="beta"] .header-menu-panel .language-picker,
 [data-ui-mode="beta"] .header-menu-panel .theme-picker,
 [data-ui-mode="beta"] .header-menu-panel .ui-mode-toggle,
-[data-ui-mode="beta"] .header-menu-panel .rounding-toggle {
+[data-ui-mode="beta"] .header-menu-panel .rounding-toggle,
+[data-ui-mode="beta"] .header-menu-panel .timer-enabled-toggle {
   width: 100%;
   justify-content: space-between;
 }
@@ -452,6 +564,11 @@ tr:nth-child(even){
   justify-self: end;
 }
 [data-ui-mode="beta"] #rounding_fieldset {
+  border: 0;
+  padding: 0;
+  margin: 0;
+}
+[data-ui-mode="beta"] #timer_fieldset {
   border: 0;
   padding: 0;
   margin: 0;
@@ -466,6 +583,112 @@ tr:nth-child(even){
   clip: rect(0, 0, 0, 0);
   white-space: nowrap;
   border: 0;
+}
+[data-ui-mode="beta"] .timer-enabled-legend {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+[data-ui-mode="beta"] .timer-enabled-classic-row {
+  display: none;
+}
+[data-ui-mode="beta"] #timer_enabled_toggle.timer-enabled-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.85rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 999px;
+  border: 1px solid var(--border-color);
+  background: var(--control-bg);
+  color: var(--text-color);
+  box-sizing: border-box;
+}
+[data-ui-mode="beta"] #timer_enabled_toggle.timer-enabled-toggle .timer-enabled-label {
+  display: inline-flex;
+  align-items: center;
+  font-weight: 400;
+}
+[data-ui-mode="beta"] #timer_enabled_toggle.timer-enabled-toggle label {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+  color: var(--text-color);
+  box-shadow: none;
+}
+[data-ui-mode="beta"] #timer_enabled_toggle.timer-enabled-toggle input[type="radio"] {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+}
+[data-ui-mode="beta"] #timer_enabled_toggle.timer-enabled-toggle .ui-checkboxradio-icon,
+[data-ui-mode="beta"] #timer_enabled_toggle.timer-enabled-toggle .ui-checkboxradio-icon-space {
+  display: none;
+}
+[data-ui-mode="beta"] #timer_enabled_toggle.timer-enabled-toggle .ui-button,
+[data-ui-mode="beta"] #timer_enabled_toggle.timer-enabled-toggle .ui-state-default,
+[data-ui-mode="beta"] #timer_enabled_toggle.timer-enabled-toggle .ui-state-active,
+[data-ui-mode="beta"] #timer_enabled_toggle.timer-enabled-toggle .ui-state-hover,
+[data-ui-mode="beta"] #timer_enabled_toggle.timer-enabled-toggle .ui-state-focus {
+  background: transparent;
+  border: 0;
+  color: var(--text-color);
+  box-shadow: none;
+}
+[data-ui-mode="beta"] #timer_enabled_toggle.timer-enabled-toggle .timer-enabled-switch {
+  display: inline-block;
+  position: relative;
+  width: 2.4rem;
+  height: 1.2rem;
+  flex-shrink: 0;
+}
+[data-ui-mode="beta"] #timer_enabled_toggle.timer-enabled-toggle .timer-enabled-slider {
+  position: absolute;
+  inset: 0;
+  background: var(--row-alt);
+  border-radius: 999px;
+  transition: background-color 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: inset 0 0 0 1px var(--border-color);
+}
+[data-ui-mode="beta"] #timer_enabled_toggle.timer-enabled-toggle .timer-enabled-slider::before {
+  content: "";
+  position: absolute;
+  top: 0.1rem;
+  left: 0.1rem;
+  width: 1rem;
+  height: 1rem;
+  border-radius: 50%;
+  background: var(--panel-bg);
+  transition: transform 0.2s ease, background-color 0.2s ease;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+[data-ui-mode="beta"] #timer_enabled_toggle.timer-enabled-toggle.is-enabled .timer-enabled-slider {
+  background: var(--link-color);
+}
+[data-ui-mode="beta"] #timer_enabled_toggle.timer-enabled-toggle.is-enabled .timer-enabled-slider::before {
+  transform: translateX(1.2rem);
+  background: var(--control-bg);
+}
+[data-ui-mode="beta"] #timer_enabled_toggle.timer-enabled-toggle:focus-within .timer-enabled-slider {
+  outline: 2px solid var(--link-color);
+  outline-offset: 2px;
+}
+[data-ui-mode="beta"] #timer_enabled_toggle.timer-enabled-toggle .ui-mode-option {
+  font-weight: 700;
 }
 [data-ui-mode="beta"] #rounding.rounding-toggle {
   display: inline-flex;

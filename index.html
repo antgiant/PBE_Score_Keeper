@@ -79,6 +79,7 @@
               <span class="ui-mode-option" data-i18n="ui_mode.beta">Beta</span>
             </label>
             <div id="header_menu_rounding_slot" class="header-menu-rounding-slot"></div>
+            <div id="header_menu_timer_slot" class="header-menu-timer-slot"></div>
             <div id="header_menu_session_slot" class="header-menu-session-slot"></div>
             <div id="header_menu_question_slot" class="header-menu-question-slot">
               <fieldset class="config-fieldset header-menu-question-fieldset" id="header_menu_question_fieldset">
@@ -178,6 +179,35 @@
             </label>
           </div>
         </fieldset>
+        <div id="timer_fieldset_placeholder"></div>
+        <fieldset class="config-fieldset" id="timer_fieldset">
+          <legend class="timer-enabled-legend" data-i18n="timer.title">Question Timer</legend>
+          <label class="timer-enabled-classic-row"><input type="checkbox" id="timer_enabled" onchange="local_data_update(this)"><span data-i18n="timer.enable">Enable timer</span></label>
+          <div id="timer_enabled_toggle" class="timer-enabled-toggle is-disabled">
+            <span class="timer-enabled-label" data-i18n="timer.toggle_label">Timer</span>
+            <label>
+              <input type="radio" id="timer_enabled_no" name="timer_enabled_mode" value="false" onchange="local_data_update(this)">
+              <span class="ui-mode-option" data-i18n="timer.disabled">Disabled</span>
+            </label>
+            <span class="timer-enabled-switch" aria-hidden="true">
+              <span class="timer-enabled-slider"></span>
+            </span>
+            <label>
+              <input type="radio" id="timer_enabled_yes" name="timer_enabled_mode" value="true" onchange="local_data_update(this)">
+              <span class="ui-mode-option" data-i18n="timer.enabled">Enabled</span>
+            </label>
+          </div>
+          <div class="timer-settings">
+            <label for="timer_first_point_seconds">
+              <span data-i18n="timer.first_point_seconds">Seconds for first point</span>
+              <input type="number" id="timer_first_point_seconds" min="0" step="1" onchange="local_data_update(this)">
+            </label>
+            <label for="timer_subsequent_point_seconds">
+              <span data-i18n="timer.subsequent_point_seconds">Seconds for each additional point</span>
+              <input type="number" id="timer_subsequent_point_seconds" min="0" step="1" onchange="local_data_update(this)">
+            </label>
+          </div>
+        </fieldset>
         <button class="config-add-btn" onclick="local_data_update(this);$( '#accordion' ).accordion({active: 1});" data-i18n="config.enter_scores">Enter Scores</button>
       </div>
       <h3 data-i18n="score_entry.title">Score Entry</h3>
@@ -236,6 +266,19 @@
                         </legend>
                         <div id="max_points_notice_slot" class="max-points-notice-slot"></div>
                         <div id="question_score">
+                        </div>
+                      </fieldset>
+                    </div>
+                    <div class="score-entry-field score-entry-timer-container" data-field="timer">
+                      <fieldset id="question_timer_panel" class="question-timer-panel" style="display:none;">
+                        <legend data-i18n="timer.time_remaining">Time Remaining</legend>
+                        <div class="question-timer-display-line">
+                          <span id="question_timer_display" class="question-timer-display">00:00</span>
+                        </div>
+                        <div class="question-timer-buttons">
+                          <button id="question_timer_restart" type="button" onclick="local_data_update(this)" data-i18n="timer.restart">⏮️</button>
+                          <button id="question_timer_play_pause" type="button" onclick="local_data_update(this)">⏯️</button>
+                          <button id="question_timer_stop" type="button" onclick="local_data_update(this)" data-i18n="timer.stop">⏹️</button>
                         </div>
                       </fieldset>
                     </div>
@@ -378,7 +421,7 @@
     </div>
     <div id="scores_tabs_placeholder"></div>
     <footer><p><span data-i18n="footer.feedback">Have an idea to make this better?</span> <a target="_blank" href="https://github.com/antgiant/PBE_Score_Keeper/issues" data-i18n="footer.let_me_know">Let me know</a>.</p>
-    <p><center data-i18n="footer.version" data-i18n-version="2.18.22">v 2.18.22</center></p></footer>
+    <p><center data-i18n="footer.version" data-i18n-version="2.18.26">v 2.18.26</center></p></footer>
 </body>
 
 </html>

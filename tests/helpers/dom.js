@@ -415,6 +415,8 @@ function loadApp(seed = {}) {
               const configMap = new Y.Map();
               configMap.set('maxPointsPerQuestion', sessionConfig.maxPointsPerQuestion || 12);
               configMap.set('rounding', sessionConfig.rounding || false);
+              configMap.set('timerFirstPointSeconds', Number.isFinite(sessionConfig.timerFirstPointSeconds) ? sessionConfig.timerFirstPointSeconds : 30);
+              configMap.set('timerSubsequentPointSeconds', Number.isFinite(sessionConfig.timerSubsequentPointSeconds) ? sessionConfig.timerSubsequentPointSeconds : 10);
               session.set('config', configMap);
 
               // Initialize UUID structures
@@ -747,6 +749,8 @@ function exportYjsToLocalStorageFormat(ydoc, DocManager) {
     if (config) {
       result[`session_${sessionIndex}_max_points_per_question`] = JSON.stringify(config.get('maxPointsPerQuestion'));
       result[`session_${sessionIndex}_rounding`] = JSON.stringify(config.get('rounding'));
+      result[`session_${sessionIndex}_timer_first_point_seconds`] = JSON.stringify(config.get('timerFirstPointSeconds'));
+      result[`session_${sessionIndex}_timer_subsequent_point_seconds`] = JSON.stringify(config.get('timerSubsequentPointSeconds'));
     }
     
     // Teams

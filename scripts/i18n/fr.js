@@ -103,6 +103,18 @@ register_i18n_language('fr', {
       "yes": "Arrondi",
       "no": "Exact"
     },
+    "timer": {
+      "title": "Minuteur de question",
+      "enable": "Activer le minuteur",
+      "toggle_label": "Minuteur",
+      "enabled": "Activé",
+      "disabled": "Désactivé",
+      "first_point_seconds": "Secondes pour le premier point",
+      "subsequent_point_seconds": "Secondes pour chaque point supplémentaire",
+      "time_remaining": "Temps restant",
+      "restart": "⏮️",
+      "stop": "⏹️"
+    },
     "score_entry": {
       "title": "Saisie",
       "previous": "Question Précédente",

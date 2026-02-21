@@ -21,6 +21,8 @@ function update_data_element(updated_id, new_value) {
   const team_question_score_check = /team_([0-9]+)_score_([0-9]+)/;
   const decrease_team_extra_credit_check = /team_([0-9]+)_extra_credit_decrease/;
   const increase_team_extra_credit_check = /team_([0-9]+)_extra_credit_increase/;
+  const timer_first_point_seconds_check = /timer_first_point_seconds/;
+  const timer_subsequent_point_seconds_check = /timer_subsequent_point_seconds/;
   const delete_team_check = /delete_team_([0-9]+)/;
   const delete_block_check = /delete_block_([0-9]+)/;
 
@@ -282,6 +284,69 @@ function update_data_element(updated_id, new_value) {
       }, 'local');
     }
   }
+  //Enable or disable question timer
+  else if (updated_id == "timer_enabled" || updated_id == "timer_enabled_yes" || updated_id == "timer_enabled_no") {
+    const timerEnabled = updated_id == "timer_enabled_yes"
+      ? true
+      : updated_id == "timer_enabled_no"
+        ? false
+        : $("#timer_enabled").prop("checked") === true;
+    $("#timer_enabled").prop("checked", timerEnabled);
+    $("#timer_enabled_yes").prop("checked", timerEnabled);
+    $("#timer_enabled_no").prop("checked", !timerEnabled);
+    if (timerEnabled) {
+      $("#timer_enabled_toggle").addClass("is-enabled");
+      $("#timer_enabled_toggle").removeClass("is-disabled");
+    } else {
+      $("#timer_enabled_toggle").addClass("is-disabled");
+      $("#timer_enabled_toggle").removeClass("is-enabled");
+    }
+    const sessionId = session.get('id');
+    if (sessionId && typeof set_local_timer_enabled === 'function') {
+      set_local_timer_enabled(sessionId, timerEnabled);
+    }
+    if (!timerEnabled && typeof stop_question_timer_from_user === 'function') {
+      stop_question_timer_from_user();
+    }
+  }
+  //Update timer seconds for first point
+  else if (updated_id.search(timer_first_point_seconds_check) > -1) {
+    const sessionDoc = getActiveSessionDoc();
+    if (sessionDoc) {
+      const parsedValue = Math.max(0, Math.floor(Number(new_value) || 0));
+      sessionDoc.transact(() => {
+        session.get('config').set('timerFirstPointSeconds', parsedValue);
+      }, 'local');
+    }
+  }
+  //Update timer seconds for subsequent points
+  else if (updated_id.search(timer_subsequent_point_seconds_check) > -1) {
+    const sessionDoc = getActiveSessionDoc();
+    if (sessionDoc) {
+      const parsedValue = Math.max(0, Math.floor(Number(new_value) || 0));
+      sessionDoc.transact(() => {
+        session.get('config').set('timerSubsequentPointSeconds', parsedValue);
+      }, 'local');
+    }
+  }
+  //Restart question timer
+  else if (updated_id == "question_timer_restart") {
+    if (typeof restart_question_timer_from_current_question === 'function') {
+      restart_question_timer_from_current_question();
+    }
+  }
+  //Toggle question timer play/pause
+  else if (updated_id == "question_timer_play_pause") {
+    if (typeof toggle_question_timer_play_pause === 'function') {
+      toggle_question_timer_play_pause();
+    }
+  }
+  //Stop question timer
+  else if (updated_id == "question_timer_stop") {
+    if (typeof stop_question_timer_from_user === 'function') {
+      stop_question_timer_from_user();
+    }
+  }
   //Update Ignore Question Status
   else if (updated_id == "ignore_question") {
     let temp = $("#ignore_question").prop("checked");
@@ -407,6 +472,9 @@ function update_data_element(updated_id, new_value) {
       
       if (Number(new_value) >= temp_max) {
         updateQuestionScore(sessionDoc, session, question.id, Number(new_value));
+        if (typeof start_question_timer_from_question_points === 'function') {
+          start_question_timer_from_question_points(Number(new_value));
+        }
         add_history_entry('edit_log.actions.set_question_points', 'edit_log.details_templates.set_question_points', { name: questionName, old: oldScore, new: new_value });
       }
     }

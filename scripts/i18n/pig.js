@@ -99,6 +99,18 @@ register_i18n_language('pig', {
       "yes": "Ounded-Ray",
       "no": "Exact-ay"
     },
+    "timer": {
+      "title": "Uestion-Qay Imer-Tay",
+      "enable": "Enable-ay imer-tay",
+      "toggle_label": "Imer-Tay",
+      "enabled": "Enabled-ay",
+      "disabled": "Isabled-Day",
+      "first_point_seconds": "Econds-Say or-fay irst-fay oint-pay",
+      "subsequent_point_seconds": "Econds-Say or-fay each-ay additional-ay oint-pay",
+      "time_remaining": "Ime-Tay Emaining-Ray",
+      "restart": "⏮️",
+      "stop": "⏹️"
+    },
     "score_entry": {
       "title": "Entry-ay",
       "previous": "Evious-Pray Uestion-Qay",

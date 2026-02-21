@@ -71,6 +71,8 @@ function buildSession(config, Y) {
   const configMap = new Y.Map();
   configMap.set('maxPointsPerQuestion', config.maxPointsPerQuestion || 12);
   configMap.set('rounding', config.rounding || false);
+  configMap.set('timerFirstPointSeconds', Number.isFinite(config.timerFirstPointSeconds) ? config.timerFirstPointSeconds : 30);
+  configMap.set('timerSubsequentPointSeconds', Number.isFinite(config.timerSubsequentPointSeconds) ? config.timerSubsequentPointSeconds : 10);
   session.set('config', configMap);
 
   // Build teams array (1-indexed with null placeholder)
