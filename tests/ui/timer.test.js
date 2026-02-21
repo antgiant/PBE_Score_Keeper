@@ -12,6 +12,7 @@ function buildTimerSeed() {
       rounding: false,
       timerFirstPointSeconds: 20,
       timerSubsequentPointSeconds: 5,
+      timerWarningFlashSeconds: 10,
       teams: ['Alpha'],
       blocks: ['No Block/Group'],
       questions: [{
@@ -48,6 +49,40 @@ function installManualInterval(context) {
   };
 }
 
+function installManualTimeout(context) {
+  let nextTimeoutId = 1;
+  const pending = new Map();
+  context.setTimeout = (fn, delay) => {
+    const timeoutId = nextTimeoutId++;
+    pending.set(timeoutId, { fn, delay });
+    return timeoutId;
+  };
+  context.clearTimeout = (timeoutId) => {
+    pending.delete(timeoutId);
+  };
+  return {
+    flush(delay) {
+      const timeoutIds = [];
+      pending.forEach((value, timeoutId) => {
+        if (delay === undefined || value.delay === delay) {
+          timeoutIds.push(timeoutId);
+        }
+      });
+      timeoutIds.forEach((timeoutId) => {
+        const timeout = pending.get(timeoutId);
+        if (!timeout) {
+          return;
+        }
+        pending.delete(timeoutId);
+        timeout.fn();
+      });
+    },
+    count() {
+      return pending.size;
+    }
+  };
+}
+
 test('timer settings update session config values', () => {
   const { context, localStorage } = loadApp(buildTimerSeed());
   const session = context.get_current_session();
@@ -60,12 +95,14 @@ test('timer settings update session config values', () => {
   context.update_data_element('timer_auto_start');
   context.update_data_element('timer_first_point_seconds', '11');
   context.update_data_element('timer_subsequent_point_seconds', '3');
+  context.update_data_element('timer_warning_flash_seconds', '7');
 
   assert.equal(localStorage.getItem('pbe_timer_enabled_' + sessionId), 'true');
   assert.equal(localStorage.getItem('pbe_timer_auto_start_' + sessionId), 'true');
   assert.equal(config.get('timerEnabled'), undefined);
   assert.equal(config.get('timerFirstPointSeconds'), 11);
   assert.equal(config.get('timerSubsequentPointSeconds'), 3);
+  assert.equal(config.get('timerWarningFlashSeconds'), 7);
 });
 
 test('timer enabled toggle options update local-only enabled state', () => {
@@ -131,7 +168,7 @@ test('question points do not auto-start timer when auto-start is off', () => {
   assert.equal(context.question_timer_remaining_seconds, 35);
 });
 
-test('timer restart action resets timer state', () => {
+test('timer restart action resets timer state without auto-playing', () => {
   const { context } = loadApp(buildTimerSeed());
   const session = context.get_current_session();
   const interval = installManualInterval(context);
@@ -150,11 +187,12 @@ test('timer restart action resets timer state', () => {
 
   context.update_data_element('question_timer_restart');
 
-  assert.equal(context.question_timer_running, true);
+  assert.equal(context.question_timer_running, false);
   assert.equal(context.question_timer_duration_seconds, 35);
   assert.equal(context.question_timer_remaining_seconds, 35);
   assert.equal(context.$('#question_timer_panel').hasClass('question-timer-panel-expired'), false);
-  assert.equal(interval.hasActiveInterval(), true);
+  assert.equal(context.$('#question_timer_play_pause').text(), '▶️');
+  assert.equal(interval.hasActiveInterval(), false);
 });
 
 test('timer play/pause toggle pauses and resumes countdown', () => {
@@ -213,7 +251,7 @@ test('changing timer numbers updates duration for current question', () => {
   assert.equal(context.question_timer_remaining_seconds, 21);
 
   context.update_data_element('question_timer_restart');
-  assert.equal(context.question_timer_running, true);
+  assert.equal(context.question_timer_running, false);
   assert.equal(context.question_timer_duration_seconds, 21);
   assert.equal(context.question_timer_remaining_seconds, 21);
 });
@@ -367,7 +405,47 @@ test('timer panel gets accent class at zero and clears when timer is non-zero', 
   assert.equal(context.$('#question_timer_panel').hasClass('question-timer-panel-expired'), true);
 
   context.update_data_element('question_timer_restart');
-  assert.equal(context.question_timer_running, true);
+  assert.equal(context.question_timer_running, false);
   assert.equal(context.question_timer_remaining_seconds, 35);
   assert.equal(context.$('#question_timer_panel').hasClass('question-timer-panel-expired'), false);
+});
+
+test('timer panel flashes done color for half a second at 10 seconds', () => {
+  const { context } = loadApp(buildTimerSeed());
+  const session = context.get_current_session();
+  const interval = installManualInterval(context);
+  const timeout = installManualTimeout(context);
+  context.set_local_timer_enabled(session.get('id'), true);
+  context.set_local_timer_auto_start(session.get('id'), true);
+
+  context.update_data_element('question_score_4', '4');
+  interval.tick(25);
+  assert.equal(context.question_timer_remaining_seconds, 10);
+  assert.equal(context.$('#question_timer_panel').hasClass('question-timer-panel-warning-flash'), true);
+  assert.equal(timeout.count(), 1);
+
+  timeout.flush(500);
+  assert.equal(context.$('#question_timer_panel').hasClass('question-timer-panel-warning-flash'), false);
+});
+
+test('timer warning flash threshold is configurable', () => {
+  const { context } = loadApp(buildTimerSeed());
+  const session = context.get_current_session();
+  const interval = installManualInterval(context);
+  const timeout = installManualTimeout(context);
+  context.set_local_timer_enabled(session.get('id'), true);
+  context.set_local_timer_auto_start(session.get('id'), true);
+
+  context.update_data_element('timer_warning_flash_seconds', '7');
+  context.update_data_element('question_score_4', '4');
+
+  interval.tick(25);
+  assert.equal(context.question_timer_remaining_seconds, 10);
+  assert.equal(context.$('#question_timer_panel').hasClass('question-timer-panel-warning-flash'), false);
+  assert.equal(timeout.count(), 0);
+
+  interval.tick(3);
+  assert.equal(context.question_timer_remaining_seconds, 7);
+  assert.equal(context.$('#question_timer_panel').hasClass('question-timer-panel-warning-flash'), true);
+  assert.equal(timeout.count(), 1);
 });

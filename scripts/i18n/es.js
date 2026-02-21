@@ -112,6 +112,7 @@ register_i18n_language('es', {
       "disabled": "Desactivado",
       "first_point_seconds": "Segundos para el primer punto",
       "subsequent_point_seconds": "Segundos por cada punto adicional",
+      "warning_flash_seconds": "Segundos restantes para el destello de advertencia",
       "time_remaining": "Tiempo restante",
       "remove_time": "Restar 1 segundo",
       "add_time": "Sumar 1 segundo",

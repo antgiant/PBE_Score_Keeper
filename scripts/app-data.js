@@ -23,6 +23,7 @@ function update_data_element(updated_id, new_value) {
   const increase_team_extra_credit_check = /team_([0-9]+)_extra_credit_increase/;
   const timer_first_point_seconds_check = /timer_first_point_seconds/;
   const timer_subsequent_point_seconds_check = /timer_subsequent_point_seconds/;
+  const timer_warning_flash_seconds_check = /timer_warning_flash_seconds/;
   const delete_team_check = /delete_team_([0-9]+)/;
   const delete_block_check = /delete_block_([0-9]+)/;
 
@@ -334,6 +335,16 @@ function update_data_element(updated_id, new_value) {
       const parsedValue = Math.max(0, Math.floor(Number(new_value) || 0));
       sessionDoc.transact(() => {
         session.get('config').set('timerSubsequentPointSeconds', parsedValue);
+      }, 'local');
+    }
+  }
+  //Update timer warning flash seconds threshold
+  else if (updated_id.search(timer_warning_flash_seconds_check) > -1) {
+    const sessionDoc = getActiveSessionDoc();
+    if (sessionDoc) {
+      const parsedValue = Math.max(0, Math.floor(Number(new_value) || 0));
+      sessionDoc.transact(() => {
+        session.get('config').set('timerWarningFlashSeconds', parsedValue);
       }, 'local');
     }
   }

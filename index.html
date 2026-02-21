@@ -179,44 +179,48 @@
             </label>
           </div>
         </fieldset>
-        <div id="timer_fieldset_placeholder"></div>
-        <fieldset class="config-fieldset" id="timer_fieldset">
-          <legend class="timer-enabled-legend" data-i18n="timer.title">Question Timer</legend>
-          <label class="timer-enabled-classic-row"><input type="checkbox" id="timer_enabled" onchange="local_data_update(this)"><span data-i18n="timer.enable">Enable timer</span></label>
-          <div id="timer_enabled_toggle" class="timer-enabled-toggle is-disabled">
-            <span class="timer-enabled-label" data-i18n="timer.toggle_label">Timer</span>
-            <label>
-              <input type="radio" id="timer_enabled_no" name="timer_enabled_mode" value="false" onchange="local_data_update(this)">
-              <span class="ui-mode-option" data-i18n="timer.disabled">Disabled</span>
-            </label>
-            <span class="timer-enabled-switch" aria-hidden="true">
-              <span class="timer-enabled-slider"></span>
-            </span>
-            <label>
-              <input type="radio" id="timer_enabled_yes" name="timer_enabled_mode" value="true" onchange="local_data_update(this)">
-              <span class="ui-mode-option" data-i18n="timer.enabled">Enabled</span>
-            </label>
-          </div>
-          <div class="timer-settings">
-            <label for="timer_auto_start">
-              <span data-i18n="timer.auto_start">Auto start timer when score is selected</span>
-              <input type="checkbox" id="timer_auto_start" onchange="local_data_update(this)">
-            </label>
-            <label for="timer_first_point_seconds">
-              <span data-i18n="timer.first_point_seconds">Seconds for first point</span>
-              <input type="number" id="timer_first_point_seconds" min="0" step="1" inputmode="numeric" pattern="[0-9]*" onchange="local_data_update(this)">
-            </label>
-            <label for="timer_subsequent_point_seconds">
-              <span data-i18n="timer.subsequent_point_seconds">Seconds for each additional point</span>
-              <input type="number" id="timer_subsequent_point_seconds" min="0" step="1" inputmode="numeric" pattern="[0-9]*" onchange="local_data_update(this)">
-            </label>
-          </div>
-        </fieldset>
         <button class="config-add-btn" onclick="local_data_update(this);$( '#accordion' ).accordion({active: 1});" data-i18n="config.enter_scores">Enter Scores</button>
       </div>
       <h3 data-i18n="score_entry.title">Score Entry</h3>
       <div>
         <div data-role="score_entry">
+          <div id="timer_fieldset_placeholder"></div>
+          <fieldset class="config-fieldset" id="timer_fieldset">
+            <legend class="timer-enabled-legend" data-i18n="timer.title">Question Timer</legend>
+            <label class="timer-enabled-classic-row"><input type="checkbox" id="timer_enabled" onchange="local_data_update(this)"><span data-i18n="timer.enable">Enable timer</span></label>
+            <div id="timer_enabled_toggle" class="timer-enabled-toggle is-disabled">
+              <span class="timer-enabled-label" data-i18n="timer.toggle_label">Timer</span>
+              <label>
+                <input type="radio" id="timer_enabled_no" name="timer_enabled_mode" value="false" onchange="local_data_update(this)">
+                <span class="ui-mode-option" data-i18n="timer.disabled">Disabled</span>
+              </label>
+              <span class="timer-enabled-switch" aria-hidden="true">
+                <span class="timer-enabled-slider"></span>
+              </span>
+              <label>
+                <input type="radio" id="timer_enabled_yes" name="timer_enabled_mode" value="true" onchange="local_data_update(this)">
+                <span class="ui-mode-option" data-i18n="timer.enabled">Enabled</span>
+              </label>
+            </div>
+            <div class="timer-settings">
+              <label for="timer_auto_start">
+                <span data-i18n="timer.auto_start">Auto start timer when score is selected</span>
+                <input type="checkbox" id="timer_auto_start" onchange="local_data_update(this)">
+              </label>
+              <label for="timer_first_point_seconds">
+                <span data-i18n="timer.first_point_seconds">Seconds for first point</span>
+                <input type="number" id="timer_first_point_seconds" min="0" step="1" inputmode="numeric" pattern="[0-9]*" onchange="local_data_update(this)">
+              </label>
+              <label for="timer_subsequent_point_seconds">
+                <span data-i18n="timer.subsequent_point_seconds">Seconds for each additional point</span>
+                <input type="number" id="timer_subsequent_point_seconds" min="0" step="1" inputmode="numeric" pattern="[0-9]*" onchange="local_data_update(this)">
+              </label>
+              <label for="timer_warning_flash_seconds">
+                <span data-i18n="timer.warning_flash_seconds">Seconds remaining for warning flash</span>
+                <input type="number" id="timer_warning_flash_seconds" min="0" step="1" inputmode="numeric" pattern="[0-9]*" onchange="local_data_update(this)">
+              </label>
+            </div>
+          </fieldset>
           <div id="score_entry_fieldset_placeholder"></div>
           <fieldset id="beta_session_fieldset" class="beta-session-fieldset" aria-hidden="true">
             <legend class="beta-session-legend">
@@ -426,7 +430,7 @@
     </div>
     <div id="scores_tabs_placeholder"></div>
     <footer><p><span data-i18n="footer.feedback">Have an idea to make this better?</span> <a target="_blank" href="https://github.com/antgiant/PBE_Score_Keeper/issues" data-i18n="footer.let_me_know">Let me know</a>.</p>
-    <p><center data-i18n="footer.version" data-i18n-version="2.18.34">v 2.18.34</center></p></footer>
+    <p><center data-i18n="footer.version" data-i18n-version="2.18.37">v 2.18.37</center></p></footer>
 </body>
 
 </html>

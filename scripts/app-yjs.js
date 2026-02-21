@@ -894,6 +894,7 @@ function initializeUUIDSession(sessionDoc, options = {}) {
   const now = Date.now();
   const defaultFirstPointSeconds = (typeof TIMER_DEFAULT_FIRST_POINT_SECONDS !== 'undefined') ? TIMER_DEFAULT_FIRST_POINT_SECONDS : 30;
   const defaultSubsequentPointSeconds = (typeof TIMER_DEFAULT_SUBSEQUENT_POINT_SECONDS !== 'undefined') ? TIMER_DEFAULT_SUBSEQUENT_POINT_SECONDS : 10;
+  const defaultWarningFlashSeconds = (typeof TIMER_DEFAULT_WARNING_FLASH_SECONDS !== 'undefined') ? TIMER_DEFAULT_WARNING_FLASH_SECONDS : 10;
   
   sessionDoc.transact(() => {
     // Set metadata
@@ -907,6 +908,7 @@ function initializeUUIDSession(sessionDoc, options = {}) {
     config.set('rounding', options.rounding || false);
     config.set('timerFirstPointSeconds', normalize_timer_seconds(options.timerFirstPointSeconds, defaultFirstPointSeconds));
     config.set('timerSubsequentPointSeconds', normalize_timer_seconds(options.timerSubsequentPointSeconds, defaultSubsequentPointSeconds));
+    config.set('timerWarningFlashSeconds', normalize_timer_seconds(options.timerWarningFlashSeconds, defaultWarningFlashSeconds));
     session.set('config', config);
     
     // Initialize UUID structures
@@ -953,6 +955,7 @@ function createNewSessionV4(sessionDoc, options = {}) {
   const now = Date.now();
   const defaultFirstPointSeconds = (typeof TIMER_DEFAULT_FIRST_POINT_SECONDS !== 'undefined') ? TIMER_DEFAULT_FIRST_POINT_SECONDS : 30;
   const defaultSubsequentPointSeconds = (typeof TIMER_DEFAULT_SUBSEQUENT_POINT_SECONDS !== 'undefined') ? TIMER_DEFAULT_SUBSEQUENT_POINT_SECONDS : 10;
+  const defaultWarningFlashSeconds = (typeof TIMER_DEFAULT_WARNING_FLASH_SECONDS !== 'undefined') ? TIMER_DEFAULT_WARNING_FLASH_SECONDS : 10;
   
   sessionDoc.transact(() => {
     // Set metadata
@@ -968,6 +971,7 @@ function createNewSessionV4(sessionDoc, options = {}) {
     config.set('rounding', options.rounding || false);
     config.set('timerFirstPointSeconds', normalize_timer_seconds(options.timerFirstPointSeconds, defaultFirstPointSeconds));
     config.set('timerSubsequentPointSeconds', normalize_timer_seconds(options.timerSubsequentPointSeconds, defaultSubsequentPointSeconds));
+    config.set('timerWarningFlashSeconds', normalize_timer_seconds(options.timerWarningFlashSeconds, defaultWarningFlashSeconds));
     session.set('config', config);
     
     // Initialize UUID structures
@@ -1969,6 +1973,7 @@ async function initialize_new_yjs_state() {
     rounding: false,
     timerFirstPointSeconds: (typeof TIMER_DEFAULT_FIRST_POINT_SECONDS !== 'undefined') ? TIMER_DEFAULT_FIRST_POINT_SECONDS : 30,
     timerSubsequentPointSeconds: (typeof TIMER_DEFAULT_SUBSEQUENT_POINT_SECONDS !== 'undefined') ? TIMER_DEFAULT_SUBSEQUENT_POINT_SECONDS : 10,
+    timerWarningFlashSeconds: (typeof TIMER_DEFAULT_WARNING_FLASH_SECONDS !== 'undefined') ? TIMER_DEFAULT_WARNING_FLASH_SECONDS : 10,
     teamNames: [team1Name],
     blockNames: blockNames
   });
@@ -2012,7 +2017,8 @@ async function migrate_v2_to_v3() {
         maxPointsPerQuestion: oldSession.get('config').get('maxPointsPerQuestion'),
         rounding: oldSession.get('config').get('rounding'),
         timerFirstPointSeconds: normalize_timer_seconds(oldSession.get('config').get('timerFirstPointSeconds'), (typeof TIMER_DEFAULT_FIRST_POINT_SECONDS !== 'undefined') ? TIMER_DEFAULT_FIRST_POINT_SECONDS : 30),
-        timerSubsequentPointSeconds: normalize_timer_seconds(oldSession.get('config').get('timerSubsequentPointSeconds'), (typeof TIMER_DEFAULT_SUBSEQUENT_POINT_SECONDS !== 'undefined') ? TIMER_DEFAULT_SUBSEQUENT_POINT_SECONDS : 10)
+        timerSubsequentPointSeconds: normalize_timer_seconds(oldSession.get('config').get('timerSubsequentPointSeconds'), (typeof TIMER_DEFAULT_SUBSEQUENT_POINT_SECONDS !== 'undefined') ? TIMER_DEFAULT_SUBSEQUENT_POINT_SECONDS : 10),
+        timerWarningFlashSeconds: normalize_timer_seconds(oldSession.get('config').get('timerWarningFlashSeconds'), (typeof TIMER_DEFAULT_WARNING_FLASH_SECONDS !== 'undefined') ? TIMER_DEFAULT_WARNING_FLASH_SECONDS : 10)
       },
       teams: extractYArray(oldSession.get('teams')),
       blocks: extractYArray(oldSession.get('blocks')),
@@ -2047,6 +2053,7 @@ async function migrate_v2_to_v3() {
       config.set('rounding', sessionData.config.rounding);
       config.set('timerFirstPointSeconds', sessionData.config.timerFirstPointSeconds);
       config.set('timerSubsequentPointSeconds', sessionData.config.timerSubsequentPointSeconds);
+      config.set('timerWarningFlashSeconds', sessionData.config.timerWarningFlashSeconds);
       session.set('config', config);
 
       // Teams

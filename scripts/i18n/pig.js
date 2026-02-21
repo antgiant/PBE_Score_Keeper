@@ -108,6 +108,7 @@ register_i18n_language('pig', {
       "disabled": "Isabled-Day",
       "first_point_seconds": "Econds-Say or-fay irst-fay oint-pay",
       "subsequent_point_seconds": "Econds-Say or-fay each-ay additional-ay oint-pay",
+      "warning_flash_seconds": "Econds-Say emaining-ray or-fay arning-way ash-flay",
       "time_remaining": "Ime-Tay Emaining-Ray",
       "remove_time": "Emove-Ray 1 econd-Say",
       "add_time": "Add-ay 1 econd-Say",

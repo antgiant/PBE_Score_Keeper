@@ -63,6 +63,11 @@ function session_to_json_v4(sessionId, session) {
         const value = Math.floor(Number(session.get('config').get('timerSubsequentPointSeconds')));
         const fallback = (typeof TIMER_DEFAULT_SUBSEQUENT_POINT_SECONDS !== 'undefined') ? TIMER_DEFAULT_SUBSEQUENT_POINT_SECONDS : 10;
         return (Number.isFinite(value) && value >= 0) ? value : fallback;
+      })(),
+      timerWarningFlashSeconds: (function() {
+        const value = Math.floor(Number(session.get('config').get('timerWarningFlashSeconds')));
+        const fallback = (typeof TIMER_DEFAULT_WARNING_FLASH_SECONDS !== 'undefined') ? TIMER_DEFAULT_WARNING_FLASH_SECONDS : 10;
+        return (Number.isFinite(value) && value >= 0) ? value : fallback;
       })()
     },
     // UUID-keyed structures
@@ -437,6 +442,11 @@ async function import_yjs_from_json(data, mode) {
         const fallback = (typeof TIMER_DEFAULT_SUBSEQUENT_POINT_SECONDS !== 'undefined') ? TIMER_DEFAULT_SUBSEQUENT_POINT_SECONDS : 10;
         return (Number.isFinite(value) && value >= 0) ? value : fallback;
       })());
+      config.set('timerWarningFlashSeconds', (function() {
+        const value = Math.floor(Number(sessionData.config.timerWarningFlashSeconds));
+        const fallback = (typeof TIMER_DEFAULT_WARNING_FLASH_SECONDS !== 'undefined') ? TIMER_DEFAULT_WARNING_FLASH_SECONDS : 10;
+        return (Number.isFinite(value) && value >= 0) ? value : fallback;
+      })());
       session.set('config', config);
 
       // Teams
@@ -633,6 +643,11 @@ async function import_yjs_from_json_v4(data, mode) {
       config.set('timerSubsequentPointSeconds', (function() {
         const value = Math.floor(Number(sessionData.config.timerSubsequentPointSeconds));
         const fallback = (typeof TIMER_DEFAULT_SUBSEQUENT_POINT_SECONDS !== 'undefined') ? TIMER_DEFAULT_SUBSEQUENT_POINT_SECONDS : 10;
+        return (Number.isFinite(value) && value >= 0) ? value : fallback;
+      })());
+      config.set('timerWarningFlashSeconds', (function() {
+        const value = Math.floor(Number(sessionData.config.timerWarningFlashSeconds));
+        const fallback = (typeof TIMER_DEFAULT_WARNING_FLASH_SECONDS !== 'undefined') ? TIMER_DEFAULT_WARNING_FLASH_SECONDS : 10;
         return (Number.isFinite(value) && value >= 0) ? value : fallback;
       })());
       session.set('config', config);
@@ -867,7 +882,8 @@ function convert_localStorage_to_v2(localStorageData) {
         maxPointsPerQuestion: Number(JSON.parse(localStorageData['session_' + s + '_max_points_per_question'])),
         rounding: JSON.parse(localStorageData['session_' + s + '_rounding']) === 'true',
         timerFirstPointSeconds: (typeof TIMER_DEFAULT_FIRST_POINT_SECONDS !== 'undefined') ? TIMER_DEFAULT_FIRST_POINT_SECONDS : 30,
-        timerSubsequentPointSeconds: (typeof TIMER_DEFAULT_SUBSEQUENT_POINT_SECONDS !== 'undefined') ? TIMER_DEFAULT_SUBSEQUENT_POINT_SECONDS : 10
+        timerSubsequentPointSeconds: (typeof TIMER_DEFAULT_SUBSEQUENT_POINT_SECONDS !== 'undefined') ? TIMER_DEFAULT_SUBSEQUENT_POINT_SECONDS : 10,
+        timerWarningFlashSeconds: (typeof TIMER_DEFAULT_WARNING_FLASH_SECONDS !== 'undefined') ? TIMER_DEFAULT_WARNING_FLASH_SECONDS : 10
       },
       teams: [],
       blocks: [],

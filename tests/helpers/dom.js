@@ -417,6 +417,7 @@ function loadApp(seed = {}) {
               configMap.set('rounding', sessionConfig.rounding || false);
               configMap.set('timerFirstPointSeconds', Number.isFinite(sessionConfig.timerFirstPointSeconds) ? sessionConfig.timerFirstPointSeconds : 30);
               configMap.set('timerSubsequentPointSeconds', Number.isFinite(sessionConfig.timerSubsequentPointSeconds) ? sessionConfig.timerSubsequentPointSeconds : 10);
+              configMap.set('timerWarningFlashSeconds', Number.isFinite(sessionConfig.timerWarningFlashSeconds) ? sessionConfig.timerWarningFlashSeconds : 10);
               session.set('config', configMap);
 
               // Initialize UUID structures
@@ -751,6 +752,7 @@ function exportYjsToLocalStorageFormat(ydoc, DocManager) {
       result[`session_${sessionIndex}_rounding`] = JSON.stringify(config.get('rounding'));
       result[`session_${sessionIndex}_timer_first_point_seconds`] = JSON.stringify(config.get('timerFirstPointSeconds'));
       result[`session_${sessionIndex}_timer_subsequent_point_seconds`] = JSON.stringify(config.get('timerSubsequentPointSeconds'));
+      result[`session_${sessionIndex}_timer_warning_flash_seconds`] = JSON.stringify(config.get('timerWarningFlashSeconds'));
     }
     
     // Teams

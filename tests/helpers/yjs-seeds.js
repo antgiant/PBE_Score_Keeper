@@ -73,6 +73,7 @@ function buildSession(config, Y) {
   configMap.set('rounding', config.rounding || false);
   configMap.set('timerFirstPointSeconds', Number.isFinite(config.timerFirstPointSeconds) ? config.timerFirstPointSeconds : 30);
   configMap.set('timerSubsequentPointSeconds', Number.isFinite(config.timerSubsequentPointSeconds) ? config.timerSubsequentPointSeconds : 10);
+  configMap.set('timerWarningFlashSeconds', Number.isFinite(config.timerWarningFlashSeconds) ? config.timerWarningFlashSeconds : 10);
   session.set('config', configMap);
 
   // Build teams array (1-indexed with null placeholder)

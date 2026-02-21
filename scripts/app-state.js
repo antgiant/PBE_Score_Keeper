@@ -191,6 +191,7 @@ async function migrate_localStorage_to_v3(oldVersion) {
       const rounding = JSON.parse(upgradedData['session_' + s + '_rounding'] || 'false') === 'true';
       const timerFirstPointSeconds = (typeof TIMER_DEFAULT_FIRST_POINT_SECONDS !== 'undefined') ? TIMER_DEFAULT_FIRST_POINT_SECONDS : 30;
       const timerSubsequentPointSeconds = (typeof TIMER_DEFAULT_SUBSEQUENT_POINT_SECONDS !== 'undefined') ? TIMER_DEFAULT_SUBSEQUENT_POINT_SECONDS : 10;
+      const timerWarningFlashSeconds = (typeof TIMER_DEFAULT_WARNING_FLASH_SECONDS !== 'undefined') ? TIMER_DEFAULT_WARNING_FLASH_SECONDS : 10;
 
       // Create v5 session with deterministic IDs
       createNewSessionV4(sessionDoc, {
@@ -200,6 +201,7 @@ async function migrate_localStorage_to_v3(oldVersion) {
         rounding: rounding,
         timerFirstPointSeconds: timerFirstPointSeconds,
         timerSubsequentPointSeconds: timerSubsequentPointSeconds,
+        timerWarningFlashSeconds: timerWarningFlashSeconds,
         teamNames: normalizedTeamNames,
         blockNames: normalizedBlockNames
       });
@@ -444,10 +446,13 @@ async function createNewSession(name) {
   const temp_rounding = config.get('rounding');
   const timerFirstPointFallback = (typeof TIMER_DEFAULT_FIRST_POINT_SECONDS !== 'undefined') ? TIMER_DEFAULT_FIRST_POINT_SECONDS : 30;
   const timerSubsequentFallback = (typeof TIMER_DEFAULT_SUBSEQUENT_POINT_SECONDS !== 'undefined') ? TIMER_DEFAULT_SUBSEQUENT_POINT_SECONDS : 10;
+  const timerWarningFlashFallback = (typeof TIMER_DEFAULT_WARNING_FLASH_SECONDS !== 'undefined') ? TIMER_DEFAULT_WARNING_FLASH_SECONDS : 10;
   const timerFirstValue = Math.floor(Number(config.get('timerFirstPointSeconds')));
   const timerSubsequentValue = Math.floor(Number(config.get('timerSubsequentPointSeconds')));
+  const timerWarningFlashValue = Math.floor(Number(config.get('timerWarningFlashSeconds')));
   const temp_timer_first_point_seconds = (Number.isFinite(timerFirstValue) && timerFirstValue >= 0) ? timerFirstValue : timerFirstPointFallback;
   const temp_timer_subsequent_point_seconds = (Number.isFinite(timerSubsequentValue) && timerSubsequentValue >= 0) ? timerSubsequentValue : timerSubsequentFallback;
+  const temp_timer_warning_flash_seconds = (Number.isFinite(timerWarningFlashValue) && timerWarningFlashValue >= 0) ? timerWarningFlashValue : timerWarningFlashFallback;
   const temp_block_names = get_block_names();
   const temp_team_names = get_team_names();
 
@@ -467,6 +472,7 @@ async function createNewSession(name) {
     rounding: temp_rounding,
     timerFirstPointSeconds: temp_timer_first_point_seconds,
     timerSubsequentPointSeconds: temp_timer_subsequent_point_seconds,
+    timerWarningFlashSeconds: temp_timer_warning_flash_seconds,
     teamNames: temp_team_names.slice(1), // Remove null at index 0
     blockNames: temp_block_names
   });
@@ -534,6 +540,7 @@ async function createEmptySessionForSync(name) {
     newConfig.set('rounding', false);
     newConfig.set('timerFirstPointSeconds', (typeof TIMER_DEFAULT_FIRST_POINT_SECONDS !== 'undefined') ? TIMER_DEFAULT_FIRST_POINT_SECONDS : 30);
     newConfig.set('timerSubsequentPointSeconds', (typeof TIMER_DEFAULT_SUBSEQUENT_POINT_SECONDS !== 'undefined') ? TIMER_DEFAULT_SUBSEQUENT_POINT_SECONDS : 10);
+    newConfig.set('timerWarningFlashSeconds', (typeof TIMER_DEFAULT_WARNING_FLASH_SECONDS !== 'undefined') ? TIMER_DEFAULT_WARNING_FLASH_SECONDS : 10);
     session.set('config', newConfig);
 
     // Empty v5 structures

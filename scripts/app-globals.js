@@ -3,6 +3,7 @@
 var current_question_index = 1;
 var TIMER_DEFAULT_FIRST_POINT_SECONDS = 10;
 var TIMER_DEFAULT_SUBSEQUENT_POINT_SECONDS = 5;
+var TIMER_DEFAULT_WARNING_FLASH_SECONDS = 10;
 
 // Question timer runtime state (local only)
 var question_timer_interval = null;
@@ -11,6 +12,8 @@ var question_timer_remaining_seconds = 0;
 var question_timer_duration_seconds = 0;
 var question_timer_question_id = null;
 var question_timer_expired = false;
+var question_timer_warning_flash_timeout = null;
+var question_timer_warning_flash_trigger_seconds = TIMER_DEFAULT_WARNING_FLASH_SECONDS;
 
 //Setup heml escape variables
 var DOMtext = document.createTextNode("test");

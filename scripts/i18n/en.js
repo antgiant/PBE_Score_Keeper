@@ -111,6 +111,7 @@ register_i18n_language('en', {
       "disabled": "Disabled",
       "first_point_seconds": "Seconds for first point",
       "subsequent_point_seconds": "Seconds for each additional point",
+      "warning_flash_seconds": "Seconds remaining for warning flash",
       "time_remaining": "Time Remaining",
       "remove_time": "Remove 1 second",
       "add_time": "Add 1 second",

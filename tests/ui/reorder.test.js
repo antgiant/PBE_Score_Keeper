@@ -217,7 +217,19 @@ test('beta score entry normalization inserts timer for old saved orders', () => 
   );
   assert.equal(
     JSON.stringify(normalized),
-    JSON.stringify(['points', 'timer', 'block', 'teams'])
+    JSON.stringify(['points', 'block', 'timer', 'teams'])
+  );
+});
+
+test('default score entry order places timer below block and above teams', () => {
+  const { context } = loadApp(buildReorderSeed());
+  assert.equal(
+    JSON.stringify(context.get_default_score_entry_field_order(false)),
+    JSON.stringify(['points', 'block', 'timer'])
+  );
+  assert.equal(
+    JSON.stringify(context.get_default_score_entry_field_order(true)),
+    JSON.stringify(['points', 'block', 'timer', 'teams'])
   );
 });
 

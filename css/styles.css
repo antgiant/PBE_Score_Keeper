@@ -248,12 +248,14 @@ fieldset {
   border-radius: 8px;
   background: var(--control-bg);
 }
-.question-timer-panel.question-timer-panel-expired {
+.question-timer-panel.question-timer-panel-expired,
+.question-timer-panel.question-timer-panel-warning-flash {
   background: var(--timer-expired-bg);
   border-color: var(--timer-expired-bg);
   color: var(--timer-expired-text);
 }
-.question-timer-panel.question-timer-panel-expired legend {
+.question-timer-panel.question-timer-panel-expired legend,
+.question-timer-panel.question-timer-panel-warning-flash legend {
   color: var(--timer-expired-text);
   background: var(--timer-expired-bg);
   padding: 0 0.3rem;
@@ -261,7 +263,10 @@ fieldset {
 }
 .question-timer-panel.question-timer-panel-expired .question-timer-display,
 .question-timer-panel.question-timer-panel-expired .question-timer-display-line button,
-.question-timer-panel.question-timer-panel-expired .question-timer-buttons button {
+.question-timer-panel.question-timer-panel-expired .question-timer-buttons button,
+.question-timer-panel.question-timer-panel-warning-flash .question-timer-display,
+.question-timer-panel.question-timer-panel-warning-flash .question-timer-display-line button,
+.question-timer-panel.question-timer-panel-warning-flash .question-timer-buttons button {
   color: var(--timer-expired-text);
 }
 .question-timer-display-line {
