@@ -2234,20 +2234,29 @@ function normalize_score_entry_field_order(order, available, isBeta) {
   });
 
   if (available.indexOf("timer") !== -1) {
-    normalized = normalized.filter(function(fieldId) {
-      return fieldId !== "timer";
-    });
-    var pointsIndex = normalized.indexOf("points");
-    if (pointsIndex === -1) {
-      normalized.unshift("timer");
-    } else {
-      normalized.splice(pointsIndex + 1, 0, "timer");
+    if (!isBeta) {
+      normalized = normalized.filter(function(fieldId) {
+        return fieldId !== "timer";
+      });
+      var pointsIndex = normalized.indexOf("points");
+      if (pointsIndex === -1) {
+        normalized.unshift("timer");
+      } else {
+        normalized.splice(pointsIndex + 1, 0, "timer");
+      }
+    } else if (normalized.indexOf("timer") === -1) {
+      var betaPointsIndex = normalized.indexOf("points");
+      if (betaPointsIndex === -1) {
+        normalized.unshift("timer");
+      } else {
+        normalized.splice(betaPointsIndex + 1, 0, "timer");
+      }
     }
   }
 
   if (isBeta) {
     available.forEach(function(fieldId) {
-      if (fieldId !== "timer" && normalized.indexOf(fieldId) === -1) {
+      if (normalized.indexOf(fieldId) === -1) {
         normalized.push(fieldId);
       }
     });
@@ -2532,6 +2541,9 @@ function save_score_entry_field_order() {
 function get_score_entry_reorder_label(fieldId) {
   if (fieldId === "points") {
     return t("table.possible_points");
+  }
+  if (fieldId === "timer") {
+    return t("timer.title");
   }
   if (fieldId === "block") {
     return t("score_entry.block_group", { count: 1 });

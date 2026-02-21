@@ -194,3 +194,34 @@ test('apply_score_entry_field_order function exists', () => {
   const order = context.get_score_entry_field_order();
   assert.deepEqual(order, ['block', 'points']);
 });
+
+test('beta score entry normalization allows timer away from points', () => {
+  const { context } = loadApp(buildReorderSeed());
+  const normalized = context.normalize_score_entry_field_order(
+    ['points', 'block', 'teams', 'timer'],
+    ['points', 'timer', 'block', 'teams'],
+    true
+  );
+  assert.equal(
+    JSON.stringify(normalized),
+    JSON.stringify(['points', 'block', 'teams', 'timer'])
+  );
+});
+
+test('beta score entry normalization inserts timer for old saved orders', () => {
+  const { context } = loadApp(buildReorderSeed());
+  const normalized = context.normalize_score_entry_field_order(
+    ['points', 'block', 'teams'],
+    ['points', 'timer', 'block', 'teams'],
+    true
+  );
+  assert.equal(
+    JSON.stringify(normalized),
+    JSON.stringify(['points', 'timer', 'block', 'teams'])
+  );
+});
+
+test('score entry reorder label includes timer', () => {
+  const { context } = loadApp(buildReorderSeed());
+  assert.equal(context.get_score_entry_reorder_label('timer'), context.t('timer.title'));
+});
