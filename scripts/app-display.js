@@ -511,6 +511,33 @@ function initialize_rounding_toggle_switch() {
   });
 }
 
+function sync_rounding_toggle_labels() {
+  var exactLabel = t("rounding.no");
+  var roundedLabel = t("rounding.yes");
+
+  if (typeof $ !== "undefined") {
+    $("#rounding_no_label").text(exactLabel);
+    $("#rounding_yes_label").text(roundedLabel);
+
+    var roundingNo = $("#rounding_no");
+    var roundingYes = $("#rounding_yes");
+    if (typeof roundingNo.checkboxradio === "function") {
+      try {
+        roundingNo.checkboxradio("option", "label", exactLabel);
+      } catch (e) {
+        // Checkboxradio not initialized yet.
+      }
+    }
+    if (typeof roundingYes.checkboxradio === "function") {
+      try {
+        roundingYes.checkboxradio("option", "label", roundedLabel);
+      } catch (e) {
+        // Checkboxradio not initialized yet.
+      }
+    }
+  }
+}
+
 function initialize_timer_toggle_switch() {
   if (typeof document === "undefined" || typeof document.getElementById !== "function") {
     return;
@@ -1833,6 +1860,7 @@ function sync_data_to_display() {
     roundingToggle.addClass("is-exact");
     roundingToggle.removeClass("is-rounded");
   }
+  sync_rounding_toggle_labels();
 
   //Show ignore status
   if (ignore_question === true) {

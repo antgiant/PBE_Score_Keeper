@@ -86,3 +86,17 @@ test('rounding uses the top team total for live scores and totals', () => {
   assert.ok(context.$('#team_1_points_label').text().includes('100.00%'));
   assert.ok(context.$('#team_2_points_label').text().includes('92.31%'));
 });
+
+test('rounding toggle labels follow active language', () => {
+  const { context } = loadApp(buildRoundingSeed());
+
+  context.i18n_current_language = 'es';
+  context.sync_data_to_display();
+  assert.equal(context.$('#rounding_no_label').text(), 'Exacto');
+  assert.equal(context.$('#rounding_yes_label').text(), 'Redondeado');
+
+  context.i18n_current_language = 'pig';
+  context.sync_data_to_display();
+  assert.equal(context.$('#rounding_no_label').text(), 'Exact-ay');
+  assert.equal(context.$('#rounding_yes_label').text(), 'Ounded-Ray');
+});
