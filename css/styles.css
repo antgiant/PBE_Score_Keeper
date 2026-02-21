@@ -856,14 +856,17 @@ tr:nth-child(even){
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 2rem;
+  min-width: 0;
   height: 2rem;
+  padding: 0 0.65rem;
   border-radius: 999px;
   border: 1px solid var(--border-color);
   background: var(--control-bg);
   color: var(--text-color);
   cursor: pointer;
   font-weight: 700;
+  font-size: 0.82rem;
+  white-space: nowrap;
 }
 [data-ui-mode="beta"] .beta-session-nav-btn:disabled {
   opacity: 0.45;

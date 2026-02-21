@@ -1535,12 +1535,20 @@ function sync_data_to_display() {
     }
     var prevSessionButton = document.getElementById("session_prev_button");
     if (prevSessionButton) {
+      var prevSessionLabel = t('session_nav.previous');
+      prevSessionButton.textContent = prevSessionLabel;
+      prevSessionButton.setAttribute('aria-label', prevSessionLabel);
+      prevSessionButton.setAttribute('title', prevSessionLabel);
       prevSessionButton.disabled = currentSessionIndex <= 1;
     }
     var nextSessionButton = document.getElementById("session_next_button");
     if (nextSessionButton) {
       var hasNextSession = currentSessionIndex < session_count;
       var canCreateSession = question_count > 1;
+      var nextSessionLabel = hasNextSession ? t('session_nav.next') : t('config.new_session');
+      nextSessionButton.textContent = nextSessionLabel;
+      nextSessionButton.setAttribute('aria-label', nextSessionLabel);
+      nextSessionButton.setAttribute('title', nextSessionLabel);
       nextSessionButton.disabled = !hasNextSession && !canCreateSession;
     }
   }

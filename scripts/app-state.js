@@ -813,7 +813,7 @@ function getAllSessions() {
   // Get cached session names from global doc
   const meta = getGlobalDoc().getMap('meta');
   const sessionNames = meta.get('sessionNames');
-  const unnamedSessionText = (typeof t === 'function') ? t('defaults.unnamed_session') : 'Unnamed Session';
+  const unnamedSessionText = (typeof t === 'function') ? t('defaults.unnamed_session') : 'Unnamed Quiz';
 
   for (let i = 0; i < sessionOrder.length; i++) {
     const sessionId = sessionOrder[i];
@@ -1735,7 +1735,7 @@ async function autoMergeDuplicateSessions() {
 
         if (!sourceExists || !targetExists) {
           console.log('Session no longer exists, skipping:', source.name);
-          mergeFailures.push({ source: source.name, target: target.name, reason: 'Session not found' });
+          mergeFailures.push({ source: source.name, target: target.name, reason: 'Quiz not found' });
           continue;
         }
 

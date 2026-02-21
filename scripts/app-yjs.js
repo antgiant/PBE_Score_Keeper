@@ -1307,7 +1307,7 @@ function migrateSessionToUUID(sessionDoc) {
     return { 
       skipped: true, 
       reason: 'already-migrated',
-      message: 'Session is already v4.0 format'
+      message: 'Quiz is already v4.0 format'
     };
   }
   
@@ -1931,7 +1931,7 @@ async function initialize_new_yjs_state() {
   const sessionId = generateSessionId();
   var d = new Date();
   var formattedDate = (typeof format_date === 'function') ? format_date(d) : d.toLocaleString();
-  var sessionName = (typeof t === 'function') ? t('defaults.session_name', { date: formattedDate }) : 'Session ' + formattedDate;
+  var sessionName = (typeof t === 'function') ? t('defaults.session_name', { date: formattedDate }) : 'Quiz ' + formattedDate;
 
   // Initialize global doc structure
   getGlobalDoc().transact(function() {
@@ -2369,7 +2369,7 @@ function get_session_names() {
   // Get cached session names from global doc
   const meta = getGlobalDoc().getMap('meta');
   const sessionNames = meta.get('sessionNames');
-  const unnamedSessionText = (typeof t === 'function') ? t('defaults.unnamed_session') : 'Unnamed Session';
+  const unnamedSessionText = (typeof t === 'function') ? t('defaults.unnamed_session') : 'Unnamed Quiz';
 
   for (const sessionId of sessionOrder) {
     // Use cached name if available
@@ -2426,7 +2426,7 @@ async function repairSessionNamesCache() {
   
   // Rebuild cache from session docs
   const repairedNames = new Map();
-  const unnamedSessionText = (typeof t === 'function') ? t('defaults.unnamed_session') : 'Unnamed Session';
+  const unnamedSessionText = (typeof t === 'function') ? t('defaults.unnamed_session') : 'Unnamed Quiz';
   
   for (const sessionId of sessionOrder) {
     // Load the session doc from IndexedDB if not already loaded

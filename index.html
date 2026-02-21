@@ -109,7 +109,7 @@
       </div>
     </div>
     <div id="accordion">
-      <h3 id="accordion_config_header" data-i18n="config.title">Configuration (Session/Round/Game)</h3>
+      <h3 id="accordion_config_header" data-i18n="config.title">Configuration (Quiz)</h3>
       <div data-role="session_configuration" id="session_configuration">
         <h4 data-i18n="config.instructions_title">Instructions</h4>
         <p data-i18n="config.instructions">This is a score keeper for the Pathfinder Bible Experience (aka the Bible Bowl). Please enter your number of teams as well as blocks/groups below so that the scoring grid can be created</p>
@@ -117,13 +117,13 @@
         <p data-i18n="config.storage_note">Data is stored only on your device, and is not shared in any way with any server. This also means that if you change devices your data will not appear on the new device.</p>
         <div id="session_fieldset_placeholder"></div>
         <fieldset class="config-fieldset" id="session_fieldset">
-          <legend data-i18n="config.session_title">Session</legend>
+          <legend data-i18n="config.session_title">Quiz</legend>
           <div class="config-count-row">
             <span id="session_display_count"></span>
           </div>
           <div class="session-buttons-row">
-            <button id="new_session" class="config-add-btn" onclick='local_data_update(this)' data-i18n="config.new_session">New Session</button>
-            <button id="manage_sessions" class="config-add-btn" onclick='showSessionManagerDialog()' data-i18n="session_manager.manage_button">Manage Sessions</button>
+            <button id="new_session" class="config-add-btn" onclick='local_data_update(this)' data-i18n="config.new_session">New Quiz</button>
+            <button id="manage_sessions" class="config-add-btn" onclick='showSessionManagerDialog()' data-i18n="session_manager.manage_button">Manage Quizzes</button>
           </div>
           <fieldset class="config-fieldset beta-sync-fieldset" id="beta_sync_fieldset">
             <legend class="beta-sync-legend">
@@ -224,9 +224,9 @@
           <div id="score_entry_fieldset_placeholder"></div>
           <fieldset id="beta_session_fieldset" class="beta-session-fieldset" aria-hidden="true">
             <legend class="beta-session-legend">
-              <button id="session_prev_button" class="beta-session-nav-btn" type="button" onclick="local_data_update(this)" data-i18n-aria-label="session_nav.previous" data-i18n-title="session_nav.previous">⏮️📜</button>
+              <button id="session_prev_button" class="beta-session-nav-btn" type="button" onclick="local_data_update(this)" data-i18n="session_nav.previous" data-i18n-aria-label="session_nav.previous" data-i18n-title="session_nav.previous">Previous Quiz</button>
               <span id="beta_session_title" class="beta-session-title"></span>
-              <button id="session_next_button" class="beta-session-nav-btn" type="button" onclick="local_data_update(this)" data-i18n-aria-label="session_nav.next" data-i18n-title="session_nav.next">📜⏭️</button>
+              <button id="session_next_button" class="beta-session-nav-btn" type="button" onclick="local_data_update(this)" data-i18n="session_nav.next" data-i18n-aria-label="session_nav.next" data-i18n-title="session_nav.next">Next Quiz</button>
             </legend>
             <div id="beta_session_entry_slot" class="beta-session-entry-slot"></div>
           </fieldset>
@@ -381,7 +381,7 @@
               <tr>
                 <th data-i18n="edit_log.time">Time</th>
                 <th data-i18n="edit_log.user">User</th>
-                <th data-i18n="edit_log.session">Session</th>
+                <th data-i18n="edit_log.session">Quiz</th>
                 <th data-i18n="edit_log.action">Action</th>
                 <th data-i18n="edit_log.details_header">Details</th>
               </tr>
@@ -408,7 +408,7 @@
           </fieldset>
           <fieldset>
             <legend id = "export_json_label" data-i18n="advanced.export_json">Export for Importing</legend>
-            <button class="config-add-btn" id= "export_session_json" onclick='local_data_update(this)' data-i18n="advanced.export_session">Export Session (Round/Game)</button>
+            <button class="config-add-btn" id= "export_session_json" onclick='local_data_update(this)' data-i18n="advanced.export_session">Export Current Quiz</button>
             <button class="config-add-btn" id= "export_all_json" onclick='local_data_update(this)' data-i18n="advanced.export_all">Export All</button>
           </fieldset>
           <fieldset>
@@ -421,7 +421,7 @@
           </fieldset>
           <fieldset>
             <legend data-i18n="advanced.device_migration">Device Migration</legend>
-            <p data-i18n="advanced.migration_description">Transfer all sessions between devices using peer-to-peer sync.</p>
+            <p data-i18n="advanced.migration_description">Transfer all quizzes between devices using peer-to-peer sync.</p>
             <button class="config-add-btn" id="migration_send" onclick="showMigrationDialog('send')" data-i18n="advanced.migration_send">Send to Another Device</button>
             <button class="config-add-btn" id="migration_receive" onclick="showMigrationDialog('receive')" data-i18n="advanced.migration_receive">Receive from Another Device</button>
           </fieldset>
@@ -430,7 +430,7 @@
     </div>
     <div id="scores_tabs_placeholder"></div>
     <footer><p><span data-i18n="footer.feedback">Have an idea to make this better?</span> <a target="_blank" href="https://github.com/antgiant/PBE_Score_Keeper/issues" data-i18n="footer.let_me_know">Let me know</a>.</p>
-    <p><center data-i18n="footer.version" data-i18n-version="2.18.38">v 2.18.38</center></p></footer>
+    <p><center data-i18n="footer.version" data-i18n-version="2.18.41">v 2.18.41</center></p></footer>
 </body>
 
 </html>

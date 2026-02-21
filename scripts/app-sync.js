@@ -4512,7 +4512,8 @@ async function startMigrationReceive() {
   for (var i = 0; i < sessionOrder.length; i++) {
     var sessionId = sessionOrder[i];
     
-    updateMigrationProgress(i + 1, sessionOrder.length, 'Session ' + (i + 1));
+    var sessionLabel = (typeof t === 'function') ? t('config.session_title') : 'Quiz';
+    updateMigrationProgress(i + 1, sessionOrder.length, sessionLabel + ' ' + (i + 1));
     
     // Initialize the session doc (creates if doesn't exist)
     var sessionDoc = typeof initSessionDoc === 'function' 

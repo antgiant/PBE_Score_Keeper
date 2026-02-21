@@ -541,7 +541,7 @@ async function import_yjs_from_json(data, mode) {
       meta.set('sessionNames', sessionNames);
     }
     
-    const unnamedSessionText = (typeof t === 'function') ? t('defaults.unnamed_session') : 'Unnamed Session';
+    const unnamedSessionText = (typeof t === 'function') ? t('defaults.unnamed_session') : 'Unnamed Quiz';
     for (const sessionId of importedSessionIds) {
       const sessionDoc = getSessionDoc(sessionId);
       if (sessionDoc) {
@@ -762,7 +762,7 @@ async function import_yjs_from_json_v4(data, mode) {
       meta.set('sessionNames', sessionNames);
     }
     
-    const unnamedSessionText = (typeof t === 'function') ? t('defaults.unnamed_session') : 'Unnamed Session';
+    const unnamedSessionText = (typeof t === 'function') ? t('defaults.unnamed_session') : 'Unnamed Quiz';
     for (const sessionId of importedSessionIds) {
       const sessionDoc = getSessionDoc(sessionId);
       if (sessionDoc) {
@@ -1358,7 +1358,7 @@ async function importSessionData(data) {
               meta.set('sessionNames', sessionNames);
             }
             
-            const unnamedSessionText = (typeof t === 'function') ? t('defaults.unnamed_session') : 'Unnamed Session';
+            const unnamedSessionText = (typeof t === 'function') ? t('defaults.unnamed_session') : 'Unnamed Quiz';
             for (const sessionId of importedSessionIds) {
               const sessionDoc = getSessionDoc(sessionId);
               if (sessionDoc) {

@@ -182,7 +182,7 @@ async function createSessionBackup(sessionId, reason) {
 
     // Get session name
     var session = sessionDoc.getMap('session');
-    var sessionName = session ? session.get('name') : 'Unknown Session';
+    var sessionName = session ? session.get('name') : 'Unknown Quiz';
 
     // Capture complete state as binary
     var stateUpdate = Y.encodeStateAsUpdate(sessionDoc);
