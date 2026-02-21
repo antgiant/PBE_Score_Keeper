@@ -55,6 +55,7 @@ var DocManager = {
 var DATA_VERSION_CURRENT = '5.0';
 var DATA_VERSION_UUID = '4.0';
 var DATA_VERSION_DETERMINISTIC = '5.0';
+var SESSION_CREATED_AT_BACKFILL_FLAG = 'sessionCreatedAtBackfillV1';
 
 /**
  * Whether to create new sessions using UUID-based v4.0 format.
@@ -2217,6 +2218,7 @@ async function load_from_yjs() {
 
   // Upgrade all sessions to v5 immediately
   await upgradeAllSessionsToV5();
+  await backfillMissingSessionCreatedAtFromName();
   // Stamp global metadata to v5 after upgrade
   getGlobalDoc().transact(function() {
     meta.set('dataVersion', DATA_VERSION_DETERMINISTIC);
@@ -2233,6 +2235,169 @@ async function load_from_yjs() {
   }
   
   console.log('Loaded from Yjs, current session:', currentSessionId);
+}
+
+/**
+ * Parse date-time from old/new default session name formats:
+ * - "Session {date time}" (legacy)
+ * - "{date time}" (current)
+ * @param {string} sessionName - Session name to parse
+ * @returns {number|null} Parsed Unix timestamp in ms, or null if not parseable
+ */
+function parseDefaultSessionNameCreatedAt(sessionName) {
+  if (typeof sessionName !== 'string') return null;
+
+  const trimmedName = sessionName.trim();
+  if (!trimmedName) return null;
+
+  function parseDateText(dateText) {
+    if (!dateText) return null;
+
+    // Keep parsing strict so custom quiz names are not accidentally treated as dates.
+    if (!/^[0-9\s:/.,-]+(?:\s*[AP]M)?$/i.test(dateText)) return null;
+    if (!/[\/.-]/.test(dateText) || dateText.indexOf(':') === -1) return null;
+
+    const parsed = Date.parse(dateText);
+    if (Number.isFinite(parsed)) {
+      return parsed;
+    }
+
+    const match = dateText.match(/^(\d{1,4})[\/.-](\d{1,2})[\/.-](\d{1,4})(?:,\s*|\s+)(\d{1,2}):(\d{2})(?::(\d{2}))?\s*([AP]M)?$/i);
+    if (!match) return null;
+
+    const tokenA = Number(match[1]);
+    const tokenB = Number(match[2]);
+    const tokenC = Number(match[3]);
+    let hour = Number(match[4]);
+    const minute = Number(match[5]);
+    const second = Number(match[6] || 0);
+    const ampm = match[7] ? match[7].toUpperCase() : null;
+
+    if (!Number.isFinite(tokenA) || !Number.isFinite(tokenB) || !Number.isFinite(tokenC)) return null;
+    if (!Number.isFinite(hour) || !Number.isFinite(minute) || !Number.isFinite(second)) return null;
+
+    if (ampm) {
+      if (hour < 1 || hour > 12) return null;
+      if (ampm === 'AM' && hour === 12) hour = 0;
+      if (ampm === 'PM' && hour < 12) hour += 12;
+    } else if (hour < 0 || hour > 23) {
+      return null;
+    }
+
+    if (minute < 0 || minute > 59 || second < 0 || second > 59) return null;
+
+    function normalizeYear(year) {
+      if (year >= 100) return year;
+      return year >= 70 ? year + 1900 : year + 2000;
+    }
+
+    function toTimestamp(year, month, day, hourVal, minuteVal, secondVal) {
+      if (month < 1 || month > 12 || day < 1 || day > 31) return null;
+      const value = new Date(year, month - 1, day, hourVal, minuteVal, secondVal);
+      if (isNaN(value.getTime())) return null;
+      if (
+        value.getFullYear() !== year ||
+        value.getMonth() !== month - 1 ||
+        value.getDate() !== day ||
+        value.getHours() !== hourVal ||
+        value.getMinutes() !== minuteVal ||
+        value.getSeconds() !== secondVal
+      ) {
+        return null;
+      }
+      return value.getTime();
+    }
+
+    const candidates = [];
+    const tokenAIsYear = String(match[1]).length === 4;
+
+    if (tokenAIsYear) {
+      candidates.push([tokenA, tokenB, tokenC]);
+    } else {
+      const year = normalizeYear(tokenC);
+      // Prefer U.S. month/day first, then day/month fallback.
+      candidates.push([year, tokenA, tokenB]);
+      candidates.push([year, tokenB, tokenA]);
+    }
+
+    for (let i = 0; i < candidates.length; i++) {
+      const candidate = candidates[i];
+      const ts = toTimestamp(candidate[0], candidate[1], candidate[2], hour, minute, second);
+      if (Number.isFinite(ts)) {
+        return ts;
+      }
+    }
+
+    return null;
+  }
+
+  const dateTextCandidates = [trimmedName];
+  const firstDigitIndex = trimmedName.search(/\d/);
+  if (firstDigitIndex > 0) {
+    const prefix = trimmedName.slice(0, firstDigitIndex).trim();
+    const remainder = trimmedName.slice(firstDigitIndex).trim();
+    // Allow translated "Session" labels by stripping any non-numeric leading prefix.
+    if (remainder && prefix && /^[^0-9]+$/.test(prefix)) {
+      dateTextCandidates.push(remainder);
+    }
+  }
+
+  for (let i = 0; i < dateTextCandidates.length; i++) {
+    const ts = parseDateText(dateTextCandidates[i]);
+    if (Number.isFinite(ts)) {
+      return ts;
+    }
+  }
+
+  return null;
+}
+
+/**
+ * One-time migration: backfill missing session.createdAt using default dated names.
+ * @returns {Promise<{updatedCount:number, scannedCount:number, skipped:boolean}>}
+ */
+async function backfillMissingSessionCreatedAtFromName() {
+  const globalDoc = getGlobalDoc();
+  if (!globalDoc) {
+    return { updatedCount: 0, scannedCount: 0, skipped: true };
+  }
+
+  const meta = globalDoc.getMap('meta');
+  if (meta.get(SESSION_CREATED_AT_BACKFILL_FLAG) === true) {
+    return { updatedCount: 0, scannedCount: 0, skipped: true };
+  }
+
+  const sessionOrder = meta.get('sessionOrder') || [];
+  let updatedCount = 0;
+
+  for (const sessionId of sessionOrder) {
+    const sessionDoc = await initSessionDoc(sessionId);
+    if (!sessionDoc) continue;
+
+    const session = sessionDoc.getMap('session');
+    if (!session) continue;
+
+    const createdAt = Number(session.get('createdAt'));
+    if (Number.isFinite(createdAt) && createdAt > 0) continue;
+
+    const parsedCreatedAt = parseDefaultSessionNameCreatedAt(session.get('name'));
+    if (!Number.isFinite(parsedCreatedAt) || parsedCreatedAt <= 0) continue;
+
+    sessionDoc.transact(function() {
+      session.set('createdAt', parsedCreatedAt);
+    }, 'migration');
+    updatedCount++;
+  }
+
+  globalDoc.transact(function() {
+    meta.set(SESSION_CREATED_AT_BACKFILL_FLAG, true);
+  }, 'migration');
+
+  if (updatedCount > 0) {
+    console.log('Backfilled missing session createdAt for', updatedCount, 'session(s)');
+  }
+
+  return { updatedCount: updatedCount, scannedCount: sessionOrder.length, skipped: false };
 }
 
 /**
