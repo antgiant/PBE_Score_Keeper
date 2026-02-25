@@ -500,6 +500,9 @@ tr:nth-child(even){
   margin-left: 0;
   order: 0;
 }
+[data-ui-mode="beta"] footer > p:first-child {
+  text-align: center;
+}
 [data-ui-mode="beta"] .header-menu-toggle {
   display: inline-flex;
 }
