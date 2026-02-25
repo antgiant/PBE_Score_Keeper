@@ -856,10 +856,17 @@ tr:nth-child(even){
 }
 [data-ui-mode="beta"] .beta-session-title {
   flex: 1;
+  min-width: 0;
   text-align: center;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+[data-ui-mode="beta"] #beta_question_title_slot {
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 [data-ui-mode="beta"] .beta-question-slot {
   margin-top: 0.5rem;
