@@ -146,7 +146,7 @@ register_i18n_language('pig', {
       "team_exact": "Eam-Tay (Exact-ay)",
       "team_rounded": "Eam-Tay (Ounded-Ray)",
       "by_block": "Ock-Blay",
-      "team_and_block": "Eam-Tay & Ock-Blay",
+      "team_and_block": "Eam-Tay y-bay Ock-Blay",
       "question_history": "Uestion-Qay Og-Lay"
     },
     "table": {
@@ -249,7 +249,7 @@ register_i18n_language('pig', {
       "export_csv": "Export-ay CSV-ay",
       "export_team": "Export-ay Ore-Scay y-bay Eam-Tay",
       "export_block": "Export-ay Ore-Scay y-bay Ock-Blay",
-      "export_team_and_block": "Export-ay Ore-Scay y-bay Eam-Tay & Ock-Blay",
+      "export_team_and_block": "Export-ay Ore-Scay y-bay Eam-Tay y-bay Ock-Blay",
       "export_question_history": "Export-ay Uestion-Qay Istory-Hay",
       "export_json": "Export-ay or-fay Importing-ay",
       "export_session": "Export-ay Urrent-Cay Iz-Quay",
@@ -296,7 +296,7 @@ register_i18n_language('pig', {
       "team_scores": "Eam-Tay Ores-Scay O-Gay Ere-Hay",
       "rounded_scores": "Ounded-Ray Eam-Tay Ores-Scay O-Gay Ere-Hay",
       "block_scores": "Ock-Blay Ores-Scay O-Gay Ere-Hay",
-      "team_block_scores": "Eam-Tay & Ock-Blay Ores-Scay O-Gay Ere-Hay",
+      "team_block_scores": "Eam-Tay y-bay Ock-Blay Ores-Scay O-Gay Ere-Hay",
       "question_history": "Uestion-Qay Istory-Hay Oes-Gay Ere-Hay"
     },
     "defaults": {

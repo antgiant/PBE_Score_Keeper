@@ -150,7 +150,7 @@ register_i18n_language('es', {
       "team_exact": "Equipo (Exacto)",
       "team_rounded": "Equipo (Redondeado)",
       "by_block": "Bloque",
-      "team_and_block": "Equipo y Bloque",
+      "team_and_block": "Equipo por Bloque",
       "question_history": "Registro de Preguntas"
     },
     "table": {
@@ -253,7 +253,7 @@ register_i18n_language('es', {
       "export_csv": "Exportar CSV",
       "export_team": "Exportar Puntuación por Equipo",
       "export_block": "Exportar Puntuación por Bloque",
-      "export_team_and_block": "Exportar Puntuación por Equipo y Bloque",
+      "export_team_and_block": "Exportar Puntuación de Equipo por Bloque",
       "export_question_history": "Exportar Historial de Preguntas",
       "export_json": "Exportar para Importar",
       "export_session": "Exportar Quiz Actual",
@@ -300,7 +300,7 @@ register_i18n_language('es', {
       "team_scores": "Las Puntuaciones del Equipo Van Aquí",
       "rounded_scores": "Las Puntuaciones Redondeadas del Equipo Van Aquí",
       "block_scores": "Las Puntuaciones del Bloque Van Aquí",
-      "team_block_scores": "Las Puntuaciones del Equipo y Bloque Van Aquí",
+      "team_block_scores": "Las Puntuaciones del Equipo por Bloque Van Aquí",
       "question_history": "El Historial de Preguntas Va Aquí"
     },
     "defaults": {

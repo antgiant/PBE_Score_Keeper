@@ -149,7 +149,7 @@ register_i18n_language('en', {
       "team_exact": "Team (Exact)",
       "team_rounded": "Team (Rounded)",
       "by_block": "Block",
-      "team_and_block": "Team & Block",
+      "team_and_block": "Team by Block",
       "question_history": "Question Log"
     },
     "table": {
@@ -252,7 +252,7 @@ register_i18n_language('en', {
       "export_csv": "Export CSV",
       "export_team": "Export Score by Team",
       "export_block": "Export Score by Block",
-      "export_team_and_block": "Export Score by Team & Block",
+      "export_team_and_block": "Export Score by Team by Block",
       "export_question_history": "Export Question History",
       "export_json": "Export for Importing",
       "export_session": "Export Current Quiz",
@@ -299,7 +299,7 @@ register_i18n_language('en', {
       "team_scores": "Team Scores Go Here",
       "rounded_scores": "Rounded Team Scores Go Here",
       "block_scores": "Block Scores Go Here",
-      "team_block_scores": "Team & Block Scores Go Here",
+      "team_block_scores": "Team by Block Scores Go Here",
       "question_history": "Question History Goes Here"
     },
     "defaults": {

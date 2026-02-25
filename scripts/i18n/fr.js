@@ -150,7 +150,7 @@ register_i18n_language('fr', {
       "team_exact": "Équipe (Exact)",
       "team_rounded": "Équipe (Arrondi)",
       "by_block": "Bloc",
-      "team_and_block": "Équipe et Bloc",
+      "team_and_block": "Équipe par Bloc",
       "question_history": "Journal des Questions"
     },
     "table": {
@@ -253,7 +253,7 @@ register_i18n_language('fr', {
       "export_csv": "Exporter CSV",
       "export_team": "Exporter le Score par Équipe",
       "export_block": "Exporter le Score par Bloc",
-      "export_team_and_block": "Exporter le Score par Équipe et Bloc",
+      "export_team_and_block": "Exporter le Score d'Équipe par Bloc",
       "export_question_history": "Exporter l'Historique des Questions",
       "export_json": "Exporter pour Importation",
       "export_session": "Exporter la Quiz Actuelle",
@@ -300,7 +300,7 @@ register_i18n_language('fr', {
       "team_scores": "Les Scores des Équipes Vont Ici",
       "rounded_scores": "Les Scores Arrondis des Équipes Vont Ici",
       "block_scores": "Les Scores des Blocs Vont Ici",
-      "team_block_scores": "Les Scores des Équipes et Blocs Vont Ici",
+      "team_block_scores": "Les Scores des Équipes par Bloc Vont Ici",
       "question_history": "L'Historique des Questions Va Ici"
     },
     "defaults": {
