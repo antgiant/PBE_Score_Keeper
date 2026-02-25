@@ -14,6 +14,8 @@
   --accent-hover: #0847ac;
   --timer-expired-bg: #0b57d0;
   --timer-expired-text: #ffffff;
+  --timer-warning-bg: #c62828;
+  --timer-warning-text: #ffffff;
 }
 [data-theme="dark"] {
   color-scheme: dark;
@@ -31,6 +33,8 @@
   --accent-hover: #a7c6fa;
   --timer-expired-bg: #8ab4f8;
   --timer-expired-text: #0f1115;
+  --timer-warning-bg: #ff6f61;
+  --timer-warning-text: #2b0b0b;
 }
 body {
   background-color: var(--page-bg);
@@ -248,26 +252,38 @@ fieldset {
   border-radius: 8px;
   background: var(--control-bg);
 }
-.question-timer-panel.question-timer-panel-expired,
-.question-timer-panel.question-timer-panel-warning-flash {
+.question-timer-panel.question-timer-panel-expired {
   background: var(--timer-expired-bg);
   border-color: var(--timer-expired-bg);
   color: var(--timer-expired-text);
 }
+.question-timer-panel.question-timer-panel-warning-flash {
+  background: var(--timer-warning-bg);
+  border-color: var(--timer-warning-bg);
+  color: var(--timer-warning-text);
+}
 .question-timer-panel.question-timer-panel-expired legend,
 .question-timer-panel.question-timer-panel-warning-flash legend {
-  color: var(--timer-expired-text);
-  background: var(--timer-expired-bg);
   padding: 0 0.3rem;
   border-radius: 5px;
 }
+.question-timer-panel.question-timer-panel-expired legend {
+  color: var(--timer-expired-text);
+  background: var(--timer-expired-bg);
+}
+.question-timer-panel.question-timer-panel-warning-flash legend {
+  color: var(--timer-warning-text);
+  background: var(--timer-warning-bg);
+}
 .question-timer-panel.question-timer-panel-expired .question-timer-display,
 .question-timer-panel.question-timer-panel-expired .question-timer-display-line button,
-.question-timer-panel.question-timer-panel-expired .question-timer-buttons button,
+.question-timer-panel.question-timer-panel-expired .question-timer-buttons button {
+  color: var(--timer-expired-text);
+}
 .question-timer-panel.question-timer-panel-warning-flash .question-timer-display,
 .question-timer-panel.question-timer-panel-warning-flash .question-timer-display-line button,
 .question-timer-panel.question-timer-panel-warning-flash .question-timer-buttons button {
-  color: var(--timer-expired-text);
+  color: var(--timer-warning-text);
 }
 .question-timer-display-line {
   display: flex;
@@ -428,6 +444,8 @@ tr:nth-child(even){
   --accordion-header-active-text: #ffffff;
   --timer-expired-bg: #c08a00;
   --timer-expired-text: #1b2738;
+  --timer-warning-bg: #b71c1c;
+  --timer-warning-text: #ffffff;
   font-family: "Iowan Old Style", "Palatino", "Georgia", serif;
 }
 :root[data-theme="dark"][data-ui-mode="beta"] {
@@ -448,6 +466,8 @@ tr:nth-child(even){
   --accordion-header-active-text: #1b2334;
   --timer-expired-bg: #f5c24a;
   --timer-expired-text: #1b2334;
+  --timer-warning-bg: #ff8a80;
+  --timer-warning-text: #2b0f10;
 }
 [data-ui-mode="beta"] body {
   background-image: radial-gradient(circle at top left, rgba(31, 75, 143, 0.12), transparent 45%),
