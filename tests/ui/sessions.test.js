@@ -51,6 +51,41 @@ function buildBasicSessionSeed() {
   });
 }
 
+function buildTwoSessionSeed() {
+  return createYjsDoc({
+    currentSession: 1,
+    sessions: [{
+      name: 'Session 1',
+      maxPointsPerQuestion: 6,
+      rounding: false,
+      teams: ['Team 1'],
+      blocks: ['No Block'],
+      questions: [{
+        name: 'Q1',
+        score: 4,
+        block: 0,
+        ignore: false,
+        teamScores: [{ score: 3, extraCredit: 0 }]
+      }],
+      currentQuestion: 1
+    }, {
+      name: 'Session 2',
+      maxPointsPerQuestion: 6,
+      rounding: false,
+      teams: ['Team 1'],
+      blocks: ['No Block'],
+      questions: [{
+        name: 'Q1',
+        score: 5,
+        block: 0,
+        ignore: false,
+        teamScores: [{ score: 4, extraCredit: 0 }]
+      }],
+      currentQuestion: 1
+    }]
+  });
+}
+
 test('renaming a session via renameSession updates session name', () => {
   const { context, ydoc } = loadApp(buildBasicSessionSeed());
 
@@ -99,4 +134,16 @@ test('creating a new session works after scoring and writes to storage', async (
   assert.ok(questionOrder, 'New session should have questionOrder array');
   assert.equal(questionOrder.length, 1, 'New session should have 1 question in questionOrder (placeholder)');
   assert.equal(questionOrder.get(0), 'q-1', 'New session should start with deterministic q-1');
+});
+
+test('results session nav buttons switch sessions using shared handlers', async () => {
+  const { context } = loadApp(buildTwoSessionSeed());
+
+  assert.equal(context.get_current_session_index(), 1, 'Should start on session 1');
+
+  await context.update_data_element('results_session_next_button');
+  assert.equal(context.get_current_session_index(), 2, 'Should move to session 2 from results next button');
+
+  await context.update_data_element('results_session_prev_button');
+  assert.equal(context.get_current_session_index(), 1, 'Should move back to session 1 from results previous button');
 });

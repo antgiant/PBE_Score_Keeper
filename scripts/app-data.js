@@ -48,7 +48,7 @@ function update_data_element(updated_id, new_value) {
     });
   }
 
-  else if (updated_id == "session_prev_button") {
+  else if (updated_id == "session_prev_button" || updated_id == "results_session_prev_button") {
     const currentSessionIndex = get_current_session_index();
     if (currentSessionIndex <= 1) {
       return;
@@ -59,7 +59,7 @@ function update_data_element(updated_id, new_value) {
     });
   }
 
-  else if (updated_id == "session_next_button") {
+  else if (updated_id == "session_next_button" || updated_id == "results_session_next_button") {
     const sessionNames = get_session_names();
     const sessionCount = sessionNames.length - 1;
     const currentSessionIndex = get_current_session_index();

@@ -1529,27 +1529,42 @@ function sync_data_to_display() {
 
   if (typeof document !== 'undefined' && typeof document.getElementById === 'function') {
     var sessionTitle = session.get('name') || t('defaults.unnamed_session');
-    var sessionTitleEl = document.getElementById("beta_session_title");
-    if (sessionTitleEl) {
-      sessionTitleEl.textContent = sessionTitle;
+    var sessionTitleEls = [
+      document.getElementById("beta_session_title"),
+      document.getElementById("beta_results_session_title")
+    ];
+    for (var i = 0; i < sessionTitleEls.length; i++) {
+      if (sessionTitleEls[i]) {
+        sessionTitleEls[i].textContent = sessionTitle;
+      }
     }
-    var prevSessionButton = document.getElementById("session_prev_button");
-    if (prevSessionButton) {
-      var prevSessionLabel = t('session_nav.previous');
-      prevSessionButton.textContent = prevSessionLabel;
-      prevSessionButton.setAttribute('aria-label', prevSessionLabel);
-      prevSessionButton.setAttribute('title', prevSessionLabel);
-      prevSessionButton.disabled = currentSessionIndex <= 1;
+    var prevSessionLabel = t('session_nav.previous');
+    var prevSessionButtons = [
+      document.getElementById("session_prev_button"),
+      document.getElementById("results_session_prev_button")
+    ];
+    for (var j = 0; j < prevSessionButtons.length; j++) {
+      if (prevSessionButtons[j]) {
+        prevSessionButtons[j].textContent = prevSessionLabel;
+        prevSessionButtons[j].setAttribute('aria-label', prevSessionLabel);
+        prevSessionButtons[j].setAttribute('title', prevSessionLabel);
+        prevSessionButtons[j].disabled = currentSessionIndex <= 1;
+      }
     }
-    var nextSessionButton = document.getElementById("session_next_button");
-    if (nextSessionButton) {
-      var hasNextSession = currentSessionIndex < session_count;
-      var canCreateSession = question_count > 1;
-      var nextSessionLabel = hasNextSession ? t('session_nav.next') : t('config.new_session');
-      nextSessionButton.textContent = nextSessionLabel;
-      nextSessionButton.setAttribute('aria-label', nextSessionLabel);
-      nextSessionButton.setAttribute('title', nextSessionLabel);
-      nextSessionButton.disabled = !hasNextSession && !canCreateSession;
+    var hasNextSession = currentSessionIndex < session_count;
+    var canCreateSession = question_count > 1;
+    var nextSessionLabel = hasNextSession ? t('session_nav.next') : t('config.new_session');
+    var nextSessionButtons = [
+      document.getElementById("session_next_button"),
+      document.getElementById("results_session_next_button")
+    ];
+    for (var k = 0; k < nextSessionButtons.length; k++) {
+      if (nextSessionButtons[k]) {
+        nextSessionButtons[k].textContent = nextSessionLabel;
+        nextSessionButtons[k].setAttribute('aria-label', nextSessionLabel);
+        nextSessionButtons[k].setAttribute('title', nextSessionLabel);
+        nextSessionButtons[k].disabled = !hasNextSession && !canCreateSession;
+      }
     }
   }
   
