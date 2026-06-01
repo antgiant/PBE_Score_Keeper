@@ -1816,61 +1816,18 @@ function initialize_yjs() {
   }
 
   try {
-    // Create global Yjs document for metadata
+    // Create global Yjs document for metadata (in-memory, ~1-2ms)
     setYdoc(new Y.Doc());
 
-    // Setup IndexedDB persistence for global doc
-    if (window.indexedDB && typeof IndexeddbPersistence !== 'undefined') {
-      // Check if old v2.0 database exists and use it, otherwise use new v3.0 key
-      check_old_v2_database_exists().then(oldDbExists => {
-        const dbKey = oldDbExists ? 'pbe-score-keeper' : 'pbe-score-keeper-global';
-        console.log('Using IndexedDB key:', dbKey);
-        
-        setYProvider(new IndexeddbPersistence(dbKey, getGlobalDoc()));
-
-        // Fail safe: some environments never emit 'synced', which can stall app startup.
-        setTimeout(function() {
-          if (!yjsReady) {
-            console.warn('Yjs IndexedDB sync timeout; continuing startup without synced signal.');
-            setYjsReady(true);
-          }
-        }, 3000);
-
-        yProvider.on('synced', function() {
-          console.log('Global Yjs doc synced with IndexedDB from:', dbKey);
-          setYjsReady(true);
-
-          // Check document state
-          const meta = getGlobalDoc().getMap('meta');
-          if (meta.size === 0) {
-            console.log('Empty Yjs document detected - will initialize');
-          } else {
-            const version = meta.get('dataVersion');
-            console.log('Existing Yjs data found, version:', version);
-            
-            // Handle migration from v2.0 (single-doc) to v3.0 (multi-doc)
-            if (version === 2.0) {
-              console.log('Migration from v2.0 to v3.0 needed');
-            }
-          }
-          
-          // Set up BroadcastChannel for cross-tab sync of global doc
-          if (typeof BroadcastChannel !== 'undefined') {
-            setupBroadcastChannelSync(getGlobalDoc(), 'pbe-global', function(channel) {
-              DocManager.globalBroadcast = channel;
-            });
-          }
-        });
-      });
-    } else {
-      // No IndexedDB persistence
-      setYjsReady(true);
-    }
+    // Set ready flag immediately for critical startup path
+    // IndexedDB persistence will sync asynchronously after first paint
+    // This unblocks initialize_state() and display rendering
+    setYjsReady(true);
 
     // Track previous session for change detection
     var previousSessionId = null;
 
-    // Listen for changes on global doc
+    // Listen for changes on global doc (works with or without IndexedDB)
     getGlobalDoc().on('update', function(updateData, origin) {
       const meta = getGlobalDoc().getMap('meta');
       const currentSessionId = meta.get('currentSession');
@@ -1892,10 +1849,75 @@ function initialize_yjs() {
       }
     });
 
+    // Schedule IndexedDB persistence setup on idle (after first paint)
+    // This prevents 3000ms timeout from blocking startup
+    schedule_yjs_indexeddb_setup();
+    
     return true;
   } catch (error) {
     console.error('Failed to initialize Yjs:', error);
     return false;
+  }
+}
+
+/**
+ * Set up IndexedDB persistence for global doc asynchronously (after first paint)
+ * Non-blocking: runs on idle callback, does not delay critical startup
+ * @private
+ */
+function setup_yjs_indexeddb_persistence() {
+  if (!window.indexedDB || typeof IndexeddbPersistence === 'undefined') {
+    console.log('IndexedDB not available or persistence library not loaded');
+    return;
+  }
+
+  try {
+    check_old_v2_database_exists().then(oldDbExists => {
+      const dbKey = oldDbExists ? 'pbe-score-keeper' : 'pbe-score-keeper-global';
+      console.log('Setting up IndexedDB persistence with key:', dbKey);
+      
+      setYProvider(new IndexeddbPersistence(dbKey, getGlobalDoc()));
+
+      yProvider.on('synced', function() {
+        console.log('Global Yjs doc synced with IndexedDB from:', dbKey);
+
+        // Check document state
+        const meta = getGlobalDoc().getMap('meta');
+        if (meta.size === 0) {
+          console.log('Empty Yjs document detected');
+        } else {
+          const version = meta.get('dataVersion');
+          console.log('Loaded Yjs data from IndexedDB, version:', version);
+        }
+        
+        // Set up BroadcastChannel for cross-tab sync of global doc
+        if (typeof BroadcastChannel !== 'undefined') {
+          setupBroadcastChannelSync(getGlobalDoc(), 'pbe-global', function(channel) {
+            DocManager.globalBroadcast = channel;
+          });
+        }
+      });
+    });
+  } catch (error) {
+    console.error('Failed to set up IndexedDB persistence:', error);
+  }
+}
+
+/**
+ * Schedule IndexedDB persistence setup on idle or timeout
+ * Called after Y.Doc creation to defer expensive I/O
+ * @private
+ */
+function schedule_yjs_indexeddb_setup() {
+  if (typeof requestIdleCallback === 'function') {
+    requestIdleCallback(function() {
+      setup_yjs_indexeddb_persistence();
+    }, { timeout: 1000 });
+  } else {
+    // Fallback for browsers without requestIdleCallback
+    setTimeout(function() {
+      setup_yjs_indexeddb_persistence();
+    }, 100);
   }
 }
 
