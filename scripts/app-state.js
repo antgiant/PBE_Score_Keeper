@@ -30,8 +30,10 @@ async function initialize_state() {
       }
     }
 
-    setTimeout(initialize_state, 100);
-    return;
+    await new Promise(function(resolve) {
+      setTimeout(resolve, 100);
+    });
+    return initialize_state();
   }
 
   initialize_state_retry_count = 0;

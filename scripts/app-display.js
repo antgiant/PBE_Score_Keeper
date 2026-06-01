@@ -1056,7 +1056,8 @@ function initialize_display() {
 
   //Set up Accordion display
   $("#accordion").accordion({
-    heightStyle: "content"
+    heightStyle: "content",
+    animate: false
   });
   initialize_config_accordion_for_ui_mode();
 
@@ -1073,9 +1074,12 @@ function initialize_display() {
   initialize_theme_controls();
   initialize_ui_mode_controls();
   initialize_max_points_controls_for_ui_mode();
-  initialize_header_menu();
-  initialize_block_manager();
-  initialize_team_manager();
+  if (typeof initialize_block_manager === "function") {
+    initialize_block_manager();
+  }
+  if (typeof initialize_team_manager === "function") {
+    initialize_team_manager();
+  }
   initialize_score_entry_field_order_for_ui_mode();
   initialize_score_entry_field_reorder();
   initialize_score_entry_advanced_toggle();
@@ -1083,10 +1087,16 @@ function initialize_display() {
   initialize_rounding_toggle_switch();
   initialize_timer_toggle_switch();
   sync_data_to_display();
-  initialize_reorder_controls();
-  initialize_history_viewer();
+  if (typeof initialize_reorder_controls === "function") {
+    initialize_reorder_controls();
+  }
+  if (typeof initialize_history_viewer === "function") {
+    initialize_history_viewer();
+  }
 
-  setup_file_import();
+  if (typeof setup_file_import === "function") {
+    setup_file_import();
+  }
   
   // Set up hover/click handlers for blocks that cannot be deleted (show notice on row hover/click)
   $("#block_names").on("mouseenter", ".reorder-item", function() {
@@ -1154,6 +1164,10 @@ function initialize_display() {
       typeof document !== 'undefined' && document.getElementById) {
     hasExistingDataOnLoad = false; // Reset flag so it doesn't show again
     checkAndShowContinueOrNewDialog();
+  }
+
+  if (typeof document !== "undefined" && document.documentElement) {
+    document.documentElement.removeAttribute("data-initializing");
   }
 }
 

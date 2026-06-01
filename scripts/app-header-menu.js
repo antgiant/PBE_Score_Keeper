@@ -6,6 +6,9 @@ function initialize_header_menu() {
   }
 
   var root = document.documentElement;
+  if (root && root.dataset && root.dataset.headerMenuInitialized === "true") {
+    return;
+  }
   var toggle = document.getElementById("header_menu_toggle");
   var panel = document.getElementById("header_menu_panel");
   var sessionFieldset = document.getElementById("session_fieldset");
@@ -27,6 +30,10 @@ function initialize_header_menu() {
   var defaultSyncFieldset = document.getElementById("default_sync_fieldset");
   if (!root || !toggle || !panel) {
     return;
+  }
+
+  if (root.dataset) {
+    root.dataset.headerMenuInitialized = "true";
   }
 
   function is_default_mode() {

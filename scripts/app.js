@@ -1,35 +1,301 @@
 // Initialize display only after state is ready
 var stateInitialized = false;
+var domReadyForDisplay = false;
+var displayInitialized = false;
+var deferredModulesInitialized = false;
 
-$(document).ready(function() {
-  initialize_feedback_link();
+var STARTUP_LANGUAGE_SCRIPTS = {
+  en: "scripts/i18n/en.js",
+  es: "scripts/i18n/es.js",
+  fr: "scripts/i18n/fr.js",
+  pig: "scripts/i18n/pig.js"
+};
 
-  // Wait for state to be initialized before initializing display
-  var checkStateReady = setInterval(function() {
-    if (window.stateInitialized) {
-      clearInterval(checkStateReady);
-      initialize_display();
+var DEFERRED_SCRIPT_PATHS = {
+  reorder: "scripts/app-reorder.js",
+  snapshot: "scripts/app-snapshot.js",
+  importExport: "scripts/app-import-export.js",
+  backup: "scripts/app-backup.js",
+  history: "scripts/app-history.js",
+  blockManager: "scripts/app-block-manager.js",
+  teamManager: "scripts/app-team-manager.js",
+  syncCrypto: "scripts/app-sync-crypto.js",
+  sync: "scripts/app-sync.js"
+};
+
+var DEFERRED_FEATURE_GROUPS = {
+  reorder: ["reorder"],
+  snapshot: ["snapshot"],
+  importExport: ["importExport"],
+  backup: ["backup"],
+  history: ["history"],
+  blockManager: ["blockManager"],
+  teamManager: ["teamManager"],
+  sync: ["syncCrypto", "sync"],
+  all: ["reorder", "snapshot", "importExport", "backup", "history", "blockManager", "teamManager", "syncCrypto", "sync"]
+};
+
+var _scriptLoadPromises = {};
+var _featureLoadPromises = {};
+var _deferredLanguageLoaded = {};
+
+function load_script_once(src) {
+  if (_scriptLoadPromises[src]) {
+    return _scriptLoadPromises[src];
+  }
+
+  _scriptLoadPromises[src] = new Promise(function(resolve, reject) {
+    var script = document.createElement("script");
+    script.src = src;
+    script.async = true;
+    script.onload = function() {
+      resolve();
+    };
+    script.onerror = function() {
+      reject(new Error("Failed to load script: " + src));
+    };
+    document.head.appendChild(script);
+  });
+
+  return _scriptLoadPromises[src];
+}
+
+function detect_boot_language_code() {
+  var supportedCodes = Object.keys(STARTUP_LANGUAGE_SCRIPTS);
+  var savedLanguage = null;
+  try {
+    savedLanguage = localStorage.getItem("language_preference");
+  } catch (e) {
+    savedLanguage = null;
+  }
+
+  if (savedLanguage && savedLanguage !== "auto") {
+    return supportedCodes.indexOf(savedLanguage) !== -1 ? savedLanguage : "en";
+  }
+
+  var browserLangs = (typeof navigator !== "undefined" && navigator.languages && navigator.languages.length)
+    ? navigator.languages
+    : [typeof navigator !== "undefined" ? (navigator.language || navigator.userLanguage || "en") : "en"];
+
+  for (var i = 0; i < browserLangs.length; i++) {
+    var lang = browserLangs[i];
+    if (!lang) {
+      continue;
     }
-  }, 50);
-});
+    var normalized = String(lang).toLowerCase();
+    if (supportedCodes.indexOf(normalized) !== -1) {
+      return normalized;
+    }
+    var base = normalized.split("-")[0];
+    if (supportedCodes.indexOf(base) !== -1) {
+      return base;
+    }
+  }
 
-initialize_language_preference();
-initialize_theme_preference();
-initialize_ui_mode_preference();
-initialize_storage_persistence();
+  return "en";
+}
+
+function ensure_language_loaded(code) {
+  var normalizedCode = STARTUP_LANGUAGE_SCRIPTS[code] ? code : "en";
+  if (_deferredLanguageLoaded[normalizedCode]) {
+    return Promise.resolve();
+  }
+  return load_script_once(STARTUP_LANGUAGE_SCRIPTS[normalizedCode]).then(function() {
+    _deferredLanguageLoaded[normalizedCode] = true;
+  });
+}
+
+function ensure_feature_loaded(featureName) {
+  if (_featureLoadPromises[featureName]) {
+    return _featureLoadPromises[featureName];
+  }
+
+  var scriptKeys = DEFERRED_FEATURE_GROUPS[featureName];
+  if (!scriptKeys || scriptKeys.length === 0) {
+    return Promise.resolve();
+  }
+
+  _featureLoadPromises[featureName] = scriptKeys.reduce(function(chain, scriptKey) {
+    return chain.then(function() {
+      var path = DEFERRED_SCRIPT_PATHS[scriptKey];
+      if (!path) {
+        return Promise.resolve();
+      }
+      return load_script_once(path);
+    });
+  }, Promise.resolve());
+
+  return _featureLoadPromises[featureName];
+}
+
+function setup_lazy_feature_shim(globalFunctionName, featureName) {
+  if (typeof window[globalFunctionName] === "function") {
+    return;
+  }
+
+  var shim = function() {
+    var args = Array.prototype.slice.call(arguments);
+    return ensure_feature_loaded(featureName)
+      .then(function() {
+        var loadedFn = window[globalFunctionName];
+        if (typeof loadedFn === "function" && loadedFn !== shim) {
+          return loadedFn.apply(window, args);
+        }
+      })
+      .catch(function(error) {
+        console.error("Failed to lazy-load feature for", globalFunctionName, error);
+      });
+  };
+
+  window[globalFunctionName] = shim;
+}
+
+function refresh_language_selector_after_lazy_load() {
+  if (typeof populate_language_selector !== "function" || typeof update_language_selector !== "function") {
+    return;
+  }
+  populate_language_selector();
+  var savedLanguage = null;
+  try {
+    savedLanguage = localStorage.getItem("language_preference");
+  } catch (e) {
+    savedLanguage = null;
+  }
+  update_language_selector(savedLanguage || "auto");
+}
+
+function initialize_deferred_modules() {
+  if (deferredModulesInitialized) {
+    return;
+  }
+  deferredModulesInitialized = true;
+
+  ensure_feature_loaded("all")
+    .then(function() {
+      if (typeof initialize_block_manager === "function") {
+        initialize_block_manager();
+      }
+      if (typeof initialize_team_manager === "function") {
+        initialize_team_manager();
+      }
+      if (typeof initialize_reorder_controls === "function") {
+        initialize_reorder_controls();
+      }
+      if (typeof initialize_history_viewer === "function") {
+        initialize_history_viewer();
+      }
+      if (typeof setup_file_import === "function") {
+        setup_file_import();
+      }
+      if (typeof initSyncManager === "function") {
+        initSyncManager();
+      }
+    })
+    .catch(function(error) {
+      console.error("Failed to initialize deferred modules", error);
+    });
+
+  var bootLanguage = detect_boot_language_code();
+  Object.keys(STARTUP_LANGUAGE_SCRIPTS).forEach(function(code) {
+    if (code === bootLanguage) {
+      return;
+    }
+    ensure_language_loaded(code)
+      .then(function() {
+        refresh_language_selector_after_lazy_load();
+      })
+      .catch(function(error) {
+        console.error("Failed to load deferred language", code, error);
+      });
+  });
+}
+
+function schedule_deferred_initialization() {
+  if (typeof window !== "undefined" && typeof window.requestIdleCallback === "function") {
+    window.requestIdleCallback(function() {
+      initialize_deferred_modules();
+    }, { timeout: 1000 });
+    return;
+  }
+  setTimeout(function() {
+    initialize_deferred_modules();
+  }, 100);
+}
+
+function try_initialize_display() {
+  if (displayInitialized || !domReadyForDisplay || !window.stateInitialized) {
+    return;
+  }
+  displayInitialized = true;
+  initialize_feedback_link();
+  initialize_display();
+  schedule_deferred_initialization();
+}
+
+if (typeof document !== "undefined") {
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", function() {
+      domReadyForDisplay = true;
+      try_initialize_display();
+    }, { once: true });
+  } else {
+    domReadyForDisplay = true;
+  }
+}
+
+setup_lazy_feature_shim("showImportExportDialog", "importExport");
+setup_lazy_feature_shim("showChangeLogDialog", "history");
+setup_lazy_feature_shim("showSyncDialog", "sync");
+setup_lazy_feature_shim("showSyncInfoDialog", "sync");
+setup_lazy_feature_shim("showMigrationDialog", "sync");
+setup_lazy_feature_shim("showBackupBrowserDialog", "backup");
+setup_lazy_feature_shim("showBlockManagerDialog", "blockManager");
+setup_lazy_feature_shim("showTeamManagerDialog", "teamManager");
+
+function bootstrap_critical_startup() {
+  var bootLanguage = detect_boot_language_code();
+  ensure_language_loaded(bootLanguage)
+    .then(function() {
+      initialize_language_preference();
+      if (typeof translate_page === "function") {
+        translate_page();
+      }
+      initialize_theme_preference();
+      initialize_ui_mode_preference();
+      initialize_storage_persistence();
+      initialize_header_menu();
+      initializeApp();
+    })
+    .catch(function(error) {
+      console.error("Failed to load boot language, falling back to English", error);
+      ensure_language_loaded("en").finally(function() {
+        initialize_language_preference();
+        if (typeof translate_page === "function") {
+          translate_page();
+        }
+        initialize_theme_preference();
+        initialize_ui_mode_preference();
+        initialize_storage_persistence();
+        initialize_header_menu();
+        initializeApp();
+      });
+    });
+}
 
 // Yjs bundle loads synchronously and sets window.yjsModulesLoaded
 // But just to be safe, we'll check and wait if needed
 function initializeApp() {
   initialize_yjs();  // Initialize Yjs before state
-  initialize_state();  // This will set stateInitialized = true when done
+  initialize_state().finally(function() {
+    try_initialize_display();
+  });
 }
 
 if (window.yjsModulesLoaded) {
-  initializeApp();
+  bootstrap_critical_startup();
 } else {
   // Fallback: wait for event (shouldn't be needed with sync script)
-  window.addEventListener('yjsModulesLoaded', initializeApp, { once: true });
+  window.addEventListener('yjsModulesLoaded', bootstrap_critical_startup, { once: true });
 }
 
 /**

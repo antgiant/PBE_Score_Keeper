@@ -822,6 +822,19 @@ tr:nth-child(even){
   overflow: hidden;
   box-shadow: 0 18px 50px rgba(0, 0, 0, 0.12);
 }
+[data-ui-mode="default"] #accordion_config_header,
+[data-ui-mode="default"] #session_configuration {
+  display: none;
+}
+:root[data-initializing="true"] *,
+:root[data-initializing="true"] *::before,
+:root[data-initializing="true"] *::after {
+  animation: none !important;
+  transition: none !important;
+}
+:root[data-initializing="true"] #main {
+  visibility: hidden;
+}
 [data-ui-mode="default"] .default-session-fieldset {
   display: block;
   border: 1px solid var(--border-color);

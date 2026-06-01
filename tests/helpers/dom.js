@@ -66,6 +66,53 @@ function extractScripts(html) {
   });
 }
 
+const TEST_ALWAYS_LOAD_SCRIPTS = [
+  'scripts/app-reorder.js',
+  'scripts/app-snapshot.js',
+  'scripts/app-import-export.js',
+  'scripts/app-backup.js',
+  'scripts/app-sync-crypto.js',
+  'scripts/app-sync.js',
+  'scripts/app-history.js',
+  'scripts/app-block-manager.js',
+  'scripts/app-team-manager.js',
+];
+
+const TEST_LANGUAGE_SCRIPTS = [
+  'scripts/i18n/en.js',
+  'scripts/i18n/es.js',
+  'scripts/i18n/fr.js',
+  'scripts/i18n/pig.js',
+];
+
+function injectAlwaysLoadedScriptsForTests(orderedScripts) {
+  const existing = new Set();
+  orderedScripts.forEach((script) => {
+    if (script && script.src) {
+      existing.add(script.src);
+    }
+  });
+
+  const appI18nIndex = orderedScripts.findIndex((script) => script.src && script.src.includes('app-i18n'));
+  let languageInsertIndex = appI18nIndex >= 0 ? appI18nIndex + 1 : orderedScripts.length;
+  TEST_LANGUAGE_SCRIPTS.forEach((src) => {
+    if (existing.has(src)) {
+      return;
+    }
+    orderedScripts.splice(languageInsertIndex, 0, { src: src, inline: '' });
+    existing.add(src);
+    languageInsertIndex += 1;
+  });
+
+  TEST_ALWAYS_LOAD_SCRIPTS.forEach((src) => {
+    if (existing.has(src)) {
+      return;
+    }
+    orderedScripts.push({ src: src, inline: '' });
+    existing.add(src);
+  });
+}
+
 function buildContext(seed = {}) {
   const localStorage = createStorage(seed);
   const elements = new Map();
@@ -331,6 +378,7 @@ function loadApp(seed = {}) {
       // If no app-i18n.js found, add at end
       orderedScripts.push(...i18nLanguageScripts);
     }
+    injectAlwaysLoadedScriptsForTests(orderedScripts);
     
     orderedScripts.forEach((script) => {
       if (script.src) {
@@ -589,6 +637,7 @@ function loadApp(seed = {}) {
     } else {
       orderedScripts.push(...i18nLanguageScripts);
     }
+    injectAlwaysLoadedScriptsForTests(orderedScripts);
 
     orderedScripts.forEach((script) => {
       if (script.src) {
