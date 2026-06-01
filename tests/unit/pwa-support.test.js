@@ -15,6 +15,7 @@ const serviceWorkerScript = fs.readFileSync(
 
 test('clearCacheAndRestart uses translated confirmation text', () => {
   let confirmMessage = '';
+  const deletedCaches = [];
 
   const context = {
     window: {
@@ -38,8 +39,17 @@ test('clearCacheAndRestart uses translated confirmation text', () => {
     },
     navigator: {},
     caches: {
-      keys() { return Promise.resolve([]); },
-      delete() { return Promise.resolve(true); },
+      keys() {
+        return Promise.resolve([
+          'pbe-score-keeper-shell-2.22.0',
+          'pbe-score-keeper-static-2.22.0',
+          'unrelated-origin-cache'
+        ]);
+      },
+      delete(cacheName) {
+        deletedCaches.push(cacheName);
+        return Promise.resolve(true);
+      },
     },
     localStorage: {
       getItem() { return null; },
@@ -54,6 +64,7 @@ test('clearCacheAndRestart uses translated confirmation text', () => {
       const map = {
         'advanced.clear_cache': 'Clear Cache & Restart',
         'advanced.clear_cache_confirm': 'Translated confirmation',
+        'advanced.cache_cleared': 'Cache cleared',
       };
       return map[key] || key;
     },
@@ -70,6 +81,18 @@ test('clearCacheAndRestart uses translated confirmation text', () => {
   context.clearCacheAndRestart();
 
   assert.equal(confirmMessage, 'Clear Cache & Restart\n\nTranslated confirmation');
+  assert.deepEqual(deletedCaches, []);
+
+  context.confirm = function() {
+    return true;
+  };
+
+  return context.clearCacheAndRestart().then(function() {
+    assert.deepEqual(deletedCaches, [
+      'pbe-score-keeper-shell-2.22.0',
+      'pbe-score-keeper-static-2.22.0'
+    ]);
+  });
 });
 
 test('initializePwaToolsVisibility only shows tools when installed as PWA', () => {

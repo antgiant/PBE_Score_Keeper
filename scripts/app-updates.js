@@ -7,7 +7,8 @@
  * - Periodic background sync for auto-updates (when installed as PWA)
  */
 
-var APP_VERSION = "2.22.0";
+var APP_VERSION = "2.22.1";
+var PWA_CACHE_PREFIX = "pbe-score-keeper";
 var PWA_TOOLS_DIALOG_ID = "pwa-tools-dialog-overlay";
 var pwaToolsDialogKeyHandler = null;
 var pwaToolsDialogLastFocus = null;
@@ -350,7 +351,7 @@ function clearCacheAndRestart() {
     t("advanced.clear_cache") + "\n\n" + t("advanced.clear_cache_confirm")
   );
   if (!confirmed) {
-    return;
+    return Promise.resolve(false);
   }
 
   var statusElement = document.getElementById("clear_cache_button");
@@ -359,10 +360,14 @@ function clearCacheAndRestart() {
     statusElement.disabled = true;
   }
 
-  // Get all cache names and delete them
-  caches.keys().then(function(cacheNames) {
+  // Delete only this app's service-worker caches.
+  return caches.keys().then(function(cacheNames) {
+    var appCacheNames = cacheNames.filter(function(cacheName) {
+      return typeof cacheName === "string" && cacheName.indexOf(PWA_CACHE_PREFIX) === 0;
+    });
+
     return Promise.all(
-      cacheNames.map(function(cacheName) {
+      appCacheNames.map(function(cacheName) {
         return caches.delete(cacheName);
       })
     );
@@ -372,9 +377,11 @@ function clearCacheAndRestart() {
     setTimeout(function() {
       window.location.reload();
     }, 1000);
+    return true;
   }).catch(function(error) {
     console.warn("Error clearing cache:", error);
     resetClearCacheButton();
+    return false;
   });
 }
 
