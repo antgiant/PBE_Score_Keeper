@@ -36,6 +36,25 @@ function initialize_header_menu() {
     root.dataset.headerMenuInitialized = "true";
   }
 
+  var menuSwipeStartX = 0;
+  var menuSwipeStartY = 0;
+  var menuSwipeTracking = false;
+  var menuOpenSwipeStartX = 0;
+  var menuOpenSwipeStartY = 0;
+  var menuOpenSwipeTracking = false;
+
+  function reset_menu_swipe_tracking() {
+    menuSwipeTracking = false;
+    menuSwipeStartX = 0;
+    menuSwipeStartY = 0;
+  }
+
+  function reset_menu_open_swipe_tracking() {
+    menuOpenSwipeTracking = false;
+    menuOpenSwipeStartX = 0;
+    menuOpenSwipeStartY = 0;
+  }
+
   function is_default_mode() {
     return root.getAttribute("data-ui-mode") === "default";
   }
@@ -216,6 +235,98 @@ function initialize_header_menu() {
       set_menu_state(false);
       toggle.focus();
     }
+  });
+
+  document.addEventListener("touchstart", function(event) {
+    if (!is_default_mode()) {
+      return;
+    }
+    if (panel.classList.contains(HEADER_MENU_OPEN_CLASS)) {
+      reset_menu_open_swipe_tracking();
+      return;
+    }
+    if (!event.touches || event.touches.length !== 1) {
+      reset_menu_open_swipe_tracking();
+      return;
+    }
+
+    var startX = event.touches[0].clientX;
+    if (startX > 28) {
+      reset_menu_open_swipe_tracking();
+      return;
+    }
+
+    menuOpenSwipeStartX = startX;
+    menuOpenSwipeStartY = event.touches[0].clientY;
+    menuOpenSwipeTracking = true;
+  });
+
+  document.addEventListener("touchend", function(event) {
+    if (!menuOpenSwipeTracking) {
+      return;
+    }
+    if (!event.changedTouches || !event.changedTouches.length) {
+      reset_menu_open_swipe_tracking();
+      return;
+    }
+
+    var deltaX = event.changedTouches[0].clientX - menuOpenSwipeStartX;
+    var deltaY = event.changedTouches[0].clientY - menuOpenSwipeStartY;
+    var horizontalDistance = Math.abs(deltaX);
+    var verticalDistance = Math.abs(deltaY);
+    var isOpenSwipe = deltaX >= 70 && horizontalDistance > verticalDistance * 1.2;
+
+    if (isOpenSwipe && !panel.classList.contains(HEADER_MENU_OPEN_CLASS)) {
+      set_menu_state(true);
+    }
+
+    reset_menu_open_swipe_tracking();
+  });
+
+  document.addEventListener("touchcancel", function() {
+    reset_menu_open_swipe_tracking();
+  });
+
+  panel.addEventListener("touchstart", function(event) {
+    if (!is_default_mode()) {
+      return;
+    }
+    if (!panel.classList.contains(HEADER_MENU_OPEN_CLASS)) {
+      return;
+    }
+    if (!event.touches || event.touches.length !== 1) {
+      reset_menu_swipe_tracking();
+      return;
+    }
+    menuSwipeStartX = event.touches[0].clientX;
+    menuSwipeStartY = event.touches[0].clientY;
+    menuSwipeTracking = true;
+  });
+
+  panel.addEventListener("touchend", function(event) {
+    if (!menuSwipeTracking) {
+      return;
+    }
+    if (!event.changedTouches || !event.changedTouches.length) {
+      reset_menu_swipe_tracking();
+      return;
+    }
+
+    var deltaX = event.changedTouches[0].clientX - menuSwipeStartX;
+    var deltaY = event.changedTouches[0].clientY - menuSwipeStartY;
+    var horizontalDistance = Math.abs(deltaX);
+    var verticalDistance = Math.abs(deltaY);
+    var isHorizontalSwipe = horizontalDistance >= 60 && horizontalDistance > verticalDistance * 1.2;
+
+    if (isHorizontalSwipe && panel.classList.contains(HEADER_MENU_OPEN_CLASS)) {
+      set_menu_state(false);
+    }
+
+    reset_menu_swipe_tracking();
+  });
+
+  panel.addEventListener("touchcancel", function() {
+    reset_menu_swipe_tracking();
   });
 
   var observer = new MutationObserver(function(mutations) {
