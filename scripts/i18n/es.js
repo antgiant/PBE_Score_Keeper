@@ -289,7 +289,13 @@ register_i18n_language('es', {
       "migration_no_sessions": "No hay quizzes para transferir.",
       "migration_close": "Cerrar",
       "migration_info": "Esto usa la misma tecnología punto a punto que la Sincronización en Tiempo Real. Ambos dispositivos deben estar en línea.",
-      "close_button": "Cerrar"
+      "close_button": "Cerrar",
+      "check_updates": "Buscar Actualizaciones",
+      "clear_cache": "Borrar Caché e Reiniciar",
+      "update_available": "¡Actualización de app disponible! Actualiza para aplicar.",
+      "checking_updates": "Buscando actualizaciones...",
+      "no_update_available": "Estás ejecutando la versión más reciente.",
+      "cache_cleared": "Caché borrada. Reiniciando app..."
     },
     "footer": {
       "feedback": "¿Tiene una idea para mejorar esto?",

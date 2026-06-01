@@ -285,7 +285,13 @@ register_i18n_language('pig', {
       "migration_no_sessions": "O-Nay izzes-quay o-tay ansfer-tray.",
       "migration_close": "Ose-Clay",
       "migration_info": "Is-Thay uses-ay e-thay ame-say eer-pay-o-tay-eer-pay echnology-tay as-ay Eal-Ray Ime-Tay Ync-Say. Oth-Bay evices-day ust-may e-bay online-ay.",
-      "close_button": "Ose-Clay"
+      "close_button": "Ose-Clay",
+      "check_updates": "Heck-Cay or-fay Updates-ay",
+      "clear_cache": "Lear-Cay Ache-Cay And-ay Estart-Ray",
+      "update_available": "App-ay Update-ay is-ay Available-ay! Refresh-ay o-tay Apply-ay.",
+      "checking_updates": "Hecking-Cay or-fay Updates-ay...",
+      "no_update_available": "Ou-Yay're-ay unning-ray e-thay Latest-ay ersion-vay.",
+      "cache_cleared": "Ache-Cay Leared-Cay. Estarting-Ray App-ay..."
     },
     "footer": {
       "feedback": "Ave-Hay an-ay idea-ay o-tay ake-may is-thay etter-bay?",

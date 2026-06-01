@@ -288,7 +288,13 @@ register_i18n_language('en', {
       "migration_no_sessions": "No quizzes to transfer.",
       "migration_close": "Close",
       "migration_info": "This uses the same peer-to-peer technology as Real-Time Sync. Both devices must be online.",
-      "close_button": "Close"
+      "close_button": "Close",
+      "check_updates": "Check for Updates",
+      "clear_cache": "Clear Cache & Restart",
+      "update_available": "App update is available! Refresh to apply.",
+      "checking_updates": "Checking for updates...",
+      "no_update_available": "You're running the latest version.",
+      "cache_cleared": "Cache cleared. Restarting app..."
     },
     "footer": {
       "feedback": "Have an idea to make this better?",

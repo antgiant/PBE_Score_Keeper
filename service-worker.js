@@ -1,4 +1,4 @@
-const APP_VERSION = "2.20.0";
+const APP_VERSION = "2.21.0";
 const CACHE_PREFIX = "pbe-score-keeper";
 const SHELL_CACHE_NAME = `${CACHE_PREFIX}-shell-${APP_VERSION}`;
 const STATIC_RUNTIME_CACHE_NAME = `${CACHE_PREFIX}-static-${APP_VERSION}`;
@@ -101,6 +101,21 @@ self.addEventListener("activate", function(event) {
 self.addEventListener("message", function(event) {
   if (event.data && event.data.type === "SKIP_WAITING") {
     self.skipWaiting();
+  }
+});
+
+self.addEventListener("periodicsync", function(event) {
+  if (event.tag === "check-app-updates") {
+    event.waitUntil(
+      fetch("./", { method: "HEAD" })
+        .then(function(response) {
+          // Periodic sync completed - updates will be checked on next page load
+          console.log("Periodic sync: App update check completed");
+        })
+        .catch(function(error) {
+          console.log("Periodic sync: Failed to check for updates:", error);
+        })
+    );
   }
 });
 

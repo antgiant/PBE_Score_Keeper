@@ -19,6 +19,17 @@
 		"productivity",
 		"utilities"
 	],
+	"share_target": {
+		"action": "./",
+		"method": "POST",
+		"enctype": "multipart/form-data",
+		"files": [
+			{
+				"name": "session",
+				"accept": ["application/octet-stream", "application/json", ".yjs", ".json"]
+			}
+		]
+	},
 	"icons": [
 		{
 			"src": "/android-chrome-192x192.png",

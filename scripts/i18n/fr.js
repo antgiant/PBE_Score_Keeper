@@ -289,7 +289,13 @@ register_i18n_language('fr', {
       "migration_no_sessions": "Aucune quiz à transférer.",
       "migration_close": "Fermer",
       "migration_info": "Ceci utilise la même technologie pair-à-pair que la Synchronisation en Temps Réel. Les deux appareils doivent être en ligne.",
-      "close_button": "Fermer"
+      "close_button": "Fermer",
+      "check_updates": "Vérifier les Mises à Jour",
+      "clear_cache": "Effacer le Cache et Redémarrer",
+      "update_available": "Une mise à jour de l'application est disponible ! Actualisez pour l'appliquer.",
+      "checking_updates": "Vérification des mises à jour...",
+      "no_update_available": "Vous exécutez la dernière version.",
+      "cache_cleared": "Cache effacé. Redémarrage de l'application..."
     },
     "footer": {
       "feedback": "Vous avez une idée pour améliorer ceci ?",
