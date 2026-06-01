@@ -2544,7 +2544,9 @@ async function handleSessionChangeFromGlobalUpdate(sessionId) {
 
   // Refresh display
   sync_data_to_display();
-  refresh_history_display();
+  if (typeof refresh_history_display === 'function') {
+    refresh_history_display();
+  }
 }
 
 /**
