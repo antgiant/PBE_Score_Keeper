@@ -98,6 +98,9 @@ fieldset {
 .header-menu-actions {
   display: none;
 }
+.header-menu-install-actions {
+  display: none;
+}
 .header-menu-pwa-actions {
   display: none;
 }
@@ -537,6 +540,14 @@ tr:nth-child(even){
   border-top: 1px solid var(--border-color);
 }
 [data-ui-mode="default"] .header-menu-pwa-actions {
+  display: none;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border-color);
+}
+[data-ui-mode="default"] .header-menu-install-actions {
   display: none;
   flex-direction: column;
   gap: 0.5rem;

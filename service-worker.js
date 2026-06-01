@@ -1,4 +1,4 @@
-const APP_VERSION = "2.22.1";
+const APP_VERSION = "2.23.0";
 const CACHE_PREFIX = "pbe-score-keeper";
 const SHELL_CACHE_NAME = `${CACHE_PREFIX}-shell-${APP_VERSION}`;
 const STATIC_RUNTIME_CACHE_NAME = `${CACHE_PREFIX}-static-${APP_VERSION}`;
@@ -55,7 +55,9 @@ const PRECACHE_OPTIONAL_URLS = [
   "images/ui-icons_777620_256x240.png",
   "images/ui-icons_777777_256x240.png",
   "images/ui-icons_cc0000_256x240.png",
-  "images/ui-icons_ffffff_256x240.png"
+  "images/ui-icons_ffffff_256x240.png",
+  "images/main_screen_screenshot.jpg",
+  "images/score_screenshot.jpg"
 ];
 
 const CACHE_POLICIES = {

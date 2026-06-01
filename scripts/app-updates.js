@@ -7,12 +7,13 @@
  * - Periodic background sync for auto-updates (when installed as PWA)
  */
 
-var APP_VERSION = "2.22.1";
+var APP_VERSION = "2.23.0";
 var PWA_CACHE_PREFIX = "pbe-score-keeper";
 var PWA_TOOLS_DIALOG_ID = "pwa-tools-dialog-overlay";
 var pwaToolsDialogKeyHandler = null;
 var pwaToolsDialogLastFocus = null;
 var pwaDeferredReloadNotified = false;
+var deferredInstallPromptEvent = null;
 
 function isRunningAsInstalledPwa() {
   var isStandaloneDisplayMode = false;
@@ -47,13 +48,80 @@ function initializePwaToolsVisibility() {
 
   var pwaToolsButton = document.getElementById("pwa_tools_button");
   var pwaActionsContainer = document.querySelector(".header-menu-pwa-actions");
-  if (!pwaToolsButton || !pwaActionsContainer) {
+  var installButton = document.getElementById("install_app_button");
+  var installActionsContainer = document.querySelector(".header-menu-install-actions");
+
+  var isInstalled = isRunningAsInstalledPwa();
+
+  if (pwaToolsButton && pwaActionsContainer) {
+    pwaActionsContainer.style.display = isInstalled ? "flex" : "none";
+    pwaToolsButton.hidden = !isInstalled;
+  }
+
+  if (installButton && installActionsContainer) {
+    var shouldShowInstallAction = !isInstalled;
+    installActionsContainer.style.display = shouldShowInstallAction ? "flex" : "none";
+    installButton.hidden = !shouldShowInstallAction;
+  }
+}
+
+function getInstallFallbackMessage() {
+  var userAgent = "";
+  if (typeof navigator !== "undefined" && navigator.userAgent) {
+    userAgent = String(navigator.userAgent).toLowerCase();
+  }
+
+  var isIos = /iphone|ipad|ipod/.test(userAgent);
+  var isAndroid = /android/.test(userAgent);
+
+  if (isIos) {
+    return t("advanced.install_instructions_ios");
+  }
+  if (isAndroid) {
+    return t("advanced.install_instructions_android");
+  }
+  return t("advanced.install_instructions_desktop");
+}
+
+function promptInstallApp() {
+  if (isRunningAsInstalledPwa()) {
     return;
   }
 
-  var shouldShow = isRunningAsInstalledPwa();
-  pwaActionsContainer.style.display = shouldShow ? "flex" : "none";
-  pwaToolsButton.hidden = !shouldShow;
+  if (!deferredInstallPromptEvent || typeof deferredInstallPromptEvent.prompt !== "function") {
+    showUpdateNotification(getInstallFallbackMessage(), "info");
+    return;
+  }
+
+  deferredInstallPromptEvent.prompt();
+  deferredInstallPromptEvent.userChoice.then(function(choiceResult) {
+    if (!choiceResult || choiceResult.outcome !== "accepted") {
+      showUpdateNotification(getInstallFallbackMessage(), "info");
+    }
+  }).catch(function() {
+    showUpdateNotification(getInstallFallbackMessage(), "info");
+  }).finally(function() {
+    deferredInstallPromptEvent = null;
+    initializePwaToolsVisibility();
+  });
+}
+
+function initializeInstallPromptHandling() {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  window.addEventListener("beforeinstallprompt", function(event) {
+    event.preventDefault();
+    deferredInstallPromptEvent = event;
+    initializePwaToolsVisibility();
+  });
+
+  window.addEventListener("appinstalled", function() {
+    deferredInstallPromptEvent = null;
+    initializePwaToolsVisibility();
+    showUpdateNotification(t("advanced.install_success"), "success");
+  });
 }
 
 function getPwaLastUpdateCheckIso() {
@@ -500,10 +568,12 @@ function registerPeriodicBackgroundSync() {
 
 // Initialize periodic background sync on app load
 if (typeof window !== "undefined" && document.readyState === "complete") {
+  initializeInstallPromptHandling();
   initializePwaToolsVisibility();
   registerPeriodicBackgroundSync();
 } else if (typeof window !== "undefined") {
   window.addEventListener("load", function() {
+    initializeInstallPromptHandling();
     initializePwaToolsVisibility();
     registerPeriodicBackgroundSync();
   });

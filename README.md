@@ -3,6 +3,15 @@
 # PBE Score Keeper
 A tool to help keep track of Pathfinder Bible Experience (PBE) (aka Bible Bowl) Scores by block and team.
 
+## Install as an App (PWA)
+PBE Score Keeper is optimized for mobile use and can be installed to your home screen.
+
+1. Android (Chrome): Open the app, tap the browser menu, then tap "Install app" or "Add to Home screen".
+2. iPhone/iPad (Safari): Open the app, tap Share, then tap "Add to Home Screen".
+3. Desktop (Chrome/Edge): Open the app and use the install icon in the address bar, or browser menu > "Install".
+
+After installation, open the app from your home screen/app launcher for the best full-screen experience.
+
 ## Data Storage Note
 Data is stored only on your device, and is not shared in any way with any server. This means this data is only on your current device, and that you must use the Export Data options under Import/Export if you need to save copies of this data.
 

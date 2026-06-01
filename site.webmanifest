@@ -49,5 +49,21 @@
 			"type": "image/png",
 			"purpose": "maskable"
 		}
+	],
+	"screenshots": [
+		{
+			"src": "/images/main_screen_screenshot.jpg",
+			"sizes": "1320x2658",
+			"type": "image/jpeg",
+			"form_factor": "narrow",
+			"label": "Score entry and team management"
+		},
+		{
+			"src": "/images/score_screenshot.jpg",
+			"sizes": "1320x2682",
+			"type": "image/jpeg",
+			"form_factor": "narrow",
+			"label": "Live score results with multiple views"
+		}
 	]
 }
