@@ -201,6 +201,17 @@ function initialize_deferred_modules() {
             console.error("Failed to upgrade other sessions:", error);
           });
       }
+
+      // Repair session metadata after first paint so dropdown updates can lag safely
+      if (typeof maintainSessionMetadata === "function") {
+        maintainSessionMetadata()
+          .then(function(result) {
+            console.log("Deferred session metadata maintenance complete:", result);
+          })
+          .catch(function(error) {
+            console.error("Failed to maintain session metadata:", error);
+          });
+      }
     })
     .catch(function(error) {
       console.error("Failed to initialize deferred modules", error);

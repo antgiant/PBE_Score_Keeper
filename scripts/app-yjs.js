@@ -2804,6 +2804,26 @@ async function pruneEmptySessions() {
 }
 
 /**
+ * Repair session metadata after first paint.
+ * Keeps the startup path light while restoring cached names and pruning empty sessions.
+ * @returns {Promise<{wasRepaired: boolean, prunedCount: number}>}
+ */
+async function maintainSessionMetadata() {
+  if (!is_multi_doc()) {
+    return { wasRepaired: false, prunedCount: 0 };
+  }
+
+  const wasRepaired = await repairSessionNamesCache();
+  const prunedCount = await pruneEmptySessions();
+
+  if ((wasRepaired || prunedCount > 0) && typeof sync_data_to_display === 'function') {
+    sync_data_to_display();
+  }
+
+  return { wasRepaired: wasRepaired, prunedCount: prunedCount };
+}
+
+/**
  * Get team names for current session
  * Supports both v3.0 (index-based) and v4.0 (UUID-based) structures
  * @returns {Array<string>} Array of team names (index 0 is empty string for v3 compatibility)

@@ -47,19 +47,6 @@ async function initialize_state() {
       // Set flag to show welcome back dialog after display is initialized
       hasExistingDataOnLoad = true;
       
-      // Repair sessionNames cache if needed (for users who migrated before fix)
-      if (is_multi_doc()) {
-        const wasRepaired = await repairSessionNamesCache();
-        
-        // Prune empty sessions (no teams and no blocks)
-        const prunedCount = await pruneEmptySessions();
-        
-        // If cache was repaired or sessions pruned, sync display to show corrected session
-        if ((wasRepaired || prunedCount > 0) && typeof sync_data_to_display === 'function') {
-          sync_data_to_display();
-        }
-      }
-      
       // Initialize sync manager for WebRTC sync
       if (typeof initSyncManager === 'function') {
         initSyncManager();
