@@ -187,6 +187,9 @@ function initialize_deferred_modules() {
       if (typeof setup_file_import === "function") {
         setup_file_import();
       }
+      if (typeof handleShareTargetImport === "function") {
+        handleShareTargetImport();
+      }
       if (typeof initSyncManager === "function") {
         initSyncManager();
       }
@@ -324,6 +327,17 @@ function register_service_worker() {
       return;
     }
 
+    var shouldReload = true;
+    if (typeof should_reload_after_service_worker_update === "function") {
+      shouldReload = should_reload_after_service_worker_update();
+    }
+    if (!shouldReload) {
+      if (typeof handle_deferred_service_worker_update === "function") {
+        handle_deferred_service_worker_update();
+      }
+      return;
+    }
+
     hasRefreshedForServiceWorker = true;
     window.location.reload();
   });
@@ -331,7 +345,9 @@ function register_service_worker() {
   navigator.serviceWorker.register("service-worker.js", { scope: "./" })
     .then(function(registration) {
       if (registration.waiting) {
-        registration.waiting.postMessage({ type: "SKIP_WAITING" });
+        if (typeof showUpdateNotification === "function" && typeof t === "function") {
+          showUpdateNotification(t("advanced.update_available"), "warning");
+        }
       }
 
       registration.addEventListener("updatefound", function() {
@@ -343,8 +359,8 @@ function register_service_worker() {
         installingWorker.addEventListener("statechange", function() {
           if (installingWorker.state === "installed" && navigator.serviceWorker.controller) {
             console.log("Service worker update installed");
-            if (registration.waiting) {
-              registration.waiting.postMessage({ type: "SKIP_WAITING" });
+            if (registration.waiting && typeof showUpdateNotification === "function" && typeof t === "function") {
+              showUpdateNotification(t("advanced.update_available"), "warning");
             }
           }
         });

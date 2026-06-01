@@ -856,6 +856,105 @@ function setup_file_import() {
   }
 }
 
+function removeShareTargetQueryFlag() {
+  if (typeof window === "undefined" || !window.location || !window.history || !window.history.replaceState) {
+    return;
+  }
+
+  try {
+    var url = new URL(window.location.href);
+    if (!url.searchParams.has("share-target")) {
+      return;
+    }
+    url.searchParams.delete("share-target");
+    var docTitle = (typeof document !== "undefined" && document.title) ? document.title : "";
+    window.history.replaceState({}, docTitle, url.toString());
+  } catch (e) {
+    // Ignore URL parsing errors
+  }
+}
+
+async function importSharedSessionData(content, isJson) {
+  try {
+    var parsedData = isJson ? JSON.parse(content) : new Uint8Array(content);
+    var result = await importSessionData(parsedData);
+
+    if (result && result.success) {
+      sync_data_to_display();
+      add_global_history_entry(
+        'history_global.actions.import',
+        isJson ? 'history_global.details_templates.imported_from_json' : 'history_global.details_templates.imported_from_yjs',
+        { count: result.importedCount }
+      );
+      alert(t('alerts.import_success', { count: result.importedCount }));
+      if (typeof $ === 'function') {
+        $('#accordion').accordion({ active: 0 });
+      }
+      return true;
+    }
+
+    var errorMsg = (result && result.errors && result.errors.length > 0)
+      ? result.errors[0]
+      : t('alerts.unknown_import_error');
+    alert(t('alerts.import_failed', { error: errorMsg }));
+    return false;
+  } catch (error) {
+    if (isJson) {
+      alert(t('alerts.import_json_failed', { error: error.message }));
+    } else {
+      alert(t('alerts.import_binary_failed', { error: error.message }));
+    }
+    return false;
+  }
+}
+
+async function handleShareTargetImport() {
+  if (typeof window === "undefined" || typeof fetch === "undefined" || !window.location) {
+    return;
+  }
+
+  var shareTargetEnabled = false;
+  try {
+    var currentUrl = new URL(window.location.href);
+    shareTargetEnabled = currentUrl.searchParams.get("share-target") === "1";
+  } catch (e) {
+    shareTargetEnabled = false;
+  }
+
+  if (!shareTargetEnabled) {
+    return;
+  }
+
+  try {
+    var response = await fetch("./__share-target-import__", { cache: "no-store" });
+    if (!response || !response.ok) {
+      alert(t('alerts.import_failed', { error: t('alerts.unknown_import_error') }));
+      return;
+    }
+
+    var fileName = response.headers.get("x-shared-filename") || "shared-session.yjs";
+    var decodedFileName;
+    try {
+      decodedFileName = decodeURIComponent(fileName);
+    } catch (e) {
+      decodedFileName = fileName;
+    }
+    var isJson = decodedFileName.toLowerCase().endsWith('.json') || (response.headers.get('content-type') || '').indexOf('json') > -1;
+
+    if (isJson) {
+      var textContent = await response.text();
+      await importSharedSessionData(textContent, true);
+    } else {
+      var binaryContent = await response.arrayBuffer();
+      await importSharedSessionData(binaryContent, false);
+    }
+  } catch (error) {
+    alert(t('alerts.import_failed', { error: error.message || t('alerts.unknown_import_error') }));
+  } finally {
+    removeShareTargetQueryFlag();
+  }
+}
+
 /**
  * Convert localStorage format to v2.0 Yjs format
  * Handles automatic upgrade from any v1.x version to v1.5 before conversion

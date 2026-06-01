@@ -1,10 +1,12 @@
-const APP_VERSION = "2.21.0";
+const APP_VERSION = "2.22.0";
 const CACHE_PREFIX = "pbe-score-keeper";
 const SHELL_CACHE_NAME = `${CACHE_PREFIX}-shell-${APP_VERSION}`;
 const STATIC_RUNTIME_CACHE_NAME = `${CACHE_PREFIX}-static-${APP_VERSION}`;
 const IMAGE_RUNTIME_CACHE_NAME = `${CACHE_PREFIX}-images-${APP_VERSION}`;
 const DYNAMIC_RUNTIME_CACHE_NAME = `${CACHE_PREFIX}-dynamic-${APP_VERSION}`;
 const NAVIGATION_RUNTIME_CACHE_NAME = `${CACHE_PREFIX}-navigation-${APP_VERSION}`;
+const SHARE_RUNTIME_CACHE_NAME = `${CACHE_PREFIX}-share-target`;
+const SHARE_IMPORT_CACHE_KEY = "./__share-target-import__";
 
 const PRECACHE_REQUIRED_URLS = [
   "./",
@@ -28,6 +30,9 @@ const PRECACHE_REQUIRED_URLS = [
   "scripts/app-storage.js",
   "scripts/app.js",
   "scripts/i18n/en.js",
+  "scripts/i18n/es.js",
+  "scripts/i18n/fr.js",
+  "scripts/i18n/pig.js",
   "apple-touch-icon.png",
   "android-chrome-192x192.png",
   "android-chrome-512x512.png",
@@ -45,9 +50,6 @@ const PRECACHE_OPTIONAL_URLS = [
   "scripts/app-team-manager.js",
   "scripts/app-sync-crypto.js",
   "scripts/app-sync.js",
-  "scripts/i18n/es.js",
-  "scripts/i18n/fr.js",
-  "scripts/i18n/pig.js",
   "images/ui-icons_444444_256x240.png",
   "images/ui-icons_555555_256x240.png",
   "images/ui-icons_777620_256x240.png",
@@ -199,7 +201,8 @@ function cleanupOldCaches() {
     STATIC_RUNTIME_CACHE_NAME,
     IMAGE_RUNTIME_CACHE_NAME,
     DYNAMIC_RUNTIME_CACHE_NAME,
-    NAVIGATION_RUNTIME_CACHE_NAME
+    NAVIGATION_RUNTIME_CACHE_NAME,
+    SHARE_RUNTIME_CACHE_NAME
   ];
 
   return caches.keys().then(function(cacheNames) {
@@ -315,6 +318,75 @@ function fetchWithTimeout(request, timeoutMs) {
   });
 }
 
+function isShareTargetPostRequest(request, requestUrl) {
+  if (request.method !== "POST") {
+    return false;
+  }
+
+  var contentType = request.headers.get("content-type") || "";
+  if (contentType.indexOf("multipart/form-data") === -1) {
+    return false;
+  }
+
+  // Match root, ./, and index navigation endpoints.
+  var pathname = requestUrl.pathname;
+  if (pathname === self.location.pathname || pathname === "/" || pathname.endsWith("/index.html")) {
+    return true;
+  }
+
+  return false;
+}
+
+function isShareImportReadRequest(requestUrl) {
+  return requestUrl.pathname.endsWith("/__share-target-import__") || requestUrl.pathname === "/__share-target-import__";
+}
+
+function buildShareRedirectUrl(query) {
+  var baseHref = (self.location && self.location.href)
+    ? self.location.href
+    : (self.location.origin + (self.location.pathname || "/"));
+  return new URL(query, baseHref).toString();
+}
+
+function handleShareTargetPost(request) {
+  return request.formData().then(function(formData) {
+    var sharedFile = formData.get("session");
+    if (!sharedFile) {
+      return Response.redirect(buildShareRedirectUrl("./?share-target=empty"), 303);
+    }
+
+    var fileName = sharedFile.name || "shared-session.yjs";
+    var responseHeaders = new Headers();
+    responseHeaders.set("content-type", sharedFile.type || "application/octet-stream");
+    responseHeaders.set("x-shared-filename", encodeURIComponent(fileName));
+
+    return caches.open(SHARE_RUNTIME_CACHE_NAME).then(function(cache) {
+      return cache.put(
+        SHARE_IMPORT_CACHE_KEY,
+        new Response(sharedFile, { headers: responseHeaders })
+      );
+    }).then(function() {
+      return Response.redirect(buildShareRedirectUrl("./?share-target=1"), 303);
+    });
+  }).catch(function() {
+    return Response.redirect(buildShareRedirectUrl("./?share-target=error"), 303);
+  });
+}
+
+function consumeShareTargetImportPayload() {
+  return caches.open(SHARE_RUNTIME_CACHE_NAME).then(function(cache) {
+    return cache.match(SHARE_IMPORT_CACHE_KEY).then(function(response) {
+      if (!response) {
+        return Response.error();
+      }
+
+      return cache.delete(SHARE_IMPORT_CACHE_KEY).then(function() {
+        return response;
+      });
+    });
+  });
+}
+
 function cacheFirst(request, cacheName, policy, event) {
   return caches.match(request).then(function(cachedResponse) {
     if (cachedResponse && !isResponseExpired(cachedResponse, policy.maxAgeMs)) {
@@ -393,13 +465,23 @@ function networkFirst(request, options, event) {
 }
 
 self.addEventListener("fetch", function(event) {
-  if (event.request.method !== "GET") {
-    return;
-  }
-
   var requestUrl = new URL(event.request.url);
 
   if (!isSameOrigin(requestUrl)) {
+    return;
+  }
+
+  if (isShareImportReadRequest(requestUrl) && event.request.method === "GET") {
+    event.respondWith(consumeShareTargetImportPayload());
+    return;
+  }
+
+  if (isShareTargetPostRequest(event.request, requestUrl)) {
+    event.respondWith(handleShareTargetPost(event.request));
+    return;
+  }
+
+  if (event.request.method !== "GET") {
     return;
   }
 

@@ -3,17 +3,299 @@
  * Handles:
  * - Checking for app updates
  * - Clearing cache and restarting
+ * - PWA diagnostics and tooling dialog
  * - Periodic background sync for auto-updates (when installed as PWA)
  */
 
-var APP_VERSION = "2.21.0";
+var APP_VERSION = "2.22.0";
+var PWA_TOOLS_DIALOG_ID = "pwa-tools-dialog-overlay";
+var pwaToolsDialogKeyHandler = null;
+var pwaToolsDialogLastFocus = null;
+var pwaDeferredReloadNotified = false;
+
+function isRunningAsInstalledPwa() {
+  var isStandaloneDisplayMode = false;
+  var isLegacyIosStandalone = false;
+  var isTwa = false;
+
+  try {
+    isStandaloneDisplayMode = !!(window.matchMedia && window.matchMedia("(display-mode: standalone)").matches);
+  } catch (e) {
+    isStandaloneDisplayMode = false;
+  }
+
+  try {
+    isLegacyIosStandalone = !!(window.navigator && window.navigator.standalone);
+  } catch (e) {
+    isLegacyIosStandalone = false;
+  }
+
+  try {
+    isTwa = !!(document && document.referrer && document.referrer.indexOf("android-app://") === 0);
+  } catch (e) {
+    isTwa = false;
+  }
+
+  return isStandaloneDisplayMode || isLegacyIosStandalone || isTwa;
+}
+
+function initializePwaToolsVisibility() {
+  if (typeof document === "undefined") {
+    return;
+  }
+
+  var pwaToolsButton = document.getElementById("pwa_tools_button");
+  var pwaActionsContainer = document.querySelector(".header-menu-pwa-actions");
+  if (!pwaToolsButton || !pwaActionsContainer) {
+    return;
+  }
+
+  var shouldShow = isRunningAsInstalledPwa();
+  pwaActionsContainer.style.display = shouldShow ? "flex" : "none";
+  pwaToolsButton.hidden = !shouldShow;
+}
+
+function getPwaLastUpdateCheckIso() {
+  try {
+    return localStorage.getItem("pwa_last_update_check") || "";
+  } catch (e) {
+    return "";
+  }
+}
+
+function setPwaLastUpdateCheckNow() {
+  try {
+    localStorage.setItem("pwa_last_update_check", new Date().toISOString());
+  } catch (e) {
+    // Ignore storage errors for diagnostics metadata
+  }
+}
+
+function formatPwaLastUpdateCheck() {
+  var iso = getPwaLastUpdateCheckIso();
+  if (!iso) {
+    return t("advanced.pwa_status_never");
+  }
+
+  var parsed = Date.parse(iso);
+  if (Number.isNaN(parsed)) {
+    return t("advanced.pwa_status_unknown");
+  }
+
+  try {
+    return new Date(parsed).toLocaleString();
+  } catch (e) {
+    return iso;
+  }
+}
+
+function getPwaDiagnostics() {
+  var diagnostics = [];
+  var hasNavigator = typeof navigator !== "undefined";
+  var hasServiceWorker = !!(hasNavigator && navigator.serviceWorker);
+  var hasController = !!(hasNavigator && navigator.serviceWorker && navigator.serviceWorker.controller);
+  var syncState = (typeof getSyncState === "function") ? getSyncState() : "offline";
+  var periodicSyncSupported = false;
+
+  diagnostics.push({
+    label: t("advanced.pwa_status_installed"),
+    value: isRunningAsInstalledPwa() ? t("advanced.pwa_status_yes") : t("advanced.pwa_status_no")
+  });
+  diagnostics.push({
+    label: t("advanced.pwa_status_online"),
+    value: (hasNavigator && navigator.onLine === false)
+      ? t("advanced.pwa_status_no")
+      : t("advanced.pwa_status_yes")
+  });
+  diagnostics.push({
+    label: t("advanced.pwa_status_service_worker"),
+    value: hasServiceWorker ? t("advanced.pwa_status_yes") : t("advanced.pwa_status_no")
+  });
+  diagnostics.push({
+    label: t("advanced.pwa_status_service_worker_control"),
+    value: hasController ? t("advanced.pwa_status_yes") : t("advanced.pwa_status_no")
+  });
+
+  diagnostics.push({
+    label: t("advanced.pwa_status_sync"),
+    value: syncState
+  });
+
+  if (hasNavigator && navigator.serviceWorker && navigator.serviceWorker.ready) {
+    navigator.serviceWorker.ready.then(function(registration) {
+      periodicSyncSupported = !!(registration && registration.periodicSync);
+      var container = document.getElementById("pwa_tools_status_list");
+      if (!container) {
+        return;
+      }
+      var periodicRow = container.querySelector("[data-pwa-status='periodic-sync'] .pwa-status-value");
+      if (periodicRow) {
+        periodicRow.textContent = periodicSyncSupported ? t("advanced.pwa_status_yes") : t("advanced.pwa_status_no");
+      }
+    }).catch(function() {
+      // Ignore diagnostics refresh failures
+    });
+  }
+
+  diagnostics.push({
+    label: t("advanced.pwa_status_periodic_sync"),
+    value: t("advanced.pwa_status_unknown"),
+    key: "periodic-sync"
+  });
+  diagnostics.push({
+    label: t("advanced.pwa_status_last_update_check"),
+    value: formatPwaLastUpdateCheck()
+  });
+
+  return diagnostics;
+}
+
+function createPwaStatusRowsHtml() {
+  var diagnostics = getPwaDiagnostics();
+  return diagnostics.map(function(item) {
+    var attr = item.key ? " data-pwa-status='" + item.key + "'" : "";
+    return "<div class='pwa-status-row'" + attr + "><span class='pwa-status-label'>" + item.label + "</span><span class='pwa-status-value'>" + item.value + "</span></div>";
+  }).join("");
+}
+
+function showPwaToolsDialog() {
+  if (typeof document === "undefined") {
+    return;
+  }
+  if (!isRunningAsInstalledPwa()) {
+    return;
+  }
+  if (document.getElementById(PWA_TOOLS_DIALOG_ID)) {
+    return;
+  }
+
+  pwaToolsDialogLastFocus = document.activeElement || null;
+
+  var overlay = document.createElement("div");
+  overlay.id = PWA_TOOLS_DIALOG_ID;
+  overlay.className = "sync-dialog-overlay";
+
+  var dialog = document.createElement("div");
+  dialog.className = "sync-dialog pwa-tools-dialog";
+  dialog.setAttribute("role", "dialog");
+  dialog.setAttribute("aria-modal", "true");
+
+  var title = document.createElement("h2");
+  title.id = "pwa-tools-title";
+  title.textContent = t("advanced.pwa_tools");
+  dialog.setAttribute("aria-labelledby", title.id);
+
+  var description = document.createElement("p");
+  description.className = "pwa-tools-description";
+  description.textContent = t("advanced.pwa_tools_description");
+
+  var statusPanel = document.createElement("div");
+  statusPanel.className = "pwa-tools-status";
+  statusPanel.innerHTML = "<h3>" + t("advanced.pwa_status_title") + "</h3><div id='pwa_tools_status_list' class='pwa-status-list'>" + createPwaStatusRowsHtml() + "</div>";
+
+  var buttonRow = document.createElement("div");
+  buttonRow.className = "button-row";
+
+  var updateButton = document.createElement("button");
+  updateButton.id = "check_updates_button";
+  updateButton.type = "button";
+  updateButton.textContent = t("advanced.check_updates");
+  updateButton.className = "secondary";
+  updateButton.addEventListener("click", function() {
+    checkForUpdates();
+    refreshPwaStatusPanel();
+  });
+
+  var clearButton = document.createElement("button");
+  clearButton.id = "clear_cache_button";
+  clearButton.type = "button";
+  clearButton.textContent = t("advanced.clear_cache");
+  clearButton.className = "danger";
+  clearButton.addEventListener("click", function() {
+    clearCacheAndRestart();
+  });
+
+  var refreshButton = document.createElement("button");
+  refreshButton.type = "button";
+  refreshButton.className = "secondary";
+  refreshButton.textContent = t("advanced.pwa_refresh_status");
+  refreshButton.addEventListener("click", refreshPwaStatusPanel);
+
+  var closeButton = document.createElement("button");
+  closeButton.type = "button";
+  closeButton.className = "primary";
+  closeButton.textContent = t("advanced.close_button");
+  closeButton.addEventListener("click", closePwaToolsDialog);
+
+  buttonRow.appendChild(updateButton);
+  buttonRow.appendChild(clearButton);
+  buttonRow.appendChild(refreshButton);
+  buttonRow.appendChild(closeButton);
+
+  dialog.appendChild(title);
+  dialog.appendChild(description);
+  dialog.appendChild(statusPanel);
+  dialog.appendChild(buttonRow);
+  overlay.appendChild(dialog);
+  document.body.appendChild(overlay);
+
+  closeButton.focus();
+
+  pwaToolsDialogKeyHandler = function(event) {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      closePwaToolsDialog();
+    }
+  };
+  document.addEventListener("keydown", pwaToolsDialogKeyHandler);
+}
+
+function refreshPwaStatusPanel() {
+  if (typeof document === "undefined") {
+    return;
+  }
+  var statusList = document.getElementById("pwa_tools_status_list");
+  if (!statusList) {
+    return;
+  }
+  statusList.innerHTML = createPwaStatusRowsHtml();
+}
+
+function closePwaToolsDialog() {
+  if (typeof document === "undefined") {
+    return;
+  }
+  var overlay = document.getElementById(PWA_TOOLS_DIALOG_ID);
+  if (!overlay) {
+    return;
+  }
+  overlay.remove();
+
+  if (pwaToolsDialogKeyHandler) {
+    document.removeEventListener("keydown", pwaToolsDialogKeyHandler);
+    pwaToolsDialogKeyHandler = null;
+  }
+
+  if (pwaToolsDialogLastFocus && typeof pwaToolsDialogLastFocus.focus === "function") {
+    pwaToolsDialogLastFocus.focus();
+  }
+  pwaToolsDialogLastFocus = null;
+}
+
+function requestServiceWorkerActivation(registration, allowImmediateReload) {
+  if (!registration || !registration.waiting) {
+    return;
+  }
+  window.__pbeAllowImmediateSwReload = !!allowImmediateReload;
+  registration.waiting.postMessage({ type: "SKIP_WAITING" });
+}
 
 /**
  * Check for updates by comparing service worker versions
  * Shows toast notification with update status
  */
 function checkForUpdates() {
-  if (!navigator || !navigator.serviceWorker) {
+  if (typeof navigator === "undefined" || !navigator.serviceWorker) {
     showUpdateNotification(t("advanced.no_update_available"), "info");
     return;
   }
@@ -34,10 +316,11 @@ function checkForUpdates() {
 
       // Force check for updates
       registration.update().then(function() {
+        setPwaLastUpdateCheckNow();
         if (registration.waiting) {
           // Update is waiting to be activated
           showUpdateNotification(t("advanced.update_available"), "warning");
-          registration.waiting.postMessage({ type: "SKIP_WAITING" });
+          requestServiceWorkerActivation(registration, true);
         } else if (registration.installing) {
           // Update is being downloaded
           showUpdateNotification(t("advanced.checking_updates"), "info");
@@ -64,7 +347,7 @@ function checkForUpdates() {
  */
 function clearCacheAndRestart() {
   var confirmed = confirm(
-    t("advanced.clear_cache") + "\n\nThis will delete all cached data and restart the app."
+    t("advanced.clear_cache") + "\n\n" + t("advanced.clear_cache_confirm")
   );
   if (!confirmed) {
     return;
@@ -123,6 +406,10 @@ function resetClearCacheButton() {
  * @param {string} type - The type of notification: 'info', 'success', 'warning', 'error'
  */
 function showUpdateNotification(message, type) {
+  if (typeof document === "undefined" || !document.body) {
+    return;
+  }
+
   type = type || "info";
   
   var notification = document.createElement("div");
@@ -151,13 +438,39 @@ function showUpdateNotification(message, type) {
   }, 4000);
 }
 
+function should_reload_after_service_worker_update() {
+  if (window.__pbeAllowImmediateSwReload) {
+    return true;
+  }
+
+  // Avoid reload interruptions while actively collaborating online.
+  if (typeof getSyncState === "function" && getSyncState() !== "offline") {
+    return false;
+  }
+
+  // Allow silent reload when app is in the background.
+  if (typeof document !== "undefined" && document.visibilityState === "hidden") {
+    return true;
+  }
+
+  return false;
+}
+
+function handle_deferred_service_worker_update() {
+  if (pwaDeferredReloadNotified) {
+    return;
+  }
+  pwaDeferredReloadNotified = true;
+  showUpdateNotification(t("advanced.update_ready_deferred"), "info");
+}
+
 /**
  * Register for periodic background sync
  * Checks for updates every 24 hours when the app is installed as a PWA
  * This runs in the background without user interaction
  */
 function registerPeriodicBackgroundSync() {
-  if (!navigator || !navigator.serviceWorker || !navigator.serviceWorker.ready) {
+  if (typeof navigator === "undefined" || !navigator.serviceWorker || !navigator.serviceWorker.ready) {
     return;
   }
 
@@ -180,7 +493,22 @@ function registerPeriodicBackgroundSync() {
 
 // Initialize periodic background sync on app load
 if (typeof window !== "undefined" && document.readyState === "complete") {
+  initializePwaToolsVisibility();
   registerPeriodicBackgroundSync();
 } else if (typeof window !== "undefined") {
-  window.addEventListener("load", registerPeriodicBackgroundSync);
+  window.addEventListener("load", function() {
+    initializePwaToolsVisibility();
+    registerPeriodicBackgroundSync();
+  });
+}
+
+if (typeof window !== "undefined" && window.matchMedia) {
+  try {
+    var displayModeMatcher = window.matchMedia("(display-mode: standalone)");
+    if (displayModeMatcher && typeof displayModeMatcher.addEventListener === "function") {
+      displayModeMatcher.addEventListener("change", initializePwaToolsVisibility);
+    }
+  } catch (e) {
+    // Ignore display mode listener setup errors
+  }
 }
