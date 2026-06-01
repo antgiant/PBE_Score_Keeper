@@ -15,6 +15,24 @@ var question_timer_expired = false;
 var question_timer_warning_flash_timeout = null;
 var question_timer_warning_flash_trigger_seconds = TIMER_DEFAULT_WARNING_FLASH_SECONDS;
 
+// Embedding API configuration. Standalone mode keeps this disabled unless
+// ?embedded=1 is present or a host explicitly enables it before app startup.
+var EMBEDDING_CONFIG = {
+  enabled: false,
+  apiVersion: 1,
+  hostOrigin: null,
+  allowedOrigins: [],
+  allowedHosts: [],
+  readyTimeoutMs: 10000,
+  maxPayloadBytes: 524288,
+  rateLimit: {
+    enabled: true,
+    windowMs: 1000,
+    maxMessages: 80,
+    maxCommands: 40
+  }
+};
+
 //Setup heml escape variables
 var DOMtext = document.createTextNode("test");
 var DOMnative = document.createElement("span");

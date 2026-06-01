@@ -32,67 +32,67 @@
 ## Phase 2: Embedding Architecture (v2.25.0) - 4 weeks
 
 ### Milestone 2.1: Core API Layer
-- [ ] Create `scripts/app-embedding-api.js`
-  - PostMessage handshake protocol
-  - Command dispatch mechanism
-  - Event subscription system
-  - Origin validation
-- [ ] Add `?embedded=1` detection to app initialization
-- [ ] Add embedded mode styling/UI hiding
-- [ ] Implement embedding configuration in `app-globals.js`
+- [x] Create `scripts/app-embedding-api.js`
+  - [x] PostMessage handshake protocol
+  - [x] Command dispatch mechanism
+  - [x] Event subscription system
+  - [x] Origin validation
+- [x] Add `?embedded=1` detection to app initialization
+- [x] Add embedded mode styling/UI hiding
+- [x] Implement embedding configuration in `app-globals.js`
 
 ### Milestone 2.2: Command Handlers
-- [ ] Create `scripts/app-embedding-commands.js`
-- [ ] Implement Session Management commands (9 commands)
-- [ ] Implement Question Navigation commands (8 commands)
-- [ ] Implement Scoring commands (4 commands)
-- [ ] Implement Block Management commands (5 commands)
-- [ ] Implement Timer commands (7 commands)
-- [ ] Implement Sync commands (8 commands)
-- [ ] Implement UI commands (3 commands)
-- [ ] Add parameter validation for all commands
-- [ ] Add response formatting
+- [x] Create `scripts/app-embedding-commands.js`
+- [x] Implement Session Management commands (9 commands)
+- [x] Implement Question Navigation commands (8 commands)
+- [x] Implement Scoring commands (4 commands)
+- [x] Implement Block Management commands (5 commands)
+- [x] Implement Timer commands (7 commands)
+- [x] Implement Sync commands (8 commands)
+- [x] Implement UI commands (3 commands)
+- [x] Add parameter validation for all commands
+- [x] Add response formatting
 
 ### Milestone 2.3: Event System
-- [ ] Implement event emission infrastructure
-- [ ] Session events (5 events)
-- [ ] Question events (4 events)
-- [ ] Sync events (3 events)
-- [ ] UI events (3 events)
-- [ ] Add event throttling/debouncing where appropriate
+- [x] Implement event emission infrastructure
+- [x] Session events (5 events)
+- [x] Question events (4 events)
+- [x] Sync events (3 events)
+- [x] UI events (3 events)
+- [x] Add event throttling/debouncing where appropriate
 
 ### Milestone 2.4: Host-Side Client Library
-- [ ] Create `app-embedding-client.js` (host library)
-- [ ] Implement `PBEScoreKeeperAPI` class
-- [ ] Add command method wrapper
-- [ ] Add event listener management
-- [ ] Add auto-ready detection
-- [ ] Add error handling and retries
-- [ ] Create TypeScript type definitions (optional)
+- [x] Create `app-embedding-client.js` (host library)
+- [x] Implement `PBEScoreKeeperAPI` class
+- [x] Add command method wrapper
+- [x] Add event listener management
+- [x] Add auto-ready detection
+- [x] Add error handling and retries
+- [x] Create TypeScript type definitions (optional)
 
 ### Milestone 2.5: Security & Validation
-- [ ] Implement origin allowlist validation
-- [ ] Add rate limiting (optional)
-- [ ] Add input sanitization for all commands
-- [ ] Document security model
-- [ ] Review sandbox permissions
+- [x] Implement origin allowlist validation
+- [x] Add rate limiting (optional)
+- [x] Add input sanitization for all commands
+- [x] Document security model
+- [x] Review sandbox permissions
 
 ### Milestone 2.6: Testing & Documentation
-- [ ] Unit tests: Command dispatch, event emission
-- [ ] Integration tests: PostMessage roundtrips
-- [ ] E2E tests: Multi-command sequences
-- [ ] Example host page implementation
-- [ ] API documentation
-- [ ] Integration guide for third parties
+- [x] Unit tests: Command dispatch, event emission
+- [x] Integration tests: PostMessage roundtrips
+- [x] E2E tests: Multi-command sequences
+- [x] Example host page implementation
+- [x] API documentation
+- [x] Integration guide for third parties
 
 ### Tests (Phase 2)
-- [ ] Command dispatch accuracy (44 commands)
-- [ ] Event emission and subscription
-- [ ] Origin validation and blocking
-- [ ] Error handling and recovery
-- [ ] Multi-command sequences
-- [ ] Large data imports
-- [ ] Concurrent operations
+- [x] Command dispatch accuracy (44 commands)
+- [x] Event emission and subscription
+- [x] Origin validation and blocking
+- [x] Error handling and recovery
+- [x] Multi-command sequences
+- [x] Large data imports
+- [x] Concurrent operations
 
 ---
 
@@ -155,12 +155,12 @@
 - [x] Deep links work (manual testing)
 
 ### Phase 2
-- [ ] All 44 commands implemented and tested
-- [ ] Host can control full app lifecycle
-  - [ ] This closes Github Issue [#44](https://github.com/antgiant/PBE_Score_Keeper/issues/44)
-- [ ] Events emitted correctly
-- [ ] Origin validation working
-- [ ] Example host page fully functional
+- [x] All 44 commands implemented and tested
+- [x] Host can control full app lifecycle
+  - [x] This closes Github Issue [#44](https://github.com/antgiant/PBE_Score_Keeper/issues/44)
+- [x] Events emitted correctly
+- [x] Origin validation working
+- [x] Example host page fully functional
 
 ### Phase 3
 - [ ] State sync works bidirectionally

@@ -313,13 +313,33 @@ function initialize_pwa_handlers() {
   }
 }
 
+function initialize_embedding_mode() {
+  if (typeof EmbeddingAPI !== "undefined" && EmbeddingAPI && typeof EmbeddingAPI.shouldInitialize === "function" && EmbeddingAPI.shouldInitialize()) {
+    EmbeddingAPI.applyEmbeddedMode();
+  }
+}
+
+function initialize_embedding_api() {
+  if (typeof EmbeddingCommands !== "undefined" && EmbeddingCommands && typeof EmbeddingCommands.init === "function") {
+    EmbeddingCommands.init();
+  }
+  if (typeof EmbeddingEvents !== "undefined" && EmbeddingEvents && typeof EmbeddingEvents.init === "function") {
+    EmbeddingEvents.init();
+  }
+  if (typeof EmbeddingAPI !== "undefined" && EmbeddingAPI && typeof EmbeddingAPI.init === "function") {
+    EmbeddingAPI.init();
+  }
+}
+
 // Yjs bundle loads synchronously and sets window.yjsModulesLoaded
 // But just to be safe, we'll check and wait if needed
 function initializeApp() {
+  initialize_embedding_mode();
   initialize_yjs();  // Initialize Yjs before state
   initialize_state().finally(function() {
     try_initialize_display();
     initialize_pwa_handlers();
+    initialize_embedding_api();
   });
 }
 

@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PBE Score Keeper Embedding Example</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      margin: 0;
+      background: #f5f7fb;
+      color: #1f2937;
+    }
+
+    main {
+      display: grid;
+      grid-template-columns: minmax(260px, 360px) minmax(0, 1fr);
+      min-height: 100vh;
+    }
+
+    aside {
+      border-right: 1px solid #d9dee8;
+      background: #ffffff;
+      padding: 20px;
+    }
+
+    .controls {
+      display: grid;
+      gap: 10px;
+    }
+
+    button,
+    input,
+    select {
+      font: inherit;
+      min-height: 36px;
+    }
+
+    button {
+      border: 1px solid #2563eb;
+      background: #2563eb;
+      color: #ffffff;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    button.secondary {
+      background: #ffffff;
+      color: #2563eb;
+    }
+
+    label {
+      display: grid;
+      gap: 4px;
+      font-size: 0.9rem;
+    }
+
+    iframe {
+      width: 100%;
+      height: 100vh;
+      border: 0;
+      background: #ffffff;
+    }
+
+    pre {
+      min-height: 180px;
+      overflow: auto;
+      background: #111827;
+      color: #d1fae5;
+      padding: 12px;
+      border-radius: 6px;
+      font-size: 0.82rem;
+      white-space: pre-wrap;
+    }
+
+    @media (max-width: 760px) {
+      main {
+        grid-template-columns: 1fr;
+      }
+
+      iframe {
+        height: 70vh;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <aside>
+      <h1>PBE Embed Host</h1>
+      <div class="controls">
+        <label>
+          Team
+          <select id="team">
+            <option value="1">Team 1</option>
+            <option value="2">Team 2</option>
+          </select>
+        </label>
+        <label>
+          Score
+          <input id="score" type="number" min="0" value="1">
+        </label>
+        <button id="ready">Wait For Ready</button>
+        <button id="create-question" class="secondary">Create Question</button>
+        <button id="set-score">Set Score</button>
+        <button id="next-question" class="secondary">Next Question</button>
+        <button id="export-session" class="secondary">Export Session</button>
+        <pre id="log">Waiting for host actions...</pre>
+      </div>
+    </aside>
+
+    <iframe
+      id="scorekeeper"
+      src="../index.html?embedded=1"
+      sandbox="allow-scripts allow-same-origin allow-downloads">
+    </iframe>
+  </main>
+
+  <script src="../scripts/app-embedding-client.js"></script>
+  <script>
+    const log = document.getElementById("log");
+    const frame = document.getElementById("scorekeeper");
+    const api = new PBEScoreKeeperAPI(frame, {
+      targetOrigin: window.location.origin === "null" ? "*" : window.location.origin,
+      retries: 1
+    });
+
+    function write(message, data) {
+      const suffix = data === undefined ? "" : "\n" + JSON.stringify(data, null, 2);
+      log.textContent = `${new Date().toLocaleTimeString()} - ${message}${suffix}\n\n${log.textContent}`;
+    }
+
+    api.on("question:scored", (score) => write("question:scored", score));
+    api.on("session:stateChanged", (state) => write("session:stateChanged", state.currentQuestion));
+
+    document.getElementById("ready").addEventListener("click", async () => {
+      write("Ready", await api.ready());
+    });
+
+    document.getElementById("create-question").addEventListener("click", async () => {
+      const result = await api.question.create({
+        name: "Host-created question",
+        maxPoints: 5
+      });
+      write("Created question", result);
+    });
+
+    document.getElementById("set-score").addEventListener("click", async () => {
+      const teamIndex = Number(document.getElementById("team").value);
+      const score = Number(document.getElementById("score").value);
+      const result = await api.score.set({ teamIndex, score });
+      write("Set score", result);
+    });
+
+    document.getElementById("next-question").addEventListener("click", async () => {
+      write("Next question", await api.question.next());
+    });
+
+    document.getElementById("export-session").addEventListener("click", async () => {
+      const result = await api.session.export();
+      write("Exported native Yjs bytes", {
+        sessionId: result.sessionId,
+        byteLength: result.byteLength
+      });
+    });
+  </script>
+</body>
+</html>

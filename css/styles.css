@@ -40,6 +40,40 @@ body {
   background-color: var(--page-bg);
   color: var(--text-color);
 }
+
+:root[data-embedded="true"] body {
+  margin: 0;
+  background: var(--panel-bg);
+}
+
+:root[data-embedded="true"] .jqm-header,
+:root[data-embedded="true"] footer,
+:root[data-embedded="true"] #accordion_config_header,
+:root[data-embedded="true"] #session_configuration,
+:root[data-embedded="true"] #accordion_change_log_header,
+:root[data-embedded="true"] #accordion_change_log_panel,
+:root[data-embedded="true"] #accordion_advanced_header,
+:root[data-embedded="true"] #accordion_advanced_panel {
+  display: none !important;
+}
+
+:root[data-embedded="true"] #main,
+:root[data-embedded="true"] #accordion {
+  margin: 0;
+  padding: 0;
+  max-width: none;
+}
+
+:root[data-embedded="true"] #accordion .ui-accordion-content {
+  border-left: 0;
+  border-right: 0;
+}
+
+:root[data-embedding-visibility="hidden"] body,
+body.pbe-embedding-hidden {
+  visibility: hidden;
+}
+
 a {
   color: var(--link-color);
 }

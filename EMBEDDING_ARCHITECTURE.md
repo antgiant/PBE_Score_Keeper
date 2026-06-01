@@ -46,7 +46,7 @@ This document describes the architecture for embedding PBE Score Keeper as a ful
 - Minimal UI (hides header, session tabs, non-core controls)
 - All features accessible via API only
 - Theme inheritance from host
-- No localStorage/persistence (host manages state)
+- Storage remains isolated to the scorekeeper origin
 - Communication via `window.postMessage()`
 
 #### 2.2.3 Hybrid Mode (future)
@@ -61,7 +61,7 @@ This document describes the architecture for embedding PBE Score Keeper as a ful
 <iframe 
   id="pbe-scorekeeper" 
   src="https://pbescore.keeper/?embedded=1&apiVersion=1"
-  sandbox="allow-scripts allow-same-origin"
+  sandbox="allow-scripts allow-same-origin allow-downloads"
 />
 
 // After iframe load, establish connection
@@ -189,10 +189,16 @@ pbeApi.on('event', (eventType, data) => {
    - Validates parameters
    - Returns responses
 
-3. `app-embedding-client.js` - Host-side library (optional)
+3. `scripts/app-embedding-events.js` - Event bridge
+   - Observes Yjs/global app changes
+   - Emits session, question, sync, and UI events
+   - Debounces high-frequency state changes
+
+4. `scripts/app-embedding-client.js` - Host-side library (optional)
    - Convenience wrapper for embedding
    - Auto-discovery of embedded frames
    - Promise-based API
+   - Type definitions in `scripts/app-embedding-client.d.ts`
 
 #### 2.6.2 Modified Files
 1. `index.html`
@@ -218,33 +224,47 @@ pbeApi.on('event', (eventType, data) => {
 var EMBEDDING_CONFIG = {
   enabled: false,
   apiVersion: 1,
-  origin: null,
-  allowedHosts: [] // Whitelist for security
+  hostOrigin: null,
+  allowedOrigins: [],
+  allowedHosts: [],
+  maxPayloadBytes: 524288,
+  rateLimit: {
+    enabled: true,
+    windowMs: 1000,
+    maxMessages: 80,
+    maxCommands: 40
+  }
 };
 ```
 
 ### 2.7 Security Model
 
 #### 2.7.1 Origin Validation
-- Only respond to PostMessage from known origins
-- Configurable allowlist in `EMBEDDING_CONFIG.allowedHosts`
-- Default: allow same-origin only
+- The iframe only responds to `postMessage` traffic from validated origins.
+- Default behavior allows same-origin messages only.
+- `EMBEDDING_CONFIG.allowedOrigins` accepts full origins such as `https://host.example`.
+- `EMBEDDING_CONFIG.allowedHosts` accepts hostnames or host:port values such as `host.example` or `host.example:8443`.
+- The first validated host is locked into `EMBEDDING_CONFIG.hostOrigin`; later messages from other origins are ignored unless the host origin is reset intentionally.
+- `*` is supported only in `allowedOrigins` and should be reserved for trusted offline/local development.
+- The host-side `PBEScoreKeeperAPI` should set `targetOrigin` to the scorekeeper origin instead of `*` in production.
 
 #### 2.7.2 Iframe Sandbox
 ```html
 <iframe 
-  sandbox="allow-scripts allow-same-origin allow-top-navigation-by-user-activation"
+  sandbox="allow-scripts allow-same-origin allow-downloads"
 />
 ```
 
 #### 2.7.3 Data Isolation
-- Embedded frame doesn't access localStorage (host manages state)
-- State passed via explicit commands
-- No implicit data sharing
+- The embedded frame uses storage for its own origin only; the host page cannot directly read that storage.
+- Cross-frame state exchange happens through explicit commands, events, and Yjs binary import/export payloads.
+- Native Yjs binary exports remain the required sync/import format for session data.
+- Host pages should avoid granting additional sandbox flags unless a specific integration requires them.
 
 #### 2.7.4 Rate Limiting (optional)
-- Throttle rapid commands
-- Prevent abuse patterns
+- `EMBEDDING_CONFIG.rateLimit` throttles rapid message and command bursts per origin.
+- `EMBEDDING_CONFIG.maxPayloadBytes` rejects oversized messages before command dispatch.
+- Command handlers validate numeric ranges, required IDs, supported enum values, and strip unsafe control characters from string payloads.
 
 ### 2.8 Example Integration
 
@@ -253,7 +273,7 @@ var EMBEDDING_CONFIG = {
 <!DOCTYPE html>
 <html>
 <head>
-  <script src="path/to/app-embedding-client.js"></script>
+  <script src="path/to/scripts/app-embedding-client.js"></script>
 </head>
 <body>
   <div id="scorekeeper-container">
@@ -267,7 +287,7 @@ var EMBEDDING_CONFIG = {
   <script>
     const pbeApp = new PBEScoreKeeperAPI(
       document.getElementById('scorekeeper'),
-      { origin: 'https://pbescore.keeper' }
+      { targetOrigin: 'https://pbescore.keeper' }
     );
 
     // Wait for app ready
