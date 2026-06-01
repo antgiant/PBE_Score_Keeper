@@ -6,7 +6,7 @@ $(document).ready(function() {
 
   // Wait for state to be initialized before initializing display
   var checkStateReady = setInterval(function() {
-    if (stateInitialized) {
+    if (window.stateInitialized) {
       clearInterval(checkStateReady);
       initialize_display();
     }

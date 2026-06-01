@@ -26,9 +26,9 @@ register_i18n_language('pig', {
     "ui_mode": {
       "label": "UI Ode-May",
       "classic": "Assic-Clay",
-      "beta": "Eta-Bay",
-      "toggle_aria": "Oggle-Tay Eta-Bay UI",
-      "toggle_title": "Itch-Sway etween-bay Assic-Clay and-ay Eta-Bay UI"
+      "default": "Efault-Day",
+      "toggle_aria": "Oggle-Tay Efault-Day UI",
+      "toggle_title": "Itch-Sway etween-bay Assic-Clay and-ay Efault-Day UI"
     },
     "menu": {
       "toggle_aria": "Enu-May",

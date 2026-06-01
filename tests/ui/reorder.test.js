@@ -10,7 +10,7 @@ function buildReorderSeed() {
       name: 'Session 1',
       maxPointsPerQuestion: 10,
       rounding: false,
-      teams: ['Alpha', 'Beta', 'Gamma'],
+      teams: ['Alpha', 'Default', 'Gamma'],
       blocks: ['No Block/Group', 'Block A', 'Block B'],
       questions: [
         {
@@ -61,16 +61,16 @@ test('reordering teams updates display order', () => {
   context.sync_data_to_display();
 
   const teamScores = context.$('#team_scores').html();
-  const [gammaIndex, alphaIndex, betaIndex] = indexOrder(teamScores, [
+  const [gammaIndex, alphaIndex, defaultIndex] = indexOrder(teamScores, [
     'Gamma',
     'Alpha',
-    'Beta',
+    'Default',
   ]);
   assert.ok(gammaIndex > -1);
   assert.ok(alphaIndex > -1);
-  assert.ok(betaIndex > -1);
+  assert.ok(defaultIndex > -1);
   assert.ok(gammaIndex < alphaIndex);
-  assert.ok(alphaIndex < betaIndex);
+  assert.ok(alphaIndex < defaultIndex);
 });
 
 test('reordering teams saves to the data store', () => {
@@ -83,7 +83,7 @@ test('reordering teams saves to the data store', () => {
   const teams = context.getOrderedTeams(session);
   const teamNames = teams.map(t => '' + t.data.get('name'));
   // Use JSON comparison to avoid Node v25 deepStrictEqual issues with Yjs strings
-  assert.equal(JSON.stringify(teamNames), JSON.stringify(['Gamma', 'Alpha', 'Beta']));
+  assert.equal(JSON.stringify(teamNames), JSON.stringify(['Gamma', 'Alpha', 'Default']));
   
   // Check that team scores are accessible (team order changed, but IDs are stable)
   const questions = context.getOrderedQuestions(session);
@@ -195,7 +195,7 @@ test('apply_score_entry_field_order function exists', () => {
   assert.deepEqual(order, ['block', 'points']);
 });
 
-test('beta score entry normalization allows timer away from points', () => {
+test('default score entry normalization allows timer away from points', () => {
   const { context } = loadApp(buildReorderSeed());
   const normalized = context.normalize_score_entry_field_order(
     ['points', 'block', 'teams', 'timer'],
@@ -208,7 +208,7 @@ test('beta score entry normalization allows timer away from points', () => {
   );
 });
 
-test('beta score entry normalization inserts timer for old saved orders', () => {
+test('default score entry normalization inserts timer for old saved orders', () => {
   const { context } = loadApp(buildReorderSeed());
   const normalized = context.normalize_score_entry_field_order(
     ['points', 'block', 'teams'],

@@ -174,7 +174,7 @@ function showImportExportDialog() {
     return;
   }
   var root = document.documentElement;
-  if (root && root.getAttribute("data-ui-mode") !== "beta") {
+  if (root && root.getAttribute("data-ui-mode") !== "default") {
     return;
   }
   if (document.getElementById(IMPORT_EXPORT_DIALOG_ID)) {
@@ -241,7 +241,7 @@ function showImportExportDialog() {
     importExportDialogObserver = new MutationObserver(function(mutations) {
       for (var i = 0; i < mutations.length; i++) {
         if (mutations[i].attributeName === "data-ui-mode") {
-          if (root.getAttribute("data-ui-mode") !== "beta") {
+          if (root.getAttribute("data-ui-mode") !== "default") {
             closeImportExportDialog();
           }
           break;

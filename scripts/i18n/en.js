@@ -29,9 +29,9 @@ register_i18n_language('en', {
     "ui_mode": {
       "label": "UI Mode",
       "classic": "Classic",
-      "beta": "Beta",
-      "toggle_aria": "Toggle beta UI",
-      "toggle_title": "Switch between Classic and Beta UI"
+      "default": "Default",
+      "toggle_aria": "Toggle default UI",
+      "toggle_title": "Switch between Classic and Default UI"
     },
     "menu": {
       "toggle_aria": "Menu",

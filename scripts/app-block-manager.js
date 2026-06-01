@@ -88,7 +88,7 @@ function showBlockManagerDialog() {
     return;
   }
   var root = document.documentElement;
-  if (!root || root.getAttribute("data-ui-mode") !== "beta") {
+  if (!root || root.getAttribute("data-ui-mode") !== "default") {
     return;
   }
   var overlay = ensure_block_manager_overlay();
@@ -126,12 +126,12 @@ function initialize_block_manager() {
   var overlay = ensure_block_manager_overlay();
   var body = overlay ? overlay.querySelector("#blocks-manager-body") : null;
 
-  function is_beta_mode_for_blocks() {
-    return root.getAttribute("data-ui-mode") === "beta";
+  function is_default_mode_for_blocks() {
+    return root.getAttribute("data-ui-mode") === "default";
   }
 
   function sync_blocks_for_mode() {
-    if (is_beta_mode_for_blocks()) {
+    if (is_default_mode_for_blocks()) {
       if (body && !body.contains(blocksFieldset)) {
         body.appendChild(blocksFieldset);
       }

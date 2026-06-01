@@ -30,9 +30,9 @@ register_i18n_language('es', {
     "ui_mode": {
       "label": "Modo de interfaz",
       "classic": "Clásica",
-      "beta": "Beta",
-      "toggle_aria": "Alternar interfaz beta",
-      "toggle_title": "Cambiar entre la interfaz clásica y beta"
+      "default": "Predeterminada",
+      "toggle_aria": "Alternar interfaz predeterminada",
+      "toggle_title": "Cambiar entre la interfaz clásica y predeterminada"
     },
     "menu": {
       "toggle_aria": "Menú",

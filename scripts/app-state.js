@@ -3,6 +3,8 @@
 
 // Flag to track if user is returning with existing data (for welcome back dialog)
 var hasExistingDataOnLoad = false;
+var initialize_state_retry_count = 0;
+var INITIALIZE_STATE_MAX_RETRIES = 100; // ~10 seconds at 100ms per retry
 
 /**
  * Initialize application state
@@ -11,9 +13,28 @@ var hasExistingDataOnLoad = false;
 async function initialize_state() {
   // Wait for Yjs to be ready
   if (typeof ydoc === 'undefined' || !yjsReady) {
+    initialize_state_retry_count += 1;
+
+    // Fail safe: avoid infinite startup loop if Yjs readiness never flips.
+    if (initialize_state_retry_count > INITIALIZE_STATE_MAX_RETRIES) {
+      console.error('Yjs readiness timeout during initialize_state; continuing with fallback mode.');
+      if (typeof ydoc !== 'undefined' && ydoc) {
+        if (typeof setYjsReady === 'function') {
+          setYjsReady(true);
+        } else {
+          yjsReady = true;
+        }
+      } else {
+        window.stateInitialized = true;
+        return;
+      }
+    }
+
     setTimeout(initialize_state, 100);
     return;
   }
+
+  initialize_state_retry_count = 0;
 
   try {
     // Check if Yjs has data (v2.0 or v3.0+)

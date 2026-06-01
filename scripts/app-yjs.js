@@ -1828,6 +1828,14 @@ function initialize_yjs() {
         
         setYProvider(new IndexeddbPersistence(dbKey, getGlobalDoc()));
 
+        // Fail safe: some environments never emit 'synced', which can stall app startup.
+        setTimeout(function() {
+          if (!yjsReady) {
+            console.warn('Yjs IndexedDB sync timeout; continuing startup without synced signal.');
+            setYjsReady(true);
+          }
+        }, 3000);
+
         yProvider.on('synced', function() {
           console.log('Global Yjs doc synced with IndexedDB from:', dbKey);
           setYjsReady(true);

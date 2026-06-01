@@ -189,11 +189,11 @@ function initialize_scores_tabs() {
     return $tabs;
   }
 
-  function move_tabs_section(isBeta) {
+  function move_tabs_section(isDefault) {
     if (!tabsHeader || !tabsPanel) {
       return;
     }
-    if (isBeta && accordion) {
+    if (isDefault && accordion) {
       var reference = document.getElementById("accordion_score_by_team_exact");
       if (reference && reference.parentNode === accordion) {
         accordion.insertBefore(tabsHeader, reference);
@@ -210,11 +210,11 @@ function initialize_scores_tabs() {
     }
   }
 
-  function move_score_panels(isBeta) {
+  function move_score_panels(isDefault) {
     for (var i = 0; i < panelMappings.length; i++) {
       var mapping = panelMappings[i];
       var content = document.getElementById(mapping.contentId);
-      var targetId = isBeta ? mapping.tabPanelId : mapping.classicPanelId;
+      var targetId = isDefault ? mapping.tabPanelId : mapping.classicPanelId;
       var target = document.getElementById(targetId);
       if (!content || !target) {
         continue;
@@ -226,10 +226,10 @@ function initialize_scores_tabs() {
   }
 
   function apply_layout_for_mode() {
-    var isBeta = root.getAttribute("data-ui-mode") === "beta";
+    var isDefault = root.getAttribute("data-ui-mode") === "default";
     var $tabs = ensure_tabs_initialized();
-    move_tabs_section(isBeta);
-    move_score_panels(isBeta);
+    move_tabs_section(isDefault);
+    move_score_panels(isDefault);
     if (typeof $tabs.tabs === "function") {
       try {
         $tabs.tabs("refresh");
@@ -315,7 +315,7 @@ function update_scores_tabs_for_rounding(roundingEnabled) {
     return;
   }
   var root = document.documentElement;
-  if (!root || root.getAttribute("data-ui-mode") !== "beta") {
+  if (!root || root.getAttribute("data-ui-mode") !== "default") {
     return;
   }
   var tabsElement = document.getElementById("scores_tabs");
@@ -377,13 +377,13 @@ function initialize_config_accordion_for_ui_mode() {
     return;
   }
 
-  function is_beta_mode_for_config_accordion() {
-    return root.getAttribute("data-ui-mode") === "beta";
+  function is_default_mode_for_config_accordion() {
+    return root.getAttribute("data-ui-mode") === "default";
   }
 
-  function set_config_accordion_visibility(isBeta) {
-    configHeader.style.display = isBeta ? "none" : "";
-    configPanel.style.display = isBeta ? "none" : "";
+  function set_config_accordion_visibility(isDefault) {
+    configHeader.style.display = isDefault ? "none" : "";
+    configPanel.style.display = isDefault ? "none" : "";
   }
 
   function set_active_first_visible_config_section() {
@@ -419,8 +419,8 @@ function initialize_config_accordion_for_ui_mode() {
   }
 
   function sync_config_accordion_for_mode() {
-    var isBeta = is_beta_mode_for_config_accordion();
-    set_config_accordion_visibility(isBeta);
+    var isDefault = is_default_mode_for_config_accordion();
+    set_config_accordion_visibility(isDefault);
     if (typeof $ !== "undefined") {
       try {
         $("#accordion").accordion("refresh");
@@ -428,7 +428,7 @@ function initialize_config_accordion_for_ui_mode() {
         // Accordion not initialized yet.
       }
     }
-    if (isBeta) {
+    if (isDefault) {
       set_active_first_visible_config_section();
     }
   }
@@ -1051,8 +1051,8 @@ function adjust_question_timer_for_current_question(deltaSeconds) {
 
 function initialize_display() {
   initialize_scores_tabs();
-  initialize_beta_session_frame();
-  initialize_beta_question_frame();
+  initialize_default_session_frame();
+  initialize_default_question_frame();
 
   //Set up Accordion display
   $("#accordion").accordion({
@@ -1157,25 +1157,25 @@ function initialize_display() {
   }
 }
 
-function initialize_beta_session_frame() {
+function initialize_default_session_frame() {
   if (typeof document === "undefined") {
     return;
   }
   var root = document.documentElement;
-  var fieldset = document.getElementById("beta_session_fieldset");
-  var slot = document.getElementById("beta_session_entry_slot");
+  var fieldset = document.getElementById("default_session_fieldset");
+  var slot = document.getElementById("default_session_entry_slot");
   var placeholder = document.getElementById("score_entry_fieldset_placeholder");
   var content = document.getElementById("score_entry_content");
   if (!root || !fieldset || !slot || !placeholder || !content) {
     return;
   }
 
-  function is_beta_mode_for_session_frame() {
-    return root.getAttribute("data-ui-mode") === "beta";
+  function is_default_mode_for_session_frame() {
+    return root.getAttribute("data-ui-mode") === "default";
   }
 
   function sync_frame_for_mode() {
-    if (is_beta_mode_for_session_frame()) {
+    if (is_default_mode_for_session_frame()) {
       fieldset.setAttribute("aria-hidden", "false");
       if (!slot.contains(content)) {
         slot.appendChild(content);
@@ -1206,14 +1206,14 @@ function initialize_beta_session_frame() {
   sync_frame_for_mode();
 }
 
-function initialize_beta_question_frame() {
+function initialize_default_question_frame() {
   if (typeof document === "undefined") {
     return;
   }
   var root = document.documentElement;
-  var fieldset = document.getElementById("beta_question_fieldset");
-  var slot = document.getElementById("beta_question_slot");
-  var bottomSlot = document.getElementById("beta_question_bottom_slot");
+  var fieldset = document.getElementById("default_question_fieldset");
+  var slot = document.getElementById("default_question_slot");
+  var bottomSlot = document.getElementById("default_question_bottom_slot");
   var placeholder = document.getElementById("score_entry_content_body_placeholder");
   var content = document.getElementById("score_entry_content_body");
   var bottomNav = document.getElementById("score_entry_bottom_nav");
@@ -1224,17 +1224,17 @@ function initialize_beta_question_frame() {
   var nextButtonSecondary = document.getElementById("next_question_2");
   var prevPlaceholder = document.getElementById("previous_question_placeholder");
   var nextPlaceholder = document.getElementById("next_question_placeholder");
-  var prevSlot = document.getElementById("beta_question_prev_slot");
-  var nextSlot = document.getElementById("beta_question_next_slot");
+  var prevSlot = document.getElementById("default_question_prev_slot");
+  var nextSlot = document.getElementById("default_question_next_slot");
   var titleSpan = document.getElementById("current_question_title_count");
   var titlePlaceholder = document.getElementById("current_question_title_placeholder");
-  var titleSlot = document.getElementById("beta_question_title_slot");
+  var titleSlot = document.getElementById("default_question_title_slot");
   if (!root || !fieldset || !slot || !placeholder || !content) {
     return;
   }
 
-  function is_beta_mode_for_question_frame() {
-    return root.getAttribute("data-ui-mode") === "beta";
+  function is_default_mode_for_question_frame() {
+    return root.getAttribute("data-ui-mode") === "default";
   }
 
   function update_question_nav_labels(useShortLabels) {
@@ -1258,7 +1258,7 @@ function initialize_beta_question_frame() {
   }
 
   function sync_question_frame_for_mode() {
-    if (is_beta_mode_for_question_frame()) {
+    if (is_default_mode_for_question_frame()) {
       fieldset.setAttribute("aria-hidden", "false");
       if (!slot.contains(content)) {
         slot.appendChild(content);
@@ -1530,8 +1530,8 @@ function sync_data_to_display() {
   if (typeof document !== 'undefined' && typeof document.getElementById === 'function') {
     var sessionTitle = session.get('name') || t('defaults.unnamed_session');
     var sessionTitleEls = [
-      document.getElementById("beta_session_title"),
-      document.getElementById("beta_results_session_title")
+      document.getElementById("default_session_title"),
+      document.getElementById("default_results_session_title")
     ];
     for (var i = 0; i < sessionTitleEls.length; i++) {
       if (sessionTitleEls[i]) {
@@ -1945,12 +1945,12 @@ function sync_data_to_display() {
     }
   }
   question_quick_nav += '</select>';
-  var isBetaUi = false;
+  var isDefaultUi = false;
   if (typeof document !== "undefined") {
     var root = document.documentElement;
-    isBetaUi = !!(root && root.getAttribute("data-ui-mode") === "beta");
+    isDefaultUi = !!(root && root.getAttribute("data-ui-mode") === "default");
   }
-  if (isBetaUi) {
+  if (isDefaultUi) {
     $("#current_question_title_count").text(t('score_entry.question_title', { number: current_question }));
     $("#question_quick_nav_container").html(question_quick_nav);
   } else {
@@ -2178,7 +2178,7 @@ function sync_data_to_display() {
   //Change Next Question to New Question if that is reality
   var useShortQuestionLabels = false;
   if (typeof document !== "undefined" && document.documentElement) {
-    useShortQuestionLabels = document.documentElement.getAttribute("data-ui-mode") === "beta";
+    useShortQuestionLabels = document.documentElement.getAttribute("data-ui-mode") === "default";
   }
   if (current_question >= question_count) {
     var nextLabelKey = useShortQuestionLabels ? 'score_entry.new_short' : 'score_entry.new';
@@ -2357,12 +2357,12 @@ var scoreEntryReorderLastFocus = null;
 var scoreEntryReorderKeyHandler = null;
 var scoreEntryReorderObserver = null;
 
-function is_beta_mode_for_score_entry() {
+function is_default_mode_for_score_entry() {
   if (typeof document === "undefined") {
     return false;
   }
   var root = document.documentElement;
-  return !!(root && root.getAttribute("data-ui-mode") === "beta");
+  return !!(root && root.getAttribute("data-ui-mode") === "default");
 }
 
 /**
@@ -2393,10 +2393,10 @@ function get_score_entry_field_order() {
 }
 
 /**
- * Get the saved score entry field order for beta UI from global doc
+ * Get the saved score entry field order for default UI from global doc
  * @returns {Array|null} - Array of field IDs in order, or null if not set
  */
-function get_beta_score_entry_field_order() {
+function get_saved_default_score_entry_field_order() {
   if (typeof getGlobalDoc !== "function") {
     return null;
   }
@@ -2405,7 +2405,7 @@ function get_beta_score_entry_field_order() {
     return null;
   }
   var meta = doc.getMap("meta");
-  var orderStr = meta.get("scoreEntryFieldOrderBeta");
+  var orderStr = meta.get("scoreEntryFieldOrderDefault");
   if (typeof orderStr === "string") {
     try {
       var order = JSON.parse(orderStr);
@@ -2416,6 +2416,20 @@ function get_beta_score_entry_field_order() {
       // Invalid JSON
     }
   }
+
+  // Backward compatibility: reuse previously saved beta UI order.
+  var legacyOrderStr = meta.get("scoreEntryFieldOrderBeta");
+  if (typeof legacyOrderStr === "string") {
+    try {
+      var legacyOrder = JSON.parse(legacyOrderStr);
+      if (Array.isArray(legacyOrder) && legacyOrder.length > 0) {
+        return legacyOrder;
+      }
+    } catch (e) {
+      // Invalid JSON
+    }
+  }
+
   return null;
 }
 
@@ -2443,11 +2457,11 @@ function set_score_entry_field_order(order) {
 }
 
 /**
- * Set the beta score entry field order in global doc
+ * Set the default score entry field order in global doc
  * @param {Array} order - Array of field IDs in order (e.g., ['points', 'block', 'teams'])
  * @returns {boolean} - True if successfully set, false otherwise
  */
-function set_beta_score_entry_field_order(order) {
+function set_default_score_entry_field_order(order) {
   if (typeof getGlobalDoc !== "function") {
     return false;
   }
@@ -2460,8 +2474,8 @@ function set_beta_score_entry_field_order(order) {
   }
   var meta = doc.getMap("meta");
   doc.transact(function() {
-    meta.set("scoreEntryFieldOrderBeta", JSON.stringify(order));
-  }, "scoreEntryFieldOrderBeta");
+    meta.set("scoreEntryFieldOrderDefault", JSON.stringify(order));
+  }, "scoreEntryFieldOrderDefault");
   return true;
 }
 
@@ -2474,13 +2488,13 @@ function get_score_entry_field_ids(container) {
   }).filter(Boolean);
 }
 
-function get_default_score_entry_field_order(isBeta) {
-  return isBeta ? ["points", "block", "timer", "teams"] : ["points", "block", "timer"];
+function get_default_score_entry_field_order(isDefault) {
+  return isDefault ? ["points", "block", "timer", "teams"] : ["points", "block", "timer"];
 }
 
-function normalize_score_entry_field_order(order, available, isBeta) {
-  var baseOrder = Array.isArray(order) && order.length > 0 ? order : get_default_score_entry_field_order(isBeta);
-  if (!isBeta) {
+function normalize_score_entry_field_order(order, available, isDefault) {
+  var baseOrder = Array.isArray(order) && order.length > 0 ? order : get_default_score_entry_field_order(isDefault);
+  if (!isDefault) {
     baseOrder = baseOrder.filter(function(fieldId) {
       return fieldId === "points" || fieldId === "timer" || fieldId === "block";
     });
@@ -2493,7 +2507,7 @@ function normalize_score_entry_field_order(order, available, isBeta) {
   });
 
   if (available.indexOf("timer") !== -1) {
-    if (!isBeta) {
+    if (!isDefault) {
       normalized = normalized.filter(function(fieldId) {
         return fieldId !== "timer";
       });
@@ -2509,21 +2523,21 @@ function normalize_score_entry_field_order(order, available, isBeta) {
         }
       }
     } else if (normalized.indexOf("timer") === -1) {
-      var betaBlockIndex = normalized.indexOf("block");
-      if (betaBlockIndex !== -1) {
-        normalized.splice(betaBlockIndex + 1, 0, "timer");
+      var defaultBlockIndex = normalized.indexOf("block");
+      if (defaultBlockIndex !== -1) {
+        normalized.splice(defaultBlockIndex + 1, 0, "timer");
       } else {
-        var betaPointsIndex = normalized.indexOf("points");
-        if (betaPointsIndex === -1) {
+        var defaultPointsIndex = normalized.indexOf("points");
+        if (defaultPointsIndex === -1) {
           normalized.unshift("timer");
         } else {
-          normalized.splice(betaPointsIndex + 1, 0, "timer");
+          normalized.splice(defaultPointsIndex + 1, 0, "timer");
         }
       }
     }
   }
 
-  if (isBeta) {
+  if (isDefault) {
     available.forEach(function(fieldId) {
       if (normalized.indexOf(fieldId) === -1) {
         normalized.push(fieldId);
@@ -2538,14 +2552,14 @@ function normalize_score_entry_field_order(order, available, isBeta) {
   return normalized;
 }
 
-function get_score_entry_field_order_for_mode(isBeta) {
+function get_score_entry_field_order_for_mode(isDefault) {
   var container = document.getElementById("score_entry_fields");
   if (!container) {
     return null;
   }
   var available = get_score_entry_field_ids(container);
-  var stored = isBeta ? get_beta_score_entry_field_order() : get_score_entry_field_order();
-  return normalize_score_entry_field_order(stored, available, isBeta);
+  var stored = isDefault ? get_saved_default_score_entry_field_order() : get_score_entry_field_order();
+  return normalize_score_entry_field_order(stored, available, isDefault);
 }
 
 /**
@@ -2556,7 +2570,7 @@ function apply_score_entry_field_order() {
   if (!container) {
     return;
   }
-  var order = get_score_entry_field_order_for_mode(is_beta_mode_for_score_entry());
+  var order = get_score_entry_field_order_for_mode(is_default_mode_for_score_entry());
   if (!order || order.length === 0) {
     return;
   }
@@ -2623,7 +2637,7 @@ function initialize_score_entry_field_reorder() {
   
   // Handle drag start
   container.addEventListener("dragstart", function(e) {
-    if (is_beta_mode_for_score_entry()) {
+    if (is_default_mode_for_score_entry()) {
       return;
     }
     var handle = e.target.closest(".score-entry-drag-handle");
@@ -2643,7 +2657,7 @@ function initialize_score_entry_field_reorder() {
   
   // Handle drag over
   container.addEventListener("dragover", function(e) {
-    if (is_beta_mode_for_score_entry() || !draggedItem) {
+    if (is_default_mode_for_score_entry() || !draggedItem) {
       return;
     }
     var target = e.target.closest(".score-entry-field");
@@ -2668,7 +2682,7 @@ function initialize_score_entry_field_reorder() {
   
   // Handle drop
   container.addEventListener("drop", function(e) {
-    if (is_beta_mode_for_score_entry()) {
+    if (is_default_mode_for_score_entry()) {
       return;
     }
     var target = e.target.closest(".score-entry-field");
@@ -2708,7 +2722,7 @@ function initialize_score_entry_field_reorder() {
   var touchClone = null;
   
   container.addEventListener("touchstart", function(e) {
-    if (is_beta_mode_for_score_entry()) {
+    if (is_default_mode_for_score_entry()) {
       return;
     }
     var handle = e.target.closest(".score-entry-drag-handle");
@@ -2791,7 +2805,7 @@ function initialize_score_entry_field_reorder() {
  * Save the current score entry field order to global doc
  */
 function save_score_entry_field_order() {
-  if (is_beta_mode_for_score_entry()) {
+  if (is_default_mode_for_score_entry()) {
     return;
   }
   var container = document.getElementById("score_entry_fields");
@@ -2828,7 +2842,7 @@ function showScoreEntryReorderDialog() {
     return;
   }
   var root = document.documentElement;
-  if (!root || root.getAttribute("data-ui-mode") !== "beta") {
+  if (!root || root.getAttribute("data-ui-mode") !== "default") {
     return;
   }
   if (document.getElementById(SCORE_ENTRY_REORDER_DIALOG_ID)) {
@@ -2914,7 +2928,7 @@ function showScoreEntryReorderDialog() {
       return get_score_entry_field_order_for_mode(true) || get_default_score_entry_field_order(true);
     },
     on_reorder: function(updatedOrder) {
-      set_beta_score_entry_field_order(updatedOrder);
+      set_default_score_entry_field_order(updatedOrder);
       apply_score_entry_field_order();
     }
   });
@@ -2933,7 +2947,7 @@ function showScoreEntryReorderDialog() {
     scoreEntryReorderObserver = new MutationObserver(function(mutations) {
       for (var i = 0; i < mutations.length; i++) {
         if (mutations[i].attributeName === "data-ui-mode") {
-          if (root.getAttribute("data-ui-mode") !== "beta") {
+          if (root.getAttribute("data-ui-mode") !== "default") {
             closeScoreEntryReorderDialog();
           }
           break;

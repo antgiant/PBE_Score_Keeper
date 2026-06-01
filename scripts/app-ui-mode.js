@@ -1,13 +1,16 @@
 var UI_MODE_STORAGE_KEY = "ui_mode_preference";
-var UI_MODE_DEFAULT = "classic";
+var UI_MODE_DEFAULT = "default";
 
 function get_saved_ui_mode() {
   if (typeof localStorage === "undefined") {
     return UI_MODE_DEFAULT;
   }
   var saved = localStorage.getItem(UI_MODE_STORAGE_KEY);
-  if (saved === "beta" || saved === "classic") {
+  if (saved === "default" || saved === "classic") {
     return saved;
+  }
+  if (saved === "beta") {
+    return "default";
   }
   return UI_MODE_DEFAULT;
 }
@@ -17,7 +20,7 @@ function apply_ui_mode(mode) {
   if (!root) {
     return;
   }
-  var resolvedMode = mode === "beta" ? "beta" : "classic";
+  var resolvedMode = mode === "default" ? "default" : "classic";
   root.setAttribute("data-ui-mode", resolvedMode);
   update_ui_mode_toggle(resolvedMode);
   if (typeof sync_data_to_display_debounced === "function") {
@@ -35,9 +38,9 @@ function update_ui_mode_toggle(mode) {
   if (!toggle) {
     return;
   }
-  var isBeta = mode === "beta";
-  toggle.checked = isBeta;
-  toggle.setAttribute("aria-checked", isBeta ? "true" : "false");
+  var isDefault = mode === "default";
+  toggle.checked = isDefault;
+  toggle.setAttribute("aria-checked", isDefault ? "true" : "false");
 }
 
 function initialize_ui_mode_preference() {
@@ -54,7 +57,7 @@ function initialize_ui_mode_controls() {
   }
   update_ui_mode_toggle(get_saved_ui_mode());
   toggle.addEventListener("change", function() {
-    var mode = toggle.checked ? "beta" : "classic";
+    var mode = toggle.checked ? "default" : "classic";
     if (typeof localStorage !== "undefined") {
       localStorage.setItem(UI_MODE_STORAGE_KEY, mode);
     }
@@ -85,12 +88,12 @@ function initialize_max_points_controls_for_ui_mode() {
     return;
   }
 
-  function is_beta_mode_for_controls() {
-    return root.getAttribute("data-ui-mode") === "beta";
+  function is_default_mode_for_controls() {
+    return root.getAttribute("data-ui-mode") === "default";
   }
 
   function sync_controls_for_mode() {
-    if (is_beta_mode_for_controls()) {
+    if (is_default_mode_for_controls()) {
       if (!slot.contains(controls)) {
         slot.appendChild(controls);
       }

@@ -23,14 +23,14 @@ function initialize_header_menu() {
   var scoreEntryReorderButton = document.getElementById("score_entry_reorder_button");
   var syncButton = document.getElementById("sync_button");
   var syncButtonSlot = document.getElementById("sync_button_slot");
-  var syncButtonBetaSlot = document.getElementById("beta_sync_button_slot");
-  var betaSyncFieldset = document.getElementById("beta_sync_fieldset");
+  var syncButtonDefaultSlot = document.getElementById("default_sync_button_slot");
+  var defaultSyncFieldset = document.getElementById("default_sync_fieldset");
   if (!root || !toggle || !panel) {
     return;
   }
 
-  function is_beta_mode() {
-    return root.getAttribute("data-ui-mode") === "beta";
+  function is_default_mode() {
+    return root.getAttribute("data-ui-mode") === "default";
   }
 
   function set_menu_state(isOpen) {
@@ -40,7 +40,7 @@ function initialize_header_menu() {
       panel.classList.remove(HEADER_MENU_OPEN_CLASS);
     }
 
-    if (is_beta_mode()) {
+    if (is_default_mode()) {
       panel.setAttribute("aria-hidden", isOpen ? "false" : "true");
       toggle.setAttribute("aria-expanded", isOpen ? "true" : "false");
     }
@@ -50,7 +50,7 @@ function initialize_header_menu() {
     if (!sessionFieldset || !sessionSlot || !sessionPlaceholder) {
       return;
     }
-    if (is_beta_mode()) {
+    if (is_default_mode()) {
       if (!sessionSlot.contains(sessionFieldset)) {
         sessionSlot.appendChild(sessionFieldset);
       }
@@ -65,7 +65,7 @@ function initialize_header_menu() {
     if (!roundingFieldset || !roundingSlot || !roundingPlaceholder) {
       return;
     }
-    if (is_beta_mode()) {
+    if (is_default_mode()) {
       if (!roundingSlot.contains(roundingFieldset)) {
         roundingSlot.appendChild(roundingFieldset);
       }
@@ -80,7 +80,7 @@ function initialize_header_menu() {
     if (!timerFieldset || !timerSlot || !timerPlaceholder) {
       return;
     }
-    if (is_beta_mode()) {
+    if (is_default_mode()) {
       if (!timerSlot.contains(timerFieldset)) {
         timerSlot.appendChild(timerFieldset);
       }
@@ -95,10 +95,10 @@ function initialize_header_menu() {
     if (!scoreEntryReorderButton || !scoreEntryAdvancedPanel || !sessionFieldset) {
       return;
     }
-    if (is_beta_mode()) {
-      if (betaSyncFieldset && betaSyncFieldset.parentNode === sessionFieldset) {
-        if (betaSyncFieldset.previousSibling !== scoreEntryReorderButton) {
-          sessionFieldset.insertBefore(scoreEntryReorderButton, betaSyncFieldset);
+    if (is_default_mode()) {
+      if (defaultSyncFieldset && defaultSyncFieldset.parentNode === sessionFieldset) {
+        if (defaultSyncFieldset.previousSibling !== scoreEntryReorderButton) {
+          sessionFieldset.insertBefore(scoreEntryReorderButton, defaultSyncFieldset);
         }
         return;
       }
@@ -116,10 +116,10 @@ function initialize_header_menu() {
     if (!syncButton || !syncButtonSlot) {
       return;
     }
-    if (is_beta_mode()) {
-      if (syncButtonBetaSlot) {
-        if (!syncButtonBetaSlot.contains(syncButton)) {
-          syncButtonBetaSlot.appendChild(syncButton);
+    if (is_default_mode()) {
+      if (syncButtonDefaultSlot) {
+        if (!syncButtonDefaultSlot.contains(syncButton)) {
+          syncButtonDefaultSlot.appendChild(syncButton);
         }
       } else if (sessionFieldset) {
         var legend = sessionFieldset.querySelector("legend");
@@ -142,7 +142,7 @@ function initialize_header_menu() {
     if (!questionFieldset || !scoreEntryAdvancedPanel || !scoreEntryAdvancedPlaceholder) {
       return;
     }
-    if (is_beta_mode()) {
+    if (is_default_mode()) {
       if (!questionFieldset.contains(scoreEntryAdvancedPanel)) {
         questionFieldset.appendChild(scoreEntryAdvancedPanel);
       }
@@ -154,7 +154,7 @@ function initialize_header_menu() {
   }
 
   function sync_menu_for_mode() {
-    if (is_beta_mode()) {
+    if (is_default_mode()) {
       set_menu_state(false);
       move_session_fieldset_for_mode();
       move_rounding_fieldset_for_mode();
@@ -177,7 +177,7 @@ function initialize_header_menu() {
   }
 
   toggle.addEventListener("click", function(event) {
-    if (!is_beta_mode()) {
+    if (!is_default_mode()) {
       return;
     }
     event.preventDefault();
@@ -186,7 +186,7 @@ function initialize_header_menu() {
   });
 
   document.addEventListener("click", function(event) {
-    if (!is_beta_mode()) {
+    if (!is_default_mode()) {
       return;
     }
     if (!panel.classList.contains(HEADER_MENU_OPEN_CLASS)) {
@@ -199,7 +199,7 @@ function initialize_header_menu() {
   });
 
   document.addEventListener("keydown", function(event) {
-    if (!is_beta_mode()) {
+    if (!is_default_mode()) {
       return;
     }
     if (event.key !== "Escape") {

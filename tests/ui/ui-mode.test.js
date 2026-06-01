@@ -1,6 +1,6 @@
 /**
  * UI Mode Toggle Tests
- * Validates beta/classic mode state, persistence, and toggle behavior.
+ * Validates default/classic mode state, persistence, and toggle behavior.
  */
 
 const test = require('node:test');
@@ -38,14 +38,14 @@ function createUiModeHarness(context) {
 }
 
 test('UI Mode - initializes from saved preference', () => {
-  const { context } = loadApp({ ui_mode_preference: 'beta' });
+  const { context } = loadApp({ ui_mode_preference: 'default' });
   const { root, toggle } = createUiModeHarness(context);
 
   context.initialize_ui_mode_preference();
 
-  assert.strictEqual(root.getAttribute('data-ui-mode'), 'beta', 'Should apply beta mode to root');
-  assert.strictEqual(toggle.checked, true, 'Toggle should be checked for beta');
-  assert.strictEqual(toggle.attributes['aria-checked'], 'true', 'ARIA should reflect beta state');
+  assert.strictEqual(root.getAttribute('data-ui-mode'), 'default', 'Should apply default mode to root');
+  assert.strictEqual(toggle.checked, true, 'Toggle should be checked for default');
+  assert.strictEqual(toggle.attributes['aria-checked'], 'true', 'ARIA should reflect default state');
 });
 
 test('UI Mode - toggle updates localStorage and root attribute', () => {
@@ -55,12 +55,12 @@ test('UI Mode - toggle updates localStorage and root attribute', () => {
   context.initialize_ui_mode_preference();
   context.initialize_ui_mode_controls();
 
-  assert.strictEqual(root.getAttribute('data-ui-mode'), 'classic', 'Default should be classic');
+  assert.strictEqual(root.getAttribute('data-ui-mode'), 'default', 'Default should be default');
 
   toggle.checked = true;
   toggle._onChange();
-  assert.strictEqual(localStorage.getItem('ui_mode_preference'), 'beta', 'Should persist beta preference');
-  assert.strictEqual(root.getAttribute('data-ui-mode'), 'beta', 'Root should reflect beta mode');
+  assert.strictEqual(localStorage.getItem('ui_mode_preference'), 'default', 'Should persist default preference');
+  assert.strictEqual(root.getAttribute('data-ui-mode'), 'default', 'Root should reflect default mode');
 
   toggle.checked = false;
   toggle._onChange();

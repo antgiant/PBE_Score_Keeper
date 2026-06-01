@@ -30,9 +30,9 @@ register_i18n_language('fr', {
     "ui_mode": {
       "label": "Mode d'interface",
       "classic": "Classique",
-      "beta": "Bêta",
-      "toggle_aria": "Basculer l'interface bêta",
-      "toggle_title": "Basculer entre l'interface classique et bêta"
+      "default": "Par défaut",
+      "toggle_aria": "Basculer l'interface par défaut",
+      "toggle_title": "Basculer entre l'interface classique et par défaut"
     },
     "menu": {
       "toggle_aria": "Menu",

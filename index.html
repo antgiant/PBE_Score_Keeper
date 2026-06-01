@@ -76,7 +76,7 @@
                 <input type="checkbox" id="ui_mode_toggle" role="switch" data-i18n-aria-label="ui_mode.toggle_aria" data-i18n-title="ui_mode.toggle_title">
                 <span class="ui-mode-slider" aria-hidden="true"></span>
               </span>
-              <span class="ui-mode-option" data-i18n="ui_mode.beta">Beta</span>
+              <span class="ui-mode-option" data-i18n="ui_mode.default">Default</span>
             </label>
             <div id="header_menu_rounding_slot" class="header-menu-rounding-slot"></div>
             <div id="header_menu_timer_slot" class="header-menu-timer-slot"></div>
@@ -125,12 +125,12 @@
             <button id="new_session" class="config-add-btn" onclick='local_data_update(this)' data-i18n="config.new_session">New Quiz</button>
             <button id="manage_sessions" class="config-add-btn" onclick='showSessionManagerDialog()' data-i18n="session_manager.manage_button">Manage Quizzes</button>
           </div>
-          <fieldset class="config-fieldset beta-sync-fieldset" id="beta_sync_fieldset">
-            <legend class="beta-sync-legend">
+          <fieldset class="config-fieldset default-sync-fieldset" id="default_sync_fieldset">
+            <legend class="default-sync-legend">
               <span data-i18n="sync.title">Collaborate</span>
               <a href="#" class="sync-info-link" onclick="showSyncInfoDialog(); return false;" data-i18n-title="sync.info_link_title" data-i18n-aria-label="sync.info_link_title">ⓘ</a>
             </legend>
-            <div id="beta_sync_button_slot" class="beta-sync-button-slot"></div>
+            <div id="default_sync_button_slot" class="default-sync-button-slot"></div>
           </fieldset>
         </fieldset>
         <div id="teams_fieldset_placeholder"></div>
@@ -222,24 +222,24 @@
             </div>
           </fieldset>
           <div id="score_entry_fieldset_placeholder"></div>
-          <fieldset id="beta_session_fieldset" class="beta-session-fieldset" aria-hidden="true">
-            <legend class="beta-session-legend">
-              <button id="session_prev_button" class="beta-session-nav-btn" type="button" onclick="local_data_update(this)" data-i18n="session_nav.previous" data-i18n-aria-label="session_nav.previous" data-i18n-title="session_nav.previous">Previous Quiz</button>
-              <button id="session_next_button" class="beta-session-nav-btn" type="button" onclick="local_data_update(this)" data-i18n="session_nav.next" data-i18n-aria-label="session_nav.next" data-i18n-title="session_nav.next">Next Quiz</button>
+          <fieldset id="default_session_fieldset" class="default-session-fieldset" aria-hidden="true">
+            <legend class="default-session-legend">
+              <button id="session_prev_button" class="default-session-nav-btn" type="button" onclick="local_data_update(this)" data-i18n="session_nav.previous" data-i18n-aria-label="session_nav.previous" data-i18n-title="session_nav.previous">Previous Quiz</button>
+              <button id="session_next_button" class="default-session-nav-btn" type="button" onclick="local_data_update(this)" data-i18n="session_nav.next" data-i18n-aria-label="session_nav.next" data-i18n-title="session_nav.next">Next Quiz</button>
             </legend>
-            <span id="beta_session_title" class="beta-session-title"></span>
-            <div id="beta_session_entry_slot" class="beta-session-entry-slot"></div>
+            <span id="default_session_title" class="default-session-title"></span>
+            <div id="default_session_entry_slot" class="default-session-entry-slot"></div>
           </fieldset>
           <div id="score_entry_content">
             <div id="score_entry_content_body_placeholder"></div>
-            <fieldset id="beta_question_fieldset" class="beta-question-fieldset" aria-hidden="true">
-              <legend class="beta-question-legend">
-                <span id="beta_question_prev_slot"></span>
-                <span id="beta_question_next_slot"></span>
+            <fieldset id="default_question_fieldset" class="default-question-fieldset" aria-hidden="true">
+              <legend class="default-question-legend">
+                <span id="default_question_prev_slot"></span>
+                <span id="default_question_next_slot"></span>
               </legend>
-              <span id="beta_question_title_slot"></span>
-              <div id="beta_question_slot" class="beta-question-slot"></div>
-              <div id="beta_question_bottom_slot" class="beta-question-bottom-slot"></div>
+              <span id="default_question_title_slot"></span>
+              <div id="default_question_slot" class="default-question-slot"></div>
+              <div id="default_question_bottom_slot" class="default-question-bottom-slot"></div>
             </fieldset>
             <div id="score_entry_content_body">
               <div>
@@ -324,13 +324,13 @@
       </div>
       <h3 id="accordion_scores_tabs_header" data-i18n="scores.according"></h3>
       <div id="accordion_scores_tabs_panel">
-        <fieldset id="beta_results_session_fieldset" class="beta-session-fieldset">
-          <legend class="beta-session-legend">
-            <button id="results_session_prev_button" class="beta-session-nav-btn" type="button" onclick="local_data_update(this)" data-i18n="session_nav.previous" data-i18n-aria-label="session_nav.previous" data-i18n-title="session_nav.previous">Previous Quiz</button>
-            <button id="results_session_next_button" class="beta-session-nav-btn" type="button" onclick="local_data_update(this)" data-i18n="session_nav.next" data-i18n-aria-label="session_nav.next" data-i18n-title="session_nav.next">Next Quiz</button>
+        <fieldset id="default_results_session_fieldset" class="default-session-fieldset">
+          <legend class="default-session-legend">
+            <button id="results_session_prev_button" class="default-session-nav-btn" type="button" onclick="local_data_update(this)" data-i18n="session_nav.previous" data-i18n-aria-label="session_nav.previous" data-i18n-title="session_nav.previous">Previous Quiz</button>
+            <button id="results_session_next_button" class="default-session-nav-btn" type="button" onclick="local_data_update(this)" data-i18n="session_nav.next" data-i18n-aria-label="session_nav.next" data-i18n-title="session_nav.next">Next Quiz</button>
           </legend>
-          <span id="beta_results_session_title" class="beta-session-title"></span>
-          <div id="beta_results_session_slot" class="beta-session-entry-slot">
+          <span id="default_results_session_title" class="default-session-title"></span>
+          <div id="default_results_session_slot" class="default-session-entry-slot">
             <div id="scores_tabs" class="scores-tabs">
               <ul>
                 <li id="scores_tab_team_exact_tab"><a href="#scores_tab_team_exact" data-i18n="scores.team">Team</a></li>
@@ -439,7 +439,7 @@
     </div>
     <div id="scores_tabs_placeholder"></div>
     <footer><p><span data-i18n="footer.feedback">Have an idea to make this better?</span> <a id="footer_feedback_link" target="_blank" rel="noopener noreferrer" href="https://docs.google.com/forms/d/e/1FAIpQLSfp9N-Zryv6H0Dw70PVC9ImTH81JabJ6LGA-DgCjhAn1SQqjA/viewform?usp=dialog" data-feedback-base-url="https://docs.google.com/forms/d/e/1FAIpQLSfp9N-Zryv6H0Dw70PVC9ImTH81JabJ6LGA-DgCjhAn1SQqjA/viewform?usp=dialog" data-feedback-version-entry="entry.1929638831" data-i18n="footer.let_me_know">Let me know</a>.</p>
-    <p><center data-i18n="footer.version" data-i18n-version="2.18.52">v 2.18.52</center></p></footer>
+    <p><center data-i18n="footer.version" data-i18n-version="2.18.53">v 2.18.53</center></p></footer>
 </body>
 
 </html>
