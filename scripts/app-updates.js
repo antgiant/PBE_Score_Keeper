@@ -7,7 +7,7 @@
  * - Periodic background sync for auto-updates (when installed as PWA)
  */
 
-var APP_VERSION = "2.23.0";
+var APP_VERSION = "2.23.2";
 var PWA_CACHE_PREFIX = "pbe-score-keeper";
 var PWA_TOOLS_DIALOG_ID = "pwa-tools-dialog-overlay";
 var pwaToolsDialogKeyHandler = null;
@@ -275,6 +275,13 @@ function showPwaToolsDialog() {
     refreshPwaStatusPanel();
   });
 
+  var reloadButton = document.createElement("button");
+  reloadButton.id = "reload_app_button";
+  reloadButton.type = "button";
+  reloadButton.textContent = t("advanced.reload_app");
+  reloadButton.className = "secondary";
+  reloadButton.addEventListener("click", reloadAppForUpdate);
+
   var clearButton = document.createElement("button");
   clearButton.id = "clear_cache_button";
   clearButton.type = "button";
@@ -297,6 +304,7 @@ function showPwaToolsDialog() {
   closeButton.addEventListener("click", closePwaToolsDialog);
 
   buttonRow.appendChild(updateButton);
+  buttonRow.appendChild(reloadButton);
   buttonRow.appendChild(clearButton);
   buttonRow.appendChild(refreshButton);
   buttonRow.appendChild(closeButton);
@@ -359,6 +367,26 @@ function requestServiceWorkerActivation(registration, allowImmediateReload) {
   registration.waiting.postMessage({ type: "SKIP_WAITING" });
 }
 
+function reloadAppForUpdate() {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  if (typeof navigator !== "undefined" && navigator.serviceWorker && typeof navigator.serviceWorker.getRegistration === "function") {
+    navigator.serviceWorker.getRegistration().then(function(registration) {
+      requestServiceWorkerActivation(registration, true);
+      setTimeout(function() {
+        window.location.reload();
+      }, 200);
+    }).catch(function() {
+      window.location.reload();
+    });
+    return;
+  }
+
+  window.location.reload();
+}
+
 /**
  * Check for updates by comparing service worker versions
  * Shows toast notification with update status
@@ -388,8 +416,10 @@ function checkForUpdates() {
         setPwaLastUpdateCheckNow();
         if (registration.waiting) {
           // Update is waiting to be activated
-          showUpdateNotification(t("advanced.update_available"), "warning");
-          requestServiceWorkerActivation(registration, true);
+          showUpdateNotification(t("advanced.update_available"), "warning", {
+            actionLabel: t("advanced.reload_now"),
+            onAction: reloadAppForUpdate,
+          });
         } else if (registration.installing) {
           // Update is being downloaded
           showUpdateNotification(t("advanced.checking_updates"), "info");
@@ -479,18 +509,48 @@ function resetClearCacheButton() {
  * Show a toast notification with update status
  * @param {string} message - The message to display
  * @param {string} type - The type of notification: 'info', 'success', 'warning', 'error'
+ * @param {object=} options - Optional action button configuration
  */
-function showUpdateNotification(message, type) {
+function showUpdateNotification(message, type, options) {
   if (typeof document === "undefined" || !document.body) {
     return;
   }
 
+  options = options || {};
   type = type || "info";
   
   var notification = document.createElement("div");
+  if (!notification) {
+    return;
+  }
   notification.className = "update-notification update-notification-" + type;
-  notification.textContent = message;
+  if (typeof notification.setAttribute === "function") {
+    notification.setAttribute("role", "status");
+    notification.setAttribute("aria-live", "polite");
+  }
   notification.style.cssText = "position: fixed; bottom: 20px; right: 20px; padding: 12px 20px; background-color: var(--bg-secondary, #f5f5f5); color: var(--text-primary, #333); border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.2); z-index: 10000; font-size: 14px; max-width: 300px; word-wrap: break-word;";
+  notification.textContent = message;
+
+  var canAppendChildren = typeof notification.appendChild === "function";
+
+  if (canAppendChildren && options.actionLabel && typeof options.onAction === "function") {
+    var messageElement = document.createElement("div");
+    messageElement.textContent = message;
+    notification.textContent = "";
+    notification.appendChild(messageElement);
+
+    var actionButton = document.createElement("button");
+    actionButton.type = "button";
+    actionButton.textContent = options.actionLabel;
+    actionButton.style.cssText = "margin-top: 8px; padding: 6px 10px; border: 1px solid currentColor; border-radius: 4px; background: transparent; color: inherit; cursor: pointer;";
+    actionButton.addEventListener("click", function() {
+      options.onAction();
+      if (typeof notification.remove === "function") {
+        notification.remove();
+      }
+    });
+    notification.appendChild(actionButton);
+  }
   
   if (type === "success") {
     notification.style.borderLeft = "4px solid #4caf50";
