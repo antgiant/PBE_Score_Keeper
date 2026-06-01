@@ -1,4 +1,4 @@
-const APP_VERSION = "2.23.2";
+const APP_VERSION = "2.24.0";
 const CACHE_PREFIX = "pbe-score-keeper";
 const SHELL_CACHE_NAME = `${CACHE_PREFIX}-shell-${APP_VERSION}`;
 const STATIC_RUNTIME_CACHE_NAME = `${CACHE_PREFIX}-static-${APP_VERSION}`;
@@ -28,6 +28,7 @@ const PRECACHE_REQUIRED_URLS = [
   "scripts/app-summaries.js",
   "scripts/app-display.js",
   "scripts/app-storage.js",
+  "scripts/app-pwa-handlers.js",
   "scripts/app.js",
   "scripts/i18n/en.js",
   "scripts/i18n/es.js",

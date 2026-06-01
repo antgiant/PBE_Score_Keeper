@@ -605,6 +605,22 @@ register_i18n_language('en', {
       "empty_sessions_deleted": "{{count}} empty duplicate quiz(es) deleted:",
       "empty_session_deleted": "Deleted (no data)",
       "status": "Status"
+    },
+    "pwa": {
+      "file_launch_success": "Imported quiz from file",
+      "file_launch_error": "Failed to import file: {{error}}",
+      "file_launch_invalid": "Invalid file launch data",
+      "file_reader_unavailable": "File reading is not available in this browser",
+      "file_read_failed": "The file could not be read",
+      "unsupported_file_type": "Only .yjs and .json files can be imported",
+      "import_unavailable": "Import is not available yet",
+      "unknown_import_error": "Unknown import error",
+      "http_error": "HTTP {{status}}",
+      "protocol_join_sync": "Joining sync room {{code}}...",
+      "protocol_new_session": "Creating new quiz...",
+      "protocol_import_url": "Importing quiz from link...",
+      "protocol_error_invalid": "Invalid protocol link",
+      "protocol_error_missing_param": "Missing required parameter: {{param}}"
     }
   }
 });

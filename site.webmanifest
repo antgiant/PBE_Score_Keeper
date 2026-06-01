@@ -65,5 +65,22 @@
 			"form_factor": "narrow",
 			"label": "Live score results with multiple views"
 		}
-	]
+	],
+	"file_handlers": [
+		{
+			"action": "./",
+			"accept": {
+				"application/octet-stream": [".yjs"],
+				"application/json": [".json"]
+			},
+			"launch_type": "single-client"
+		}
+	],
+	"protocol_handlers": [
+		{
+			"protocol": "web+pbe",
+			"url": "./?protocol=%s"
+		}
+	],
+	"prefer_related_applications": false
 }

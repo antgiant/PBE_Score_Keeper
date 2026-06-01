@@ -12,6 +12,17 @@ PBE Score Keeper is optimized for mobile use and can be installed to your home s
 
 After installation, open the app from your home screen/app launcher for the best full-screen experience.
 
+## App File and Link Handling
+When installed in a compatible Chromium-based browser, PBE Score Keeper can open `.yjs` and `.json` quiz export files directly from the operating system file picker or file manager.
+
+The installed app also registers `web+pbe://` links, which are the browser-safe form of PBE deep links:
+- `web+pbe://join/ABC123` opens the sync dialog with room `ABC123` filled in.
+- `web+pbe://join/ABC123?password=PASS` also fills in the room password.
+- `web+pbe://session/new` starts a new quiz session when the current quiz has enough data to allow session creation.
+- `web+pbe://import?file=https%3A%2F%2Fexample.com%2Fsession.yjs` imports a quiz export from a link.
+
+Browser support for file and protocol handlers varies. If a handler is unavailable, use the in-app Import/Export tools.
+
 ## Data Storage Note
 Data is stored only on your device, and is not shared in any way with any server. This means this data is only on your current device, and that you must use the Export Data options under Import/Export if you need to save copies of this data.
 

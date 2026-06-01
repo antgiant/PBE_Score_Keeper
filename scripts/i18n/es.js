@@ -604,6 +604,22 @@ register_i18n_language('es', {
       "empty_sessions_deleted": "{{count}} quiz(es) duplicada(s) vacía(s) eliminada(s):",
       "empty_session_deleted": "Eliminada (sin datos)",
       "status": "Estado"
+    },
+    "pwa": {
+      "file_launch_success": "Quiz importado desde archivo",
+      "file_launch_error": "Error al importar archivo: {{error}}",
+      "file_launch_invalid": "Datos de inicio de archivo inválidos",
+      "file_reader_unavailable": "La lectura de archivos no está disponible en este navegador",
+      "file_read_failed": "No se pudo leer el archivo",
+      "unsupported_file_type": "Solo se pueden importar archivos .yjs y .json",
+      "import_unavailable": "La importación aún no está disponible",
+      "unknown_import_error": "Error de importación desconocido",
+      "http_error": "HTTP {{status}}",
+      "protocol_join_sync": "Uniéndose a la sala de sincronización {{code}}...",
+      "protocol_new_session": "Creando nuevo quiz...",
+      "protocol_import_url": "Importando quiz desde enlace...",
+      "protocol_error_invalid": "Enlace de protocolo inválido",
+      "protocol_error_missing_param": "Parámetro requerido faltante: {{param}}"
     }
   }
 });

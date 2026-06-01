@@ -307,12 +307,19 @@ function bootstrap_critical_startup() {
     });
 }
 
+function initialize_pwa_handlers() {
+  if (typeof PWAHandlers !== "undefined" && PWAHandlers && typeof PWAHandlers.init === "function") {
+    PWAHandlers.init();
+  }
+}
+
 // Yjs bundle loads synchronously and sets window.yjsModulesLoaded
 // But just to be safe, we'll check and wait if needed
 function initializeApp() {
   initialize_yjs();  // Initialize Yjs before state
   initialize_state().finally(function() {
     try_initialize_display();
+    initialize_pwa_handlers();
   });
 }
 

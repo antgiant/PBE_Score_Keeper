@@ -599,6 +599,22 @@ register_i18n_language('pig', {
       "empty_sessions_deleted": "{{count}} empty-ay uplicate-day ession(s)-say eleted-day:",
       "empty_session_deleted": "Eleted-Day (o-nay ata-day)",
       "status": "Atus-Stay"
+    },
+    "pwa": {
+      "file_launch_success": "Importeday uizay omfray ilfay",
+      "file_launch_error": "Ailfay otay importay ilfay: {{error}}",
+      "file_launch_invalid": "Invaliday ilefay aunchlay ataday",
+      "file_reader_unavailable": "Ilefay eadingray isay otnay availableay inay isthay owserbray",
+      "file_read_failed": "Ethay ilefay ouldcay otnay ebay eadray",
+      "unsupported_file_type": "Onlyay .yjs anday .json ilesfay ancay ebay importeday",
+      "import_unavailable": "Importay isay otnay availableay etyay",
+      "unknown_import_error": "Unknownay importay erroray",
+      "http_error": "HTTP {{status}}",
+      "protocol_join_sync": "OiningJay yncay oomatray {{code}}...",
+      "protocol_new_session": "Reatingcay ewnay uizay...",
+      "protocol_import_url": "Importinay uizay omfray inklay...",
+      "protocol_error_invalid": "Invaliday protocolay inklay",
+      "protocol_error_missing_param": "Issingmay equiredray arameterpay: {{param}}"
     }
   }
 });
