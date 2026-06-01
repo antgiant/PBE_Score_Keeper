@@ -190,6 +190,17 @@ function initialize_deferred_modules() {
       if (typeof initSyncManager === "function") {
         initSyncManager();
       }
+
+      // Upgrade other sessions (current session upgraded in critical path)
+      if (typeof upgradeAllSessionsToV5 === "function") {
+        upgradeAllSessionsToV5()
+          .then(function(result) {
+            console.log("Deferred session migrations complete:", result);
+          })
+          .catch(function(error) {
+            console.error("Failed to upgrade other sessions:", error);
+          });
+      }
     })
     .catch(function(error) {
       console.error("Failed to initialize deferred modules", error);

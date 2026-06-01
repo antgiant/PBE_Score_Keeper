@@ -452,24 +452,57 @@ function ensureSessionIsV5(sessionDoc) {
 }
 
 /**
+ * Upgrade only the current session to v5 (critical path, blocking)
+ * Called before display initialization to ensure data consistency
+ * @returns {Promise<{upgraded: boolean, reason: string}>}
+ */
+async function upgradeCurrentSessionToV5() {
+  if (!getGlobalDoc()) return { upgraded: false, reason: 'no-global-doc' };
+  
+  const meta = getGlobalDoc().getMap('meta');
+  const currentSessionId = meta.get('currentSession');
+  if (!currentSessionId) return { upgraded: false, reason: 'no-current-session' };
+
+  const sessionDoc = await initSessionDoc(currentSessionId);
+  const result = ensureSessionIsV5(sessionDoc);
+  
+  console.log('Current session upgrade result:', result);
+  return result || { upgraded: false, reason: 'unknown' };
+}
+
+/**
  * Upgrade all sessions in the global order to v5.
+ * Skips current session (already upgraded in critical path).
  * @returns {Promise<{upgraded: number, total: number}>}
  */
 async function upgradeAllSessionsToV5() {
   if (!getGlobalDoc()) return { upgraded: 0, total: 0 };
   const meta = getGlobalDoc().getMap('meta');
   const sessionOrder = meta.get('sessionOrder') || [];
+  const currentSessionId = meta.get('currentSession');
   let upgraded = 0;
+  let skipped = 0;
 
   for (const sessionId of sessionOrder) {
-    const sessionDoc = await initSessionDoc(sessionId);
-    const result = ensureSessionIsV5(sessionDoc);
-    if (result && result.upgraded) {
-      upgraded++;
+    // Skip current session - it was already upgraded in critical path
+    if (sessionId === currentSessionId) {
+      skipped++;
+      continue;
+    }
+
+    try {
+      const sessionDoc = await initSessionDoc(sessionId);
+      const result = ensureSessionIsV5(sessionDoc);
+      if (result && result.upgraded) {
+        upgraded++;
+      }
+    } catch (error) {
+      console.warn('Error upgrading session', sessionId, ':', error);
     }
   }
 
-  return { upgraded, total: sessionOrder.length };
+  console.log('Deferred session upgrades:', { upgraded, skipped, total: sessionOrder.length });
+  return { upgraded, total: sessionOrder.length - skipped };
 }
 
 /**
@@ -2219,7 +2252,8 @@ function extractYMap(yMap) {
 }
 
 /**
- * Load state from Yjs - upgrades legacy formats to v5
+ * Load state from Yjs - upgrades legacy formats to v5 (fast path, before first paint)
+ * Only upgrades current session; defers other session upgrades to idle time
  * @returns {Promise<void>}
  */
 async function load_from_yjs() {
@@ -2246,8 +2280,9 @@ async function load_from_yjs() {
   await initSessionDoc(currentSessionId);
   DocManager.setActiveSession(currentSessionId);
 
-  // Upgrade all sessions to v5 immediately
-  await upgradeAllSessionsToV5();
+  // Upgrade ONLY current session for critical path (~50-100ms)
+  // Other sessions will be upgraded on idle
+  await upgradeCurrentSessionToV5();
   await backfillMissingSessionCreatedAtFromName();
   // Stamp global metadata to v5 after upgrade
   getGlobalDoc().transact(function() {
