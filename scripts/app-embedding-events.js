@@ -109,6 +109,8 @@ var EmbeddingEvents = {
       return 0;
     }
 
+    this.updatePresenceFromEvent(eventType, data);
+
     var throttleMs = options.throttleMs;
     if (throttleMs === undefined) {
       throttleMs = this.throttleMs[eventType] || 0;
@@ -129,6 +131,39 @@ var EmbeddingEvents = {
     }
 
     return EmbeddingAPI.emit(eventType, data || {});
+  },
+
+  updatePresenceFromEvent: function(eventType, data) {
+    var updatePresence = this.getGlobal("updateSyncPresence");
+    if (typeof updatePresence !== "function") {
+      return;
+    }
+    if (eventType !== "question:changed" && eventType !== "question:scored" && eventType !== "question:ignored" && eventType !== "question:block-changed") {
+      return;
+    }
+    data = data || {};
+    var patch = {
+      lastEmbeddingEvent: eventType,
+      lastEmbeddingEventAt: Date.now()
+    };
+    if (data.questionId || data.id) {
+      patch.activeQuestionId = data.questionId || data.id;
+    }
+    if (data.questionIndex || data.index || data.number) {
+      patch.activeQuestionIndex = data.questionIndex || data.index || data.number;
+    }
+    if (eventType === "question:scored") {
+      patch.lastScore = {
+        questionId: data.questionId || data.id || null,
+        questionIndex: data.questionIndex || data.index || null,
+        teamId: data.teamId || null,
+        teamIndex: data.teamIndex || null,
+        score: data.score !== undefined ? data.score : null,
+        extraCredit: data.extraCredit !== undefined ? data.extraCredit : null,
+        total: data.total !== undefined ? data.total : null
+      };
+    }
+    updatePresence(patch);
   },
 
   emitStateChanged: function(reason) {

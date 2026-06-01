@@ -99,25 +99,25 @@
 ## Phase 3: Enhanced Features (v2.26.0) - 3 weeks
 
 ### Milestone 3.1: Bidirectional State Sync
-- [ ] Implement session state export (Yjs binary)
-- [ ] Implement session state import
-- [ ] Add conflict resolution UI
-- [ ] Support parallel sync sessions
+- [x] Implement session state export (Yjs binary)
+- [x] Implement session state import
+- [x] Add conflict resolution UI
+- [x] Support parallel sync sessions
 
 ### Milestone 3.2: Batch Commands
-- [ ] Implement batch command support
-- [ ] Add atomic transaction semantics
-- [ ] Test rollback scenarios
+- [x] Implement batch command support
+- [x] Add atomic transaction semantics
+- [x] Test rollback scenarios
 
 ### Milestone 3.3: Real-time Collaboration
-- [ ] Share cursor position
-- [ ] Live name updates across peers
-- [ ] Multi-user scoring UI feedback
+- [x] Share cursor position
+- [x] Live name updates across peers
+- [x] Multi-user scoring UI feedback
 
 ### Milestone 3.4: Custom Theming
-- [ ] Accept CSS variables from host
-- [ ] Apply host theme to embedded frame
-- [ ] Support dark/light mode inheritance
+- [x] Accept CSS variables from host
+- [x] Apply host theme to embedded frame
+- [x] Support dark/light mode inheritance
 
 ---
 
@@ -163,10 +163,10 @@
 - [x] Example host page fully functional
 
 ### Phase 3
-- [ ] State sync works bidirectionally
-- [ ] Batch commands atomic
-- [ ] Multi-user real-time updates
-- [ ] Theme inheritance working
+- [x] State sync works bidirectionally
+- [x] Batch commands atomic
+- [x] Multi-user real-time updates
+- [x] Theme inheritance working
 
 ---
 

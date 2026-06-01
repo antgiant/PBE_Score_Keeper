@@ -80,6 +80,8 @@ var SyncManager = {
   
   // Peers tracking
   peers: new Map(),  // peerId -> { displayName, color, lastSeen }
+  presence: {},
+  parallelSessions: new Map(),  // sessionId -> background sync connection record
   
   // Callbacks
   onStateChange: null,
@@ -1125,6 +1127,232 @@ function getSyncPeers() {
  */
 function getSyncPeerCount() {
   return SyncManager.peers.size + 1; // +1 for self
+}
+
+function getSessionDataVersionForAwareness(sessionId) {
+  var doc = sessionId && typeof getSessionDoc === 'function' ? getSessionDoc(sessionId) : null;
+  var session = doc ? doc.getMap('session') : null;
+  if (session && typeof isDeterministicSession === 'function' && isDeterministicSession(session)) {
+    return (typeof DATA_VERSION_DETERMINISTIC !== 'undefined') ? DATA_VERSION_DETERMINISTIC : '5.0';
+  }
+  if (session && typeof isUUIDSession === 'function' && isUUIDSession(session)) {
+    return (typeof DATA_VERSION_UUID !== 'undefined') ? DATA_VERSION_UUID : '4.0';
+  }
+  return (typeof DATA_VERSION_DETERMINISTIC !== 'undefined') ? DATA_VERSION_DETERMINISTIC : '5.0';
+}
+
+function buildParallelAwarenessState(record) {
+  if (!record.joinedAt) {
+    record.joinedAt = Date.now();
+  }
+  var presence = Object.assign({}, getLocalSyncPresence(), {
+    activeSessionId: record.sessionId,
+    parallel: true
+  });
+  return {
+    displayName: record.displayName,
+    color: generateUserColor(record.displayName),
+    lastSeen: Date.now(),
+    joinedAt: record.joinedAt,
+    dataVersion: getSessionDataVersionForAwareness(record.sessionId),
+    presence: presence
+  };
+}
+
+function updateParallelPeersFromAwareness(record) {
+  if (!record || !record.awareness) return;
+  record.peers.clear();
+  var states = record.awareness.getStates();
+  var localClientId = record.awareness.clientID;
+  var defaultDataVersion = (typeof DATA_VERSION_DETERMINISTIC !== 'undefined') ? DATA_VERSION_DETERMINISTIC : '5.0';
+  states.forEach(function(state, clientId) {
+    if (clientId !== localClientId && state.displayName) {
+      record.peers.set(clientId, {
+        displayName: state.displayName,
+        color: state.color || '#888',
+        lastSeen: state.lastSeen || Date.now(),
+        dataVersion: state.dataVersion || defaultDataVersion,
+        presence: state.presence || {}
+      });
+    }
+  });
+}
+
+function serializeParallelSyncRecord(record) {
+  return {
+    sessionId: record.sessionId,
+    roomCode: record.roomCode,
+    state: record.state,
+    displayName: record.displayName,
+    connectionType: record.connectionType,
+    peerCount: record.peers.size + 1,
+    peers: Array.from(record.peers.values())
+  };
+}
+
+/**
+ * Get background sync sessions.
+ * @returns {Array<Object>} Serialized parallel sync records
+ */
+function getParallelSyncSessions() {
+  var sessions = [];
+  SyncManager.parallelSessions.forEach(function(record) {
+    sessions.push(serializeParallelSyncRecord(record));
+  });
+  return sessions;
+}
+
+/**
+ * Start a background sync provider for a specific session doc.
+ * @param {string} sessionId - Session UUID to sync
+ * @param {string} roomCode - Room code to join/create
+ * @param {string} displayName - Display name for awareness
+ * @param {string} [password] - Optional room password
+ * @param {Object} [options] - Additional options
+ * @param {boolean} [options.saveRoom=true] - Whether to save room metadata to the session
+ * @returns {Promise<Object>} Serialized sync record
+ */
+async function startParallelSessionSync(sessionId, roomCode, displayName, password, options) {
+  options = options || {};
+  if (!sessionId) {
+    throw new Error('Session ID is required');
+  }
+  if (!displayName || displayName.trim().length === 0) {
+    throw new Error('Display name is required');
+  }
+  displayName = displayName.trim().substring(0, MAX_DISPLAY_NAME_LENGTH);
+  if (roomCode && !isValidRoomCode(roomCode)) {
+    throw new Error('Invalid room code');
+  }
+  if (typeof WebrtcProvider === 'undefined') {
+    throw new Error('WebrtcProvider not available - rebuild yjs-bundle.min.js with y-webrtc');
+  }
+
+  var sessionDoc = typeof getSessionDoc === 'function' ? getSessionDoc(sessionId) : null;
+  if (!sessionDoc && typeof initSessionDoc === 'function') {
+    sessionDoc = await initSessionDoc(sessionId);
+  }
+  if (!sessionDoc) {
+    throw new Error('Session not found');
+  }
+
+  if (SyncManager.parallelSessions.has(sessionId)) {
+    stopParallelSessionSync(sessionId, false);
+  }
+
+  var finalRoomCode = roomCode ? roomCode.toUpperCase() : generateRoomCode();
+  var record = {
+    sessionId: sessionId,
+    roomCode: finalRoomCode,
+    displayName: displayName,
+    password: password || null,
+    provider: null,
+    awareness: null,
+    state: 'connecting',
+    connectionType: 'webrtc',
+    peers: new Map(),
+    joinedAt: Date.now(),
+    sessionUpdateListener: null
+  };
+  SyncManager.parallelSessions.set(sessionId, record);
+
+  var roomName = SyncManager.config.roomPrefix + finalRoomCode;
+  record.provider = new WebrtcProvider(roomName, sessionDoc, {
+    signaling: SyncManager.config.signalingServers,
+    password: password || null,
+    maxConns: 20,
+    filterBcConns: true,
+    peerOpts: {}
+  });
+
+  record.awareness = record.provider.awareness || null;
+  if (record.awareness) {
+    record.awareness.setLocalState(buildParallelAwarenessState(record));
+    record.awareness.on('change', function() {
+      updateParallelPeersFromAwareness(record);
+      if (SyncManager.onPeersChange) {
+        SyncManager.onPeersChange(getSyncPeers());
+      }
+    });
+  }
+
+  record.sessionUpdateListener = function(updateData, origin) {
+    if (origin !== 'local' && origin !== sessionDoc.clientID) {
+      updateSessionNameCache(sessionId, sessionDoc);
+      if (typeof get_current_session_id === 'function' && get_current_session_id() === sessionId) {
+        if (typeof sync_data_to_display_debounced === 'function') {
+          sync_data_to_display_debounced();
+        } else if (typeof sync_data_to_display === 'function') {
+          sync_data_to_display();
+        }
+      }
+    }
+  };
+  if (typeof sessionDoc.on === 'function') {
+    sessionDoc.on('update', record.sessionUpdateListener);
+  }
+
+  record.provider.on('status', function(event) {
+    record.state = event.status === 'connected' ? 'connected' : event.status;
+  });
+  record.provider.on('synced', function(event) {
+    if (event.synced) {
+      record.state = 'connected';
+      clearAwaitingSyncFlag(sessionDoc);
+      updateSessionNameCache(sessionId, sessionDoc);
+    }
+  });
+  record.provider.on('peers', function() {
+    updateParallelPeersFromAwareness(record);
+  });
+
+  if (options.saveRoom !== false) {
+    saveSessionSyncRoom(finalRoomCode, sessionId);
+  }
+  saveDisplayName(displayName);
+
+  return serializeParallelSyncRecord(record);
+}
+
+/**
+ * Stop a background sync provider for a specific session.
+ * @param {string} sessionId - Session UUID
+ * @param {boolean} [clearSessionRoom=true] - Whether to clear saved room metadata
+ * @returns {boolean} True when a record existed and was stopped
+ */
+function stopParallelSessionSync(sessionId, clearSessionRoom) {
+  if (clearSessionRoom === undefined) {
+    clearSessionRoom = true;
+  }
+  var record = SyncManager.parallelSessions.get(sessionId);
+  if (!record) {
+    return false;
+  }
+  var sessionDoc = typeof getSessionDoc === 'function' ? getSessionDoc(sessionId) : null;
+  if (sessionDoc && record.sessionUpdateListener && typeof sessionDoc.off === 'function') {
+    sessionDoc.off('update', record.sessionUpdateListener);
+  }
+  if (record.provider && typeof record.provider.destroy === 'function') {
+    record.provider.destroy();
+  }
+  if (clearSessionRoom) {
+    saveSessionSyncRoom(null, sessionId);
+  }
+  SyncManager.parallelSessions.delete(sessionId);
+  return true;
+}
+
+/**
+ * Stop all background sync providers.
+ * @param {boolean} [clearSessionRoom=true] - Whether to clear saved room metadata
+ * @returns {number} Number of stopped background sessions
+ */
+function stopAllParallelSyncSessions(clearSessionRoom) {
+  var sessionIds = Array.from(SyncManager.parallelSessions.keys());
+  sessionIds.forEach(function(sessionId) {
+    stopParallelSessionSync(sessionId, clearSessionRoom);
+  });
+  return sessionIds.length;
 }
 
 /**
@@ -3266,8 +3494,48 @@ function buildLocalAwarenessState(displayName) {
     color: generateUserColor(displayName),
     lastSeen: Date.now(),
     joinedAt: SyncManager.joinedAt,
-    dataVersion: getCurrentDataVersion()
+    dataVersion: getCurrentDataVersion(),
+    presence: getLocalSyncPresence()
   };
+}
+
+function getCurrentQuestionPresence() {
+  var questionId = null;
+  if (typeof get_current_session === 'function' && typeof getOrderedQuestions === 'function' && typeof current_question_index !== 'undefined') {
+    var session = get_current_session();
+    var questions = session ? getOrderedQuestions(session) : [];
+    if (current_question_index >= 1 && current_question_index <= questions.length) {
+      questionId = questions[current_question_index - 1].id;
+    }
+  }
+  return {
+    activeSessionId: typeof get_current_session_id === 'function' ? get_current_session_id() : null,
+    activeQuestionIndex: typeof current_question_index !== 'undefined' ? current_question_index : null,
+    activeQuestionId: questionId
+  };
+}
+
+function getLocalSyncPresence() {
+  var basePresence = getCurrentQuestionPresence();
+  var customPresence = SyncManager.presence || {};
+  Object.keys(customPresence).forEach(function(key) {
+    basePresence[key] = customPresence[key];
+  });
+  basePresence.updatedAt = Date.now();
+  return basePresence;
+}
+
+function updateSyncPresence(presencePatch) {
+  SyncManager.presence = Object.assign({}, SyncManager.presence || {}, presencePatch || {});
+  if (SyncManager.awareness) {
+    SyncManager.awareness.setLocalState(buildLocalAwarenessState(SyncManager.displayName));
+  }
+  SyncManager.parallelSessions.forEach(function(record) {
+    if (record.awareness) {
+      record.awareness.setLocalState(buildParallelAwarenessState(record));
+    }
+  });
+  return getLocalSyncPresence();
 }
 
 /**
@@ -3414,7 +3682,8 @@ function updatePeersFromAwareness() {
         displayName: state.displayName,
         color: state.color || '#888',
         lastSeen: state.lastSeen || Date.now(),
-        dataVersion: state.dataVersion || defaultDataVersion
+        dataVersion: state.dataVersion || defaultDataVersion,
+        presence: state.presence || {}
       });
     }
   });
@@ -4678,6 +4947,12 @@ if (typeof module !== 'undefined' && module.exports) {
     getSyncDisplayName: getSyncDisplayName,
     getSyncPeers: getSyncPeers,
     getSyncPeerCount: getSyncPeerCount,
+    getLocalSyncPresence: getLocalSyncPresence,
+    updateSyncPresence: updateSyncPresence,
+    getParallelSyncSessions: getParallelSyncSessions,
+    startParallelSessionSync: startParallelSessionSync,
+    stopParallelSessionSync: stopParallelSessionSync,
+    stopAllParallelSyncSessions: stopAllParallelSyncSessions,
     startSync: startSync,
     stopSync: stopSync,
     showSyncDialog: showSyncDialog,

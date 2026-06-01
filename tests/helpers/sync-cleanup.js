@@ -9,6 +9,14 @@ function cleanupSyncModule(syncModule) {
     }
   }
 
+  if (typeof syncModule.stopAllParallelSyncSessions === 'function') {
+    try {
+      syncModule.stopAllParallelSyncSessions(false);
+    } catch (error) {
+      // Ignore cleanup errors to avoid hiding test failures.
+    }
+  }
+
   if (typeof syncModule.stopRegistryHealthCheck === 'function') {
     try {
       syncModule.stopRegistryHealthCheck();

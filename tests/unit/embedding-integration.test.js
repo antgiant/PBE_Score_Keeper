@@ -185,3 +185,29 @@ test('postMessage import accepts Yjs binary exported by another embedded app', a
   assert.equal(imported.result.import.success, true);
   assert.equal(imported.result.import.importedCount >= 1, true);
 });
+
+test('postMessage state preview reports conflicts before full import', async () => {
+  const exportingContext = loadEmbeddingApp(createSessionConfig('Shared Name'));
+  const importingContext = loadEmbeddingApp(createSessionConfig('Shared Name'));
+  const exportSource = createSource();
+  const importSource = createSource();
+
+  const exported = await sendCommand(exportingContext, exportSource, 'state:export');
+  assert.equal(exported.result.format, 'pbe-multi-doc');
+  assert.equal(exported.result.bytes.length > 0, true);
+
+  const preview = await sendCommand(importingContext, importSource, 'state:previewImport', {
+    bytes: exported.result.bytes,
+  });
+
+  assert.equal(preview.ok, true);
+  assert.equal(preview.result.format, 'binary-full');
+  assert.equal(preview.result.sessions.length, 1);
+  assert.equal(preview.result.conflicts.length >= 1, true);
+
+  const imported = await sendCommand(importingContext, importSource, 'state:import', {
+    bytes: exported.result.bytes,
+  });
+  assert.equal(imported.ok, true);
+  assert.equal(imported.result.import.success, true);
+});

@@ -606,6 +606,18 @@ register_i18n_language('en', {
       "empty_session_deleted": "Deleted (no data)",
       "status": "Status"
     },
+    "embedding": {
+      "import_conflicts": {
+        "title": "Import Conflicts",
+        "description": "{{count}} imported quiz conflict(s) need review before import.",
+        "same_id": "Same ID: this import will merge with the existing quiz.",
+        "same_name": "Same name: this import may create a duplicate quiz name.",
+        "unnamed": "Unnamed quiz",
+        "cancel": "Cancel",
+        "import": "Import and Merge",
+        "cancelled": "Import cancelled"
+      }
+    },
     "pwa": {
       "file_launch_success": "Imported quiz from file",
       "file_launch_error": "Failed to import file: {{error}}",

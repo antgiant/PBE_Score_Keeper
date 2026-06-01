@@ -51,8 +51,18 @@ var EmbeddingCommands = {
     "sync:setPassword",
     "sync:setDisplayName",
     "sync:getPeers",
+    "sync:startParallel",
+    "sync:stopParallel",
+    "sync:listParallel",
+    "state:export",
+    "state:import",
+    "state:previewImport",
+    "batch:run",
     "ui:setTheme",
     "ui:setLanguage",
+    "ui:setThemeVariables",
+    "ui:clearThemeVariables",
+    "ui:inheritTheme",
     "ui:show",
     "ui:hide",
     "ui:focus"
@@ -125,8 +135,18 @@ var EmbeddingCommands = {
       "sync:setPassword": this.syncSetPassword,
       "sync:setDisplayName": this.syncSetDisplayName,
       "sync:getPeers": this.syncGetPeers,
+      "sync:startParallel": this.syncStartParallel,
+      "sync:stopParallel": this.syncStopParallel,
+      "sync:listParallel": this.syncListParallel,
+      "state:export": this.stateExport,
+      "state:import": this.stateImport,
+      "state:previewImport": this.statePreviewImport,
+      "batch:run": this.batchRun,
       "ui:setTheme": this.uiSetTheme,
       "ui:setLanguage": this.uiSetLanguage,
+      "ui:setThemeVariables": this.uiSetThemeVariables,
+      "ui:clearThemeVariables": this.uiClearThemeVariables,
+      "ui:inheritTheme": this.uiInheritTheme,
       "ui:show": this.uiShow,
       "ui:hide": this.uiHide,
       "ui:focus": this.uiFocus
@@ -212,6 +232,30 @@ var EmbeddingCommands = {
 
   sanitizeString: function(value) {
     return String(value).replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g, "");
+  },
+
+  escapeHtml: function(value) {
+    return String(value).replace(/[&<>"']/g, function(character) {
+      return {
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;"
+      }[character];
+    });
+  },
+
+  translate: function(key, params, fallback) {
+    if (typeof t === "function") {
+      return t(key, params || {});
+    }
+    var output = fallback || key;
+    params = params || {};
+    Object.keys(params).forEach(function(name) {
+      output = output.replace(new RegExp("\\{\\{" + name + "\\}\\}", "g"), params[name]);
+    });
+    return output;
   },
 
   getNumber: function(payload, keys, options) {
@@ -449,6 +493,9 @@ var EmbeddingCommands = {
     if (typeof EmbeddingEvents !== "undefined" && EmbeddingEvents && typeof EmbeddingEvents.markCommandMutation === "function") {
       EmbeddingEvents.markCommandMutation();
     }
+    if (typeof EmbeddingEvents !== "undefined" && EmbeddingEvents && typeof EmbeddingEvents.updatePresenceFromEvent === "function") {
+      EmbeddingEvents.updatePresenceFromEvent(eventType, data || {});
+    }
     if (typeof EmbeddingAPI !== "undefined" && EmbeddingAPI && typeof EmbeddingAPI.emit === "function") {
       return EmbeddingAPI.emit(eventType, data || {});
     }
@@ -594,13 +641,17 @@ var EmbeddingCommands = {
     var getRoomCode = this.getGlobal("getSyncRoomCode");
     var getName = this.getGlobal("getSyncDisplayName");
     var getPeers = this.getGlobal("getSyncPeers");
+    var getParallel = this.getGlobal("getParallelSyncSessions");
     return {
       state: typeof getState === "function" ? getState() : "offline",
       roomCode: typeof getRoomCode === "function" ? getRoomCode() : null,
       displayName: typeof getName === "function" ? getName() : null,
-      peers: typeof getPeers === "function" ? getPeers() : []
+      peers: typeof getPeers === "function" ? getPeers() : [],
+      parallelSessions: typeof getParallel === "function" ? getParallel() : []
     };
   },
+
+  base64Alphabet: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/",
 
   bytesToBase64: function(bytes) {
     var binary = "";
@@ -613,7 +664,19 @@ var EmbeddingCommands = {
     if (typeof Buffer !== "undefined") {
       return Buffer.from(binary, "binary").toString("base64");
     }
-    return null;
+    var alphabet = this.base64Alphabet;
+    var output = "";
+    for (var index = 0; index < bytes.length; index += 3) {
+      var first = bytes[index];
+      var second = index + 1 < bytes.length ? bytes[index + 1] : 0;
+      var third = index + 2 < bytes.length ? bytes[index + 2] : 0;
+      var triplet = (first << 16) | (second << 8) | third;
+      output += alphabet[(triplet >> 18) & 63];
+      output += alphabet[(triplet >> 12) & 63];
+      output += index + 1 < bytes.length ? alphabet[(triplet >> 6) & 63] : "=";
+      output += index + 2 < bytes.length ? alphabet[triplet & 63] : "=";
+    }
+    return output;
   },
 
   base64ToBytes: function(base64) {
@@ -623,7 +686,32 @@ var EmbeddingCommands = {
     } else if (typeof Buffer !== "undefined") {
       binary = Buffer.from(base64, "base64").toString("binary");
     } else {
-      throw this.error("feature_unavailable", "Base64 decoding is unavailable");
+      var clean = String(base64).replace(/\s+/g, "");
+      var padding = clean.endsWith("==") ? 2 : (clean.endsWith("=") ? 1 : 0);
+      var byteLength = Math.floor(clean.length * 3 / 4) - padding;
+      var decoded = new Uint8Array(byteLength);
+      var byteIndex = 0;
+      var alphabet = this.base64Alphabet;
+      for (var index = 0; index < clean.length; index += 4) {
+        var c1 = alphabet.indexOf(clean.charAt(index));
+        var c2 = alphabet.indexOf(clean.charAt(index + 1));
+        var c3 = clean.charAt(index + 2) === "=" ? 0 : alphabet.indexOf(clean.charAt(index + 2));
+        var c4 = clean.charAt(index + 3) === "=" ? 0 : alphabet.indexOf(clean.charAt(index + 3));
+        if (c1 < 0 || c2 < 0 || c3 < 0 || c4 < 0) {
+          throw this.error("invalid_parameter", "Invalid Base64 data");
+        }
+        var triplet = (c1 << 18) | (c2 << 12) | (c3 << 6) | c4;
+        if (byteIndex < byteLength) {
+          decoded[byteIndex++] = (triplet >> 16) & 255;
+        }
+        if (byteIndex < byteLength) {
+          decoded[byteIndex++] = (triplet >> 8) & 255;
+        }
+        if (byteIndex < byteLength) {
+          decoded[byteIndex++] = triplet & 255;
+        }
+      }
+      return decoded;
     }
     var bytes = new Uint8Array(binary.length);
     for (var i = 0; i < binary.length; i++) {
@@ -632,17 +720,40 @@ var EmbeddingCommands = {
     return bytes;
   },
 
-  normalizeImportData: function(payload) {
-    payload = payload || {};
-    var data = payload.data || payload.binary || payload.bytes || payload.update || null;
+  bytesFromArrayLike: function(data) {
+    if (!data || typeof data === "string") {
+      return null;
+    }
     if (data instanceof Uint8Array) {
       return data;
     }
     if (typeof ArrayBuffer !== "undefined" && data instanceof ArrayBuffer) {
       return new Uint8Array(data);
     }
-    if (Array.isArray(data)) {
-      return new Uint8Array(data);
+    if (Array.isArray(data) || typeof data.length === "number") {
+      return new Uint8Array(Array.prototype.slice.call(data));
+    }
+    if (typeof data === "object") {
+      var keys = Object.keys(data).filter(function(key) {
+        return /^[0-9]+$/.test(key);
+      }).sort(function(a, b) {
+        return Number(a) - Number(b);
+      });
+      if (keys.length > 0) {
+        return new Uint8Array(keys.map(function(key) {
+          return Number(data[key]);
+        }));
+      }
+    }
+    return null;
+  },
+
+  normalizeImportData: function(payload) {
+    payload = payload || {};
+    var data = payload.data || payload.binary || payload.bytes || payload.update || null;
+    var bytes = this.bytesFromArrayLike(data);
+    if (bytes) {
+      return bytes;
     }
     if (payload.base64) {
       return this.base64ToBytes(String(payload.base64));
@@ -1293,6 +1404,37 @@ var EmbeddingCommands = {
     return { peers: this.serializeSyncState().peers };
   },
 
+  syncStartParallel: async function(payload) {
+    await this.ensureFeature("sync");
+    payload = payload || {};
+    var sessionId = this.resolveSessionId(payload, { allowCurrent: true });
+    var displayName = this.getString(payload, ["displayName", "name"], { required: true, maxLength: 40 });
+    var roomCode = this.getString(payload, ["roomCode", "code"], { required: true });
+    var password = this.getString(payload, ["password"], { allowEmpty: true });
+    var startParallel = this.requireFunction("startParallelSessionSync");
+    return startParallel(sessionId, roomCode, displayName, password || null, payload.options || {});
+  },
+
+  syncStopParallel: async function(payload) {
+    await this.ensureFeature("sync");
+    payload = payload || {};
+    var sessionId = this.resolveSessionId(payload, { allowCurrent: true });
+    var clearSessionRoom = this.getBoolean(payload, ["clearSessionRoom"], { defaultValue: true });
+    var stopped = this.requireFunction("stopParallelSessionSync")(sessionId, clearSessionRoom);
+    return {
+      sessionId: sessionId,
+      stopped: stopped,
+      parallelSessions: this.callGlobal("getParallelSyncSessions") || []
+    };
+  },
+
+  syncListParallel: async function() {
+    await this.ensureFeature("sync");
+    return {
+      parallelSessions: this.callGlobal("getParallelSyncSessions") || []
+    };
+  },
+
   syncSetPassword: async function(payload) {
     await this.ensureFeature("sync");
     var password = this.getString(payload, ["password"], { allowEmpty: true, defaultValue: null });
@@ -1327,6 +1469,489 @@ var EmbeddingCommands = {
     return state;
   },
 
+  stateExport: async function() {
+    await this.ensureFeature("importExport");
+    var exportAllSessions = this.requireFunction("exportAllSessions");
+    var update = await exportAllSessions();
+    if (!update || !update.length) {
+      update = await this.exportAllSessionsForEmbedding();
+    }
+    if (!update || !update.length) {
+      throw this.error("command_failed", "State export failed");
+    }
+    return {
+      format: "pbe-multi-doc",
+      binary: update,
+      bytes: Array.prototype.slice.call(update),
+      base64: this.bytesToBase64(update),
+      byteLength: update.length
+    };
+  },
+
+  exportAllSessionsForEmbedding: async function() {
+    if (typeof Y === "undefined" || !Y || typeof Y.encodeStateAsUpdate !== "function") {
+      throw this.error("feature_unavailable", "Yjs export is unavailable");
+    }
+    var getGlobalDoc = this.requireFunction("getGlobalDoc");
+    var getSessionDoc = this.requireFunction("getSessionDoc");
+    var initSessionDoc = this.getGlobal("initSessionDoc");
+    var sessionOrder = this.callGlobal("get_session_order") || [];
+    var sessions = {};
+
+    for (var i = 0; i < sessionOrder.length; i++) {
+      var sessionId = sessionOrder[i];
+      var sessionDoc = getSessionDoc(sessionId);
+      if (!sessionDoc && typeof initSessionDoc === "function") {
+        sessionDoc = await initSessionDoc(sessionId);
+      }
+      if (sessionDoc) {
+        sessions[sessionId] = this.bytesToBase64(Y.encodeStateAsUpdate(sessionDoc));
+      }
+    }
+
+    var container = {
+      format: "pbe-multi-doc",
+      version: (typeof DATA_VERSION_DETERMINISTIC !== "undefined") ? DATA_VERSION_DETERMINISTIC : "5.0",
+      exportedAt: Date.now(),
+      global: this.bytesToBase64(Y.encodeStateAsUpdate(getGlobalDoc())),
+      sessions: sessions
+    };
+    return this.encodeUtf8(JSON.stringify(container));
+  },
+
+  encodeUtf8: function(text) {
+    if (typeof TextEncoder !== "undefined") {
+      return new TextEncoder().encode(text);
+    }
+    var encoded = unescape(encodeURIComponent(text));
+    var bytes = new Uint8Array(encoded.length);
+    for (var i = 0; i < encoded.length; i++) {
+      bytes[i] = encoded.charCodeAt(i);
+    }
+    return bytes;
+  },
+
+  decodeUtf8: function(bytes) {
+    if (typeof TextDecoder !== "undefined") {
+      return new TextDecoder().decode(bytes);
+    }
+    var binary = "";
+    for (var i = 0; i < bytes.length; i++) {
+      binary += String.fromCharCode(bytes[i]);
+    }
+    return decodeURIComponent(escape(binary));
+  },
+
+  tryParseMultiDocContainer: function(data) {
+    var bytes = this.bytesFromArrayLike(data);
+    if (!bytes) {
+      return null;
+    }
+    try {
+      var parsed = JSON.parse(this.decodeUtf8(bytes));
+      if (parsed && parsed.format === "pbe-multi-doc" && parsed.global && parsed.sessions) {
+        return parsed;
+      }
+    } catch (error) {
+      return null;
+    }
+    return null;
+  },
+
+  stateImport: async function(payload) {
+    await this.ensureFeature("importExport");
+    var importSessionData = this.requireFunction("importSessionData");
+    payload = payload || {};
+    var data = this.normalizeImportData(payload);
+    var container = this.tryParseMultiDocContainer(data);
+    var importData = container || data;
+    var preview = this.previewImportData(importData);
+    var conflictResolution = null;
+    if (this.shouldConfirmStateImport(payload, preview)) {
+      conflictResolution = await this.showStateImportConflictDialog(preview);
+      if (!conflictResolution || conflictResolution.action === "cancel") {
+        throw this.error("operation_cancelled", this.translate("embedding.import_conflicts.cancelled", {}, "Import cancelled"));
+      }
+    }
+    var result = await importSessionData(importData);
+    this.refreshDisplay();
+    this.emitStateChanged({ reason: "state:import" });
+    return {
+      preview: preview,
+      conflictResolution: conflictResolution,
+      import: result,
+      sessions: this.getSessions().sessions
+    };
+  },
+
+  statePreviewImport: async function(payload) {
+    await this.ensureFeature("importExport");
+    payload = payload || {};
+    var data = this.normalizeImportData(payload);
+    var preview = this.previewImportData(this.tryParseMultiDocContainer(data) || data);
+    if (this.shouldConfirmStateImport(payload, preview)) {
+      preview.conflictResolution = await this.showStateImportConflictDialog(preview);
+    }
+    return preview;
+  },
+
+  previewImportData: function(data) {
+    data = this.tryParseMultiDocContainer(data) || data;
+    var detectImportFormat = this.requireFunction("detectImportFormat");
+    var format = detectImportFormat(data);
+    var importedSessions = [];
+    var errors = [];
+
+    if (format === "binary-full") {
+      importedSessions = this.previewMultiDocImport(data, errors);
+    } else if (format === "binary-single") {
+      importedSessions = this.previewSingleDocImport(data, errors);
+    } else if (format.indexOf("json") === 0) {
+      importedSessions = this.previewJsonImport(data, errors);
+    }
+
+    return {
+      format: format,
+      sessions: importedSessions,
+      conflicts: this.findImportConflicts(importedSessions),
+      errors: errors
+    };
+  },
+
+  shouldConfirmStateImport: function(payload, preview) {
+    if (!preview || !preview.conflicts || preview.conflicts.length === 0) {
+      return false;
+    }
+    return payload.confirmConflicts === true || payload.showConflictDialog === true || payload.showDialog === true;
+  },
+
+  createStateImportConflictDialogHTML: function(preview) {
+    preview = preview || {};
+    var conflicts = preview.conflicts || [];
+    var title = this.translate("embedding.import_conflicts.title", {}, "Import Conflicts");
+    var description = this.translate("embedding.import_conflicts.description", {
+      count: conflicts.length
+    }, "{{count}} imported quiz conflict(s) need review before import.");
+    var html = '<div class="sync-dialog state-import-conflict-dialog" role="dialog" aria-labelledby="state-import-conflict-title" aria-modal="true">' +
+      '<h2 id="state-import-conflict-title">' + this.escapeHtml(title) + '</h2>' +
+      '<p>' + this.escapeHtml(description) + '</p>' +
+      '<ul class="state-import-conflict-list">';
+    for (var i = 0; i < conflicts.length; i++) {
+      var conflict = conflicts[i];
+      var imported = conflict.imported || {};
+      var name = imported.name || this.translate("embedding.import_conflicts.unnamed", {}, "Unnamed quiz");
+      var messageKey = conflict.type === "same-id" ? "embedding.import_conflicts.same_id" : "embedding.import_conflicts.same_name";
+      var messageFallback = conflict.type === "same-id" ? "Same ID: this import will merge with the existing quiz." : "Same name: this import may create a duplicate quiz name.";
+      var message = this.translate(messageKey, { name: name }, messageFallback);
+      html += '<li>' +
+        '<strong>' + this.escapeHtml(name) + '</strong>' +
+        '<span>' + this.escapeHtml(message) + '</span>' +
+      '</li>';
+    }
+    html += '</ul>' +
+      '<div class="button-row">' +
+        '<button type="button" class="ui-button state-import-cancel" data-state-import-action="cancel">' +
+          this.escapeHtml(this.translate("embedding.import_conflicts.cancel", {}, "Cancel")) +
+        '</button>' +
+        '<button type="button" class="ui-button ui-button-primary state-import-confirm" data-state-import-action="import">' +
+          this.escapeHtml(this.translate("embedding.import_conflicts.import", {}, "Import and Merge")) +
+        '</button>' +
+      '</div>' +
+    '</div>';
+    return html;
+  },
+
+  showStateImportConflictDialog: function(preview) {
+    var self = this;
+    if (typeof document === "undefined" || !document.body || typeof document.createElement !== "function") {
+      return Promise.resolve({ action: "import", unavailable: true });
+    }
+    return new Promise(function(resolve) {
+      var overlay = document.createElement("div");
+      overlay.className = "sync-dialog-overlay state-import-conflict-overlay";
+      overlay.innerHTML = self.createStateImportConflictDialogHTML(preview);
+      document.body.appendChild(overlay);
+
+      var settled = false;
+      var cancelButton = overlay.querySelector ? overlay.querySelector('[data-state-import-action="cancel"]') : null;
+      var importButton = overlay.querySelector ? overlay.querySelector('[data-state-import-action="import"]') : null;
+
+      function cleanupStateImportDialog(action) {
+        if (settled) {
+          return;
+        }
+        settled = true;
+        if (typeof document.removeEventListener === "function") {
+          document.removeEventListener("keydown", handleKeydown);
+        }
+        if (overlay && typeof overlay.remove === "function") {
+          overlay.remove();
+        } else if (overlay && overlay.parentNode && typeof overlay.parentNode.removeChild === "function") {
+          overlay.parentNode.removeChild(overlay);
+        }
+        resolve({
+          action: action,
+          conflictCount: preview && preview.conflicts ? preview.conflicts.length : 0
+        });
+      }
+
+      function handleKeydown(event) {
+        if (event.key === "Escape") {
+          event.preventDefault();
+          cleanupStateImportDialog("cancel");
+        }
+      }
+
+      if (cancelButton && typeof cancelButton.addEventListener === "function") {
+        cancelButton.addEventListener("click", function() {
+          cleanupStateImportDialog("cancel");
+        });
+      }
+      if (importButton && typeof importButton.addEventListener === "function") {
+        importButton.addEventListener("click", function() {
+          cleanupStateImportDialog("import");
+        });
+      }
+      if (!cancelButton || !importButton) {
+        cleanupStateImportDialog("import");
+        return;
+      }
+      if (typeof document.addEventListener === "function") {
+        document.addEventListener("keydown", handleKeydown);
+      }
+      if (importButton && typeof importButton.focus === "function") {
+        importButton.focus();
+      }
+    });
+  },
+
+  previewMultiDocImport: function(data, errors) {
+    var container = data;
+    if (data instanceof Uint8Array) {
+      try {
+        container = JSON.parse(this.decodeUtf8(data));
+      } catch (error) {
+        errors.push(error.message);
+        return [];
+      }
+    }
+    var sessions = [];
+    if (!container || !container.sessions) {
+      return sessions;
+    }
+    for (var sessionId in container.sessions) {
+      if (!Object.prototype.hasOwnProperty.call(container.sessions, sessionId)) {
+        continue;
+      }
+      try {
+        var bytes = this.base64ToBytes(container.sessions[sessionId]);
+        var summary = this.previewSessionUpdate(bytes, sessionId);
+        sessions.push(summary);
+      } catch (error) {
+        errors.push(error.message);
+      }
+    }
+    return sessions;
+  },
+
+  previewSingleDocImport: function(data, errors) {
+    try {
+      return [this.previewSessionUpdate(data, null)];
+    } catch (error) {
+      errors.push(error.message);
+      return [];
+    }
+  },
+
+  previewJsonImport: function(data, errors) {
+    var parsed = data;
+    if (typeof data === "string") {
+      try {
+        parsed = JSON.parse(data);
+      } catch (error) {
+        errors.push(error.message);
+        return [];
+      }
+    }
+    var sessions = [];
+    if (parsed && Array.isArray(parsed.sessions)) {
+      for (var i = 0; i < parsed.sessions.length; i++) {
+        var session = parsed.sessions[i];
+        if (!session) {
+          continue;
+        }
+        sessions.push({
+          id: session.id || null,
+          name: session.name || (session.session_name || null),
+          source: "json",
+          questionCount: session.questions ? session.questions.length : null
+        });
+      }
+    } else if (parsed && (parsed.session_names || parsed.sessionNames)) {
+      var names = parsed.session_names || parsed.sessionNames || [];
+      for (var n = 1; n < names.length; n++) {
+        sessions.push({
+          id: null,
+          name: names[n],
+          source: "json",
+          questionCount: null
+        });
+      }
+    }
+    return sessions;
+  },
+
+  previewSessionUpdate: function(updateBytes, fallbackId) {
+    if (typeof Y === "undefined" || !Y || typeof Y.Doc !== "function" || typeof Y.applyUpdate !== "function") {
+      throw this.error("feature_unavailable", "Yjs preview is unavailable");
+    }
+    var doc = new Y.Doc();
+    Y.applyUpdate(doc, updateBytes, "preview");
+    var session = doc.getMap("session");
+    var questions = session.get("questionsById");
+    var teams = session.get("teamsById");
+    var blocks = session.get("blocksById");
+    return {
+      id: session.get("id") || fallbackId || null,
+      name: session.get("name") || null,
+      source: "yjs",
+      dataVersion: session.get("dataVersion") || null,
+      questionCount: questions ? questions.size : 0,
+      teamCount: teams ? teams.size : 0,
+      blockCount: blocks ? blocks.size : 0
+    };
+  },
+
+  findImportConflicts: function(importedSessions) {
+    var existing = this.getSessions().sessions;
+    var existingById = {};
+    var existingByName = {};
+    existing.forEach(function(session) {
+      existingById[session.id] = session;
+      existingByName[String(session.name || "").toLowerCase()] = session;
+    });
+
+    var conflicts = [];
+    importedSessions.forEach(function(session) {
+      if (session.id && existingById[session.id]) {
+        conflicts.push({
+          type: "id",
+          imported: session,
+          existing: existingById[session.id]
+        });
+        return;
+      }
+      var nameKey = String(session.name || "").toLowerCase();
+      if (nameKey && existingByName[nameKey]) {
+        conflicts.push({
+          type: "name",
+          imported: session,
+          existing: existingByName[nameKey]
+        });
+      }
+    });
+    return conflicts;
+  },
+
+  batchRun: async function(payload, context) {
+    payload = payload || {};
+    var commands = payload.commands;
+    if (!commands || typeof commands.length !== "number") {
+      throw this.error("missing_parameter", "commands is required");
+    }
+
+    commands = Array.prototype.slice.call(commands);
+    var maxBatchCommands = this.getNumber(payload, ["maxBatchCommands"], { integer: true, min: 1, defaultValue: 100 });
+    if (commands.length === 0) {
+      return { count: 0, results: [] };
+    }
+    if (commands.length > maxBatchCommands) {
+      throw this.error("invalid_parameter", "Batch command count exceeds the allowed maximum");
+    }
+
+    var atomic = this.getBoolean(payload, ["atomic"], { defaultValue: true });
+    var haltOnError = this.getBoolean(payload, ["haltOnError"], { defaultValue: atomic });
+    this.validateBatchCommands(commands);
+
+    if (payload.dryRun === true) {
+      return {
+        count: commands.length,
+        atomic: atomic,
+        dryRun: true,
+        results: commands.map(function(command, index) {
+          return { index: index, command: command.command, ok: true };
+        })
+      };
+    }
+
+    var results = [];
+    for (var i = 0; i < commands.length; i++) {
+      var item = commands[i];
+      try {
+        var result = await EmbeddingAPI.dispatchCommand(item.command, item.payload || {}, {
+          origin: context && context.origin,
+          source: context && context.source,
+          id: context && context.id,
+          batch: true,
+          batchIndex: i
+        });
+        results.push({
+          index: i,
+          command: item.command,
+          ok: true,
+          result: result === undefined ? null : result
+        });
+      } catch (error) {
+        var formatted = EmbeddingAPI.formatError(error);
+        results.push({
+          index: i,
+          command: item.command,
+          ok: false,
+          error: formatted
+        });
+        if (haltOnError) {
+          var batchError = this.error("batch_failed", "Batch command failed");
+          batchError.index = i;
+          batchError.command = item.command;
+          batchError.results = results;
+          throw batchError;
+        }
+      }
+    }
+
+    this.emitStateChanged({ reason: "batch:run" });
+    return {
+      count: commands.length,
+      atomic: atomic,
+      results: results
+    };
+  },
+
+  validateBatchCommands: function(commands) {
+    if (typeof EmbeddingAPI === "undefined" || !EmbeddingAPI) {
+      throw this.error("feature_unavailable", "Embedding API is unavailable");
+    }
+    for (var i = 0; i < commands.length; i++) {
+      var item = commands[i];
+      if (!item || typeof item !== "object") {
+        throw this.error("invalid_parameter", "Each batch item must be an object");
+      }
+      if (typeof item.command !== "string" || item.command.length === 0) {
+        throw this.error("invalid_command", "Batch command is required");
+      }
+      if (item.command === "batch:run") {
+        throw this.error("invalid_command", "Nested batch commands are not supported");
+      }
+      if (typeof EmbeddingAPI.commandHandlers[item.command] !== "function") {
+        throw this.error("unknown_command", "Unknown command: " + item.command);
+      }
+      if (item.payload !== undefined && (item.payload === null || typeof item.payload !== "object")) {
+        throw this.error("invalid_parameter", "Batch payload must be an object");
+      }
+    }
+    return true;
+  },
+
   uiSetTheme: function(payload) {
     var theme = this.getString(payload, ["theme", "preference"], { required: true });
     if (theme !== "light" && theme !== "dark" && theme !== "system") {
@@ -1344,6 +1969,9 @@ var EmbeddingCommands = {
       theme: theme,
       resolvedTheme: this.getGlobal("resolve_theme") ? this.requireFunction("resolve_theme")(theme) : theme
     };
+    if (payload && payload.variables) {
+      result.variables = this.applyThemeVariables(payload.variables);
+    }
     this.emit("ui:themeChanged", result);
     return result;
   },
@@ -1369,6 +1997,126 @@ var EmbeddingCommands = {
     };
     this.emit("ui:languageChanged", result);
     return result;
+  },
+
+  uiSetThemeVariables: function(payload) {
+    payload = payload || {};
+    var applied = this.applyThemeVariables(payload.variables || payload);
+    var result = {
+      variables: applied
+    };
+    this.emit("ui:themeChanged", result);
+    return result;
+  },
+
+  uiClearThemeVariables: function(payload) {
+    payload = payload || {};
+    var names = payload.names || payload.variables || null;
+    var cleared = this.clearThemeVariables(names);
+    var result = {
+      cleared: cleared
+    };
+    this.emit("ui:themeChanged", result);
+    return result;
+  },
+
+  uiInheritTheme: function(payload) {
+    payload = payload || {};
+    var theme = this.getString(payload, ["theme", "preference"], { defaultValue: null });
+    var result = {};
+    if (theme) {
+      if (theme !== "light" && theme !== "dark" && theme !== "system") {
+        throw this.error("invalid_parameter", "theme must be light, dark, or system");
+      }
+      if (typeof localStorage !== "undefined" && localStorage) {
+        localStorage.setItem("theme_preference", theme);
+      }
+      var setGlobal = this.getGlobal("set_global_theme_preference");
+      if (typeof setGlobal === "function") {
+        setGlobal(theme);
+      }
+      this.requireFunction("apply_theme_preference")(theme);
+      result.theme = theme;
+      result.resolvedTheme = this.getGlobal("resolve_theme") ? this.requireFunction("resolve_theme")(theme) : theme;
+    }
+    if (payload.variables) {
+      result.variables = this.applyThemeVariables(payload.variables);
+    }
+    result.inherited = true;
+    this.emit("ui:themeChanged", result);
+    return result;
+  },
+
+  applyThemeVariables: function(variables) {
+    if (!variables || typeof variables !== "object") {
+      throw this.error("missing_parameter", "variables is required");
+    }
+    if (typeof document === "undefined" || !document.documentElement || !document.documentElement.style) {
+      throw this.error("state_unavailable", "Document root style is unavailable");
+    }
+
+    var applied = {};
+    var config = (typeof EMBEDDING_CONFIG !== "undefined" && EMBEDDING_CONFIG) ? EMBEDDING_CONFIG : {};
+    if (!config.themeVariables) {
+      config.themeVariables = {};
+    }
+
+    Object.keys(variables).forEach(function(name) {
+      if (!/^--[A-Za-z0-9_-]+$/.test(name)) {
+        throw EmbeddingCommands.error("invalid_parameter", "Invalid CSS variable name");
+      }
+      var value = EmbeddingCommands.sanitizeThemeValue(variables[name]);
+      document.documentElement.style.setProperty(name, value);
+      config.themeVariables[name] = value;
+      applied[name] = value;
+    });
+
+    if (document.documentElement.setAttribute) {
+      document.documentElement.setAttribute("data-host-theme", "true");
+    }
+    return applied;
+  },
+
+  clearThemeVariables: function(names) {
+    if (typeof document === "undefined" || !document.documentElement || !document.documentElement.style) {
+      throw this.error("state_unavailable", "Document root style is unavailable");
+    }
+    var config = (typeof EMBEDDING_CONFIG !== "undefined" && EMBEDDING_CONFIG) ? EMBEDDING_CONFIG : {};
+    var stored = config.themeVariables || {};
+    var clearNames;
+    if (!names) {
+      clearNames = Object.keys(stored);
+    } else if (typeof names === "string") {
+      clearNames = [names];
+    } else if (typeof names.length === "number") {
+      clearNames = Array.prototype.slice.call(names);
+    } else {
+      throw this.error("invalid_parameter", "names must be a string or array");
+    }
+
+    clearNames.forEach(function(name) {
+      if (!/^--[A-Za-z0-9_-]+$/.test(name)) {
+        throw EmbeddingCommands.error("invalid_parameter", "Invalid CSS variable name");
+      }
+      document.documentElement.style.removeProperty(name);
+      delete stored[name];
+    });
+    config.themeVariables = stored;
+    if (Object.keys(stored).length === 0 && document.documentElement.removeAttribute) {
+      document.documentElement.removeAttribute("data-host-theme");
+    }
+    return clearNames;
+  },
+
+  sanitizeThemeValue: function(value) {
+    var sanitized = this.sanitizeString(String(value)).trim();
+    if (!sanitized || sanitized.length > 200) {
+      throw this.error("invalid_parameter", "Invalid CSS variable value");
+    }
+    if (/url\s*\(|expression\s*\(|javascript:/i.test(sanitized) || /[<>]/.test(sanitized)) {
+      throw this.error("invalid_parameter", "Unsafe CSS variable value");
+    }
+    return sanitized;
   },
 
   uiShow: function() {

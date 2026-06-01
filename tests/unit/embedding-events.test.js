@@ -164,3 +164,51 @@ test('embedding events bridge sync state, peers, and errors', () => {
   assert.equal(events(source, 'sync:peersChanged').at(-1).peers[0].displayName, 'Peer One');
   assert.equal(events(source, 'sync:errorOccurred').at(-1).error.code, context.SyncError.NETWORK_ERROR);
 });
+
+test('embedding question events update sync presence metadata', () => {
+  const context = loadEmbeddingApp();
+  let localState = null;
+  context.SyncManager.displayName = 'Host User';
+  context.SyncManager.awareness = {
+    clientID: 1,
+    setLocalState(state) {
+      localState = JSON.parse(JSON.stringify(state));
+    },
+    getStates() {
+      return new Map([
+        [1, localState],
+        [2, {
+          displayName: 'Peer User',
+          color: '#123456',
+          lastSeen: 123,
+          dataVersion: '5.0',
+          presence: {
+            activeQuestionId: 'q-2',
+            activeQuestionIndex: 2,
+            lastEmbeddingEvent: 'question:changed',
+          },
+        }],
+      ]);
+    },
+  };
+
+  context.EmbeddingEvents.updatePresenceFromEvent('question:scored', {
+    questionId: 'q-1',
+    questionIndex: 1,
+    teamId: 't-test-1-1',
+    teamIndex: 1,
+    score: 3,
+    extraCredit: 1,
+    total: 4,
+  });
+
+  assert.equal(localState.presence.activeQuestionId, 'q-1');
+  assert.equal(localState.presence.activeQuestionIndex, 1);
+  assert.equal(localState.presence.lastScore.total, 4);
+
+  context.updatePeersFromAwareness();
+  const peers = context.getSyncPeers();
+  assert.equal(peers.length, 1);
+  assert.equal(peers[0].presence.activeQuestionId, 'q-2');
+  assert.equal(peers[0].presence.lastEmbeddingEvent, 'question:changed');
+});

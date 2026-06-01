@@ -70,11 +70,48 @@ const totals = await pbe.score.getTotalPoints();
 console.log(totals.total);
 ```
 
+Run several commands together:
+
+```javascript
+await pbe.batch([
+  { command: "question:create", payload: { name: "Question 2", maxPoints: 5 } },
+  { command: "score:set", payload: { teamIndex: 1, score: 4 } }
+], { atomic: true });
+```
+
+Atomic batches validate the whole command list before any command runs.
+
 All exports use native Yjs update bytes:
 
 ```javascript
 const exported = await pbe.session.export();
 await otherPbe.session.import({ bytes: exported.bytes });
+```
+
+For all-session state transfer, use the state helpers. Preview first when the host wants to show its own conflict UI, or ask the embedded app to confirm conflicts before import:
+
+```javascript
+const stateExport = await pbe.state.export();
+const preview = await otherPbe.state.previewImport({ bytes: stateExport.bytes });
+
+if (preview.conflicts.length > 0) {
+  await otherPbe.state.import({
+    bytes: stateExport.bytes,
+    confirmConflicts: true
+  });
+}
+```
+
+Hosts that manage multiple rooms can keep additional session docs connected in the background:
+
+```javascript
+await pbe.sync.startParallel({
+  sessionId: "session-uuid",
+  roomCode: "ABC234",
+  displayName: "Scoreboard"
+});
+
+const parallel = await pbe.sync.listParallel();
 ```
 
 ## 6. Listen For Events
@@ -88,13 +125,37 @@ pbe.on("sync:stateChanged", (sync) => {
   console.log("sync state", sync.state);
 });
 
+pbe.on("sync:peersChanged", (sync) => {
+  sync.peers.forEach((peer) => {
+    console.log(peer.displayName, peer.presence?.activeQuestionIndex);
+  });
+});
+
 // Later:
 unsubscribe();
 ```
 
 Use `session:stateChanged` when the host needs a broad refresh signal. It is debounced.
 
-## 7. Error Handling
+## 7. Host Theme Inheritance
+
+Host pages can apply a small CSS-variable theme to the embedded frame:
+
+```javascript
+await pbe.ui.inheritTheme({
+  theme: "dark",
+  variables: {
+    "--page-bg": "#111827",
+    "--panel-bg": "#1f2937",
+    "--text-color": "#f9fafb",
+    "--accent-color": "#60a5fa"
+  }
+});
+```
+
+Only CSS custom properties are accepted, and unsafe values are rejected.
+
+## 8. Error Handling
 
 Client methods reject with `PBEScoreKeeperAPIError`.
 
@@ -118,8 +179,9 @@ Common error codes:
 | `not_found` | Requested session, question, team, or block was not found |
 | `payload_too_large` | Message exceeded `maxPayloadBytes` |
 | `rate_limited` | Message or command burst exceeded rate limits |
+| `batch_failed` | A batch stopped because one command failed |
 
-## 8. Cleanup
+## 9. Cleanup
 
 When the host removes the iframe:
 

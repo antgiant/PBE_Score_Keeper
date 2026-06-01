@@ -164,6 +164,17 @@
     return this.command(commandName, payload, options);
   };
 
+  PBEScoreKeeperAPI.prototype.batch = function(commands, options) {
+    options = options || {};
+    return this.command("batch:run", {
+      commands: commands,
+      atomic: options.atomic,
+      haltOnError: options.haltOnError,
+      dryRun: options.dryRun,
+      maxBatchCommands: options.maxBatchCommands
+    }, options);
+  };
+
   PBEScoreKeeperAPI.prototype.subscribe = function(events, options) {
     var self = this;
     var eventList = normalizeEventList(events);
@@ -452,12 +463,24 @@
       createRoom: wrap("sync:createRoom"),
       setPassword: wrap("sync:setPassword"),
       setDisplayName: wrap("sync:setDisplayName"),
-      getPeers: wrap("sync:getPeers")
+      getPeers: wrap("sync:getPeers"),
+      startParallel: wrap("sync:startParallel"),
+      stopParallel: wrap("sync:stopParallel"),
+      listParallel: wrap("sync:listParallel")
+    };
+
+    this.state = {
+      export: wrap("state:export"),
+      import: wrap("state:import"),
+      previewImport: wrap("state:previewImport")
     };
 
     this.ui = {
       setTheme: wrap("ui:setTheme"),
       setLanguage: wrap("ui:setLanguage"),
+      setThemeVariables: wrap("ui:setThemeVariables"),
+      clearThemeVariables: wrap("ui:clearThemeVariables"),
+      inheritTheme: wrap("ui:inheritTheme"),
       show: wrap("ui:show"),
       hide: wrap("ui:hide"),
       focus: wrap("ui:focus")

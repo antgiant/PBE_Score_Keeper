@@ -104,6 +104,7 @@
         <button id="create-question" class="secondary">Create Question</button>
         <button id="set-score">Set Score</button>
         <button id="next-question" class="secondary">Next Question</button>
+        <button id="inherit-theme" class="secondary">Apply Host Theme</button>
         <button id="export-session" class="secondary">Export Session</button>
         <pre id="log">Waiting for host actions...</pre>
       </div>
@@ -154,6 +155,18 @@
 
     document.getElementById("next-question").addEventListener("click", async () => {
       write("Next question", await api.question.next());
+    });
+
+    document.getElementById("inherit-theme").addEventListener("click", async () => {
+      write("Applied host theme", await api.ui.inheritTheme({
+        theme: "light",
+        variables: {
+          "--page-bg": "#f5f7fb",
+          "--panel-bg": "#ffffff",
+          "--text-color": "#1f2937",
+          "--link-color": "#2563eb"
+        }
+      }));
     });
 
     document.getElementById("export-session").addEventListener("click", async () => {

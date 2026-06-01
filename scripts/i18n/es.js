@@ -605,6 +605,18 @@ register_i18n_language('es', {
       "empty_session_deleted": "Eliminada (sin datos)",
       "status": "Estado"
     },
+    "embedding": {
+      "import_conflicts": {
+        "title": "Conflictos de Importación",
+        "description": "{{count}} conflicto(s) de quiz importada necesitan revisión antes de importar.",
+        "same_id": "Mismo ID: esta importación se fusionará con la quiz existente.",
+        "same_name": "Mismo nombre: esta importación puede crear un nombre de quiz duplicado.",
+        "unnamed": "Quiz sin nombre",
+        "cancel": "Cancelar",
+        "import": "Importar y Fusionar",
+        "cancelled": "Importación cancelada"
+      }
+    },
     "pwa": {
       "file_launch_success": "Quiz importado desde archivo",
       "file_launch_error": "Error al importar archivo: {{error}}",

@@ -402,4 +402,43 @@ describe('Sync Flows', () => {
     assert.strictEqual(globalDoc.getMap('meta').get('syncDisplayName'), 'Ivy');
     assert.strictEqual(syncModule.SyncManager.awareness.getLocalState().displayName, 'Ivy');
   });
+
+  it('runs background sync for a second session without replacing active sync state', async () => {
+    const secondSessionDoc = buildSessionDoc('session-2');
+    sessionDocs.set('session-2', secondSessionDoc);
+
+    const record = await syncModule.startParallelSessionSync('session-2', 'ABC234', 'June', 'secret');
+
+    assert.strictEqual(record.sessionId, 'session-2');
+    assert.strictEqual(record.roomCode, 'ABC234');
+    assert.strictEqual(record.state, 'connected');
+    assert.strictEqual(syncModule.getSyncState(), 'offline');
+
+    const config = secondSessionDoc.getMap('session').get('config');
+    assert.strictEqual(config.get('syncRoom'), 'ABC234');
+
+    const liveRecord = syncModule.SyncManager.parallelSessions.get('session-2');
+    liveRecord.awareness.getStates().set(2, {
+      displayName: 'Peer',
+      color: '#123456',
+      dataVersion: '5.0',
+      presence: { activeQuestionId: 'q-2' }
+    });
+    liveRecord.awareness.triggerChange();
+
+    const sessions = syncModule.getParallelSyncSessions();
+    assert.strictEqual(sessions.length, 1);
+    assert.strictEqual(sessions[0].peerCount, 2);
+    assert.strictEqual(sessions[0].peers[0].displayName, 'Peer');
+    assert.strictEqual(sessions[0].peers[0].presence.activeQuestionId, 'q-2');
+
+    syncModule.updateSyncPresence({ scoringContext: { questionId: 'q-1' } });
+    assert.strictEqual(liveRecord.awareness.getLocalState().presence.parallel, true);
+    assert.strictEqual(liveRecord.awareness.getLocalState().presence.activeSessionId, 'session-2');
+
+    const stopped = syncModule.stopParallelSessionSync('session-2', false);
+    assert.strictEqual(stopped, true);
+    assert.strictEqual(liveRecord.provider.destroyed, true);
+    assert.strictEqual(syncModule.getParallelSyncSessions().length, 0);
+  });
 });

@@ -600,6 +600,18 @@ register_i18n_language('pig', {
       "empty_session_deleted": "Eleted-Day (o-nay ata-day)",
       "status": "Atus-Stay"
     },
+    "embedding": {
+      "import_conflicts": {
+        "title": "Import-ay Onflicts-Cay",
+        "description": "{{count}} imported-ay iz-quay onflict(s)-cay eed-nay eview-ray efore-bay import-ay.",
+        "same_id": "Ame-Say ID-ay: is-thay import-ay ill-way erge-may ith-way e-thay existing-ay iz-quay.",
+        "same_name": "Ame-Say ame-nay: is-thay import-ay ay-may eate-cray a-ay uplicate-day iz-quay ame-nay.",
+        "unnamed": "Unnamed-ay iz-quay",
+        "cancel": "Ancel-Cay",
+        "import": "Import-ay and-ay Erge-May",
+        "cancelled": "Import-ay ancelled-cay"
+      }
+    },
     "pwa": {
       "file_launch_success": "Importeday uizay omfray ilfay",
       "file_launch_error": "Ailfay otay importay ilfay: {{error}}",

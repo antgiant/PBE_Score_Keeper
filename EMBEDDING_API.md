@@ -155,6 +155,29 @@ Sync:
 | `sync:setPassword` | `{ password? }` |
 | `sync:setDisplayName` | `{ displayName }` |
 | `sync:getPeers` | none |
+| `sync:startParallel` | `{ sessionId? or sessionIndex?, roomCode, displayName, password?, options? }` |
+| `sync:stopParallel` | `{ sessionId? or sessionIndex?, clearSessionRoom? }` |
+| `sync:listParallel` | none |
+
+`sync:getState` includes `parallelSessions` when background session sync providers are active. Parallel sync is intended for hosts that need multiple session docs connected at the same time; it does not replace the active-room UI connection.
+
+State:
+
+| Command | Payload |
+| --- | --- |
+| `state:export` | none |
+| `state:previewImport` | `{ bytes? or base64? or data?, showConflictDialog? }` |
+| `state:import` | `{ bytes? or base64? or data?, confirmConflicts? }` |
+
+State export returns a native `.yjs` multi-doc container as `bytes`, `base64`, and `byteLength`. `state:previewImport` reports imported sessions and conflicts without mutating state. When `confirmConflicts` or `showConflictDialog` is true and conflicts are detected, the embedded app shows an import-conflict dialog before proceeding.
+
+Batch:
+
+| Command | Payload |
+| --- | --- |
+| `batch:run` | `{ commands: [{ command, payload? }], atomic?, haltOnError?, dryRun?, maxBatchCommands? }` |
+
+Atomic batches validate every command envelope before execution. If validation fails, no command in the batch is run. Runtime command failures stop the batch when `haltOnError` is true.
 
 UI:
 
@@ -162,9 +185,14 @@ UI:
 | --- | --- |
 | `ui:setTheme` | `{ theme: "light" | "dark" | "system" }` |
 | `ui:setLanguage` | `{ language }` |
+| `ui:setThemeVariables` | `{ variables: { "--css-var": "value" } }` |
+| `ui:clearThemeVariables` | `{ names?: ["--css-var"] }` |
+| `ui:inheritTheme` | `{ theme?, variables? }` |
 | `ui:show` | none |
 | `ui:hide` | none |
 | `ui:focus` | none |
+
+Host-provided CSS variables must use custom-property names (`--name`) and safe values. Values containing `url(...)`, `expression(...)`, `javascript:`, or angle brackets are rejected.
 
 ## Events
 
@@ -195,3 +223,5 @@ Available events:
 | UI | `ui:ready`, `ui:themeChanged`, `ui:languageChanged` |
 
 High-frequency state and sync events are debounced or throttled.
+
+`sync:getPeers` and sync peer events include peer `presence` metadata when available, including active session, active question, and recent scoring context.

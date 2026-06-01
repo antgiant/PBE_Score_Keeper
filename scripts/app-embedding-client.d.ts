@@ -49,6 +49,7 @@ export class PBEScoreKeeperAPI {
   ready(): Promise<unknown>;
   command<T = unknown>(commandName: string, payload?: unknown, options?: { timeoutMs?: number; retries?: number }): Promise<T>;
   sendCommand<T = unknown>(commandName: string, payload?: unknown, options?: { timeoutMs?: number; retries?: number }): Promise<T>;
+  batch<T = unknown>(commands: Array<{ command: string; payload?: unknown }>, options?: { atomic?: boolean; haltOnError?: boolean; dryRun?: boolean; maxBatchCommands?: number; timeoutMs?: number; retries?: number }): Promise<T>;
   subscribe(events: string | string[], options?: { timeoutMs?: number; retries?: number }): Promise<unknown>;
   unsubscribe(events?: string | string[], options?: { timeoutMs?: number; retries?: number }): Promise<unknown>;
   on<T = unknown>(eventName: string, handler: EmbeddingEventHandler<T>): () => void;
@@ -62,5 +63,6 @@ export class PBEScoreKeeperAPI {
   block: Record<string, (payload?: unknown, options?: unknown) => Promise<unknown>>;
   timer: Record<string, (payload?: unknown, options?: unknown) => Promise<unknown>>;
   sync: Record<string, (payload?: unknown, options?: unknown) => Promise<unknown>>;
+  state: Record<string, (payload?: unknown, options?: unknown) => Promise<unknown>>;
   ui: Record<string, (payload?: unknown, options?: unknown) => Promise<unknown>>;
 }

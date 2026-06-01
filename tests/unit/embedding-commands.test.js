@@ -54,10 +54,61 @@ test('embedding command module registers the command surface', () => {
   const { context } = loadEmbeddingApp();
   const commandNames = Array.from(context.EmbeddingCommands.commandNames);
 
-  assert.equal(commandNames.length, 48);
+  assert.equal(commandNames.length, 58);
   for (const command of commandNames) {
     assert.equal(typeof context.EmbeddingAPI.commandHandlers[command], 'function', command);
   }
+});
+
+test('batch command runs validated multi-command sequences', async () => {
+  const { context } = loadEmbeddingApp();
+
+  const batch = plain(await dispatch(context, 'batch:run', {
+    atomic: true,
+    commands: [
+      {
+        command: 'question:create',
+        payload: { name: 'Batch Question', maxPoints: 5 },
+      },
+      {
+        command: 'score:set',
+        payload: { teamIndex: 1, score: 3 },
+      },
+      {
+        command: 'score:getTotalPoints',
+        payload: {},
+      },
+    ],
+  }));
+
+  assert.equal(batch.count, 3);
+  assert.equal(batch.results.every((result) => result.ok), true);
+  assert.equal(batch.results[0].result.name, 'Batch Question');
+  assert.equal(batch.results[2].result.total, 3);
+});
+
+test('atomic batch validation prevents mutation when command list is invalid', async () => {
+  const { context } = loadEmbeddingApp();
+
+  await assert.rejects(
+    () => dispatch(context, 'batch:run', {
+      atomic: true,
+      commands: [
+        {
+          command: 'score:set',
+          payload: { teamIndex: 1, score: 4 },
+        },
+        {
+          command: 'missing:command',
+          payload: {},
+        },
+      ],
+    }),
+    (error) => error.code === 'unknown_command'
+  );
+
+  const totals = plain(await dispatch(context, 'score:getTotalPoints'));
+  assert.equal(totals.total, 0);
 });
 
 test('session commands list, create, rename, switch, and delete sessions', async () => {
@@ -193,6 +244,108 @@ test('timer commands persist local timer settings and duration config', async ()
   assert.equal(localStorage.getItem('pbe_timer_auto_start_test-session-1'), 'true');
 });
 
+test('sync commands manage parallel session providers through host API', async () => {
+  const { context } = loadEmbeddingApp();
+  const parallelSessions = [];
+  context.startParallelSessionSync = async (sessionId, roomCode, displayName, password, options) => {
+    const record = {
+      sessionId,
+      roomCode,
+      displayName,
+      password,
+      options,
+      state: 'connected',
+      peers: [],
+    };
+    parallelSessions.push(record);
+    return record;
+  };
+  context.stopParallelSessionSync = (sessionId, clearSessionRoom) => {
+    const index = parallelSessions.findIndex((session) => session.sessionId === sessionId);
+    if (index === -1) {
+      return false;
+    }
+    parallelSessions[index].clearSessionRoom = clearSessionRoom;
+    parallelSessions.splice(index, 1);
+    return true;
+  };
+  context.getParallelSyncSessions = () => parallelSessions.slice();
+
+  const started = plain(await dispatch(context, 'sync:startParallel', {
+    sessionId: 'test-session-1',
+    roomCode: 'ABC234',
+    displayName: 'Host',
+    password: 'secret',
+    options: { saveRoom: false },
+  }));
+
+  assert.equal(started.sessionId, 'test-session-1');
+  assert.equal(started.roomCode, 'ABC234');
+  assert.equal(started.options.saveRoom, false);
+
+  const listed = plain(await dispatch(context, 'sync:listParallel'));
+  assert.equal(listed.parallelSessions.length, 1);
+
+  const state = plain(await dispatch(context, 'sync:getState'));
+  assert.equal(state.parallelSessions.length, 1);
+
+  const stopped = plain(await dispatch(context, 'sync:stopParallel', {
+    sessionId: 'test-session-1',
+    clearSessionRoom: false,
+  }));
+  assert.equal(stopped.stopped, true);
+  assert.equal(stopped.parallelSessions.length, 0);
+});
+
+test('state import conflict dialog escapes content and resolves user choice', async () => {
+  const { context } = loadEmbeddingApp();
+  const preview = {
+    conflicts: [{
+      type: 'same-name',
+      imported: { name: '<Shared & Quiz>' },
+    }],
+  };
+  const html = context.EmbeddingCommands.createStateImportConflictDialogHTML(preview);
+  assert.match(html, /&lt;Shared &amp; Quiz&gt;/);
+  assert.doesNotMatch(html, /<Shared & Quiz>/);
+
+  const buttons = {};
+  let removed = false;
+  context.document.body = {
+    appendChild(overlay) {
+      this.overlay = overlay;
+    },
+  };
+  context.document.createElement = () => ({
+    className: '',
+    innerHTML: '',
+    querySelector(selector) {
+      return buttons[selector];
+    },
+    remove() {
+      removed = true;
+    },
+  });
+  context.document.addEventListener = () => {};
+  context.document.removeEventListener = () => {};
+  buttons['[data-state-import-action="cancel"]'] = {
+    addEventListener(event, handler) {
+      this.handler = handler;
+    },
+  };
+  buttons['[data-state-import-action="import"]'] = {
+    addEventListener(event, handler) {
+      this.handler = handler;
+    },
+    focus() {},
+  };
+
+  const decision = context.EmbeddingCommands.showStateImportConflictDialog(preview);
+  buttons['[data-state-import-action="import"]'].handler();
+  assert.deepEqual(plain(await decision), { action: 'import', conflictCount: 1 });
+  assert.equal(removed, true);
+});
+
 test('ui commands update theme, language, and embedded visibility', async () => {
   const { context, localStorage } = loadEmbeddingApp();
   const attrs = {};
@@ -200,6 +353,15 @@ test('ui commands update theme, language, and embedded visibility', async () => 
   let focused = false;
 
   context.document.documentElement = {
+    style: {
+      values: {},
+      setProperty(name, value) {
+        this.values[name] = value;
+      },
+      removeProperty(name) {
+        delete this.values[name];
+      },
+    },
     setAttribute(name, value) {
       attrs[name] = value;
     },
@@ -256,6 +418,32 @@ test('ui commands update theme, language, and embedded visibility', async () => 
   assert.equal(language.preference, 'fr');
   assert.equal(language.language, 'fr');
   assert.equal(localStorage.getItem('language_preference'), 'fr');
+
+  const variables = plain(await dispatch(context, 'ui:setThemeVariables', {
+    variables: {
+      '--panel-bg': '#ffffff',
+      '--accent-color': 'rgb(10, 20, 30)',
+    },
+  }));
+  assert.deepEqual(variables.variables, {
+    '--panel-bg': '#ffffff',
+    '--accent-color': 'rgb(10, 20, 30)',
+  });
+  assert.equal(context.document.documentElement.style.values['--panel-bg'], '#ffffff');
+  assert.equal(attrs['data-host-theme'], 'true');
+
+  await assert.rejects(
+    () => dispatch(context, 'ui:setThemeVariables', {
+      variables: { '--bad': 'url(javascript:alert(1))' },
+    }),
+    (error) => error.code === 'invalid_parameter'
+  );
+
+  const cleared = plain(await dispatch(context, 'ui:clearThemeVariables', {
+    names: ['--panel-bg'],
+  }));
+  assert.deepEqual(cleared.cleared, ['--panel-bg']);
+  assert.equal(context.document.documentElement.style.values['--panel-bg'], undefined);
 
   const hidden = plain(await dispatch(context, 'ui:hide'));
   assert.equal(hidden.visible, false);
