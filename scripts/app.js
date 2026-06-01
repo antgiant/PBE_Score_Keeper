@@ -313,11 +313,48 @@ function initializeApp() {
   });
 }
 
+function register_service_worker() {
+  if (typeof navigator === "undefined" || !navigator.serviceWorker) {
+    return;
+  }
+
+  navigator.serviceWorker.register("service-worker.js", { scope: "./" })
+    .then(function(registration) {
+      if (registration.waiting) {
+        registration.waiting.postMessage({ type: "SKIP_WAITING" });
+      }
+
+      registration.addEventListener("updatefound", function() {
+        var installingWorker = registration.installing;
+        if (!installingWorker) {
+          return;
+        }
+
+        installingWorker.addEventListener("statechange", function() {
+          if (installingWorker.state === "installed" && navigator.serviceWorker.controller) {
+            console.log("Service worker update installed");
+          }
+        });
+      });
+    })
+    .catch(function(error) {
+      console.warn("Service worker registration failed:", error);
+    });
+}
+
 if (window.yjsModulesLoaded) {
   bootstrap_critical_startup();
 } else {
   // Fallback: wait for event (shouldn't be needed with sync script)
   window.addEventListener('yjsModulesLoaded', bootstrap_critical_startup, { once: true });
+}
+
+if (typeof window !== "undefined") {
+  if (document.readyState === "complete") {
+    register_service_worker();
+  } else {
+    window.addEventListener("load", register_service_worker, { once: true });
+  }
 }
 
 /**
