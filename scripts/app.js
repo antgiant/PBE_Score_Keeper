@@ -318,6 +318,16 @@ function register_service_worker() {
     return;
   }
 
+  var hasRefreshedForServiceWorker = false;
+  navigator.serviceWorker.addEventListener("controllerchange", function() {
+    if (hasRefreshedForServiceWorker) {
+      return;
+    }
+
+    hasRefreshedForServiceWorker = true;
+    window.location.reload();
+  });
+
   navigator.serviceWorker.register("service-worker.js", { scope: "./" })
     .then(function(registration) {
       if (registration.waiting) {
@@ -333,6 +343,9 @@ function register_service_worker() {
         installingWorker.addEventListener("statechange", function() {
           if (installingWorker.state === "installed" && navigator.serviceWorker.controller) {
             console.log("Service worker update installed");
+            if (registration.waiting) {
+              registration.waiting.postMessage({ type: "SKIP_WAITING" });
+            }
           }
         });
       });

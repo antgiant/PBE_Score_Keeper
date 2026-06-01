@@ -1,4 +1,4 @@
-const APP_VERSION = "2.19.0";
+const APP_VERSION = "2.19.1";
 const CACHE_NAME = `pbe-score-keeper-${APP_VERSION}`;
 const PRECACHE_URLS = [
   "./",
@@ -51,8 +51,6 @@ self.addEventListener("install", function(event) {
   event.waitUntil(
     caches.open(CACHE_NAME).then(function(cache) {
       return cache.addAll(PRECACHE_URLS);
-    }).then(function() {
-      return self.skipWaiting();
     })
   );
 });
