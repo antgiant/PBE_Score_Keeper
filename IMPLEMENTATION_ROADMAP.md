@@ -7,7 +7,7 @@
 - [x] Implement `launchQueue` handler in app startup
 - [x] Add file detection and routing in `app.js` startup
 - [x] Update import flow to accept file contents
-- [ ] Test file associations on Android/Chrome
+- [ ] Test file associations on Android/Chrome (manual installed-PWA validation required)
 - [x] Add tests for file handler flow
 
 ### Milestone 1.2: Protocol Handlers  
@@ -19,13 +19,26 @@
   - [x] `web+pbe://session/new` → Create new session
   - [x] `web+pbe://import?file=URL` → Import session from URL
 - [x] Add error handling for invalid URLs
-- [ ] Test protocol handlers (manual testing on mobile)
+- [ ] Test protocol handlers (manual mobile/installed-PWA validation required)
 - [x] Add documentation to README
 
 ### Tests (Phase 1)
 - [x] File handler launch queue parsing
 - [x] Protocol URL parsing and routing
 - [x] Fallback behavior when unsupported
+
+### Manual Validation Checklist (Phase 1)
+- Android/Chrome file association:
+  - Install the app from Chrome using "Install app" or "Add to Home screen".
+  - Download or share a `.yjs` export to the installed PWA.
+  - Confirm the app launches and imports the quiz without using the in-app file picker.
+  - Repeat with a legacy `.json` export.
+- Mobile protocol handler:
+  - Install the app from a browser that supports web protocol handlers.
+  - Open `web+pbe://join/ABC123` and confirm the sync dialog opens with `ABC123` filled in.
+  - Open `web+pbe://join/ABC123?password=PASS` and confirm the room and password fields are filled in.
+  - Open `web+pbe://session/new` and confirm a new quiz flow starts.
+  - Open `web+pbe://import?file=<encoded-url>` with a reachable `.yjs` file and confirm import routing starts.
 
 ---
 
@@ -150,9 +163,9 @@
 ## Success Metrics
 
 ### Phase 1
-- [x] File associations work on Android/Chrome
+- [ ] File associations work on Android/Chrome (pending manual installed-PWA validation)
 - [x] Protocol handlers registered in manifest
-- [x] Deep links work (manual testing)
+- [ ] Deep links work on mobile/installed PWA (pending manual validation)
 
 ### Phase 2
 - [x] All 44 commands implemented and tested
