@@ -7,7 +7,7 @@ This guide is for host sites that want to embed PBE Score Keeper as an iframe an
 The scorekeeper must be served from a web origin. Embedded mode is enabled with:
 
 ```text
-https://scorekeeper.example/?embedded=1
+https://pbe-scores.wooleys.us/?embedded=1
 ```
 
 Use HTTPS in production so WebRTC sync and storage APIs work consistently.
@@ -19,7 +19,7 @@ Use the smallest sandbox that supports your integration:
 ```html
 <iframe
   id="scorekeeper"
-  src="https://scorekeeper.example/?embedded=1"
+  src="https://pbe-scores.wooleys.us/?embedded=1"
   sandbox="allow-scripts allow-same-origin allow-downloads"
   style="width: 100%; height: 720px; border: 0;">
 </iframe>
@@ -30,12 +30,12 @@ Do not add broader sandbox permissions unless the host workflow specifically nee
 ## 3. Load The Client
 
 ```html
-<script src="https://scorekeeper.example/scripts/app-embedding-client.js"></script>
+<script src="https://pbe-scores.wooleys.us/scripts/app-embedding-client.js"></script>
 ```
 
 ```javascript
 const pbe = new PBEScoreKeeperAPI(document.getElementById("scorekeeper"), {
-  targetOrigin: "https://scorekeeper.example",
+  targetOrigin: "https://pbe-scores.wooleys.us",
   timeoutMs: 10000,
   retries: 1
 });
@@ -56,11 +56,7 @@ allowedOrigins: ["*"]
 
 The first validated origin is locked as the active host origin for that iframe. Messages from other origins are ignored after the lock.
 
-If you publish a private copy and want to restrict command access, edit `scripts/app-globals.js` before deploying:
-
-```javascript
-allowedOrigins: ["https://host.example"]
-```
+If you publish a private copy and want to restrict command access, edit `scripts/app-globals.js` before deploying and replace `["*"]` with the exact origin of each host page that should be allowed.
 
 The host page cannot call `EmbeddingAPI.configure(...)` inside a cross-origin iframe after it loads. Cross-origin JavaScript access to the iframe is blocked by the browser, so allowlist changes must be baked into the scorekeeper deployment.
 

@@ -10,14 +10,14 @@ Use the host-side helper when possible:
 <script src="scripts/app-embedding-client.js"></script>
 <iframe
   id="scorekeeper"
-  src="https://scorekeeper.example/?embedded=1"
+  src="https://pbe-scores.wooleys.us/?embedded=1"
   sandbox="allow-scripts allow-same-origin allow-downloads">
 </iframe>
 ```
 
 ```javascript
 const api = new PBEScoreKeeperAPI(document.getElementById("scorekeeper"), {
-  targetOrigin: "https://scorekeeper.example"
+  targetOrigin: "https://pbe-scores.wooleys.us"
 });
 
 await api.ready();
@@ -37,7 +37,7 @@ iframe.contentWindow.postMessage({
   id: "request-1",
   command: "session:list",
   payload: {}
-}, "https://scorekeeper.example");
+}, "https://pbe-scores.wooleys.us");
 ```
 
 Iframe to host:
@@ -81,11 +81,7 @@ EmbeddingAPI.configure({
 
 Default origin policy allows any first host origin, which is useful for GitHub Pages deployments where response headers and per-host runtime configuration are limited. The first validated origin is locked as `hostOrigin`, so later messages from other origins are ignored for that frame instance.
 
-To restrict command access for a private deployment, edit `EMBEDDING_CONFIG.allowedOrigins` in `scripts/app-globals.js` before publishing:
-
-```javascript
-allowedOrigins: ["https://host.example"]
-```
+To restrict command access for a private deployment, edit `EMBEDDING_CONFIG.allowedOrigins` in `scripts/app-globals.js` before publishing and replace `["*"]` with the exact origin of each host page that should be allowed.
 
 The host page should still set the client `targetOrigin` to the exact scorekeeper origin in production.
 
@@ -218,7 +214,7 @@ iframe.contentWindow.postMessage({
   type: "embedding:subscribe",
   id: "sub-1",
   events: ["question:scored", "sync:stateChanged"]
-}, "https://scorekeeper.example");
+}, "https://pbe-scores.wooleys.us");
 ```
 
 Available events:

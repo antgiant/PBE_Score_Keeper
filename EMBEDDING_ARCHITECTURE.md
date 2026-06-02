@@ -60,7 +60,7 @@ This document describes the architecture for embedding PBE Score Keeper as a ful
 // Host loads PBE Score Keeper in iframe
 <iframe 
   id="pbe-scorekeeper" 
-  src="https://pbescore.keeper/?embedded=1&apiVersion=1"
+  src="https://pbe-scores.wooleys.us/?embedded=1&apiVersion=1"
   sandbox="allow-scripts allow-same-origin allow-downloads"
 />
 
@@ -242,8 +242,8 @@ var EMBEDDING_CONFIG = {
 #### 2.7.1 Origin Validation
 - The iframe only responds to `postMessage` traffic from validated origins.
 - Default behavior allows any first host origin with `allowedOrigins: ["*"]`, which supports GitHub Pages deployments with limited header/runtime configuration control.
-- `EMBEDDING_CONFIG.allowedOrigins` accepts full origins such as `https://host.example`.
-- `EMBEDDING_CONFIG.allowedHosts` accepts hostnames or host:port values such as `host.example` or `host.example:8443`.
+- `EMBEDDING_CONFIG.allowedOrigins` accepts full host page origins.
+- `EMBEDDING_CONFIG.allowedHosts` accepts hostnames or host:port values.
 - The first validated host is locked into `EMBEDDING_CONFIG.hostOrigin`; later messages from other origins are ignored unless the host origin is reset intentionally.
 - `*` is supported only in `allowedOrigins`. Restrict it to explicit origins for private deployments that should not accept commands from arbitrary host pages.
 - The host-side `PBEScoreKeeperAPI` should set `targetOrigin` to the scorekeeper origin instead of `*` in production.
@@ -279,7 +279,7 @@ var EMBEDDING_CONFIG = {
   <div id="scorekeeper-container">
     <iframe 
       id="scorekeeper"
-      src="https://pbescore.keeper/?embedded=1"
+      src="https://pbe-scores.wooleys.us/?embedded=1"
       style="width: 100%; height: 600px;"
     ></iframe>
   </div>
@@ -287,7 +287,7 @@ var EMBEDDING_CONFIG = {
   <script>
     const pbeApp = new PBEScoreKeeperAPI(
       document.getElementById('scorekeeper'),
-      { targetOrigin: 'https://pbescore.keeper' }
+      { targetOrigin: 'https://pbe-scores.wooleys.us' }
     );
 
     // Wait for app ready

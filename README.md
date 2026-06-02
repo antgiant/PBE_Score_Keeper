@@ -19,7 +19,7 @@ The installed app also registers `web+pbe://` links, which are the browser-safe 
 - `web+pbe://join/ABC123` opens the sync dialog with room `ABC123` filled in.
 - `web+pbe://join/ABC123?password=PASS` also fills in the room password.
 - `web+pbe://session/new` starts a new quiz session when the current quiz has enough data to allow session creation.
-- `web+pbe://import?file=https%3A%2F%2Fexample.com%2Fsession.yjs` imports a quiz export from a link.
+- `web+pbe://import?file=<encoded .yjs export URL>` imports a quiz export from a link.
 
 Browser support for file and protocol handlers varies. If a handler is unavailable, use the in-app Import/Export tools.
 
