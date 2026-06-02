@@ -172,9 +172,30 @@ test('hello handshake responds to same-origin host', () => {
   assert.equal(source.messages[0].message.result.embedded, true);
 });
 
-test('invalid origins are blocked by default', () => {
+test('cross-origin hosts are permitted by default and lock the active origin', () => {
   const { context } = createContext();
   const source = createSource();
+  context.EmbeddingAPI.init();
+
+  const handled = context.EmbeddingAPI.handleMessage({
+    origin: 'https://host.example.test',
+    source,
+    data: {
+      type: 'embedding:hello',
+      id: 'host-1',
+    },
+  });
+
+  assert.equal(handled, true);
+  assert.equal(source.messages.length, 1);
+  assert.equal(source.messages[0].message.ok, true);
+  assert.equal(context.EMBEDDING_CONFIG.hostOrigin, 'https://host.example.test');
+});
+
+test('explicit allowedOrigins still block unlisted origins', () => {
+  const { context } = createContext();
+  const source = createSource();
+  context.EMBEDDING_CONFIG.allowedOrigins = ['https://trusted.example.test'];
   context.EmbeddingAPI.init();
 
   const handled = context.EmbeddingAPI.handleMessage({

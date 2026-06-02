@@ -21,7 +21,7 @@ var EMBEDDING_CONFIG = {
   enabled: false,
   apiVersion: 1,
   hostOrigin: null,
-  allowedOrigins: [],
+  allowedOrigins: ["*"],
   allowedHosts: [],
   readyTimeoutMs: 10000,
   maxPayloadBytes: 524288,

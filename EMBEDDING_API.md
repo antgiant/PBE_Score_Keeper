@@ -67,8 +67,8 @@ Embedding is enabled by `?embedded=1` or by setting `EMBEDDING_CONFIG.enabled = 
 
 ```javascript
 EmbeddingAPI.configure({
-  allowedOrigins: ["https://host.example"],
-  allowedHosts: ["host.example"],
+  allowedOrigins: ["*"],
+  allowedHosts: [],
   maxPayloadBytes: 524288,
   rateLimit: {
     enabled: true,
@@ -79,7 +79,15 @@ EmbeddingAPI.configure({
 });
 ```
 
-Default origin policy is same-origin only. The first validated origin is locked as `hostOrigin`.
+Default origin policy allows any first host origin, which is useful for GitHub Pages deployments where response headers and per-host runtime configuration are limited. The first validated origin is locked as `hostOrigin`, so later messages from other origins are ignored for that frame instance.
+
+To restrict command access for a private deployment, edit `EMBEDDING_CONFIG.allowedOrigins` in `scripts/app-globals.js` before publishing:
+
+```javascript
+allowedOrigins: ["https://host.example"]
+```
+
+The host page should still set the client `targetOrigin` to the exact scorekeeper origin in production.
 
 ## Commands
 

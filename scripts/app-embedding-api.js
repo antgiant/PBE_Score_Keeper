@@ -34,7 +34,7 @@ var EmbeddingAPI = {
       EMBEDDING_CONFIG.apiVersion = this.apiVersion;
     }
     if (!EMBEDDING_CONFIG.allowedOrigins) {
-      EMBEDDING_CONFIG.allowedOrigins = [];
+      EMBEDDING_CONFIG.allowedOrigins = ["*"];
     }
     if (!EMBEDDING_CONFIG.allowedHosts) {
       EMBEDDING_CONFIG.allowedHosts = [];

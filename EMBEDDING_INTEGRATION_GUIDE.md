@@ -45,18 +45,24 @@ await pbe.ready();
 
 Set `targetOrigin` to the exact scorekeeper origin in production.
 
-## 4. Configure Allowed Hosts
+## 4. Cross-Origin Hosting
 
-For same-origin embedding, no configuration is needed. For cross-origin hosts, configure the scorekeeper frame before or during app startup:
+The published app defaults to allowing any first host origin to control an embedded frame. This is intended for GitHub Pages, where you usually cannot set custom frame headers or inject per-host runtime configuration into the scorekeeper origin.
 
 ```javascript
-EmbeddingAPI.configure({
-  allowedOrigins: ["https://host.example"],
-  allowedHosts: ["host.example"]
-});
+// scripts/app-globals.js
+allowedOrigins: ["*"]
 ```
 
-The first validated origin is locked as the active host origin. Messages from other origins are ignored.
+The first validated origin is locked as the active host origin for that iframe. Messages from other origins are ignored after the lock.
+
+If you publish a private copy and want to restrict command access, edit `scripts/app-globals.js` before deploying:
+
+```javascript
+allowedOrigins: ["https://host.example"]
+```
+
+The host page cannot call `EmbeddingAPI.configure(...)` inside a cross-origin iframe after it loads. Cross-origin JavaScript access to the iframe is blocked by the browser, so allowlist changes must be baked into the scorekeeper deployment.
 
 ## 5. Control The Scorekeeper
 

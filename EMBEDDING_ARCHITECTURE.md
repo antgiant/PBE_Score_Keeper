@@ -225,7 +225,7 @@ var EMBEDDING_CONFIG = {
   enabled: false,
   apiVersion: 1,
   hostOrigin: null,
-  allowedOrigins: [],
+  allowedOrigins: ["*"],
   allowedHosts: [],
   maxPayloadBytes: 524288,
   rateLimit: {
@@ -241,11 +241,11 @@ var EMBEDDING_CONFIG = {
 
 #### 2.7.1 Origin Validation
 - The iframe only responds to `postMessage` traffic from validated origins.
-- Default behavior allows same-origin messages only.
+- Default behavior allows any first host origin with `allowedOrigins: ["*"]`, which supports GitHub Pages deployments with limited header/runtime configuration control.
 - `EMBEDDING_CONFIG.allowedOrigins` accepts full origins such as `https://host.example`.
 - `EMBEDDING_CONFIG.allowedHosts` accepts hostnames or host:port values such as `host.example` or `host.example:8443`.
 - The first validated host is locked into `EMBEDDING_CONFIG.hostOrigin`; later messages from other origins are ignored unless the host origin is reset intentionally.
-- `*` is supported only in `allowedOrigins` and should be reserved for trusted offline/local development.
+- `*` is supported only in `allowedOrigins`. Restrict it to explicit origins for private deployments that should not accept commands from arbitrary host pages.
 - The host-side `PBEScoreKeeperAPI` should set `targetOrigin` to the scorekeeper origin instead of `*` in production.
 
 #### 2.7.2 Iframe Sandbox
